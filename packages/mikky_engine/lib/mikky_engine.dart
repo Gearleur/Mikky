@@ -13,3 +13,4 @@ export 'src/island/island_machine.dart';
 export 'src/island/island_motion.dart';
 export 'src/mikky/mikky.dart';
 export 'src/mikky/mikky_geometry.dart';
+export 'src/mikky/mikky_tuning.dart';
