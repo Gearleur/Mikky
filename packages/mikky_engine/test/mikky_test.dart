@@ -10,6 +10,15 @@ void run(Mikky m, double seconds, {double lookX = 0, double lookY = 0}) {
   }
 }
 
+/// Runs an approving Mikky until he is fully the "!".
+void untilBang(Mikky m) {
+  for (var i = 0; i < 60 * 10; i++) {
+    m.update(1 / 60);
+    if (m.form == MikkyForm.bang && (m.morph - 1).abs() < .03 && m.time > 2.8) return;
+  }
+  fail('never became the "!"');
+}
+
 void main() {
   test('a blink closes then reopens the eyes', () {
     final m = Mikky(random: math.Random(1));
@@ -81,14 +90,39 @@ void main() {
       return MikkyGeometry.of(m, 100);
     }
 
-    test('approval: big eyes, and he turns into the "!" himself, no badge', () {
+    test('approval: big eyes, then he turns into the "!" himself, no badge', () {
       final m = Mikky(random: math.Random(2))..setState(MikkyState.approval);
-      run(m, 2);
+      run(m, 1);
       expect(m.pose.eyeScale, greaterThan(1.1));
-      expect(m.form, MikkyForm.bang);
-      expect(m.morph, closeTo(1, .05));
+      expect(m.form, MikkyForm.cat);
+      expect(m.badge, isNull);
+      untilBang(m);
       expect(m.badge, isNull);
       expect(MikkyGeometry.of(m, 100).satellites, hasLength(1));
+    });
+
+    test('approval goes round: 2 hops as the cat, the "!" for 3 or 4 hops, the cat again', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.approval);
+      final phases = <String>[];
+      final hopsIn = <String, int>{};
+      var wasUp = false;
+      for (var i = 0; i < 60 * 14; i++) {
+        m.update(1 / 60);
+        final phase = m.form == MikkyForm.bang && m.morph > .9
+            ? 'B'
+            : (m.morph.abs() < .1 ? 'C' : null);
+        if (phase != null && (phases.isEmpty || phases.last != phase)) phases.add(phase);
+        final up = m.pose.offsetY < -.1;
+        if (up && !wasUp && phases.isNotEmpty) {
+          final key = '${phases.length}${phases.last}';
+          hopsIn[key] = (hopsIn[key] ?? 0) + 1;
+        }
+        wasUp = up;
+      }
+      expect(phases.take(4), ['C', 'B', 'C', 'B']);
+      expect(hopsIn['1C'], 2);
+      expect(hopsIn['2B'], inInclusiveRange(3, 4));
+      expect(hopsIn['3C'], 2);
     });
 
     test('question: one ear folded, head tilted, "?" badge', () {
@@ -108,14 +142,20 @@ void main() {
       expect(m.badge?.color, AgentStatus.error);
     });
 
-    test('finished: happy arcs, a roll and sparkles', () {
+    test('finished: content eyes, a little jump (no roll), one ear bigger, sparkles', () {
       final m = Mikky(random: math.Random(2))..setState(MikkyState.finished);
-      run(m, .3);
-      expect(m.pose.tilt.abs(), greaterThan(.5));
+      var highest = 0.0, maxTurn = 0.0;
+      for (var i = 0; i < 40; i++) {
+        m.update(1 / 60);
+        highest = math.min(highest, m.pose.offsetY);
+        maxTurn = math.max(maxTurn, m.pose[MikkyProp.spin].abs());
+      }
+      expect(highest, lessThan(-.15));
+      expect(maxTurn, 0);
       expect(m.particles.where((p) => p.kind == ParticleKind.sparkle), isNotEmpty);
       run(m, 2);
-      expect(m.pose[MikkyProp.spin], 0);
       expect(m.eyeLeft, EyeShape.happy);
+      expect(m.pose[MikkyProp.earBaseRight] - m.pose[MikkyProp.earBaseLeft], greaterThan(.3));
     });
 
     test('sleeping: closed eyes, droopy ears, "z", no blinking', () {
@@ -150,35 +190,63 @@ void main() {
       expect(m.pose.yaw, lessThan(-.3));
     });
 
-    test('every state has its eyes', () {
+    test('every state has its eyes (the "!" only between its turns into the sign)', () {
       for (final s in MikkyState.values) {
-        final g = settle(s);
-        expect(g.eyes, isNotEmpty, reason: '$s');
+        final m = Mikky(random: math.Random(2))..setState(s);
+        run(m, 1);
+        expect(MikkyGeometry.of(m, 100).eyes, isNotEmpty, reason: '$s');
       }
+      final bang = Mikky(random: math.Random(2))..setState(MikkyState.approval);
+      untilBang(bang);
+      expect(MikkyGeometry.of(bang, 100).eyes, isEmpty);
     });
   });
 
   group('forms: Mikky turns into the sign', () {
-    test('working: a fur ball; thinking: the middle dot of three', () {
+    test('working: a fur ball that does not shake; thinking: a single ball that hops', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
       run(m, 2);
       expect((m.form, m.badge), (MikkyForm.furball, null));
+      for (var i = 0; i < 60; i++) {
+        m.update(1 / 60);
+        expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
+      }
       m.setState(MikkyState.thinking);
       run(m, 3);
-      expect(m.form, MikkyForm.dots);
-      final g = MikkyGeometry.of(m, 100);
-      expect(g.satellites, hasLength(2));
-      // The two other dots sit on each side of him.
-      double centerX(List<double> c) {
-        var sum = 0.0;
-        for (var i = 0; i < c.length; i += 2) {
-          sum += c[i];
+      expect(m.form, MikkyForm.ball);
+      expect(MikkyGeometry.of(m, 100).satellites, isEmpty);
+      // It hops: its top goes up and down.
+      final tops = <double>[];
+      for (var i = 0; i < 40; i++) {
+        m.update(1 / 60);
+        final c = MikkyGeometry.of(m, 100).contour;
+        var top = 0.0;
+        for (var j = 1; j < c.length; j += 2) {
+          top = math.min(top, c[j]);
         }
-        return sum / (c.length / 2);
+        tops.add(top);
+      }
+      expect(tops.reduce(math.max) - tops.reduce(math.min), greaterThan(20));
+    });
+
+    test('the fur ball is not a circle, and its fur changes on its own', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      run(m, 2);
+      List<double> radii() {
+        final c = MikkyGeometry.of(m, 100).contour;
+        return [for (var j = 0; j < c.length; j += 2) math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1])];
       }
 
-      expect(centerX(g.satellites[0]), lessThan(-100));
-      expect(centerX(g.satellites[1]), greaterThan(100));
+      final a = radii();
+      expect(a.reduce(math.max) - a.reduce(math.min), greaterThan(15));
+      run(m, .5);
+      final b = radii();
+      var moved = 0;
+      for (var j = 0; j < a.length; j++) {
+        if ((a[j] - b[j]).abs() > 1) moved++;
+      }
+      // Some spikes moved, not all of them the same way.
+      expect(moved, inInclusiveRange(20, a.length - 20));
     });
 
     test('from one form to another, he goes back through the cat', () {
@@ -215,13 +283,29 @@ void main() {
       expect(m.badge?.color, AgentStatus.error);
     });
 
-    test('every form keeps a closed outline and two eyes', () {
+    test('the "!": a bar well apart from its dot, no eyes', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      untilBang(m);
+      final g = MikkyGeometry.of(m, 100);
+      expect(g.eyes, isEmpty);
+      var barBottom = -1e9, dotTop = 1e9;
+      for (var j = 1; j < g.contour.length; j += 2) {
+        barBottom = math.max(barBottom, g.contour[j]);
+      }
+      final dot = g.satellites.single;
+      for (var j = 1; j < dot.length; j += 2) {
+        dotTop = math.min(dotTop, dot[j]);
+      }
+      expect(dotTop - barBottom, greaterThan(15));
+    });
+
+    test('every form keeps a closed outline, and eyes except the "!"', () {
       for (final s in [MikkyState.working, MikkyState.thinking, MikkyState.approval]) {
         final m = Mikky(random: math.Random(5))..setState(s);
-        run(m, 2);
+        s == MikkyState.approval ? untilBang(m) : run(m, 2);
         final g = MikkyGeometry.of(m, 100);
         expect(g.contour[0], closeTo(g.contour[g.contour.length - 2], 1e-6), reason: '$s');
-        expect(g.eyes, hasLength(2), reason: '$s');
+        expect(g.eyes, hasLength(s == MikkyState.approval ? 0 : 2), reason: '$s');
       }
     });
   });

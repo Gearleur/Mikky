@@ -76,13 +76,15 @@ void main() {
 
   testWidgets('Mikky forms over time', (tester) async {
     const times = [.12, .3, .9, 1.7];
-    final forms = <(String, MikkyState?, MikkyEmote?)>[
-      ('amour → cœur', null, MikkyEmote.love),
-      ('travaille → boule de poils', MikkyState.working, null),
-      ('réfléchit → •••', MikkyState.thinking, null),
-      ('feu vert → !', MikkyState.approval, null),
+    final forms = <(String, MikkyState?, MikkyEmote?, List<double>)>[
+      ('amour → cœur', null, MikkyEmote.love, times),
+      ('travaille → boule de poils', MikkyState.working, null, times),
+      ('réfléchit → boule qui saute', MikkyState.thinking, null, times),
+      // Two hops as the cat, then the "!" hops, then back to the cat.
+      ('feu vert : 2 sauts', MikkyState.approval, null, const [.85, 2.25, 2.95, 6.2]),
+      ('terminé : petit saut', MikkyState.finished, null, times),
     ];
-    await tester.binding.setSurfaceSize(const Size(720, 800));
+    await tester.binding.setSurfaceSize(const Size(720, 1000));
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,
@@ -90,10 +92,10 @@ void main() {
           color: Colors.white,
           child: Wrap(
             children: [
-              for (final (label, state, emote) in forms)
-                for (final t in times)
+              for (final (label, state, emote, at) in forms)
+                for (final t in at)
                   _Cell(
-                    label: t == times.first ? label : '${t.toStringAsFixed(2)} s',
+                    label: t == at.first ? label : '${t.toStringAsFixed(2)} s',
                     mikky: _mikkyAt(state: state, emote: emote, seconds: t),
                     theme: MikkyTheme.light,
                   ),

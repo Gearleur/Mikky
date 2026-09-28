@@ -147,11 +147,14 @@ class MikkyGeometry {
       final py = s.sign * math.pow(s.abs(), ex);
       var x = rx * px * (1 + k * py);
       var y = ry * py;
-      // The ears melt into the form.
-      if (py < 0) y -= earBump(x) * (1 - w);
-      // Tufts: one on top of the head, fluffy cheeks, slowly waving.
-      final top = math.exp(-math.pow((th - math.pi * 1.5) / .16, 2));
-      final cheeks = math.exp(-math.pow((th - .18) / .22, 2)) + math.exp(-math.pow((th - (math.pi - .18)) / .22, 2));
+      // The ears melt into the form. Lowered ears reach the sides: they fade
+      // out toward the middle of the side, so the outline stays smooth where
+      // it starts and ends.
+      if (py < 0) y -= earBump(x) * (1 - w) * (-py / .3).clamp(0.0, 1.0);
+      // Tufts: one on top of the head, fluffy cheeks, slowly waving. Angles
+      // wrap around, so the right cheek is the same at both ends.
+      final top = _bell(th, math.pi * 1.5, .16);
+      final cheeks = _bell(th, .18, .22) + _bell(th, math.pi - .18, .22);
       final fluff = 1 + (top * .09 + cheeks * .05) * math.sin(th * 40 + math.sin(t * 2.5) * .5).abs() * (1 - w);
       x *= fluff;
       y *= fluff;
@@ -181,6 +184,9 @@ class MikkyGeometry {
       final catX = math.sin(yaw) * cp * rx * (1 - k * math.sin(pitch));
       final catY = -math.sin(pitch) * ry;
       final (ax, ay, scale) = anchor;
+      final grow = 1 + (scale - 1) * w;
+      // Forms without eyes: they shrink away.
+      if (grow < .05) continue;
       final formX = (side * ax + p.yaw * .25) * r;
       final formY = (ay - p.pitch * .2) * r + _formOffsetY(form, t) * r;
       final sx = math.max(.2, math.cos(yaw)) * p.eyeScale;
@@ -189,8 +195,8 @@ class MikkyGeometry {
         x: catX + (formX - catX) * w,
         y: catY + (formY - catY) * w,
         rotation: (-.04 - p.yaw * .25) * (1 - w),
-        scaleX: (sx + (p.eyeScale - sx) * w) * (1 + (scale - 1) * w),
-        scaleY: (sy + (p.eyeScale - sy) * w) * (1 + (scale - 1) * w),
+        scaleX: (sx + (p.eyeScale - sx) * w) * grow,
+        scaleY: (sy + (p.eyeScale - sy) * w) * grow,
         width: width,
         height: math.max(width * .25, fullHeight * lid),
         fullHeight: fullHeight,
@@ -199,11 +205,10 @@ class MikkyGeometry {
       ));
     }
 
-    // The little fur balls that come out of him (the other two dots, the
-    // dot of "!").
+    // The little fur ball that comes out of him (the dot of "!").
     final satellites = <Float64List>[
       for (final (cx, cy, cr) in _satellites(form, t))
-        // Enough points for the fine fur (34 waves), or it turns into lumps.
+        // Enough points for the fine fur, or it turns into lumps.
         _furBall(cx * r * _easeOut(w), cy * r * _easeOut(w), cr * r * w, t + cx * 3, 200),
     ];
 
@@ -213,7 +218,7 @@ class MikkyGeometry {
       contour: contour,
       satellites: satellites,
       eyes: eyes,
-      translateX: p.offsetX * r + _formOffsetX(form, t) * r * w,
+      translateX: p.offsetX * r,
       translateY: p.offsetY * r,
       tilt: p.tilt,
       scaleX: p.scaleX,
@@ -235,89 +240,126 @@ class MikkyGeometry {
 
 double _easeOut(double t) => 1 - math.pow(1 - t, 3).toDouble();
 
+/// Bell curve around the angle [center], measured the short way round.
+double _bell(double th, double center, double width) {
+  var d = (th - center) % (2 * math.pi);
+  if (d > math.pi) d -= 2 * math.pi;
+  return math.exp(-math.pow(d / width, 2));
+}
+
+/// Deterministic pseudo-random number in [0, 1) for [k].
+double _hash(double k) {
+  final v = math.sin(k * 12.9898 + 78.233) * 43758.5453;
+  return v - v.floorToDouble();
+}
+
+/// 0 on the ground, 1 at the top of the hop.
+double _hopHeight(double t) => math.sin(t * 5.2).abs();
+
 /// Hops of the body in a form.
 double _formOffsetY(MikkyForm f, double t) => switch (f) {
-      MikkyForm.dots => -math.sin(t * 5.5).abs() * .22,
+      MikkyForm.ball => -_hopHeight(t) * .34,
       MikkyForm.bang => math.sin(t * 2.2) * .03,
       _ => 0,
     };
 
-/// The fur ball shakes itself now and then.
-double _formOffsetX(MikkyForm f, double t) {
-  if (f != MikkyForm.furball) return 0;
-  final burst = math.pow(math.max(0.0, math.sin(t * 1.9)), 3);
-  return math.sin(t * 42) * .05 * burst;
-}
+/// Slow wobble of an outline: never quite the same shape.
+double _wobble(double th, double t, [double amount = 1]) =>
+    1 + amount * (.035 * math.sin(2 * th + t * 1.3) + .025 * math.sin(3 * th - t * .8 + 1));
 
-/// Fur all around an outline: fine, uneven, moving.
+/// Fine fur all around an outline, uneven, moving (heart, "!").
 double _fur(double th, double t, double amount) =>
     amount * math.sin(th * 34 + math.sin(t * 3 + th * 5) * .6).abs() + amount * .3 * math.sin(th * 13 - t * 4);
+
+/// Wild fur of the fur balls: spikes of random length and lean, each one
+/// rising and falling on its own, in patches that wander around the ball.
+double _wildFur(double th, double t, {required int spikes, required double length}) {
+  // The fur slowly drifts around: no spike stays in the same place.
+  final a = (th / (2 * math.pi) + t * .012) * spikes;
+  final cell = a.floorToDouble();
+  final u = a - cell;
+  final k = cell % spikes;
+  final lean = .3 + .4 * _hash(k);
+  final tri = u < lean ? u / lean : (1 - u) / (1 - lean);
+  final spike = math.pow(tri, 1.7);
+  final size = .35 + .65 * _hash(k + 17);
+  final own = .5 + .5 * math.sin(t * (1.1 + 2.4 * _hash(k + 31)) + 6.283 * _hash(k + 47));
+  final patch = .5 + .5 * math.sin(2 * th + t * .9 + 1) * math.sin(3 * th - t * 1.3 + 2);
+  final bristle = .2 + .8 * math.pow(own * (.35 + .65 * patch), 1.2);
+  return length * size * spike * bristle;
+}
+
+/// Lumpy, lopsided outline of a ball: never a circle. [seed] makes each
+/// ball lopsided in its own way.
+double _lumpy(double th, double t, double seed) =>
+    1 +
+    .06 * math.sin(2 * th + .7 + seed) +
+    .045 * math.sin(3 * th + 2.1 + seed * 2 + math.sin(t * .6) * .3) +
+    .025 * math.sin(5 * th + 4 + seed * 3 + t * .4);
 
 /// Point of the form's outline for the angle [th] of the cat's outline:
 /// same parameter, so the change does not twist.
 (double, double) _formPoint(MikkyForm f, double th, double t) {
-  double x, y, cy = 0, fur;
+  final c = math.cos(th), s = math.sin(th);
   switch (f) {
     case MikkyForm.cat:
       return (0, 0);
     case MikkyForm.furball:
-      x = math.cos(th) * .98;
-      y = math.sin(th) * .98;
-      // It bristles in waves: long spikes, then smoother.
-      final bristle = math.pow(math.max(0.0, math.sin(t * 2.6)), 2);
-      fur = (.07 + .09 * bristle) * math.pow(math.sin(th * 28 + math.sin(t * 7 + th * 3) * .8).abs(), .6) +
-          .02 * math.sin(th * 11 + t * 5);
+      // Only the fur moves: it bristles here and there, at random.
+      final r = .9 * _lumpy(th, t, 0) + _wildFur(th, t, spikes: 46, length: .24);
+      return (c * r, s * r);
+    case MikkyForm.ball:
+      final r = .68 * _lumpy(th, t, 1.7) + _wildFur(th, t, spikes: 40, length: .13);
+      // Squashed when it lands, round in the air.
+      final contact = math.pow(1 - _hopHeight(t), 6).toDouble();
+      return (
+        c * r * (1 + .14 * contact),
+        s * r * (1 - .14 * contact) + .68 * .14 * contact + _formOffsetY(f, t),
+      );
     case MikkyForm.heart:
       final u = th + math.pi / 2;
       final hx = 16 * math.pow(math.sin(u), 3);
       final hy = 13 * math.cos(u) - 5 * math.cos(2 * u) - 2 * math.cos(3 * u) - math.cos(4 * u);
-      const s = 1.2 / 16;
-      x = hx * s;
-      y = -(hy + 2.5) * s;
-      fur = _fur(th, t, .04);
-    case MikkyForm.dots:
-      x = math.cos(th) * .55;
-      y = math.sin(th) * .55;
-      fur = _fur(th, t, .07);
+      const k = 1.2 / 16;
+      final g = _wobble(th, t) * (1 + _fur(th, t, .04));
+      return (hx * k * g, -(hy + 2.5) * k * g);
     case MikkyForm.bang:
-      // A soft, slightly bent bar.
-      cy = -.35;
-      final c = math.cos(th), s = math.sin(th);
-      x = .40 * c.sign * math.pow(c.abs(), 2 / 2.2) + .05 * math.sin(th * 2 + t);
-      y = cy + .95 * s.sign * math.pow(s.abs(), 2 / 2.2);
-      fur = _fur(th, t, .05);
+      // The bar of "!": wide and round at the top, thinner at the bottom,
+      // a little bent and leaning. Well apart from its dot.
+      const top = -1.42, bottom = .2;
+      const cy = (top + bottom) / 2, hy = (bottom - top) / 2;
+      final y = cy + hy * s.sign * math.pow(s.abs(), 2 / 2.6);
+      final v = (y - top) / (bottom - top);
+      final half = .43 + (.16 - .43) * v;
+      final x = half * c.sign * math.pow(c.abs(), 2 / 2.6) + .05 * math.sin(v * math.pi + t * .7) - (y - cy) * .07;
+      final g = _wobble(th, t, .6) * (1 + _fur(th, t, .035));
+      return (x * g, cy + (y - cy) * g + _formOffsetY(f, t));
   }
-  final wobble = (1 + .035 * math.sin(2 * th + t * 1.3) + .025 * math.sin(3 * th - t * .8 + 1)) * (1 + fur);
-  return (x * wobble, cy + (y - cy) * wobble + _formOffsetY(f, t));
 }
 
-/// Where the eyes go on a form, and their scale.
+/// Where the eyes go on a form, and their scale (0: no eyes).
 (double, double, double) _eyeAnchor(MikkyForm f) => switch (f) {
       MikkyForm.cat => (0, 0, 1),
       MikkyForm.heart => (.34, -.25, .85),
       MikkyForm.furball => (.3, -.1, .8),
-      MikkyForm.dots => (.17, -.08, .45),
-      MikkyForm.bang => (.13, -.8, .5),
+      MikkyForm.ball => (.2, -.1, .55),
+      // The "!" is only the sign.
+      MikkyForm.bang => (.13, -.9, 0),
     };
 
-/// The little fur balls that go with a form: center and radius. Not quite
-/// the same size, not quite in step.
+/// The little fur balls that go with a form: center and radius.
 List<(double, double, double)> _satellites(MikkyForm f, double t) => switch (f) {
-      MikkyForm.dots => [
-          (-1.3, -math.sin(t * 5.5 - 1.1).abs() * .22, .5),
-          (1.28, -math.sin(t * 5.5 + 1.1).abs() * .22, .46),
-        ],
-      MikkyForm.bang => [(.04, .92 + math.sin(t * 2.2 + .8) * .04, .3)],
+      MikkyForm.bang => [(.03, .88 + math.sin(t * 2.2 + .8) * .035, .27)],
       _ => const [],
     };
 
-/// Outline of a fuzzy ball, in pixels.
+/// Outline of a small, lopsided fur ball, in pixels.
 Float64List _furBall(double cx, double cy, double radius, double t, int n) {
   final out = Float64List((n + 1) * 2);
   for (var i = 0; i <= n; i++) {
     final th = i / n * math.pi * 2;
-    // Same fur as Mikky: they are bits of him.
-    final f = 1 + _fur(th, t, .09) + .03 * math.sin(3 * th + t * 1.7);
+    // Same kind of fur as Mikky: it is a bit of him.
+    final f = _lumpy(th, t, 3.1) + _wildFur(th, t + 5, spikes: 30, length: .16);
     out[i * 2] = cx + math.cos(th) * radius * f;
     out[i * 2 + 1] = cy + math.sin(th) * radius * f;
   }

@@ -63,14 +63,14 @@ enum MikkyForm {
   /// A slightly lopsided heart (love).
   heart,
 
-  /// A ball of fur that bristles and shakes (working).
+  /// A big ball of fur whose fur bristles here and there (working).
   furball,
 
-  /// The middle dot of "•••"; two little fur balls come out of him and the
-  /// three hop (thinking).
-  dots,
+  /// A smaller fur ball that hops (thinking).
+  ball,
 
-  /// The bar of a "!"; a little fur ball below is the dot (approval).
+  /// The bar of a "!", without eyes; a little fur ball below, well apart,
+  /// is the dot (approval).
   bang,
 }
 
@@ -192,8 +192,12 @@ class Mikky {
   double _nextBeat = 0;
   double _nextEmit = 0;
 
+  /// Approval goes round: two hops as the cat, then the "!" for 3 or 4
+  /// hops, then the cat again (user request, 2026-09-29).
+  bool _approvalBang = false;
+  int _hopsLeft = 0;
+
   MikkyState _state = MikkyState.idle;
-  double _stateSince = 0;
   double _dizzyUntil = -1;
   MikkyEmote? _emote;
   double _emoteUntil = 0;
@@ -228,15 +232,20 @@ class Mikky {
     if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
     return switch (state) {
       MikkyState.working => MikkyForm.furball,
-      MikkyState.thinking => MikkyForm.dots,
-      MikkyState.approval => MikkyForm.bang,
+      MikkyState.thinking => MikkyForm.ball,
+      MikkyState.approval => _approvalBang ? MikkyForm.bang : MikkyForm.cat,
       _ => MikkyForm.cat,
     };
   }
 
+  /// States that Mikky shows by turning into a sign (even between two
+  /// turns, as for approval): no badge next to him.
+  static bool _showsWithForm(MikkyState s) =>
+      s == MikkyState.working || s == MikkyState.thinking || s == MikkyState.approval;
+
   /// Sign next to the head, from the state. None when Mikky himself turns
   /// into the sign.
-  MikkyBadge? get badge => _wantedForm != MikkyForm.cat ? null : _stateBadge;
+  MikkyBadge? get badge => _wantedForm != MikkyForm.cat || _showsWithForm(state) ? null : _stateBadge;
 
   MikkyBadge? get _stateBadge => switch (state) {
         MikkyState.working => const MikkyBadge(BadgeKind.dots, AgentStatus.working),
@@ -320,8 +329,8 @@ class Mikky {
   }
 
   /// Crouch, jump, land. [small] for a little hop.
-  void hop({bool small = false}) {
-    final h = small ? .12 : .3;
+  void hop({bool small = false, double? height}) {
+    final h = height ?? (small ? .12 : .3);
     animate(MikkyProp.scaleY, const [
       Keyframe(.88, 90, Easings.out),
       Keyframe(1.14, 120, Easings.out),
@@ -370,18 +379,20 @@ class Mikky {
   void setState(MikkyState s) {
     if (s == _state) return;
     _state = s;
-    _stateSince = _time;
-    _nextBeat = _time + 1.4;
+    _nextBeat = _time + .5;
     _nextEmit = _time + .2;
     switch (s) {
       case MikkyState.approval:
         alert();
+        _approvalBang = false;
+        _hopsLeft = 2;
       case MikkyState.question:
         twitch(Ear.right);
       case MikkyState.error:
         shake();
       case MikkyState.finished:
-        roll();
+        // A happy little jump, no roll.
+        hop(height: .2);
         _burst(ParticleKind.sparkle, 8);
       case MikkyState.dizzy:
         roll(turns: 2, ms: 1100);
@@ -459,7 +470,8 @@ class Mikky {
       MikkyState.approval => const _Look(eyeScale: 1.18, earLeft: .35),
       MikkyState.question => const _Look(eyeScale: 1.05, earLeft: -.6, earRight: .12, tilt: .17),
       MikkyState.error => const _Look(left: EyeShape.flat, earLeft: -.55),
-      MikkyState.finished => _Look(left: EyeShape.happy, earLeft: _time - _stateSince < 1.2 ? .3 : 0),
+      // Content eyes, one ear bigger than the other.
+      MikkyState.finished => const _Look(left: EyeShape.happy, earLeft: .05, earRight: .6),
       MikkyState.rateLimited => const _Look(left: EyeShape.tired, earLeft: -.4),
       MikkyState.sleeping => const _Look(left: EyeShape.closed, earLeft: -.45),
       MikkyState.dizzy => const _Look(left: EyeShape.spiral),
@@ -604,9 +616,17 @@ class Mikky {
     }
 
     // Rhythm of some states.
-    if (st == MikkyState.approval && _time > _nextBeat) {
-      hop(small: true);
-      _nextBeat = _time + 1.4;
+    if (st == MikkyState.approval && _emote == null && _time > _nextBeat) {
+      if (_hopsLeft > 0) {
+        hop(height: .18);
+        _hopsLeft--;
+        _nextBeat = _time + .75;
+      } else {
+        // Turn into the "!" (or back), then hop again once changed.
+        _approvalBang = !_approvalBang;
+        _hopsLeft = _approvalBang ? 3 + _random.nextInt(2) : 2;
+        _nextBeat = _time + .6;
+      }
     }
 
     if (_hovered && !_lovedThisHover && _time - _lastMove >= 1.9) {
