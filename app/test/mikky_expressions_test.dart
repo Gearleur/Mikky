@@ -82,9 +82,11 @@ void main() {
       ('réfléchit → boule qui saute', MikkyState.thinking, null, times),
       // Two hops as the cat, then the "!" hops, then back to the cat.
       ('feu vert : 2 sauts', MikkyState.approval, null, const [.85, 2.25, 2.95, 6.2]),
+      // Frame by frame, the cat turning into the "!": no white left inside.
+      ('chat → !', MikkyState.approval, null, const [2.05, 2.1, 2.15, 2.22]),
       ('terminé : petit saut', MikkyState.finished, null, times),
     ];
-    await tester.binding.setSurfaceSize(const Size(720, 1000));
+    await tester.binding.setSurfaceSize(const Size(720, 1200));
     await tester.pumpWidget(
       Directionality(
         textDirection: TextDirection.ltr,

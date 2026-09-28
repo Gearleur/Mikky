@@ -532,7 +532,8 @@ class Mikky {
     _nextEmit = _time + every;
     final r = _random.nextDouble();
     _particles.add(switch (kind) {
-      ParticleKind.heart => _Particle(kind, _time, 1.3, (r - .5) * 1.4, -.6, (r - .5) * .3, -.9, .2 + r * .08, (r - .5) * .6),
+      // Born above the ears, never over his face.
+      ParticleKind.heart => _Particle(kind, _time, 1.3, (r - .5) * 1.6, -1.35, (r - .5) * .3, -.8, .2 + r * .08, (r - .5) * .6),
       ParticleKind.sweat => _Particle(kind, _time, 1.1, 1.05, -.55, .15, .1, .16, 0),
       ParticleKind.sleep => _Particle(kind, _time, 2, .7, -1.1, .35, -.45, .22, -.2),
       ParticleKind.sparkle || ParticleKind.star => throw StateError('bursts only'),

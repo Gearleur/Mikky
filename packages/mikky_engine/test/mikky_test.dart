@@ -283,6 +283,16 @@ void main() {
       expect(m.badge?.color, AgentStatus.error);
     });
 
+    test('turning into the "!", the eyes are gone before the bar is thin', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      for (var i = 0; i < 60 * 8; i++) {
+        m.update(1 / 60);
+        if (m.form == MikkyForm.bang && m.morph > .35) {
+          expect(MikkyGeometry.of(m, 100).eyes, isEmpty, reason: 'morph ${m.morph} at ${m.time}');
+        }
+      }
+    });
+
     test('the "!": a bar well apart from its dot, no eyes', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
       untilBang(m);
