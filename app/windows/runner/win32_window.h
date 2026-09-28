@@ -38,8 +38,15 @@ class Win32Window {
   // Show the current window without activating it.
   bool Show();
 
-  // Moves and resizes the window to the top center of the primary monitor,
-  // using that monitor's current scale factor.
+  // Screen edge the overlay is glued to.
+  enum class Edge { kTop, kRight };
+
+  // Changes the edge and the logical size, then re-places the window.
+  void SetPlacement(Edge edge, const Size& size);
+
+  // Moves and resizes the window on the primary monitor, using that
+  // monitor's current scale factor: top center for Edge::kTop, against the
+  // right edge and vertically centered in the work area for Edge::kRight.
   void PlaceOnPrimaryMonitor();
 
   // Scale factor (DPI / 96) of the monitor the window was last placed on.
@@ -101,8 +108,9 @@ class Win32Window {
 
   bool quit_on_close_ = false;
 
-  // Logical size requested at creation.
+  // Logical size and edge requested at creation or by SetPlacement.
   Size logical_size_{0, 0};
+  Edge edge_ = Edge::kTop;
   double scale_factor_ = 1.0;
   POINT origin_{0, 0};
 

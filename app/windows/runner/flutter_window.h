@@ -17,6 +17,14 @@
 // Channel "mikky/overlay":
 //   Dart -> native  setHitRect [x, y, w, h]  logical px, window-relative;
 //                                            w or h <= 0 means no hit area.
+//                   setPlacement [top|right, w, h]  logical size; moves
+//                                            and resizes the window
+//                   showMenu [[id, label, checked], ...]  native context
+//                                            menu at the cursor; id 0 is a
+//                                            separator. Returns the chosen
+//                                            id, 0 if dismissed.
+//                   activate                 take the keyboard focus (only
+//                                            after a click on the island)
 //                   quit
 //   native -> Dart  cursor [x, y]            logical px, window-relative;
 //                                            may be outside the window.

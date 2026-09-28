@@ -3,6 +3,7 @@
 #include <flutter/standard_method_codec.h>
 
 #include <iostream>
+#include <string>
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -15,6 +16,18 @@ constexpr UINT kCursorTimerMs = 16;
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
+
+std::wstring Utf16FromUtf8(const std::string& utf8) {
+  if (utf8.empty()) {
+    return std::wstring();
+  }
+  const int length = MultiByteToWideChar(
+      CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()), nullptr, 0);
+  std::wstring utf16(length, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
+                      utf16.data(), length);
+  return utf16;
+}
 
 }  // namespace
 
@@ -176,6 +189,72 @@ void FlutterWindow::HandleMethodCall(
     POINT cursor;
     if (GetCursorPos(&cursor)) {
       UpdateClickThrough(cursor);
+    }
+    result->Success();
+  } else if (call.method_name() == "setPlacement") {
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    const std::string* edge =
+        args && args->size() == 3 ? std::get_if<std::string>(&(*args)[0])
+                                  : nullptr;
+    const double* width = edge ? std::get_if<double>(&(*args)[1]) : nullptr;
+    const double* height = edge ? std::get_if<double>(&(*args)[2]) : nullptr;
+    if (!edge || !width || !height || (*edge != "top" && *edge != "right")) {
+      result->Error("bad_args", "setPlacement expects [top|right, w, h]");
+      return;
+    }
+    // Nothing is clickable until Dart sends the new island rect.
+    hit_w_ = hit_h_ = 0;
+    SetPlacement(*edge == "top" ? Edge::kTop : Edge::kRight,
+                 Size(static_cast<unsigned int>(*width),
+                      static_cast<unsigned int>(*height)));
+    POINT cursor;
+    if (GetCursorPos(&cursor)) {
+      UpdateClickThrough(cursor);
+    }
+    result->Success();
+  } else if (call.method_name() == "showMenu") {
+    const auto* entries = std::get_if<flutter::EncodableList>(call.arguments());
+    if (!entries) {
+      result->Error("bad_args", "showMenu expects [[id, label, checked]]");
+      return;
+    }
+    HMENU menu = CreatePopupMenu();
+    for (const auto& entry : *entries) {
+      const auto* fields = std::get_if<flutter::EncodableList>(&entry);
+      if (!fields || fields->size() != 3) {
+        continue;
+      }
+      const auto* id = std::get_if<int32_t>(&(*fields)[0]);
+      const auto* label = std::get_if<std::string>(&(*fields)[1]);
+      const auto* checked = std::get_if<bool>(&(*fields)[2]);
+      if (!id || !label || !checked) {
+        continue;
+      }
+      if (*id == 0) {
+        AppendMenu(menu, MF_SEPARATOR, 0, nullptr);
+      } else {
+        AppendMenu(menu, MF_STRING | (*checked ? MF_CHECKED : MF_UNCHECKED),
+                   *id, Utf16FromUtf8(*label).c_str());
+      }
+    }
+    POINT cursor;
+    GetCursorPos(&cursor);
+    HWND hwnd = GetHandle();
+    // Without this the menu would not close when clicking elsewhere.
+    SetForegroundWindow(hwnd);
+    const int chosen = TrackPopupMenu(
+        menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, cursor.x,
+        cursor.y, 0, hwnd, nullptr);
+    PostMessage(hwnd, WM_NULL, 0, 0);
+    DestroyMenu(menu);
+    result->Success(flutter::EncodableValue(chosen));
+  } else if (call.method_name() == "activate") {
+    // Only after a click on the island: the user asked for it, so taking
+    // the keyboard (Escape, N, Y) is expected. Never on its own.
+    HWND hwnd = GetHandle();
+    SetForegroundWindow(hwnd);
+    if (flutter_controller_) {
+      SetFocus(flutter_controller_->view()->GetNativeWindow());
     }
     result->Success();
   } else if (call.method_name() == "quit") {
