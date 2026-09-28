@@ -50,6 +50,10 @@ class OverlayChannel {
     return chosen == null || chosen == 0 ? null : chosen;
   }
 
+  /// Takes the keyboard focus, for Escape and the N / Y shortcuts. Only
+  /// right after the user clicked the island.
+  void activate() => _channel.invokeMethod<void>('activate');
+
   void quit() => _channel.invokeMethod<void>('quit');
 }
 

@@ -1,10 +1,9 @@
 import 'dart:ui';
 
+import 'package:mikky_engine/mikky_engine.dart';
+
 /// What the user picked; [auto] follows Windows' light / dark setting.
 enum ThemeChoice { auto, dark, light }
-
-/// Agent status colors.
-enum StatusColor { working, approval, finished, error, other }
 
 /// The two validated island themes (`design/prototypes/ile-noir-et-blanc.html`,
 /// `DARK` and `LIGHT`).
@@ -25,7 +24,8 @@ class MikkyTheme {
     required this._status,
   });
 
-  /// Dark "A": the default.
+  /// Dark "A": the default. The prototype's colors, plus the states it did
+  /// not show (spec §5.2 table).
   static const dark = MikkyTheme._(
     isLight: false,
     foreground: Color(0xF0FFFFFF),
@@ -39,7 +39,17 @@ class MikkyTheme {
     codeBorder: Color(0x0FFFFFFF),
     error: Color(0xFFFF8D97),
     mikkyRim: Color(0x38FFFFFF),
-    status: [Color(0xFF3B9EFF), Color(0xFFF5A524), Color(0xFF34D399), Color(0xFFF4505E), Color(0xFF8B5CF6)],
+    status: {
+      AgentStatus.working: Color(0xFF3B9EFF),
+      AgentStatus.thinking: Color(0xFF8B5CF6),
+      AgentStatus.searching: Color(0xFF6E7BFF),
+      AgentStatus.approval: Color(0xFFF5A524),
+      AgentStatus.question: Color(0xFF22D3EE),
+      AgentStatus.error: Color(0xFFF4505E),
+      AgentStatus.finished: Color(0xFF34D399),
+      AgentStatus.rateLimited: Color(0xFFFB923C),
+      AgentStatus.idle: Color(0x75FFFFFF),
+    },
   );
 
   /// Light "pur": Apple system colors, no glow, no dots, no key hints.
@@ -56,7 +66,17 @@ class MikkyTheme {
     codeBorder: Color(0x00000000),
     error: Color(0xFFFF3B30),
     mikkyRim: null,
-    status: [Color(0xFF007AFF), Color(0xFFFF9500), Color(0xFF34C759), Color(0xFFFF3B30), Color(0xFFAF52DE)],
+    status: {
+      AgentStatus.working: Color(0xFF007AFF),
+      AgentStatus.thinking: Color(0xFFAF52DE),
+      AgentStatus.searching: Color(0xFF5856D6),
+      AgentStatus.approval: Color(0xFFFF9500),
+      AgentStatus.question: Color(0xFF32ADE6),
+      AgentStatus.error: Color(0xFFFF3B30),
+      AgentStatus.finished: Color(0xFF34C759),
+      AgentStatus.rateLimited: Color(0xFFFFCC00),
+      AgentStatus.idle: Color(0x993C3C43),
+    },
   );
 
   static MikkyTheme resolve(ThemeChoice choice, Brightness system) => switch (choice) {
@@ -81,10 +101,10 @@ class MikkyTheme {
 
   /// Thin light outline that separates Mikky from the black island.
   final Color? mikkyRim;
-  final List<Color> _status;
+  final Map<AgentStatus, Color> _status;
 
   /// Colored dots glow on black only.
   bool get glow => !isLight;
 
-  Color status(StatusColor s) => _status[s.index];
+  Color status(AgentStatus s) => _status[s]!;
 }

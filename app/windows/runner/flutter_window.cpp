@@ -248,6 +248,15 @@ void FlutterWindow::HandleMethodCall(
     PostMessage(hwnd, WM_NULL, 0, 0);
     DestroyMenu(menu);
     result->Success(flutter::EncodableValue(chosen));
+  } else if (call.method_name() == "activate") {
+    // Only after a click on the island: the user asked for it, so taking
+    // the keyboard (Escape, N, Y) is expected. Never on its own.
+    HWND hwnd = GetHandle();
+    SetForegroundWindow(hwnd);
+    if (flutter_controller_) {
+      SetFocus(flutter_controller_->view()->GetNativeWindow());
+    }
+    result->Success();
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);

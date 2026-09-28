@@ -23,6 +23,8 @@
 //                                            menu at the cursor; id 0 is a
 //                                            separator. Returns the chosen
 //                                            id, 0 if dismissed.
+//                   activate                 take the keyboard focus (only
+//                                            after a click on the island)
 //                   quit
 //   native -> Dart  cursor [x, y]            logical px, window-relative;
 //                                            may be outside the window.
