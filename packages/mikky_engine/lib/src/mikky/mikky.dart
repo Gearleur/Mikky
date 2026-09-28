@@ -4,6 +4,7 @@ import '../agents/agent.dart';
 import '../anim/easing.dart';
 import '../anim/keyframes.dart';
 import '../anim/smoothing.dart';
+import '../anim/spring.dart';
 
 /// Animated properties of Mikky's pose.
 enum MikkyProp {
@@ -52,6 +53,26 @@ enum MikkyState { idle, working, thinking, searching, approval, question, error,
 
 /// Short expressions on top of the state.
 enum MikkyEmote { love, surprised, proud, wink, yawn, content, annoyed }
+
+/// What Mikky's body turns into. He is the sign himself, still black and
+/// furry, never a perfect shape (user request, 2026-09-29).
+enum MikkyForm {
+  /// His usual cat silhouette.
+  cat,
+
+  /// A slightly lopsided heart (love).
+  heart,
+
+  /// A ball of fur that bristles and shakes (working).
+  furball,
+
+  /// The middle dot of "•••"; two little fur balls come out of him and the
+  /// three hop (thinking).
+  dots,
+
+  /// The bar of a "!"; a little fur ball below is the dot (approval).
+  bang,
+}
 
 /// Small sign next to Mikky's head.
 enum BadgeKind {
@@ -177,6 +198,11 @@ class Mikky {
   MikkyEmote? _emote;
   double _emoteUntil = 0;
 
+  MikkyForm _form = MikkyForm.cat;
+
+  /// Soft and bouncy, like jelly: the change overshoots a little.
+  final _morph = Spring(0, const SpringSpec(95, .38));
+
   bool _hovered = false;
   double _lastMove = 0;
   bool _lovedThisHover = false;
@@ -189,8 +215,30 @@ class Mikky {
   EyeShape get eyeLeft => _look().left;
   EyeShape get eyeRight => _look().right;
 
-  /// Sign next to the head, from the state.
-  MikkyBadge? get badge => switch (state) {
+  /// The form being shown (or left, or reached): see [morph].
+  MikkyForm get form => _form;
+
+  /// How far the body has turned into [form]: 0 cat, 1 fully the form. It
+  /// overshoots a little on the way, which makes it look soft.
+  double get morph => _morph.value;
+
+  /// The form the state or the emote asks for.
+  MikkyForm get _wantedForm {
+    final e = _emote;
+    if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
+    return switch (state) {
+      MikkyState.working => MikkyForm.furball,
+      MikkyState.thinking => MikkyForm.dots,
+      MikkyState.approval => MikkyForm.bang,
+      _ => MikkyForm.cat,
+    };
+  }
+
+  /// Sign next to the head, from the state. None when Mikky himself turns
+  /// into the sign.
+  MikkyBadge? get badge => _wantedForm != MikkyForm.cat ? null : _stateBadge;
+
+  MikkyBadge? get _stateBadge => switch (state) {
         MikkyState.working => const MikkyBadge(BadgeKind.dots, AgentStatus.working),
         MikkyState.thinking => const MikkyBadge(BadgeKind.dots, AgentStatus.thinking),
         MikkyState.searching => const MikkyBadge(BadgeKind.dots, AgentStatus.searching),
@@ -395,7 +443,8 @@ class Mikky {
     final emote = _emote;
     if (emote != null) {
       return switch (emote) {
-        MikkyEmote.love => const _Look(left: EyeShape.heart, eyeScale: 1.1, earLeft: .15),
+        // He is the heart: content eyes on it.
+        MikkyEmote.love => const _Look(left: EyeShape.happy, eyeScale: 1.1, earLeft: .15),
         MikkyEmote.surprised => const _Look(eyeScale: 1.25, earLeft: .45),
         MikkyEmote.proud => const _Look(left: EyeShape.star, eyeScale: 1.1, earLeft: .3),
         MikkyEmote.wink => const _Look(right: EyeShape.happy, tilt: .1, earLeft: .1),
@@ -578,8 +627,25 @@ class Mikky {
       _nextTwitch = _time + 3 + _random.nextDouble() * 5;
     }
 
+    _updateForm(dt);
     _emit();
     _particles.removeWhere((p) => _time - p.born > p.life);
+  }
+
+  /// From one form to another, always through the cat: undo, then redo.
+  void _updateForm(double dt) {
+    final want = _wantedForm;
+    if (want != _form) {
+      if (_form == MikkyForm.cat) {
+        _form = want;
+      } else {
+        _morph.target = 0;
+        if (_morph.value.abs() < .06 && _morph.velocity.abs() < 1) _form = want;
+      }
+    }
+    if (want == _form) _morph.target = _form == MikkyForm.cat ? 0 : 1;
+    _morph.step(dt);
+    if (_form == MikkyForm.cat && _morph.isAtRest(.002)) _morph.snap();
   }
 
   /// Gaze input for a target at ([dx], [dy]) pixels from Mikky's center.

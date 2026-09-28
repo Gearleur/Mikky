@@ -67,7 +67,7 @@ class _TuningPage extends StatefulWidget {
 
 class _TuningPageState extends State<_TuningPage> with SingleTickerProviderStateMixin {
   final _mikky = Mikky();
-  late final Ticker _ticker = createTicker(_onTick)..start();
+  late final Ticker _ticker;
   late MikkyTuning _tuning = widget.tuning.copy();
   Duration _last = Duration.zero;
   Offset? _pointer;
@@ -76,6 +76,13 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
 
   static const _bigRadius = 110.0;
   final _bigKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    // Not lazy: nothing else would ever start it.
+    _ticker = createTicker(_onTick)..start();
+  }
 
   @override
   void dispose() {
@@ -100,7 +107,7 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
   Offset _bigCenter(Size size) => Offset(size.width / 2, size.height * .58);
 
   void _setState(MikkyState s) {
-    _state = s;
+    setState(() => _state = s);
     // Replay the entry gesture even when choosing the same state again.
     _mikky.setState(MikkyState.idle);
     _mikky.setState(s);

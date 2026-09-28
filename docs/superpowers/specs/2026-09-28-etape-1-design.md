@@ -103,6 +103,8 @@ Port de `BotEngine.swift` adapté à Mikky (pas de bouche, pas de mains ; des or
 
 Interactions : survol (clignement, yeux ×1,08), immobile 1,9 s → amour, clic = « boop » (écrasement), 3 clics en moins de 1,7 s → sonné.
 
+**Transformations (demande de l'utilisateur, 2026-09-29)** : plutôt qu'un badge ou un symbole posé à côté, c'est **Mikky lui-même qui se transforme**, de façon organique et imparfaite, en gardant sa couleur et ses poils : amour → un cœur un peu déformé ; travaille → une boule de poils qui s'hérisse et se secoue ; réfléchit (l'attente) → le point du milieu de « ••• », deux petites boules de poils sortent de lui et les trois sautillent ; attend ton feu vert → la barre d'un « ! », une petite boule de poils fait le point. Le passage d'une forme à l'autre est mou, comme de la gelée, et repasse par le chat. Les autres états gardent pour l'instant la silhouette du chat et leur badge ; d'autres transformations (« ? » pour la question…) pourront suivre.
+
 Les formes d'oreilles par état et les émotes n'ont pas été validées visuellement : elles seront réglées dans l'écran de réglage (5.6) et validées par l'utilisateur avant d'être figées.
 
 ### 5.3 Machine à états de l'île (`mikky_engine/island`)

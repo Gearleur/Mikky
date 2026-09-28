@@ -81,13 +81,14 @@ void main() {
       return MikkyGeometry.of(m, 100);
     }
 
-    test('approval: big eyes, ears up, "!" badge', () {
+    test('approval: big eyes, and he turns into the "!" himself, no badge', () {
       final m = Mikky(random: math.Random(2))..setState(MikkyState.approval);
       run(m, 2);
       expect(m.pose.eyeScale, greaterThan(1.1));
-      expect(m.pose[MikkyProp.earBaseLeft], closeTo(.35, .02));
-      expect(m.badge?.kind, BadgeKind.bang);
-      expect(m.badge?.color, AgentStatus.approval);
+      expect(m.form, MikkyForm.bang);
+      expect(m.morph, closeTo(1, .05));
+      expect(m.badge, isNull);
+      expect(MikkyGeometry.of(m, 100).satellites, hasLength(1));
     });
 
     test('question: one ear folded, head tilted, "?" badge', () {
@@ -157,6 +158,74 @@ void main() {
     });
   });
 
+  group('forms: Mikky turns into the sign', () {
+    test('working: a fur ball; thinking: the middle dot of three', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      run(m, 2);
+      expect((m.form, m.badge), (MikkyForm.furball, null));
+      m.setState(MikkyState.thinking);
+      run(m, 3);
+      expect(m.form, MikkyForm.dots);
+      final g = MikkyGeometry.of(m, 100);
+      expect(g.satellites, hasLength(2));
+      // The two other dots sit on each side of him.
+      double centerX(List<double> c) {
+        var sum = 0.0;
+        for (var i = 0; i < c.length; i += 2) {
+          sum += c[i];
+        }
+        return sum / (c.length / 2);
+      }
+
+      expect(centerX(g.satellites[0]), lessThan(-100));
+      expect(centerX(g.satellites[1]), greaterThan(100));
+    });
+
+    test('from one form to another, he goes back through the cat', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      run(m, 2);
+      m.setState(MikkyState.approval);
+      var sawCat = false;
+      for (var i = 0; i < 180; i++) {
+        m.update(1 / 60);
+        if (m.morph.abs() < .1) sawCat = true;
+      }
+      expect(sawCat, isTrue);
+      expect(m.form, MikkyForm.bang);
+    });
+
+    test('the change is soft: it overshoots, then settles', () {
+      final m = Mikky(random: math.Random(5))..play(MikkyEmote.love);
+      var peak = 0.0;
+      for (var i = 0; i < 60; i++) {
+        m.update(1 / 60);
+        peak = math.max(peak, m.morph);
+      }
+      expect(m.form, MikkyForm.heart);
+      expect(peak, greaterThan(1.05));
+    });
+
+    test('back to the cat when the state has no form', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      run(m, 2);
+      m.setState(MikkyState.error);
+      run(m, 3);
+      expect(m.morph.abs(), lessThan(.01));
+      expect(MikkyGeometry.of(m, 100).satellites, isEmpty);
+      expect(m.badge?.color, AgentStatus.error);
+    });
+
+    test('every form keeps a closed outline and two eyes', () {
+      for (final s in [MikkyState.working, MikkyState.thinking, MikkyState.approval]) {
+        final m = Mikky(random: math.Random(5))..setState(s);
+        run(m, 2);
+        final g = MikkyGeometry.of(m, 100);
+        expect(g.contour[0], closeTo(g.contour[g.contour.length - 2], 1e-6), reason: '$s');
+        expect(g.eyes, hasLength(2), reason: '$s');
+      }
+    });
+  });
+
   group('emotes', () {
     test('each emote changes the look, then fades', () {
       for (final e in MikkyEmote.values) {
@@ -168,10 +237,11 @@ void main() {
       }
     });
 
-    test('love shows hearts; proud shows stars; wink closes one eye', () {
+    test('love: he becomes the heart, content eyes, hearts; proud shows stars; wink closes one eye', () {
       final love = Mikky(random: math.Random(3))..play(MikkyEmote.love);
       run(love, .7);
-      expect(love.eyeLeft, EyeShape.heart);
+      expect(love.form, MikkyForm.heart);
+      expect(love.eyeLeft, EyeShape.happy);
       expect(love.particles.where((p) => p.kind == ParticleKind.heart), isNotEmpty);
 
       final proud = Mikky(random: math.Random(3))..play(MikkyEmote.proud);

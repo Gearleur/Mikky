@@ -74,6 +74,37 @@ class _Cell extends StatelessWidget {
 void main() {
   setUpAll(_loadFonts);
 
+  testWidgets('Mikky forms over time', (tester) async {
+    const times = [.12, .3, .9, 1.7];
+    final forms = <(String, MikkyState?, MikkyEmote?)>[
+      ('amour → cœur', null, MikkyEmote.love),
+      ('travaille → boule de poils', MikkyState.working, null),
+      ('réfléchit → •••', MikkyState.thinking, null),
+      ('feu vert → !', MikkyState.approval, null),
+    ];
+    await tester.binding.setSurfaceSize(const Size(720, 800));
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: Colors.white,
+          child: Wrap(
+            children: [
+              for (final (label, state, emote) in forms)
+                for (final t in times)
+                  _Cell(
+                    label: t == times.first ? label : '${t.toStringAsFixed(2)} s',
+                    mikky: _mikkyAt(state: state, emote: emote, seconds: t),
+                    theme: MikkyTheme.light,
+                  ),
+            ],
+          ),
+        ),
+      ),
+    );
+    await expectLater(find.byType(Wrap), matchesGoldenFile('goldens/mikky_forms.png'));
+  });
+
   for (final theme in [MikkyTheme.light, MikkyTheme.dark]) {
     final name = theme.isLight ? 'light' : 'dark';
     testWidgets('Mikky expressions ($name)', (tester) async {

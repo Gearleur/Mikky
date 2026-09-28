@@ -47,16 +47,24 @@ class MikkyPainter extends CustomPainter {
     canvas.rotate(g.tilt);
     canvas.scale(g.scaleX, g.scaleY);
 
-    canvas.drawPath(body, Paint()..color = _ink);
+    // The body and the fur balls that came out of it: all of them are him.
+    final parts = [
+      body,
+      for (final s in g.satellites)
+        Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
+    ];
     final rim = this.rim;
-    if (rim != null) {
-      canvas.drawPath(
-        body,
-        Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = math.max(1, r * .045)
-          ..color = rim,
-      );
+    for (final part in parts) {
+      canvas.drawPath(part, Paint()..color = _ink);
+      if (rim != null) {
+        canvas.drawPath(
+          part,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = math.max(1, r * .045)
+            ..color = rim,
+        );
+      }
     }
 
     canvas.save();
