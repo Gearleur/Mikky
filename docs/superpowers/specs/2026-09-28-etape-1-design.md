@@ -1,6 +1,6 @@
 # Mikky — Étape 1 : Mikky et l'île sur Windows
 
-Date : 2026-09-28 · Statut : à relire
+Date : 2026-09-28 · Statut : validée par l'utilisateur
 
 ## 1. Contexte et intention
 
