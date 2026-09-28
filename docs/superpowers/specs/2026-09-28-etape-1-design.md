@@ -22,7 +22,7 @@ Feuille de route décidée :
 
 ## 2. Hors périmètre de l'étape 1
 
-Vrais agents et hooks Claude Code, chat et champ de saisie, sons, glisser-déposer de fichiers, queue de Mikky, Liquid Glass, emplacements « gauche » et « bas droite », macOS, mobile, `mikkyd`.
+Vrais agents et hooks Claude Code, chat et champ de saisie, sons, glisser-déposer de fichiers, queue de Mikky, Liquid Glass, emplacements « gauche » et « bas droite » (« à droite » est fait, voir §3), macOS, mobile, `mikkyd`.
 
 ## 3. Décisions déjà prises (brainstorming du 2026-09-28)
 
@@ -47,6 +47,7 @@ Vrais agents et hooks Claude Code, chat et champ de saisie, sons, glisser-dépos
 - **Disposition « Focus »** (par défaut) : l'agent qui a besoin de toi en grand (nom, verbe, commande en mono dans un bloc, actions), les autres en pastilles. **Disposition « Liste »** : une ligne par agent avec barre de progression.
 - **Bulle séparée** façon Dynamic Island : île fermée, quand un agent attend (approbation, question, erreur), une bulle ronde sort par la droite avec un point de la couleur d'état, et Mikky la regarde.
 - **Goutte de notification** : une goutte se détache par le bas, reste accrochée par un pont de matière, puis se recolle ; Mikky la suit des yeux.
+- **Position « à droite »** (ajoutée à la demande de l'utilisateur le 2026-09-28) : en plus de « en haut », l'île peut vivre collée au bord droit de l'écran principal, centrée verticalement dans la zone de travail, **en hauteur comme un téléphone en portrait**. Compacte : onglet 64 × 92 (rayon 22) avec Mikky et « Mikky » dessous. Ouverte : carte 320 × 560 (rayon 38), Mikky en grand en haut, puis le contenu empilé comme une app mobile, textes à l'horizontale. On choisit « en haut » ou « à droite » dans le menu ; le choix est gardé.
 
 ## 4. Architecture
 

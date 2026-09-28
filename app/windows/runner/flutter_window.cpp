@@ -191,6 +191,27 @@ void FlutterWindow::HandleMethodCall(
       UpdateClickThrough(cursor);
     }
     result->Success();
+  } else if (call.method_name() == "setPlacement") {
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    const std::string* edge =
+        args && args->size() == 3 ? std::get_if<std::string>(&(*args)[0])
+                                  : nullptr;
+    const double* width = edge ? std::get_if<double>(&(*args)[1]) : nullptr;
+    const double* height = edge ? std::get_if<double>(&(*args)[2]) : nullptr;
+    if (!edge || !width || !height || (*edge != "top" && *edge != "right")) {
+      result->Error("bad_args", "setPlacement expects [top|right, w, h]");
+      return;
+    }
+    // Nothing is clickable until Dart sends the new island rect.
+    hit_w_ = hit_h_ = 0;
+    SetPlacement(*edge == "top" ? Edge::kTop : Edge::kRight,
+                 Size(static_cast<unsigned int>(*width),
+                      static_cast<unsigned int>(*height)));
+    POINT cursor;
+    if (GetCursorPos(&cursor)) {
+      UpdateClickThrough(cursor);
+    }
+    result->Success();
   } else if (call.method_name() == "showMenu") {
     const auto* entries = std::get_if<flutter::EncodableList>(call.arguments());
     if (!entries) {

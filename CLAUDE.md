@@ -15,6 +15,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - Island = SDF fragment shader (squircle, smooth-min drop and split bubble). Values are in the spec §3.
 - Mikky: no mouth, no feet, no pupils; tail only in some states later. Ears carry emotion.
 - Dots grid: dark theme only, only while an agent works. Light theme: Apple system colors, no glow, no dots.
+- Two placements, chosen in the menu: "en haut" (wide island, top center) and "à droite" (right edge, tall like a phone in portrait, text laid out like a phone app, never rotated). Sizes in `IslandMetrics` (engine).
 
 ## Environment
 - Repo lives on Windows at `C:\Users\alexa\projet\mikky` (moved out of WSL on 2026-09-28; from WSL: `/mnt/c/Users/alexa/projet/mikky`). Windows Flutter at `C:\dev\flutter` (3.47.5) with Visual Studio 2022 C++ workload and Android SDK. Always run `flutter`/`dart` with the Windows install (from WSL: `cmd.exe /c "C:\dev\flutter\bin\flutter.bat ..."`), never the WSL Flutter, on this repo.

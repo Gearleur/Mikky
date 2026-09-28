@@ -1,7 +1,6 @@
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
-import 'package:mikky_engine/mikky_engine.dart';
 
 import '../theme.dart';
 
@@ -16,62 +15,58 @@ Future<ui.FragmentProgram?> loadIslandProgram() async {
   }
 }
 
-/// The island's shape, centered on [centerX], glued to the top edge.
+/// The island's shape.
+///
+/// [shape] is the box given to the shader: the visible island extended past
+/// the screen edge it is glued to, so only the corners away from that edge
+/// are rounded. [visible] is the part on screen.
 class IslandPainter extends CustomPainter {
   IslandPainter({
     required this.shader,
-    required this.motion,
-    required this.centerX,
+    required this.shape,
+    required this.visible,
+    required this.radius,
+    required this.visibility,
     required this.theme,
     required this.devicePixelRatio,
   });
 
   final ui.FragmentShader? shader;
-  final IslandMotion motion;
-  final double centerX;
+  final Rect shape;
+  final Rect visible;
+  final double radius;
+  final double visibility;
   final MikkyTheme theme;
   final double devicePixelRatio;
 
-  /// The box starts this far above the screen: only the bottom corners show.
-  static const _top = -40.0;
-
   @override
   void paint(Canvas canvas, Size size) {
-    if (motion.isGone) return;
-    final w = motion.currentWidth, h = motion.currentHeight;
+    if (visibility <= 0) return;
     final shader = this.shader;
     if (shader == null) {
-      _paintFallback(canvas, w, h);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(shape, Radius.circular(radius)),
+        Paint()..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility),
+      );
       return;
     }
-    final halfW = w / 2, halfH = (h - _top) / 2;
-    final boxY = (_top + h) / 2;
+    final c = shape.center;
     final values = <double>[
-      centerX, boxY, halfW, halfH, // uBox
-      motion.cornerRadius, // uR
-      centerX, boxY, 0, // uDrop (not used yet: hidden in the box)
-      centerX, boxY, 0, // uSide (not used yet)
+      c.dx, c.dy, shape.width / 2, shape.height / 2, // uBox
+      radius, // uR
+      c.dx, c.dy, 0, // uDrop (not used yet: hidden in the box)
+      c.dx, c.dy, 0, // uSide (not used yet)
       1, 1, // uK, uKs
       theme.isLight ? 1 : 0, // uLight
       1 / devicePixelRatio, // uPx
-      motion.visibility, // uVis
+      visibility, // uVis
     ];
     for (var i = 0; i < values.length; i++) {
       shader.setFloat(i, values[i]);
     }
-    // Only the island and its shadow, not the whole window.
-    final area = Rect.fromLTRB(centerX - halfW - 60, 0, centerX + halfW + 60, h + 90);
-    canvas.drawRect(area, Paint()..shader = shader);
-  }
-
-  void _paintFallback(Canvas canvas, double w, double h) {
-    final r = motion.cornerRadius;
-    final shape = RRect.fromLTRBR(centerX - w / 2, -r, centerX + w / 2, h, Radius.circular(r));
-    final alpha = motion.visibility;
-    canvas.drawRRect(
-      shape,
-      Paint()..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: alpha),
-    );
+    // Only the island and its shadow (mostly below), not the whole window.
+    final area = Rect.fromLTRB(visible.left - 60, visible.top - 40, visible.right + 60, visible.bottom + 90);
+    canvas.drawRect(area.intersect(Offset.zero & size), Paint()..shader = shader);
   }
 
   @override

@@ -157,6 +157,12 @@ bool Win32Window::Show() {
   return ShowWindow(window_handle_, SW_SHOWNOACTIVATE);
 }
 
+void Win32Window::SetPlacement(Edge edge, const Size& size) {
+  edge_ = edge;
+  logical_size_ = size;
+  PlaceOnPrimaryMonitor();
+}
+
 void Win32Window::PlaceOnPrimaryMonitor() {
   if (!window_handle_) {
     return;
@@ -171,8 +177,15 @@ void Win32Window::PlaceOnPrimaryMonitor() {
   const int width = Scale(logical_size_.width, scale_factor_);
   const int height = Scale(logical_size_.height, scale_factor_);
   const RECT& screen = info.rcMonitor;
-  origin_ = {screen.left + (screen.right - screen.left - width) / 2,
-             screen.top};
+  if (edge_ == Edge::kTop) {
+    origin_ = {screen.left + (screen.right - screen.left - width) / 2,
+               screen.top};
+  } else {
+    // Centered in the work area, so the taskbar never covers the card.
+    const RECT& work = info.rcWork;
+    origin_ = {screen.right - width,
+               work.top + (work.bottom - work.top - height) / 2};
+  }
   SetWindowPos(window_handle_, HWND_TOPMOST, origin_.x, origin_.y, width,
                height, SWP_NOACTIVATE);
 }

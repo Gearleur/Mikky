@@ -1,11 +1,13 @@
 import 'package:flutter/services.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 /// Bridge to the native overlay window (`windows/runner/flutter_window.cpp`).
 ///
 /// All coordinates are logical pixels relative to the window's top-left
-/// corner, which is glued to the top edge of the primary screen.
+/// corner. The window is glued to the top or the right edge of the primary
+/// screen (see [setPlacement]).
 class OverlayChannel {
-  OverlayChannel({required this.onCursor}) {
+  OverlayChannel() {
     _channel.setMethodCallHandler(_handle);
   }
 
@@ -13,15 +15,22 @@ class OverlayChannel {
 
   /// Global cursor position, at most 60 times per second, only when it moves.
   /// It can be outside the window.
-  final void Function(Offset cursor) onCursor;
+  void Function(Offset cursor)? onCursor;
 
   Rect? _hitRect;
 
   Future<void> _handle(MethodCall call) async {
     if (call.method == 'cursor') {
       final args = call.arguments as List<Object?>;
-      onCursor(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
+      onCursor?.call(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
     }
+  }
+
+  /// Glues the window to [edge] of the primary screen, with [size] in
+  /// logical pixels. Clicks go through until the next [setHitRect].
+  Future<void> setPlacement(IslandEdge edge, Size size) async {
+    _hitRect = Rect.zero;
+    await _channel.invokeMethod<void>('setPlacement', [edge.name, size.width, size.height]);
   }
 
   /// The only area that receives clicks; everywhere else they go through to
