@@ -28,7 +28,7 @@ Vrais agents et hooks Claude Code, chat et champ de saisie, sons, glisser-dépos
 
 ### Technique
 - **Flutter partout** (desktop maintenant, mobile ensuite). Rust est réservé à `mikkyd` (étape 4).
-- Windows seulement pour l'étape 1. Le repo vit côté Windows (`C:\Users\alexa\projects\mikky`) : Flutter ne compile pas depuis un chemin WSL.
+- Windows seulement pour l'étape 1. Le repo vit dans WSL (`~/projects/mikky`, soit `\\wsl.localhost\Ubuntu\home\gearleur\projects\mikky` côté Windows), choix de l'utilisateur. Le build Windows depuis ce chemin est à valider au J0 (voir §11).
 
 ### Mikky (voir `design/prototypes/mascotte-variantes.html`, carte « S · Touffes + queue » sans la queue)
 - Corps noir `#0C0C0E`. Silhouette « G » : superellipse d'exposant 2,4, rx = 1,06 R, ry = 0,92 R, élargie en bas (facteur 0,055). Les oreilles sont des bosses du même contour (centre à ±0,60 rx, demi-largeur extérieure 0,40 rx, intérieure 0,44 rx, hauteur 0,55 R, courbure 0,85), pas des formes séparées.
@@ -172,7 +172,8 @@ Chaque jalon se termine par un build, une vérification visuelle et un commit.
 ## 11. Environnement de développement
 - Flutter 3.38.3 est installé (`C:\dev\flutter`) ; une mise à jour (`flutter upgrade`) est conseillée.
 - **À installer par l'utilisateur** : Visual Studio 2022 (Community suffit) avec la charge de travail « Développement Desktop en C++ ». Sans lui, aucun build Windows n'est possible.
-- Le code peut être édité depuis WSL (`/mnt/c/Users/alexa/projects/mikky`) ; les commandes Flutter se lancent côté Windows.
+- Le code vit dans WSL. `mikky_engine` (Dart pur) se teste directement dans WSL avec un SDK Dart Linux.
+- Le build et le lancement de l'app Windows passent par le Flutter de Windows. Flutter gère mal les chemins réseau `\\wsl.localhost\...` : les liens symboliques des plugins et CMake peuvent échouer. Au J0, on essaie d'abord de lancer depuis un lecteur mappé (`pushd` ou `subst`). Si ça échoue, un petit script synchronise `app/` vers un dossier Windows (par exemple `C:\dev\mikky-build`) avant chaque build ou lancement.
 
 ## 12. Questions ouvertes
 - Mini-Mikky par agent : les pastilles gardent-elles un simple point de couleur (validé), ou un mini-Mikky teinté de la couleur de l'agent comme les mini-Mochi de Coucou ? À trancher visuellement au J4.
