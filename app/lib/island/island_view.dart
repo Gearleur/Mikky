@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -29,7 +30,7 @@ const _pastEdge = 40.0;
 
 const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
-const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9;
+const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -37,11 +38,14 @@ const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9;
 /// cursor, clicks and agents, wakes it up at its deadlines, and draws its
 /// snapshot. Nothing runs while nothing happens.
 class IslandView extends StatefulWidget {
-  const IslandView({super.key, required this.overlay, required this.settings, required this.program});
+  const IslandView({super.key, required this.overlay, required this.settings, required this.program, required this.tuning});
 
   final OverlayChannel overlay;
   final Settings settings;
   final ui.FragmentProgram? program;
+
+  /// Mikky's proportions (from the tuning screen).
+  final MikkyTuning tuning;
 
   @override
   State<IslandView> createState() => _IslandViewState();
@@ -170,10 +174,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       _motion.setShape(s.shape);
       if (s.shape == IslandShape.open) _mikky.blink();
     }
-    if (s.openReason == OpenReason.alert && (prev.openReason != OpenReason.alert || prev.focus?.id != s.focus?.id)) {
+    // Mikky stands for the agent in focus (rule 10).
+    _mikky.setState(_mikkyStateFor(s.focus?.status));
+    if (s.openReason == OpenReason.alert && prev.openReason == OpenReason.alert && prev.focus?.id != s.focus?.id) {
+      // Next alert of the queue, maybe of the same kind: show it anyway.
       _mikky.alert();
     }
-    if (s.openReason == OpenReason.finished && prev.openReason != OpenReason.finished) _mikky.happy();
     if (s.preview && !prev.preview) {
       _mikky.blink();
       _mikky.twitch();
@@ -184,6 +190,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (changed || !_motion.isGone) _wake();
     _schedule();
   }
+
+  static MikkyState _mikkyStateFor(AgentStatus? status) => switch (status) {
+        null || AgentStatus.idle => MikkyState.idle,
+        AgentStatus.working => MikkyState.working,
+        AgentStatus.thinking => MikkyState.thinking,
+        AgentStatus.searching => MikkyState.searching,
+        AgentStatus.approval => MikkyState.approval,
+        AgentStatus.question => MikkyState.question,
+        AgentStatus.error => MikkyState.error,
+        AgentStatus.finished => MikkyState.finished,
+        AgentStatus.rateLimited => MikkyState.rateLimited,
+      };
 
   /// Agents are immutable: the same objects mean nothing changed.
   static bool _sameAgents(List<Agent> a, List<Agent> b) {
@@ -220,6 +238,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   void _onCursor(Offset cursor) {
     _cursor = cursor;
     _machine.pointer(_clock.now, overIsland: _hitRect.contains(cursor), atEdge: _hotZone.contains(cursor));
+    final overMikky = _motion.visibility > 0 && (cursor - _mikkyCenter).distance < _motion.mikkyRadius * 1.3;
+    _mikky.hover(overMikky);
+    if (overMikky) _mikky.pointerMoved();
     _apply();
   }
 
@@ -300,6 +321,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       const MenuEntry(_menuDemoScenario, 'Démo : relancer le scénario'),
       const MenuEntry(_menuDemoAdd, 'Démo : ajouter un agent'),
       const MenuEntry(_menuDemoStop, 'Démo : tout arrêter'),
+      const MenuEntry(_menuTuning, 'Réglage de Mikky…'),
       const MenuEntry.separator(),
       const MenuEntry(_menuQuit, 'Quitter'),
     ]);
@@ -332,6 +354,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         _source.stop();
         _machine.setAgents(_source.agents, now);
         _apply();
+      case _menuTuning:
+        // A normal window, in its own process (see windows/runner/main.cpp).
+        unawaited(Process.start(Platform.resolvedExecutable, const ['--tuning'], mode: ProcessStartMode.detached));
     }
   }
 
@@ -375,10 +400,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // Mikky looks at the bubble while it is out, else at the cursor.
     final c = _mikkyCenter;
     final side = _sideBubble;
-    final (lookX, lookY) = side != null && _bubbleOut > .5
+    final atBubble = side != null && _bubbleOut > .5;
+    final (lookX, lookY) = atBubble
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
-    _mikky.update(dt, lookX: lookX, lookY: lookY);
+    _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
 
     // Hidden and still: no more frames until something happens.
     if (_motion.isGone && _bubble.isAtRest()) _ticker.stop();
@@ -567,9 +593,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
               child: IgnorePointer(
                 child: CustomPaint(
                   painter: MikkyPainter(
-                    geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius),
+                    geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
                     center: _mikkyCenter,
                     rim: theme.mikkyRim,
+                    statusColor: theme.status,
+                    foreground: theme.foreground,
                   ),
                 ),
               ),

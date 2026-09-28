@@ -31,12 +31,16 @@ class Win32Window {
   // Creates Mikky's overlay window: borderless, transparent, always on top,
   // hidden from the taskbar and Alt+Tab, never activated, and click-through
   // until a hit rect is set. |size| is in logical pixels; the window is glued
-  // to the top edge of the primary monitor, horizontally centered. The window
-  // is invisible until |Show| is called. Returns true on success.
-  bool Create(const std::wstring& title, const Size& size);
+  // to the top edge of the primary monitor, horizontally centered.
+  // With |overlay| false: an ordinary window centered on the primary monitor
+  // (the tuning screen). The window is invisible until |Show| is called.
+  // Returns true on success.
+  bool Create(const std::wstring& title, const Size& size, bool overlay = true);
 
-  // Show the current window without activating it.
+  // Show the current window; the overlay without activating it.
   bool Show();
+
+  bool is_overlay() const { return overlay_; }
 
   // Screen edge the overlay is glued to.
   enum class Edge { kTop, kRight };
@@ -111,6 +115,7 @@ class Win32Window {
   // Logical size and edge requested at creation or by SetPlacement.
   Size logical_size_{0, 0};
   Edge edge_ = Edge::kTop;
+  bool overlay_ = true;
   double scale_factor_ = 1.0;
   POINT origin_{0, 0};
 

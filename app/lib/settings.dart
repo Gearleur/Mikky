@@ -36,6 +36,30 @@ class Settings {
     }
   }
 
+  static File? get _tuningFile {
+    final appData = Platform.environment['APPDATA'];
+    return appData == null ? null : File('$appData\\Mikky\\tuning.json');
+  }
+
+  /// Mikky's proportions saved by the tuning screen, or the defaults.
+  static Future<MikkyTuning> loadTuning() async {
+    try {
+      final file = _tuningFile;
+      if (file == null || !await file.exists()) return MikkyTuning();
+      return MikkyTuning.fromJson(jsonDecode(await file.readAsString()) as Map<String, Object?>);
+    } catch (e) {
+      debugPrint('mikky: tuning unreadable, using defaults ($e)');
+      return MikkyTuning();
+    }
+  }
+
+  static Future<void> saveTuning(MikkyTuning tuning) async {
+    final file = _tuningFile;
+    if (file == null) return;
+    await file.parent.create(recursive: true);
+    await file.writeAsString(const JsonEncoder.withIndent('  ').convert(tuning.toJson()));
+  }
+
   Future<void> save() async {
     try {
       final file = _file;
