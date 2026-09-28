@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikky — variantes de la mascotte</title>
+<style>
+body{margin:0;padding:24px;background:#f5f5f7;color:#1d1d1f;font:15px/1.5 -apple-system,"Segoe UI",Inter,sans-serif}
+h2{margin:0 0 .3rem} .subtitle{color:#6e6e73;margin:0 0 1rem} h3{margin:.2rem 0} p{margin:.2rem 0}
+.mock-button{border:1px solid #d2d2d7;background:#fff;border-radius:8px;padding:.35rem .7rem;font:inherit;cursor:pointer}
+.cards{display:grid;gap:1rem} .card{background:#fff;border:1px solid #d2d2d7;border-radius:12px;overflow:hidden}
+.card-image{display:flex;align-items:center;justify-content:center} .card-body{padding:.8rem 1rem}
+.label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73}
+</style>
+<script>function toggleSelect(){}</script>
+</head><body>
+<h2>Yeux plus allongés et quelques idées en plus</h2>
+<p class="subtitle">Yeux à 26, bas à 5,5, yeux plus longs (curseur Allongement). Idées en plus : forme d'œil, petits pieds, queue. Clic = boop.</p>
+
+<div class="section" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:1rem">
+  <button class="mock-button" onclick="all(b=>b.blink())">Cligner</button>
+  <button class="mock-button" onclick="all(b=>b.happy())">Content</button>
+  <button class="mock-button" onclick="all(b=>b.surprised())">Surpris</button>
+  <button class="mock-button" onclick="all(b=>b.hop())">Saut</button>
+  <button class="mock-button" onclick="all(b=>b.twitch())">Oreilles</button>
+  <button class="mock-button" onclick="all(b=>b.no())">Non</button>
+  <label style="margin-left:1rem;display:flex;gap:.5rem;align-items:center">Largeur du bas
+    <input type="range" min="0" max="30" value="5.5" step="0.5" oninput="window.BK=this.value/100;document.getElementById('bkv').textContent=this.value">
+    <span id="bkv">5.5</span>
+  </label>
+  <label style="display:flex;gap:.5rem;align-items:center">Hauteur des yeux
+    <input type="range" min="-10" max="40" value="26" oninput="window.EP=this.value/100;document.getElementById('epv').textContent=this.value">
+    <span id="epv">26</span>
+  </label>
+  <label style="display:flex;gap:.5rem;align-items:center">Taille des yeux
+    <input type="range" min="70" max="140" value="100" oninput="window.ES=this.value/100;document.getElementById('esv').textContent=this.value">
+    <span id="esv">100</span>
+  </label>
+  <label style="display:flex;gap:.5rem;align-items:center">Allongement
+    <input type="range" min="80" max="160" value="125" oninput="window.EL=this.value/100;document.getElementById('elv').textContent=this.value">
+    <span id="elv">125</span>
+  </label>
+</div>
+
+<div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(230px,1fr))">
+  <div class="card" data-choice="long" onclick="toggleSelect(this)">
+    <div class="card-image" style="aspect-ratio:1;background:#EEE9E1"><canvas data-v="long" style="width:100%;height:100%"></canvas></div>
+    <div class="card-body"><h3>P · G, yeux longs</h3><p>L avec des ovales nettement plus étirés.</p></div>
+  </div>
+  <div class="card" data-choice="haricot" onclick="toggleSelect(this)">
+    <div class="card-image" style="aspect-ratio:1;background:#EEE9E1"><canvas data-v="haricot" style="width:100%;height:100%"></canvas></div>
+    <div class="card-body"><h3>Q · Yeux inclinés</h3><p>Ovales longs penchés en « / \ », plus expressifs : quand elle est contente ou triste, l'inclinaison change.</p></div>
+  </div>
+  <div class="card" data-choice="pieds" onclick="toggleSelect(this)">
+    <div class="card-image" style="aspect-ratio:1;background:#EEE9E1"><canvas data-v="pieds" style="width:100%;height:100%"></canvas></div>
+    <div class="card-body"><h3>R · Duveteux + petits pieds</h3><p>Contour de J, deux petits pieds qui piétinent et pendent pendant les sauts.</p></div>
+  </div>
+  <div class="card" data-choice="queue" onclick="toggleSelect(this)">
+    <div class="card-image" style="aspect-ratio:1;background:#EEE9E1"><canvas data-v="queue" style="width:100%;height:100%"></canvas></div>
+    <div class="card-body"><h3>S · Touffes + queue</h3><p>N avec une queue de chat qui ondule derrière et fouette quand elle dit non.</p></div>
+  </div>
+</div>
+
+
+<script>
+window.BK = 0.055; window.EP = 0.26; window.ES = 1; window.EL = 1.25;
+const INK = '#0C0C0E', WHITE = '#F7F7F7';
+const E = {
+  out: t => 1 - Math.pow(1 - t, 3),
+  inOut: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2,
+  back: t => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); },
+};
+// Silhouette G shared by all; per-variant: eyes, extras, motion
+const G = { exp: 2.4, a: 1.06, b: .92, xe: .60, ewo: .40, ewi: .44, earH: .55, curv: .85, round: 8, eyeSp: .30 };
+const V = {
+  'long':    { eye: 'oval', ew: .21, eh: .50, eyeSp: .30 },
+  'haricot': { eye: 'oval', ew: .21, eh: .50, eyeSp: .31, slant: .2 },
+  'pieds':   { eye: 'oval', ew: .21, eh: .50, eyeSp: .30, fuzzy: true, feet: true, hopEvery: 4 },
+  'queue':   { eye: 'oval', ew: .21, eh: .50, eyeSp: .30, tufts: true, tail: true },
+};
+const mouse = { x: innerWidth / 2, y: innerHeight / 2 };
+addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+const now = () => performance.now() / 1000;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+class Buddy {
+  constructor(c) {
+    this.c = c; this.ctx = c.getContext('2d'); this.v = { ...G, ...V[c.dataset.v] };
+    this.p = { yaw: 0, pitch: 0, open: 1, sx: 1, sy: 1, oy: 0, ox: 0, es: 1, twL: 0, twR: 0, tilt: 0, lx: 0, ly: 0, tail: 0 };
+    this.tw = {}; this.eye = null; this.exprUntil = 0;
+    this.t0 = now() - Math.random() * 5; this.nextBlink = now() + 1 + Math.random() * 2;
+    this.nextTwitch = now() + 2 + Math.random() * 4; this.nextHop = now() + 1 + Math.random() * 3;
+    this.last = now();
+    c.addEventListener('click', () => this.boop());
+  }
+  anim(k, keys) { this.tw[k] = { keys, i: 0, from: this.p[k], start: now() }; }
+  blink() { this.anim('open', [[.06, 70, E.inOut], [1, 130, E.out]]); }
+  squash(f = 1) {
+    const e = (this.v.elastic || 1) * f;
+    this.anim('sy', [[1 - .2 * e, 70, E.out], [1 + .1 * e, 130, E.out], [1 - .03 * e, 120, E.inOut], [1, 140, E.inOut]]);
+    this.anim('sx', [[1 + .14 * e, 70, E.out], [1 - .05 * e, 130, E.out], [1 + .02 * e, 120, E.inOut], [1, 140, E.inOut]]);
+  }
+  boop() { this.squash(); this.blink(); }
+  hop(small) {
+    const h = small ? .12 : .3, e = this.v.elastic || 1;
+    // anticipation (crouch) → stretch up → land squash
+    this.anim('sy', [[1 - .12 * e, 90, E.out], [1 + .14 * e, 120, E.out], [1, 180, E.inOut], [1 - .14 * e, 70, E.out], [1, 200, E.back]]);
+    this.anim('sx', [[1 + .1 * e, 90, E.out], [1 - .08 * e, 120, E.out], [1, 180, E.inOut], [1 + .12 * e, 70, E.out], [1, 200, E.back]]);
+    this.anim('oy', [[.04, 90, E.out], [-h, 200, E.out], [0, 200, E.inOut]]);
+  }
+  happy() {
+    this.eye = 'happy'; this.exprUntil = now() + 1.4;
+    this.hop(); this.anim('twL', [[.25, 120, E.out]]); this.anim('twR', [[.25, 120, E.out]]);
+  }
+  surprised() {
+    this.exprUntil = now() + 1.2;
+    this.anim('es', [[1.25, 120, E.back]]);
+    this.anim('oy', [[-.15, 110, E.out], [0, 260, E.back]]);
+    this.anim('twL', [[.45, 90, E.out]]); this.anim('twR', [[.45, 90, E.out]]);
+  }
+  twitch(side) {
+    const tw = [[.35, 90, E.out], [-.12, 120, E.inOut], [.1, 90, E.inOut], [0, 160, E.out]];
+    if (side !== 'R') this.anim('twL', tw);
+    if (side !== 'L') setTimeout(() => this.anim('twR', tw), side ? 0 : 60);
+  }
+  no() {
+    this.anim('tail', [[1, 120, E.out], [-1, 160, E.inOut], [.6, 160, E.inOut], [0, 220, E.out]]);
+    this.anim('ox', [[.08, 60, E.out], [-.08, 90, E.inOut], [.06, 90, E.inOut], [-.03, 90, E.inOut], [0, 100, E.out]]);
+    this.anim('tilt', [[.1, 60, E.out], [-.1, 90, E.inOut], [.06, 90, E.inOut], [0, 190, E.out]]);
+  }
+  update() {
+    const t = now(), dt = Math.min(.05, t - this.last); this.last = t;
+    const p = this.p, v = this.v;
+    for (const k in this.tw) {
+      const tw = this.tw[k], [target, dur, ease] = tw.keys[tw.i];
+      const q = clamp((t - tw.start) * 1000 / dur, 0, 1);
+      p[k] = tw.from + (target - tw.from) * ease(q);
+      if (q >= 1) { tw.from = target; tw.i++; tw.start = t; if (tw.i >= tw.keys.length) delete this.tw[k]; }
+    }
+    const r = this.c.getBoundingClientRect();
+    const lx = Math.tanh((mouse.x - (r.left + r.width / 2)) / 260);
+    const ly = Math.tanh((mouse.y - (r.top + r.height / 2)) / 200);
+    const kLook = 1 - Math.pow(.0025, dt), kFast = 1 - Math.pow(.00005, dt), kGen = 1 - Math.pow(.0008, dt), tt = t - this.t0;
+    if (!this.tw.yaw) p.yaw += (lx * .5 - p.yaw) * kLook;
+    if (!this.tw.pitch) p.pitch += (-ly * .32 - p.pitch) * kLook;
+    // pupils lead the head: they react faster than the head turns
+    p.lx += (lx - p.lx) * kFast; p.ly += (ly - p.ly) * kFast;
+    // cute head tilt toward where it looks
+    if (!this.tw.tilt) p.tilt += (p.yaw * .16 - p.tilt) * kGen;
+    if (!this.tw.sy) p.sy += (1 + Math.sin(tt * 1.8) * .02 - p.sy) * kGen;
+    if (!this.tw.sx) p.sx += (1 - Math.sin(tt * 1.8) * .014 - p.sx) * kGen;
+    if (!this.tw.es) p.es += (1 - p.es) * kGen;
+    if (t > this.exprUntil && this.exprUntil > 0) {
+      this.exprUntil = 0; this.eye = null;
+      if (!this.tw.twL) this.anim('twL', [[0, 200, E.inOut]]);
+      if (!this.tw.twR) this.anim('twR', [[0, 200, E.inOut]]);
+    }
+    if (t > this.nextBlink) {
+      this.blink(); if (Math.random() < .22) setTimeout(() => this.blink(), 230);
+      this.nextBlink = t + 2.2 + Math.random() * 3.2;
+    }
+    if (t > this.nextTwitch) { this.twitch(Math.random() < .5 ? 'L' : 'R'); this.nextTwitch = t + 3 + Math.random() * 5; }
+    if (v.hopEvery && t > this.nextHop) {
+      if (!this.tw.oy) this.hop(Math.random() < .6);
+      this.nextHop = t + v.hopEvery * (.6 + Math.random());
+    }
+  }
+  draw() {
+    const c = this.c, dpr = devicePixelRatio || 1;
+    const w = Math.round(c.clientWidth * dpr), h = Math.round(c.clientHeight * dpr);
+    if (c.width !== w || c.height !== h) { c.width = w; c.height = h; }
+    const ctx = this.ctx, p = this.p, v = this.v, W = c.width, H = c.height, R = W * .27;
+    const k = window.BK + (v.bk || 0), t = now();
+    ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, W, H);
+    ctx.translate(W / 2 + p.ox * R, H * .6 + p.oy * R);
+    ctx.rotate(p.tilt); ctx.scale(p.sx, p.sy);
+    const rx = R * v.a, ry = R * v.b, ex = 2 / v.exp;
+    const pt = th => {
+      const cc = Math.cos(th), s = Math.sin(th);
+      const px = Math.sign(cc) * Math.pow(Math.abs(cc), ex), py = Math.sign(s) * Math.pow(Math.abs(s), ex);
+      return { x: rx * px * (1 + k * py), y: ry * py, py };
+    };
+    const bump = x => {
+      let best = 0;
+      for (const sd of [-1, 1]) {
+        const tw = sd < 0 ? p.twL : p.twR;
+        const xe = sd * rx * v.xe + p.yaw * rx * .28 + sd * tw * rx * .06;
+        const d = x - xe, ew = (d * sd > 0 ? v.ewo : v.ewi) * rx;
+        const tri = clamp(1 - Math.abs(d) / ew, 0, 1);
+        const hgt = v.earH * R * (1 + tw * .9) * (1 - .18 * clamp(sd * p.yaw, 0, 1));
+        best = Math.max(best, hgt * Math.pow(tri, v.curv));
+      }
+      return best;
+    };
+    ctx.fillStyle = INK; ctx.strokeStyle = INK;
+    if (v.tail) {
+      const sw = Math.sin(t * 2.1) * .35 + p.tail * .9 - p.yaw * .6;
+      const bx = rx * .55, by = ry * .55;
+      const tx = bx + R * (.75 + .1 * Math.cos(sw)), ty = by - R * (.55 + .35 * Math.sin(sw + .6));
+      ctx.beginPath(); ctx.moveTo(bx, by);
+      ctx.bezierCurveTo(bx + R * .7, by + R * .15, tx + R * .15 * Math.sin(sw), ty + R * .4, tx, ty);
+      ctx.lineCap = 'round'; ctx.lineWidth = R * .17; ctx.stroke();
+    }
+    if (v.feet) {
+      const air = clamp(-p.oy * 3, 0, 1);
+      for (const sd of [-1, 1]) {
+        const step = Math.max(0, Math.sin(t * 5 + (sd > 0 ? Math.PI : 0))) * .05 * (1 - air) * (Math.abs(p.yaw - (this.prevYaw || 0)) > .002 ? 1 : .25);
+        ctx.beginPath();
+        ctx.ellipse(sd * rx * .42 + p.yaw * R * .2, ry * (.93 + air * .12) - step * R, R * .2, R * .13, sd * air * .3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      this.prevYaw = p.yaw;
+    }
+    const body = new Path2D(), N = v.fuzzy ? 720 : 360;
+    for (let i = 0; i <= N; i++) {
+      const th = i / N * Math.PI * 2, q = pt(th);
+      let x = q.x, y = q.py < 0 ? q.y - bump(q.x) : q.y;
+      if (v.tufts) {
+        const top = Math.exp(-Math.pow((th - Math.PI * 1.5) / .16, 2));
+        const cheeks = Math.exp(-Math.pow((th - .18) / .22, 2)) + Math.exp(-Math.pow((th - (Math.PI - .18)) / .22, 2));
+        const f = 1 + (top * .09 + cheeks * .05) * Math.abs(Math.sin(th * 40 + Math.sin(t * 2.5) * .5));
+        x *= f; y *= f;
+      }
+      if (v.fuzzy) {
+        const f = 1 + .045 * Math.abs(Math.sin(th * 34 + Math.sin(t * 3 + th * 5) * .6)) + .015 * Math.sin(th * 13 - t * 4);
+        x *= f; y *= f;
+      }
+      i ? body.lineTo(x, y) : body.moveTo(x, y);
+    }
+    body.closePath();
+    ctx.fillStyle = INK; ctx.strokeStyle = INK; ctx.lineJoin = 'round';
+    ctx.fill(body); if (!v.fuzzy) { ctx.lineWidth = v.round * W / 400; ctx.stroke(body); }
+    ctx.save(); ctx.clip(body);
+    const onSphere = (ya, pa) => {
+      const cp = Math.cos(pa), xr = rx * (1 + k * -Math.sin(pa));
+      return { x: Math.sin(ya) * cp * xr, y: -Math.sin(pa) * ry, fx: Math.max(.2, Math.cos(ya)), fy: Math.max(.2, cp), vis: Math.cos(ya) * cp };
+    };
+    if (v.blush) {
+      for (const sd of [-1, 1]) {
+        const b = onSphere(sd * .5 + p.yaw, window.EP - .3 + p.pitch);
+        if (b.vis < .1) continue;
+        ctx.save(); ctx.translate(b.x, b.y); ctx.scale(b.fx, b.fy);
+        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * .2);
+        g.addColorStop(0, 'rgba(255,120,150,.55)'); g.addColorStop(1, 'rgba(255,120,150,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, R * .22, R * .13, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+    }
+    for (const sd of [-1, 1]) {
+      const e = onSphere(sd * v.eyeSp + p.yaw, window.EP + p.pitch);
+      if (e.vis < .05) continue;
+      ctx.save(); ctx.translate(e.x, e.y);
+      ctx.rotate(-.04 - p.yaw * .25 + sd * (v.slant || 0) * (this.eye === 'happy' ? 0 : 1) * (2 - p.es * 1)); ctx.scale(e.fx * p.es, e.fy * p.es);
+      const ew = R * v.ew * window.ES, eh = R * v.eh * window.ES * window.EL;
+      ctx.fillStyle = WHITE; ctx.strokeStyle = WHITE;
+      if (this.eye === 'happy') {
+        ctx.beginPath(); ctx.lineCap = 'round'; ctx.lineWidth = R * .15;
+        ctx.arc(0, eh * .2, ew * .7, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke();
+        ctx.restore(); continue;
+      }
+      const hh = Math.max(ew * .25, eh * p.open);
+      const eyePath = new Path2D();
+      if (v.eye === 'pill') eyePath.roundRect(-ew / 2, -hh / 2, ew, hh, Math.min(ew, hh) / 2);
+      else eyePath.ellipse(0, 0, ew / 2, hh / 2, 0, 0, Math.PI * 2);
+      ctx.fill(eyePath);
+      if (v.gloss && p.open > .35) {
+        ctx.save(); ctx.clip(eyePath);
+        const g = ctx.createLinearGradient(0, -hh / 2, 0, hh / 2);
+        g.addColorStop(0, 'rgba(255,255,255,0)'); g.addColorStop(.55, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(150,170,205,.55)');
+        ctx.fillStyle = g; ctx.fillRect(-ew, -hh, ew * 2, hh * 2); ctx.restore();
+      }
+      if (p.open > .35) {
+        ctx.save(); ctx.clip(eyePath);
+        let px = 0, py = 0;
+        if (v.pupil) {
+          px = p.lx * ew * .22; py = p.ly * eh * .2;
+          ctx.fillStyle = INK; ctx.beginPath(); ctx.ellipse(px, py, R * v.pupil, R * v.pupil * 1.08, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        // specular highlights: fixed "light" at top right, so they don't follow the pupil exactly
+        const sc = v.pupil ? WHITE : 'rgba(12,12,14,.0)';
+        if (v.pupil) {
+          ctx.fillStyle = WHITE;
+          ctx.beginPath(); ctx.arc(px + R * v.pupil * .38, py - R * v.pupil * .42, R * v.pupil * .36, 0, Math.PI * 2); ctx.fill();
+          if (v.shine > 1) { ctx.beginPath(); ctx.arc(px - R * v.pupil * .35, py + R * v.pupil * .45, R * v.pupil * .16, 0, Math.PI * 2); ctx.fill(); }
+        } else if (v.shine) {
+          // pill eye: small dark glint notch gives a glossy look
+          ctx.fillStyle = 'rgba(12,12,14,.18)';
+          ctx.beginPath(); ctx.ellipse(ew * .1, hh * .18, ew * .28, hh * .3, 0, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+}
+const buddies = [...document.querySelectorAll('canvas[data-v]')].map(c => new Buddy(c));
+window.all = f => buddies.forEach(f);
+(function loop() { buddies.forEach(b => { b.update(); b.draw(); }); requestAnimationFrame(loop); })();
+</script>
+
+</body></html>

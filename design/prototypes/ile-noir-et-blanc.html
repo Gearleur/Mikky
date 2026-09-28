@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikky — île noir A et blanc pur (validés)</title>
+<style>
+body{margin:0;padding:24px;background:#f5f5f7;color:#1d1d1f;font:15px/1.5 -apple-system,"Segoe UI",Inter,sans-serif}
+h2{margin:0 0 .3rem} .subtitle{color:#6e6e73;margin:0 0 1rem} h3{margin:.2rem 0} p{margin:.2rem 0}
+.mock-button{border:1px solid #d2d2d7;background:#fff;border-radius:8px;padding:.35rem .7rem;font:inherit;cursor:pointer}
+.cards{display:grid;gap:1rem} .card{background:#fff;border:1px solid #d2d2d7;border-radius:12px;overflow:hidden}
+.card-image{display:flex;align-items:center;justify-content:center} .card-body{padding:.8rem 1rem}
+.label{font-size:.75rem;text-transform:uppercase;letter-spacing:.05em;color:#6e6e73}
+</style>
+<script>function toggleSelect(){}</script>
+</head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<h2>Mikky : le blanc « façon Apple »</h2>
+<p class="subtitle">Suivant les consignes Apple : verre « regular » (lisible sur n'importe quel fond, contrairement au « clear »), couleurs système iOS (bleu #007AFF, orange #FF9500, vert #34C759, rouge #FF3B30), textes label / secondaryLabel, trait d'un demi-point, coins continus, ombre très douce. Pas de points sur le blanc.</p>
+
+<div class="section" style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-bottom:.8rem">
+  <button class="mock-button" onclick="ST.forEach(s=>s.setOpen(!s.open))">Ouvrir / fermer</button>
+  <button class="mock-button" onclick="ST.forEach(s=>s.notif())">Notification</button>
+  <span style="width:1px;height:24px;background:var(--border)"></span>
+  <span class="label" style="margin:0">État</span>
+  <button class="mock-button" onclick="setState('working')">Travaille</button>
+  <button class="mock-button" onclick="setState('approval')">Attend ton feu vert</button>
+  <button class="mock-button" onclick="setState('finished')">Terminé</button>
+  <button class="mock-button" onclick="setState('error')">Erreur</button>
+  <span style="width:1px;height:24px;background:var(--border)"></span>
+  <span class="label" style="margin:0">Points</span>
+  <button class="mock-button" onclick="DOTS=0">Aucun</button>
+  <button class="mock-button" onclick="DOTS=2">Vivants (noir seulement)</button>
+  <span style="width:1px;height:24px;background:var(--border)"></span>
+  <button class="mock-button" onclick="LAYOUT='focus'">Focus</button>
+  <button class="mock-button" onclick="LAYOUT='list'">Liste</button>
+</div>
+
+<div class="cards" style="grid-template-columns:1fr;gap:1.2rem">
+  <div class="card" data-choice="noir" onclick="toggleSelect(this)">
+    <div class="card-image stage" data-mode="0" style="aspect-ratio:auto;height:280px;position:relative;overflow:hidden"></div>
+    <div class="card-body"><h3>A · Noir (validé)</h3><p>Pour comparer.</p></div>
+  </div>
+  <div class="card" data-choice="blanc-opaque" onclick="toggleSelect(this)">
+    <div class="card-image stage" data-mode="6" style="aspect-ratio:auto;height:280px;position:relative;overflow:hidden"></div>
+    <div class="card-body"><h3>B · Blanc pur</h3><p>Blanc système opaque, trait d'un demi-point, ombre douce. Le plus simple et le plus lisible.</p></div>
+  </div>
+  <div class="card" data-choice="blanc-verre" onclick="toggleSelect(this)">
+    <div class="card-image stage" data-mode="7" style="aspect-ratio:auto;height:280px;position:relative;overflow:hidden"></div>
+    <div class="card-body"><h3>C · Verre blanc « regular »</h3><p>Liquid Glass clair : le fond d'écran transparaît très légèrement, reflet vif en haut, fin bord assombri (iOS 27).</p></div>
+  </div>
+</div>
+
+<script>
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
+const now = () => performance.now() / 1000;
+const mouse = { x: -1e4, y: -1e4 };
+addEventListener('pointermove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+const spring = x => ({ x, v: 0, t: x });
+function step(s, dt, k, z) { const c = 2 * Math.sqrt(k) * z; for (let i = 0; i < 4; i++) { const a = k * (s.t - s.x) - c * s.v; s.v += a * dt / 4; s.x += s.v * dt / 4; } }
+const hex = h => [parseInt(h.slice(1, 3), 16) / 255, parseInt(h.slice(3, 5), 16) / 255, parseInt(h.slice(5, 7), 16) / 255];
+
+window.LAYOUT = 'focus'; window.DOTS = 2;
+const STATES = {
+  working:  { c: '#3B9EFF', pill: 'ring' },
+  approval: { c: '#F5A524', pill: 'split' },
+  finished: { c: '#34D399', pill: 'check' },
+  error:    { c: '#F4505E', pill: 'split' },
+};
+let STATE = 'approval';
+window.setState = s => { STATE = s; ST.forEach(st => st.onState()); };
+
+const VS = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+const FS = `precision highp float;
+uniform vec2 uRes; uniform vec4 uBox; uniform float uR; uniform vec3 uDrop; uniform vec3 uSide; uniform float uMode; uniform float uT; uniform float uK; uniform float uKs; uniform float uS;
+uniform vec2 uMouse; uniform vec3 uGlow; uniform float uGlowA; uniform float uRim; uniform float uDots; uniform vec2 uCenter; uniform float uAct; uniform float uOpen;
+float len4(vec2 v){ v=v*v; return pow(dot(v,v),.25); }
+float sdBox(vec2 p, vec2 b, float r){ vec2 q=abs(p)-b+r; return len4(max(q,0.))+min(max(q.x,q.y),0.)-r; }
+float smin(float a,float b,float k){ float h=clamp(.5+.5*(b-a)/k,0.,1.); return mix(b,a,h)-k*h*(1.-h); }
+float scene(vec2 p){
+  float d=sdBox(p-uBox.xy,uBox.zw,uR);
+  d=smin(d,length(p-uDrop.xy)-uDrop.z,uK);
+  d=smin(d,length(p-uSide.xy)-uSide.z,uKs);
+  return d;
+}
+vec3 bg(vec2 p){
+  vec2 uv=p/uRes;
+  vec3 c=mix(vec3(.80,.85,.91),vec3(.94,.88,.80),uv.x);
+  c=mix(c,vec3(.86,.73,.67),smoothstep(.1,1.,uv.y));
+  vec2 b1=uv-vec2(.30+.04*sin(uT*.4),.30); vec2 b2=uv-vec2(.62,.18+.05*cos(uT*.3)); vec2 b3=uv-vec2(.52,.75);
+  c+=.20*vec3(1.,.45,.35)*exp(-dot(b1,b1)*22.);
+  c+=.22*vec3(.25,.45,1.)*exp(-dot(b2,b2)*16.);
+  c+=.14*vec3(.3,.9,.6)*exp(-dot(b3,b3)*20.);
+  return c;
+}
+void main(){
+  vec2 p=vec2(gl_FragCoord.x,uRes.y-gl_FragCoord.y);
+  float d=scene(p);
+  vec2 e=vec2(1.,0.);
+  vec2 n=normalize(vec2(scene(p+e.xy)-scene(p-e.xy),scene(p+e.yx)-scene(p-e.yx))+1e-6);
+  vec3 col=bg(p);
+  float out1=smoothstep(-1.,1.,d);
+  // state glow spilling on the wallpaper (modes 3,4)
+  if(uMode>2.5 && uMode<4.5){ float g=exp(-max(d,0.)/(34.*uS))*uGlowA; col=mix(col,col*.55+uGlow*.9,g*.55*out1); }
+  // two-layer shadow
+  float ds=scene(p-vec2(0.,10.*uS));
+  float lt=uMode>5.5?1.:0.;
+  col*=1.-mix(.38,.13,lt)*exp(-max(scene(p-vec2(0.,mix(10.,14.,lt)*uS)),0.)/(mix(20.,30.,lt)*uS))*out1;
+  col*=1.-mix(.20,.10,lt)*exp(-max(scene(p-vec2(0.,mix(2.,1.,lt)*uS)),0.)/(mix(3.,2.,lt)*uS))*out1;
+  if(uMode>6.5) col*=1.-.16*exp(-max(d,0.)/(1.*uS))*out1;
+  // iOS 27 darkened edge (just outside)
+  if(uMode>2.5 && uMode<3.5) col*=1.-.45*exp(-max(d,0.)/(1.2*uS))*out1;
+  float rim=1.-smoothstep(0.,1.3*uS,-d);
+  float near=exp(-length(p-uMouse)/(150.*uS));
+  vec3 fill;
+  if(uMode<.5){
+    fill=vec3(.028,.028,.032)+rim*(.13+.10*max(0.,n.y))+.025*(1.-smoothstep(0.,40.*uS,-d));
+  } else if(uMode<3.5){
+    float edge=1.-smoothstep(0.,22.*uS,-d);
+    vec2 refr=n*edge*edge*14.*uS;
+    vec3 b=vec3(0.);
+    for(int i=0;i<20;i++){ float fi=float(i); float a=fi*2.39996; float r=(3.+fi*1.4)*uS; b+=bg(p-refr+r*vec2(cos(a),sin(a))); }
+    b/=20.;
+    fill=b*.13+vec3(.012,.012,.016);
+    fill+=uGlow*uGlowA*.05*(1.-smoothstep(0.,60.*uS,-d))*max(0.,n.y);
+    float spec=max(0.,dot(n,normalize(uMouse-p+vec2(0.,-80.*uS))));
+    fill+=rim*(.10+.75*spec*(.35+.9*near));
+    fill+=(1.-smoothstep(0.,5.*uS,-d))*.05*spec;
+  } else {
+    fill=vec3(.022,.022,.026);
+    fill+=uGlow*uGlowA*.13*pow(1.-smoothstep(0.,46.*uS,-d),2.)*max(0.,n.y);
+    fill+=rim*(.07+.55*near);
+    fill+=(1.-smoothstep(0.,70.*uS,-d))*.018;
+  }
+  if(uMode>4.5){
+    float rw=uRim*uS;
+    vec3 surf=vec3(.993,.993,.996);
+    vec3 band=mix(vec3(.885,.885,.900),vec3(.950,.950,.960),clamp(-d/max(rw,1.),0.,1.));
+    fill=mix(band,surf,smoothstep(rw-.5*uS,rw+.5*uS,-d));
+    fill-=.035*exp(-abs(-d-rw)/(1.2*uS));
+    fill-=.10*(1.-smoothstep(0.,1.*uS,-d));
+    fill+=.02*(1.-smoothstep(0.,60.*uS,-d))*max(0.,-n.y);
+  }
+  if(uMode>5.5 && uMode<6.5){
+    fill=vec3(1.);
+    fill-=.085*(1.-smoothstep(0.,.9*uS,-d));
+  }
+  if(uMode>6.5){
+    vec3 b=vec3(0.);
+    for(int i=0;i<20;i++){ float fi=float(i); float a=fi*2.39996; float r=(4.+fi*1.8)*uS; b+=bg(p+r*vec2(cos(a),sin(a))); }
+    b/=20.;
+    fill=mix(b*1.08,vec3(1.),.80);
+    float spec=max(0.,-n.y)*.7+max(0.,dot(n,normalize(vec2(-1.,-.4))))*.3;
+    fill+=(1.-smoothstep(0.,1.3*uS,-d))*.10*spec;
+    fill-=.07*(1.-smoothstep(0.,.9*uS,-d))*max(0.,n.y);
+  }
+  // dot grid inside the open island (dark only)
+  if(uDots>.5 && uOpen>.01 && uMode<.5){
+    float spc=14.*uS; vec2 g=mod(p-uBox.xy,spc)-spc*.5;
+    float dist=length(p-uCenter);
+    float wave=uDots>1.5 ? pow(.5+.5*sin(dist/(16.*uS)-uT*3.6),6.)*uAct : 0.;
+    float r=(.75+.9*wave)*uS;
+    float dotA=(1.-smoothstep(r-.6*uS,r+.6*uS,length(g)))*smoothstep(uMode>4.5?(uRim+8.)*uS:6.*uS,(uMode>4.5?(uRim+22.)*uS:24.*uS),-d)*uOpen;
+    dotA*= (.55+2.2*wave)*(1.-smoothstep(70.*uS,(uDots>1.5?210.:130.)*uS,dist));
+    vec3 dc=uMode>4.5 ? mix(vec3(0.),uGlow*.8,wave) : mix(vec3(1.),uGlow,wave*.8);
+    fill=mix(fill,dc,dotA*(uMode>4.5?.16:.14));
+  }
+  float a=clamp(.5-d,0.,1.);
+  gl_FragColor=vec4(mix(col,fill,a),1.);
+}`;
+function makeGL(canvas) {
+  const gl = canvas.getContext('webgl', { antialias: false });
+  const sh = (t, s) => { const o = gl.createShader(t); gl.shaderSource(o, s); gl.compileShader(o); if (!gl.getShaderParameter(o, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(o)); return o; };
+  const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+  const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const loc = gl.getAttribLocation(pr, 'a'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+  const U = {}; for (const n of ['uRes', 'uBox', 'uR', 'uDrop', 'uSide', 'uMode', 'uT', 'uK', 'uKs', 'uS', 'uMouse', 'uGlow', 'uGlowA', 'uRim', 'uDots', 'uCenter', 'uAct', 'uOpen']) U[n] = gl.getUniformLocation(pr, n);
+  return { gl, U };
+}
+
+// ---------- Mikky (validated design) ----------
+const E = { out: t => 1 - Math.pow(1 - t, 3), inOut: t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2, back: t => { const c1 = 1.7, c3 = c1 + 1; return 1 + c3*Math.pow(t-1,3) + c1*Math.pow(t-1,2); } };
+function makeMikky() {
+  return {
+    p: { yaw: 0, pitch: 0, open: 1, sx: 1, sy: 1, es: 1, twL: 0, twR: 0, tilt: 0 }, tw: {},
+    t0: now() - Math.random() * 5, nextBlink: now() + 1 + Math.random() * 2, nextTwitch: now() + 3, last: now(),
+    anim(k, keys) { this.tw[k] = { keys, i: 0, from: this.p[k], start: now() }; },
+    blink() { this.anim('open', [[.06, 70, E.inOut], [1, 130, E.out]]); },
+    alert() { this.anim('es', [[1.2, 120, E.back], [1, 500, E.inOut]]); this.anim('twL', [[.45, 90, E.out], [0, 400, E.inOut]]); this.anim('twR', [[.45, 90, E.out], [0, 400, E.inOut]]); },
+    squash() { this.anim('sy', [[.8, 70, E.out], [1.1, 130, E.out], [1, 170, E.inOut]]); this.anim('sx', [[1.14, 70, E.out], [.95, 130, E.out], [1, 170, E.inOut]]); },
+    update(lx, ly) {
+      const t = now(), dt = Math.min(.05, t - this.last), p = this.p; this.last = t;
+      for (const k in this.tw) {
+        const tw = this.tw[k], [target, dur, ease] = tw.keys[tw.i], q = clamp((t - tw.start) * 1000 / dur, 0, 1);
+        p[k] = tw.from + (target - tw.from) * ease(q);
+        if (q >= 1) { tw.from = target; tw.i++; tw.start = t; if (tw.i >= tw.keys.length) delete this.tw[k]; }
+      }
+      const kL = 1 - Math.pow(.0025, dt), kG = 1 - Math.pow(.0008, dt), tt = t - this.t0;
+      p.yaw += (lx * .5 - p.yaw) * kL; p.pitch += (-ly * .32 - p.pitch) * kL;
+      if (!this.tw.tilt) p.tilt += (p.yaw * .16 - p.tilt) * kG;
+      if (!this.tw.sy) p.sy += (1 + Math.sin(tt * 1.8) * .02 - p.sy) * kG;
+      if (!this.tw.sx) p.sx += (1 - Math.sin(tt * 1.8) * .014 - p.sx) * kG;
+      if (t > this.nextBlink) { this.blink(); if (Math.random() < .22) setTimeout(() => this.blink(), 230); this.nextBlink = t + 2.2 + Math.random() * 3.2; }
+      if (t > this.nextTwitch) { const k = Math.random() < .5 ? 'twL' : 'twR'; this.anim(k, [[.35, 90, E.out], [-.12, 120, E.inOut], [0, 160, E.out]]); this.nextTwitch = t + 3 + Math.random() * 5; }
+    },
+    draw(ctx, cx, cy, R, rim) {
+      const p = this.p, t = now(), k = .055, rx = R * 1.06, ry = R * .92, ex = 2 / 2.4;
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(p.tilt); ctx.scale(p.sx, p.sy);
+      const pt = th => { const c = Math.cos(th), s = Math.sin(th); const px = Math.sign(c) * Math.pow(Math.abs(c), ex), py = Math.sign(s) * Math.pow(Math.abs(s), ex); return { x: rx * px * (1 + k * py), y: ry * py, py }; };
+      const bump = x => { let b = 0; for (const s of [-1, 1]) { const tw = s < 0 ? p.twL : p.twR, xe = s * rx * .6 + p.yaw * rx * .28 + s * tw * rx * .06, d = x - xe, ew = (d * s > 0 ? .40 : .44) * rx, tri = clamp(1 - Math.abs(d) / ew, 0, 1); b = Math.max(b, .55 * R * (1 + tw * .9) * (1 - .18 * clamp(s * p.yaw, 0, 1)) * Math.pow(tri, .85)); } return b; };
+      const body = new Path2D();
+      for (let i = 0; i <= 360; i++) {
+        const th = i / 360 * Math.PI * 2, q = pt(th); let x = q.x, y = q.py < 0 ? q.y - bump(q.x) : q.y;
+        const top = Math.exp(-Math.pow((th - Math.PI * 1.5) / .16, 2)), ch = Math.exp(-Math.pow((th - .18) / .22, 2)) + Math.exp(-Math.pow((th - (Math.PI - .18)) / .22, 2));
+        const f = 1 + (top * .09 + ch * .05) * Math.abs(Math.sin(th * 40 + Math.sin(t * 2.5) * .5)); x *= f; y *= f;
+        i ? body.lineTo(x, y) : body.moveTo(x, y);
+      }
+      body.closePath(); ctx.fillStyle = '#0C0C0E'; ctx.fill(body);
+      if (rim) { ctx.strokeStyle = rim; ctx.lineWidth = Math.max(1, R * .045); ctx.stroke(body); }
+      ctx.save(); ctx.clip(body);
+      for (const s of [-1, 1]) {
+        const ya = s * .30 + p.yaw, pa = .26 + p.pitch, cp = Math.cos(pa);
+        if (Math.cos(ya) * cp < .05) continue;
+        ctx.save(); ctx.translate(Math.sin(ya) * cp * rx * (1 - k * Math.sin(pa)), -Math.sin(pa) * ry);
+        ctx.rotate(-.04 - p.yaw * .25); ctx.scale(Math.max(.2, Math.cos(ya)) * p.es, Math.max(.2, cp) * p.es);
+        const ew = R * .21, eh = R * .5 * 1.25, hh = Math.max(ew * .25, eh * p.open);
+        ctx.fillStyle = '#F7F7F7'; ctx.beginPath(); ctx.ellipse(0, 0, ew / 2, hh / 2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore(); ctx.restore();
+    },
+  };
+}
+
+
+
+const DARK = { col: { working: '#3B9EFF', approval: '#F5A524', finished: '#34D399', error: '#F4505E' }, fg: 'rgba(255,255,255,.94)', sub: 'rgba(255,255,255,.46)', faint: 'rgba(255,255,255,.07)', btn: 'rgba(255,255,255,.11)', pri: '#F5F5F7', priFg: '#0B0B0D', kbd: 'rgba(255,255,255,.18)', code: 'rgba(255,255,255,.05)', codeB: 'rgba(255,255,255,.06)', err: '#FF8D97', rim: 'rgba(255,255,255,.22)' };
+const LIGHT = { col: { working: '#007AFF', approval: '#FF9500', finished: '#34C759', error: '#FF3B30' }, noKbd: true, fg: '#000000', sub: 'rgba(60,60,67,.6)', faint: 'rgba(60,60,67,.12)', btn: 'rgba(118,118,128,.12)', pri: '#007AFF', priFg: '#FFF', kbd: 'rgba(60,60,67,.3)', code: 'rgba(118,118,128,.08)', codeB: 'transparent', err: '#FF3B30', rim: null };
+let TH = DARK;
+const MONO = "'Geist Mono',ui-monospace,'SF Mono',Menlo,monospace";
+const kbd = k => TH.noKbd ? '' : `<span style="font:500 10px ${MONO};padding:1px 5px;border-radius:5px;border:1px solid ${TH.kbd};margin-left:6px;opacity:.7">${k}</span>`;
+const btn = (t, pri, k) => `<span style="display:inline-flex;align-items:center;padding:6px 13px;border-radius:99px;font-size:12.5px;font-weight:${pri ? 600 : 500};background:${pri ? TH.pri : TH.btn};color:${pri ? TH.priFg : TH.fg}">${t}${k ? kbd(k) : ''}</span>`;
+const chip = (n, c, extra) => `<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px 4px 8px;border-radius:99px;background:${TH.faint};font-size:11.5px;color:${TH.sub}"><span style="width:6px;height:6px;border-radius:50%;background:${c}"></span>${n}${extra ? `<span style="font-family:${MONO};color:${TH.fg};opacity:.7">${extra}</span>` : ''}</span>`;
+function focusHTML(st) {
+  const c = TH.col[st];
+  const title = { working: 'Refacto API', approval: 'VPS · scraper', finished: 'Site vitrine', error: 'Build release' }[st];
+  const verb = { working: 'travaille', approval: 'veut lancer', finished: 'a terminé', error: 'a échoué' }[st];
+  const code = { working: 'Edit src/routes.rs', approval: 'rm -rf ./cache && cargo build --release', finished: '14 tests passés · 2 fichiers modifiés', error: 'error[E0382]: borrow of moved value: `cfg`' }[st];
+  const actions = {
+    working: `<div style="flex:1;height:3px;border-radius:3px;background:${TH.faint};overflow:hidden"><div style="height:100%;width:${(62 + 8 * Math.sin(now() * .5)).toFixed(1)}%;background:${c};border-radius:3px"></div></div><span style="font:500 11.5px ${MONO};color:${TH.sub};margin-left:10px">62%</span>`,
+    approval: `${btn('Refuser', false, 'N')}${btn('Autoriser', true, 'Y')}`,
+    finished: `${btn('Voir le terminal')}${btn('OK', true)}`,
+    error: `${btn('Détails')}${btn('Relancer', true)}`,
+  }[st];
+  return `<div style="display:flex;align-items:baseline;gap:7px;margin-bottom:9px"><span style="width:7px;height:7px;border-radius:50%;background:${c};box-shadow:${TH.noKbd ? 'none' : '0 0 10px ' + c};align-self:center"></span><span style="font-weight:600;font-size:14px;color:${TH.fg}">${title}</span><span style="color:${TH.sub}">${verb}</span><span style="margin-left:auto;font:500 11px ${MONO};color:${TH.sub}">${st === 'working' ? '2:14' : 'maintenant'}</span></div>
+    <div style="font:400 12px/1.4 ${MONO};color:${st === 'error' ? TH.err : TH.fg};background:${TH.code};border:1px solid ${TH.codeB};border-radius:10px;padding:8px 10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${code}</div>
+    <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px;margin-top:10px">${actions}</div>
+    <div style="display:flex;gap:6px;margin-top:10px">${st !== 'working' ? chip('Refacto API', TH.col.working, '62%') : ''}${chip('Site vitrine', TH.noKbd ? '#AF52DE' : '#8B5CF6')}${st === 'working' ? chip('VPS · scraper', TH.col.approval) : ''}</div>`;
+}
+function listHTML(st) {
+  const rows = [
+    { n: 'Refacto API', a: 'Edit src/routes.rs', c: TH.col.working, t: '2:14', prog: .62 },
+    { n: 'Site vitrine', a: 'npm test', c: TH.noKbd ? '#AF52DE' : '#8B5CF6', t: '0:48', prog: .3 },
+    { n: 'VPS · scraper', a: st === 'approval' ? 'attend ton feu vert' : 'cargo build', c: TH.col[st], t: 'maint.', ask: st === 'approval' },
+  ];
+  return `<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:${TH.sub}">Agents</span><span style="font:500 11px ${MONO};color:${TH.sub}">3 · 1 en attente</span></div>` +
+    rows.map((r, i) => `<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-top:${i ? '1px solid ' + TH.faint : 'none'}">
+      <span style="width:7px;height:7px;border-radius:50%;background:${r.c};flex:none;box-shadow:${TH.noKbd ? 'none' : '0 0 8px ' + r.c + '88'}"></span>
+      <div style="flex:1;min-width:0"><div style="display:flex;gap:8px;align-items:baseline"><span style="font-weight:600;color:${TH.fg};white-space:nowrap">${r.n}</span><span style="font:400 11.5px ${MONO};color:${TH.sub};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.a}</span></div>
+      ${r.prog ? `<div style="height:2px;border-radius:2px;background:${TH.faint};margin-top:5px"><div style="width:${r.prog * 100}%;height:100%;background:${r.c};border-radius:2px"></div></div>` : ''}</div>
+      ${r.ask ? `<span style="display:flex;gap:6px">${btn('Refuser')}${btn('Autoriser', true)}</span>` : `<span style="font:500 11px ${MONO};color:${TH.sub}">${r.t}</span>`}</div>`).join('');
+}
+function pillRight(st, p) {
+  const c = TH.col[st];
+  if (st === 'working') {
+    const a = .62 * Math.PI * 2;
+    return `<svg width="16" height="16" viewBox="0 0 16 16" style="opacity:${p}"><circle cx="8" cy="8" r="6" fill="none" stroke="${TH.faint}" stroke-width="2.2"/><path d="M8 2 A6 6 0 ${a > Math.PI ? 1 : 0} 1 ${8 + 6 * Math.sin(a)} ${8 - 6 * Math.cos(a)}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/></svg>`;
+  }
+  if (st === 'finished') return `<svg width="16" height="16" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  return `<span style="font:500 11.5px ${MONO};color:${TH.sub}">3</span>`;
+}
+
+const C = { w: 186, h: 36 };
+const XS = { focus: { w: 430, h: 178 }, list: { w: 450, h: 180 } };
+class Stage {
+  constructor(el) {
+    this.el = el; this.mode = +el.dataset.mode; this.rim = +(el.dataset.rim || 0); this.th = this.mode >= 5 ? LIGHT : DARK;
+    el.innerHTML = `<canvas style="position:absolute;inset:0;width:100%;height:100%"></canvas><div style="position:absolute;pointer-events:none;font:13px/1.35 Geist,Inter,-apple-system,'Segoe UI',sans-serif;letter-spacing:-.01em;-webkit-font-smoothing:antialiased;"></div><canvas style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>`;
+    [this.cv, this.ct, this.mc] = el.children; this.mctx = this.mc.getContext('2d');
+    try { this.g = makeGL(this.cv); } catch (e) { el.insertAdjacentHTML('beforeend', `<pre style="position:absolute;left:8px;top:8px;color:#c00;font-size:11px">${e.message}</pre>`); }
+    this.open = false; this.timer = null;
+    this.sw = spring(C.w); this.sh = spring(C.h); this.sr = spring(C.h / 2); this.sp = spring(0); this.sd = spring(0);
+    this.ss = spring(0); this.glow = hex(STATES[STATE].c).slice(); this.ga = spring(0);
+    this.m = makeMikky();
+    el.addEventListener('pointermove', e => this.hover(e));
+    el.addEventListener('pointerleave', () => { clearTimeout(this.timer); this.timer = setTimeout(() => this.setOpen(false), 450); });
+    el.addEventListener('click', e => { e.stopPropagation(); if (this.inside(e, 0)) this.open ? this.m.squash() : this.setOpen(true); });
+    this.onState();
+  }
+  onState() {
+    this.ss.t = STATES[STATE].pill === 'split' ? 1 : 0;
+    this.ga.t = STATE === 'working' ? .45 : 1;
+    if (STATE === 'finished') this.m.squash(); else if (STATE !== 'working') this.m.alert();
+  }
+  size() { return this.open ? XS[LAYOUT] : C; }
+  vr() { const W = this.el.clientWidth; return { x: W / 2 - this.sw.x / 2, y: 0, w: this.sw.x, h: this.sh.x }; }
+  inside(e, pad) { const r = this.el.getBoundingClientRect(), v = this.vr(), x = e.clientX - r.left, y = e.clientY - r.top; return x > v.x - pad && x < v.x + v.w + pad + 40 && y > v.y - pad && y < v.y + v.h + pad; }
+  hover(e) {
+    if (this.inside(e, 10)) { clearTimeout(this.timer); this.timer = null; if (!this.open) this.timer = setTimeout(() => this.setOpen(true), 160); }
+    else if (this.open && !this.timer) this.timer = setTimeout(() => { this.timer = null; this.setOpen(false); }, 650);
+  }
+  setOpen(o) {
+    this.open = o; this.sp.t = o ? 1 : 0; this.sr.t = o ? 30 : C.h / 2;
+    setTimeout(() => { this.sh.t = this.size().h; }, o ? 45 : 0);
+    if (o) this.m.blink();
+  }
+  notif() { this.sd.t = 1; this.m.alert(); setTimeout(() => { this.sd.t = 0; }, 2200); }
+  frame(dt) {
+    const sz = this.size(); this.sw.t = sz.w; if (this.open) this.sh.t = sz.h;
+    step(this.sw, dt, 210, .74); step(this.sh, dt, 210, .74); step(this.sr, dt, 210, .74); step(this.sp, dt, 170, .8);
+    step(this.sd, dt, 120, .42); step(this.ss, dt, 150, .5); step(this.ga, dt, 60, 1);
+    const tc = hex(STATES[STATE].c), kc = 1 - Math.pow(.02, dt); for (let i = 0; i < 3; i++) this.glow[i] += (tc[i] - this.glow[i]) * kc;
+    const W = this.el.clientWidth, H = this.el.clientHeight, dpr = devicePixelRatio || 1, v = this.vr();
+    for (const c of [this.cv, this.mc]) if (c.width !== Math.round(W * dpr) || c.height !== Math.round(H * dpr)) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); }
+    const p = clamp(this.sp.x, 0, 1.1), closed = 1 - clamp(p * 2, 0, 1);
+    const out = clamp(this.sd.x * 2.5, 0, 1), dropY = v.h - 24 + this.sd.x * 64, dropR = 5 + 12 * out;
+    // split bubble: slides out of the right end of the pill (only when closed)
+    const sp = clamp(this.ss.x, 0, 1.2) * closed, sideR = 4 + 13 * clamp(sp, 0, 1), sideX = W / 2 + v.w / 2 - 20 + sp * 42, sideY = C.h / 2;
+    const r = this.el.getBoundingClientRect();
+    const pulse = STATE === 'working' ? .8 + .2 * Math.sin(now() * 2.2) : (STATE === 'approval' ? .75 + .25 * Math.sin(now() * 4) : 1);
+    const mR = lerp(9, 28, clamp(p, 0, 1.05)), mX = v.x + lerp(21, 54, clamp(p, 0, 1)), mY = lerp(C.h / 2 + 2, 88, clamp(p, 0, 1));
+    if (this.g) {
+      const { gl, U } = this.g;
+      gl.viewport(0, 0, this.cv.width, this.cv.height);
+      gl.uniform2f(U.uRes, this.cv.width, this.cv.height);
+      const top = -40;
+      gl.uniform4f(U.uBox, (W / 2) * dpr, ((top + v.h) / 2) * dpr, (v.w / 2) * dpr, ((v.h - top) / 2) * dpr);
+      gl.uniform1f(U.uR, Math.min(this.sr.x, v.h / 2, v.w / 2) * dpr);
+      gl.uniform3f(U.uDrop, (W / 2) * dpr, dropY * dpr, dropR * dpr);
+      gl.uniform3f(U.uSide, sideX * dpr, sideY * dpr, sideR * dpr);
+      gl.uniform1f(U.uMode, this.mode); gl.uniform1f(U.uT, now());
+      gl.uniform1f(U.uK, (1 + 21 * out) * dpr); gl.uniform1f(U.uKs, (1 + 15 * clamp(1 - Math.abs(sp - .55) * 1.4, 0, 1) * (sp > .02 ? 1 : 0)) * dpr); gl.uniform1f(U.uS, dpr);
+      gl.uniform2f(U.uMouse, (mouse.x - r.left) * dpr, (mouse.y - r.top) * dpr);
+      gl.uniform1f(U.uRim, this.rim); gl.uniform1f(U.uDots, DOTS); gl.uniform2f(U.uCenter, mX * dpr, mY * dpr); gl.uniform1f(U.uAct, STATE === 'working' ? 1 : .25); gl.uniform1f(U.uOpen, clamp((p - .3) * 1.6, 0, 1));
+      gl.uniform3f(U.uGlow, ...this.glow); gl.uniform1f(U.uGlowA, clamp(this.ga.x, 0, 1) * pulse);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+    TH = this.th; this.ct.style.color = TH.fg;
+    const cOp = clamp(1 - p * 3.2, 0, 1), xOp = clamp((p - .5) * 2.4, 0, 1), c = this.th.col[STATE];
+    Object.assign(this.ct.style, { left: v.x + 'px', top: '0px', width: v.w + 'px', height: v.h + 'px' });
+    this.ct.innerHTML =
+      `<div style="position:absolute;left:44px;right:14px;top:${C.h / 2 - 9}px;height:18px;display:flex;align-items:center;justify-content:space-between;opacity:${cOp};white-space:nowrap"><span style="font-weight:600">Mikky</span>${pillRight(STATE, 1)}</div>` +
+      `<div style="position:absolute;left:104px;right:18px;top:16px;opacity:${xOp};filter:blur(${(1 - xOp) * 5}px)">${LAYOUT === 'focus' ? focusHTML(STATE) : listHTML(STATE)}</div>`;
+    // side bubble icon
+    const sideIcon = STATE === 'error' ? '!' : '';
+    const ctx = this.mctx; ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, W, H);
+    if (sp > .45) {
+      ctx.globalAlpha = clamp((sp - .45) * 3, 0, 1);
+      ctx.fillStyle = c; ctx.beginPath(); ctx.arc(sideX + 2, sideY, 4.2 * pulse + 1, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowColor = c; ctx.shadowBlur = this.mode >= 5 ? 0 : 10; ctx.fill(); ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+    }
+    const R = lerp(9, 28, clamp(p, 0, 1.05)), mx = v.x + lerp(21, 54, clamp(p, 0, 1)), my = lerp(C.h / 2 + 2, 88, clamp(p, 0, 1));
+    let lx = Math.tanh((mouse.x - r.left - mx) / 260), ly = Math.tanh((mouse.y - r.top - my) / 200);
+    if (this.sd.x > .3) { lx = Math.tanh((W / 2 - mx) / 90); ly = Math.tanh((dropY - my) / 60); }
+    else if (sp > .5 && !this.open) { lx = .9; ly = 0; }
+    this.m.update(lx, ly); this.m.draw(ctx, mx, my, R, this.th.rim);
+  }
+}
+const ST = [...document.querySelectorAll('.stage')].map(el => new Stage(el));
+window.ST = ST;
+let last = now();
+(function loop() { const t = now(), dt = Math.min(.033, t - last); last = t; ST.forEach(s => s.frame(dt)); requestAnimationFrame(loop); })();
+</script>
+
+</body></html>
