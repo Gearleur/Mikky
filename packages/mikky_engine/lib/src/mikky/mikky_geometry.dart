@@ -22,6 +22,18 @@ abstract final class MikkyShape {
   static const eyeBaseHeight = .50; // × R, × elongation
 }
 
+/// One tuft of fur of the balls: a thick curved lock from a base inside the
+/// body to a round tip, in the body's local frame (same transform as the
+/// outline).
+class FurStrand {
+  const FurStrand(this.baseX, this.baseY, this.controlX, this.controlY, this.tipX, this.tipY, this.width);
+
+  final double baseX, baseY, controlX, controlY, tipX, tipY;
+
+  /// Width at the base; the lock tapers to a round tip.
+  final double width;
+}
+
 /// One eye, in the body's local frame (before the body transform).
 class EyeGeometry {
   const EyeGeometry({
@@ -64,6 +76,7 @@ class MikkyGeometry {
     required this.time,
     required this.contour,
     required this.satellites,
+    required this.fur,
     required this.eyes,
     required this.translateX,
     required this.translateY,
@@ -84,9 +97,12 @@ class MikkyGeometry {
   /// Closed outline: x0, y0, x1, y1, ... (y down), centered on Mikky.
   final Float64List contour;
 
-  /// Other bits of him (the fur balls of "•••" and "!"), same format and
-  /// same transform as [contour]. Eyes are only on [contour].
+  /// Other bits of him (the dot of "!"), same format and same transform as
+  /// [contour]. Eyes are only on [contour].
   final List<Float64List> satellites;
+
+  /// Long fur of the balls, drawn with the body (same transform).
+  final List<FurStrand> fur;
   final List<EyeGeometry> eyes;
   final double translateX, translateY, tilt, scaleX, scaleY;
 
@@ -101,12 +117,8 @@ class MikkyGeometry {
   int get pointCount => contour.length ~/ 2;
 
   /// Geometry of [mikky] drawn with radius [radius] pixels, with [points]
-  /// points on the outline: by default 360 when small (fur too fine to
-  /// see), 1080 from a radius of 20 on, for the fine strands of fur.
-  factory MikkyGeometry.of(Mikky mikky, double radius, {int? points, MikkyTuning? tuning}) {
-    points ??= radius >= 20 ? 1080 : 360;
-    // About 8 outline points per strand of fur.
-    final strands = points ~/ 8;
+  /// points on the outline.
+  factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) {
     final tu = tuning ?? MikkyTuning.defaults;
     final p = mikky.pose;
     final t = mikky.time;
@@ -185,7 +197,7 @@ class MikkyGeometry {
         // The top gets a little wider, for the lobes.
         x *= 1 + .06 * heart * -py;
       } else if (m != 0) {
-        final (fx, fy) = _formPoint(form, th, t, strands);
+        final (fx, fy) = _formPoint(form, th, t);
         x += (fx * r - x) * m;
         y += (fy * r - y) * m;
       }
@@ -237,7 +249,7 @@ class MikkyGeometry {
     final satellites = <Float64List>[
       for (final (cx, cy, cr) in _satellites(form, t))
         // Enough points for the fine fur, or it turns into lumps.
-        _furBall(cx * r * _easeOut(w), cy * r * _easeOut(w), cr * r * w, t + cx * 3, radius >= 20 ? 320 : 120),
+        _furBall(cx * r * _easeOut(w), cy * r * _easeOut(w), cr * r * w, t + cx * 3, 120),
     ];
 
     return MikkyGeometry._(
@@ -245,6 +257,7 @@ class MikkyGeometry {
       time: t,
       contour: contour,
       satellites: satellites,
+      fur: _furStrands(form, t, r, w, form == MikkyForm.ball ? 34 : 46, contour),
       eyes: eyes,
       translateX: p.offsetX * r,
       translateY: p.offsetY * r,
@@ -299,34 +312,69 @@ double _wobble(double th, double t, [double amount = 1]) =>
 double _fur(double th, double t, double amount) =>
     amount * math.sin(th * 34 + math.sin(t * 3 + th * 5) * .6).abs() + amount * .3 * math.sin(th * 13 - t * 4);
 
-/// Soft fur of the fur balls: many thin strands with round tips, of
-/// different lengths, each slightly curled its own way, over a short dense
-/// undercoat. Each strand rises on its own, in patches that wander around
-/// the ball (it bristles, at random). Returns the extra radius, and the
-/// sideways lean of the point (radians).
-///
-/// [strands] must leave about 8 outline points per strand, or the strands
-/// turn back into spikes.
-(double, double) _softFur(double th, double t, {required int strands, required double length}) {
-  // The fur slowly drifts around: no strand stays in the same place.
-  final a = (th / (2 * math.pi) + t * .01) * strands;
-  final cell = a.floorToDouble();
-  final u = a - cell;
-  final k = cell % strands;
-  // A strand fills part of its cell only: thin, with gaps between.
-  final width = .5 + .3 * _hash(k + 3);
-  final start = (1 - width) * _hash(k + 11);
-  final v = (u - start) / width;
-  final strand = v <= 0 || v >= 1 ? 0.0 : math.pow(math.sin(math.pi * v), .9).toDouble();
-  final size = .3 + .7 * math.pow(_hash(k + 17), .6);
-  final own = .5 + .5 * math.sin(t * (.9 + 2.0 * _hash(k + 31)) + 6.283 * _hash(k + 47));
-  final patch = .5 + .5 * math.sin(2 * th + t * .8 + 1) * math.sin(3 * th - t * 1.1 + 2);
-  final rise = .45 + .55 * own * (.4 + .6 * patch);
-  final undercoat = .12 * math.sin(th * strands * .5 + math.sin(t * 2 + th * 3)).abs();
-  final dr = length * (size * strand * rise + undercoat);
-  // Curl: the tip goes a little to one side (at most a third of a cell).
-  final lean = (_hash(k + 59) - .5) * .66 * (2 * math.pi / strands) * strand * rise;
-  return (dr, lean);
+/// Radius of the body of a ball, under its fur.
+double _ballBody(MikkyForm f) => f == MikkyForm.ball ? .58 : .78;
+
+/// A soft ripple on the body, under the tufts.
+double _undercoat(double th, double t) => .02 * math.sin(th * 9 + t * .7) + .012 * math.sin(th * 14 - t * 1.3);
+
+/// The hopping ball: squashed when it lands, round in the air, and up.
+(double, double) _ballPlace(MikkyForm f, double t, double x, double y) {
+  if (f != MikkyForm.ball) return (x, y);
+  final contact = math.pow(1 - _hopHeight(t), 6).toDouble();
+  return (x * (1 + .14 * contact), y * (1 - .14 * contact) + _ballBody(f) * .14 * contact + _formOffsetY(f, t));
+}
+
+/// The fur of the balls, tuft by tuft: not many, thick, round-ended, a
+/// little curved, of different lengths, going every way from the body and
+/// overlapping, swaying a little, each rising on its own in patches that
+/// wander (it bristles). They grow out as he turns into the ball.
+List<FurStrand> _furStrands(MikkyForm f, double t, double r, double w, int count, Float64List contour) {
+  if (w <= 0 || (f != MikkyForm.furball && f != MikkyForm.ball)) return const [];
+  final ball = f == MikkyForm.ball;
+  final length = (ball ? .26 : .34) * r;
+  final seed = ball ? 300.0 : 0.0;
+  final grow = _easeOut(w);
+  // The tufts grow from the body as it is drawn now (while it changes, hops
+  // and squashes), so they never come apart from it.
+  final n = contour.length ~/ 2 - 1;
+  var cx = 0.0, cy = 0.0;
+  for (var i = 0; i < n; i++) {
+    cx += contour[i * 2];
+    cy += contour[i * 2 + 1];
+  }
+  cx /= n;
+  cy /= n;
+  final out = <FurStrand>[];
+  for (var j = 0; j < count; j++) {
+    final h = j + seed;
+    final th = 2 * math.pi * (j + (_hash(h + .1) - .5) * .7) / count + t * .05;
+    final i = ((th / (2 * math.pi)) % 1 * n).round() % n;
+    final ex = contour[i * 2] - cx, ey = contour[i * 2 + 1] - cy;
+    // The base is inside the body, so the lock melts into it.
+    final inside = .72 + .12 * _hash(h + .2);
+    final bx = cx + ex * inside, by = cy + ey * inside;
+    var len = length * (.5 + .5 * math.pow(_hash(h + .3), .8));
+    if (_hash(h + .4) > .9) len *= 1.35;
+    final own = .5 + .5 * math.sin(t * (.8 + 1.6 * _hash(h + .5)) + 6.283 * _hash(h + .6));
+    final patch = .5 + .5 * math.sin(2 * th + t * .8 + 1) * math.sin(3 * th - t * 1.1 + 2);
+    len *= (.6 + .4 * own * (.4 + .6 * patch)) * grow;
+    final sway = .1 * math.sin(t * (1.1 + _hash(h + .7)) + 6.283 * _hash(h + .8));
+    final dir = math.atan2(ey, ex) + (_hash(h + .9) - .5) * .7 + sway;
+    final curl = (_hash(h + 1.1) - .5) * .7;
+    final dx = math.cos(dir), dy = math.sin(dir);
+    final reach = math.sqrt(ex * ex + ey * ey) * (1 - inside) + len;
+    out.add(FurStrand(
+      bx,
+      by,
+      bx + dx * reach * .5 - dy * curl * reach * .3,
+      by + dy * reach * .5 + dx * curl * reach * .3,
+      bx + dx * reach,
+      by + dy * reach,
+      r * (.16 + .08 * _hash(h + 1.2)) * grow,
+    ));
+  }
+  return out;
 }
 
 /// Lumpy, lopsided outline of a ball: never a circle. [seed] makes each
@@ -339,26 +387,20 @@ double _lumpy(double th, double t, double seed) =>
 
 /// Point of the form's outline for the angle [th] of the cat's outline:
 /// same parameter, so the change does not twist.
-(double, double) _formPoint(MikkyForm f, double th, double t, int strands) {
+(double, double) _formPoint(MikkyForm f, double th, double t) {
   final c = math.cos(th), s = math.sin(th);
   switch (f) {
     // The heart deforms the cat's own outline (see [MikkyGeometry.of]).
     case MikkyForm.cat || MikkyForm.heart:
       return (0, 0);
+    // The balls: a lumpy body with a short undercoat. Their long fur is
+    // drawn on top, strand by strand (see [_furStrands]).
     case MikkyForm.furball:
-      // Only the fur moves: it bristles here and there, at random.
-      final (dr, lean) = _softFur(th, t, strands: strands, length: .34);
-      final r = .8 * _lumpy(th, t, 0) + dr;
-      return (math.cos(th + lean) * r, math.sin(th + lean) * r);
+      final r = _ballBody(f) * _lumpy(th, t, 0) + _undercoat(th, t);
+      return (c * r, s * r);
     case MikkyForm.ball:
-      final (dr, lean) = _softFur(th, t + 3, strands: strands, length: .22);
-      final r = .6 * _lumpy(th, t, 1.7) + dr;
-      // Squashed when it lands, round in the air.
-      final contact = math.pow(1 - _hopHeight(t), 6).toDouble();
-      return (
-        math.cos(th + lean) * r * (1 + .14 * contact),
-        math.sin(th + lean) * r * (1 - .14 * contact) + .6 * .14 * contact + _formOffsetY(f, t),
-      );
+      final r = _ballBody(f) * _lumpy(th, t, 1.7) + _undercoat(th, t + 3);
+      return _ballPlace(f, t, c * r, s * r);
     case MikkyForm.bang:
       // The bar of "!": wide and round at the top, thinner at the bottom,
       // a little bent and leaning. Well apart from its dot.
@@ -389,16 +431,14 @@ List<(double, double, double)> _satellites(MikkyForm f, double t) => switch (f) 
       _ => const [],
     };
 
-/// Outline of a small, lopsided fur ball, in pixels.
+/// Outline of a small, lopsided, softly furry ball, in pixels.
 Float64List _furBall(double cx, double cy, double radius, double t, int n) {
   final out = Float64List((n + 1) * 2);
   for (var i = 0; i <= n; i++) {
     final th = i / n * math.pi * 2;
-    // Same kind of fur as Mikky: it is a bit of him.
-    final (dr, lean) = _softFur(th, t + 5, strands: n ~/ 8, length: .3);
-    final f = _lumpy(th, t, 3.1) + dr;
-    out[i * 2] = cx + math.cos(th + lean) * radius * f;
-    out[i * 2 + 1] = cy + math.sin(th + lean) * radius * f;
+    final f = _lumpy(th, t, 3.1) * (1 + _fur(th, t + 5, .06));
+    out[i * 2] = cx + math.cos(th) * radius * f;
+    out[i * 2 + 1] = cy + math.sin(th) * radius * f;
   }
   return out;
 }

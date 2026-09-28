@@ -197,6 +197,18 @@ class Mikky {
   bool _approvalBang = false;
   int _hopsLeft = 0;
 
+  /// Working and thinking go round too: the fur ball (or the hopping ball)
+  /// for a while, then his usual self for a moment (user request,
+  /// 2026-09-29).
+  bool _formOn = false;
+  double _formToggleAt = 0;
+
+  /// How long each phase lasts, seconds: (fur ball, cat).
+  (double, double) _cycle(MikkyState s) => switch (s) {
+        MikkyState.working => (6 + _random.nextDouble() * 3, 2.5 + _random.nextDouble() * 1.5),
+        _ => (4 + _random.nextDouble() * 2, 2 + _random.nextDouble()),
+      };
+
   MikkyState _state = MikkyState.idle;
   double _dizzyUntil = -1;
   MikkyEmote? _emote;
@@ -231,8 +243,8 @@ class Mikky {
     final e = _emote;
     if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
     return switch (state) {
-      MikkyState.working => MikkyForm.furball,
-      MikkyState.thinking => MikkyForm.ball,
+      MikkyState.working => _formOn ? MikkyForm.furball : MikkyForm.cat,
+      MikkyState.thinking => _formOn ? MikkyForm.ball : MikkyForm.cat,
       MikkyState.approval => _approvalBang ? MikkyForm.bang : MikkyForm.cat,
       _ => MikkyForm.cat,
     };
@@ -396,9 +408,10 @@ class Mikky {
         _burst(ParticleKind.sparkle, 8);
       case MikkyState.dizzy:
         roll(turns: 2, ms: 1100);
+      case MikkyState.working || MikkyState.thinking:
+        _formOn = true;
+        _formToggleAt = _time + _cycle(s).$1;
       case MikkyState.idle ||
-            MikkyState.working ||
-            MikkyState.thinking ||
             MikkyState.searching ||
             MikkyState.rateLimited ||
             MikkyState.sleeping:
@@ -627,6 +640,16 @@ class Mikky {
         _approvalBang = !_approvalBang;
         _hopsLeft = _approvalBang ? 3 + _random.nextInt(2) : 2;
         _nextBeat = _time + .6;
+      }
+    }
+    if ((st == MikkyState.working || st == MikkyState.thinking) && _time > _formToggleAt) {
+      _formOn = !_formOn;
+      final (on, off) = _cycle(st);
+      _formToggleAt = _time + (_formOn ? on : off);
+      // Back to himself for a moment: a blink and an ear flick.
+      if (!_formOn) {
+        _after(.5, blink);
+        _after(.8, () => twitch());
       }
     }
 

@@ -54,16 +54,38 @@ class MikkyPainter extends CustomPainter {
         Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
     ];
     final rim = this.rim;
-    for (final part in parts) {
-      canvas.drawPath(part, Paint()..color = _ink);
+    final rimWidth = math.max(1.0, r * .045);
+    if (g.fur.isEmpty) {
+      for (final part in parts) {
+        canvas.drawPath(part, Paint()..color = _ink);
+        if (rim != null) {
+          canvas.drawPath(
+            part,
+            Paint()
+              ..style = PaintingStyle.stroke
+              ..strokeWidth = rimWidth
+              ..color = rim,
+          );
+        }
+      }
+    } else {
+      // The fur ball: thick tufts over the body, wide at the base, tapering
+      // to a round tip. The light rim goes around all of it as one shape:
+      // rims first, black on top.
+      final shapes = [...parts, for (final s in g.fur) _tuft(s)];
       if (rim != null) {
-        canvas.drawPath(
-          part,
-          Paint()
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = math.max(1, r * .045)
-            ..color = rim,
-        );
+        final outline = Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeJoin = StrokeJoin.round
+          ..strokeWidth = rimWidth * 2
+          ..color = rim;
+        for (final shape in shapes) {
+          canvas.drawPath(shape, outline);
+        }
+      }
+      final ink = Paint()..color = _ink;
+      for (final shape in shapes) {
+        canvas.drawPath(shape, ink);
       }
     }
 
@@ -228,6 +250,27 @@ class MikkyPainter extends CustomPainter {
         text.paint(canvas, c - Offset(text.width / 2, text.height / 2));
         text.dispose();
     }
+  }
+
+  /// A tuft: a curved lock, as wide as [FurStrand.width] at the base,
+  /// tapering to a round tip.
+  static Path _tuft(FurStrand s) {
+    final b = Offset(s.baseX, s.baseY), c = Offset(s.controlX, s.controlY), t = Offset(s.tipX, s.tipY);
+    Offset side(Offset v, double half) {
+      final d = v.distance;
+      return d == 0 ? Offset.zero : Offset(-v.dy / d, v.dx / d) * half;
+    }
+
+    final tipRadius = s.width * .3;
+    final nb = side(c - b, s.width / 2);
+    final nc = side(t - b, s.width * .34);
+    final nt = side(t - c, tipRadius);
+    return Path()
+      ..moveTo(b.dx + nb.dx, b.dy + nb.dy)
+      ..quadraticBezierTo(c.dx + nc.dx, c.dy + nc.dy, t.dx + nt.dx, t.dy + nt.dy)
+      ..arcToPoint(t - nt, radius: Radius.circular(tipRadius), clockwise: false)
+      ..quadraticBezierTo(c.dx - nc.dx, c.dy - nc.dy, b.dx - nb.dx, b.dy - nb.dy)
+      ..close();
   }
 
   static Path _heart(double size) {

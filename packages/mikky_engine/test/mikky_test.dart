@@ -229,24 +229,41 @@ void main() {
       expect(tops.reduce(math.max) - tops.reduce(math.min), greaterThan(20));
     });
 
-    test('the fur ball is not a circle, and its fur changes on its own', () {
+    test('the fur ball: a lumpy body, not many thick tufts of different lengths, moving on their own', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
       run(m, 2);
-      List<double> radii() {
-        final c = MikkyGeometry.of(m, 100).contour;
-        return [for (var j = 0; j < c.length; j += 2) math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1])];
-      }
+      final c = MikkyGeometry.of(m, 100).contour;
+      final radii = [for (var j = 0; j < c.length; j += 2) math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1])];
+      expect(radii.reduce(math.max) - radii.reduce(math.min), greaterThan(8));
 
-      final a = radii();
-      expect(a.reduce(math.max) - a.reduce(math.min), greaterThan(15));
+      List<double> tips() => [
+            for (final s in MikkyGeometry.of(m, 100).fur) math.sqrt(s.tipX * s.tipX + s.tipY * s.tipY),
+          ];
+      final a = tips();
+      expect(a.length, inInclusiveRange(30, 60));
+      expect(a.reduce(math.max) - a.reduce(math.min), greaterThan(20));
+      expect(MikkyGeometry.of(m, 100).fur.every((s) => s.width > 8), isTrue);
       run(m, .5);
-      final b = radii();
+      final b = tips();
       var moved = 0;
       for (var j = 0; j < a.length; j++) {
         if ((a[j] - b[j]).abs() > 1) moved++;
       }
-      // Some spikes moved, not all of them the same way.
-      expect(moved, inInclusiveRange(20, a.length - 20));
+      // Some tufts rose or fell, not all of them together.
+      expect(moved, inInclusiveRange(5, a.length - 3));
+    });
+
+    test('working and thinking go back to the cat now and then', () {
+      for (final s in [MikkyState.working, MikkyState.thinking]) {
+        final m = Mikky(random: math.Random(5))..setState(s);
+        final phases = <String>[];
+        for (var i = 0; i < 60 * 30; i++) {
+          m.update(1 / 60);
+          final phase = m.form != MikkyForm.cat && m.morph > .9 ? 'F' : (m.morph.abs() < .05 ? 'C' : null);
+          if (phase != null && (phases.isEmpty || phases.last != phase)) phases.add(phase);
+        }
+        expect(phases.take(5), ['C', 'F', 'C', 'F', 'C'], reason: '$s');
+      }
     });
 
     test('from one form to another, he goes back through the cat', () {

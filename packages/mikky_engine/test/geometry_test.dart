@@ -4,12 +4,12 @@ import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
 void main() {
-  test('the outline is closed; fine (1080 points) when big, lighter (360) when small', () {
+  test('the outline is closed and has the requested number of points', () {
     final g = MikkyGeometry.of(Mikky(random: math.Random(1)), 28);
-    expect(g.pointCount, 1081);
-    expect(g.contour[0], closeTo(g.contour[2160], 1e-9));
-    expect(g.contour[1], closeTo(g.contour[2161], 1e-9));
-    expect(MikkyGeometry.of(Mikky(), 9).pointCount, 361);
+    expect(g.pointCount, 361);
+    expect(g.contour[0], closeTo(g.contour[720], 1e-9));
+    expect(g.contour[1], closeTo(g.contour[721], 1e-9));
+    expect(g.fur, isEmpty);
     expect(MikkyGeometry.of(Mikky(), 9, points: 180).pointCount, 181);
   });
 
