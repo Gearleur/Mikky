@@ -3,6 +3,7 @@
 #include <flutter/standard_method_codec.h>
 
 #include <iostream>
+#include <string>
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
@@ -15,6 +16,18 @@ constexpr UINT kCursorTimerMs = 16;
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
+
+std::wstring Utf16FromUtf8(const std::string& utf8) {
+  if (utf8.empty()) {
+    return std::wstring();
+  }
+  const int length = MultiByteToWideChar(
+      CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()), nullptr, 0);
+  std::wstring utf16(length, L'\0');
+  MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
+                      utf16.data(), length);
+  return utf16;
+}
 
 }  // namespace
 
@@ -178,6 +191,42 @@ void FlutterWindow::HandleMethodCall(
       UpdateClickThrough(cursor);
     }
     result->Success();
+  } else if (call.method_name() == "showMenu") {
+    const auto* entries = std::get_if<flutter::EncodableList>(call.arguments());
+    if (!entries) {
+      result->Error("bad_args", "showMenu expects [[id, label, checked]]");
+      return;
+    }
+    HMENU menu = CreatePopupMenu();
+    for (const auto& entry : *entries) {
+      const auto* fields = std::get_if<flutter::EncodableList>(&entry);
+      if (!fields || fields->size() != 3) {
+        continue;
+      }
+      const auto* id = std::get_if<int32_t>(&(*fields)[0]);
+      const auto* label = std::get_if<std::string>(&(*fields)[1]);
+      const auto* checked = std::get_if<bool>(&(*fields)[2]);
+      if (!id || !label || !checked) {
+        continue;
+      }
+      if (*id == 0) {
+        AppendMenu(menu, MF_SEPARATOR, 0, nullptr);
+      } else {
+        AppendMenu(menu, MF_STRING | (*checked ? MF_CHECKED : MF_UNCHECKED),
+                   *id, Utf16FromUtf8(*label).c_str());
+      }
+    }
+    POINT cursor;
+    GetCursorPos(&cursor);
+    HWND hwnd = GetHandle();
+    // Without this the menu would not close when clicking elsewhere.
+    SetForegroundWindow(hwnd);
+    const int chosen = TrackPopupMenu(
+        menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, cursor.x,
+        cursor.y, 0, hwnd, nullptr);
+    PostMessage(hwnd, WM_NULL, 0, 0);
+    DestroyMenu(menu);
+    result->Success(flutter::EncodableValue(chosen));
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);

@@ -4,8 +4,10 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 
 ## Where things are
 - `docs/superpowers/specs/2026-09-28-etape-1-design.md` — step 1 spec (in French). **Status: approved by the user on 2026-09-28.**
-- `docs/superpowers/plans/2026-09-28-etape-1-plan.md` — step 1 plan. J0 (overlay) done and validated on 2026-09-28; next: J1 (`packages/mikky_engine`), detail it in the plan first.
-- `app/` — the Flutter Windows app. Overlay native code in `app/windows/runner/` (`flutter_window.cpp`: channel `mikky/overlay`, `WH_MOUSE_LL` hook, click-through toggle). `lib/island/j0_island.dart` is a J0 stand-in, to be replaced from J1 on.
+- `docs/superpowers/plans/2026-09-28-etape-1-plan.md` — step 1 plan and progress. J0 done; a first slice of J1/J2/J3 done (Mikky, shader, both themes). See its "Avancement" section for what is left.
+- `packages/mikky_engine/` — pure Dart engine (tests: `C:\dev\flutter\bin\dart.bat test` in that folder).
+- `app/` — the Flutter Windows app. Overlay native code in `app/windows/runner/` (`flutter_window.cpp`: channel `mikky/overlay`, `WH_MOUSE_LL` hook, click-through toggle, native menu). `lib/island/island_view.dart` still uses the simplified J0 show/hide rules. Shader: `app/shaders/island.frag`.
+- Visual check: render a prototype with headless Chrome (`chrome --headless=new --use-angle=swiftshader --enable-unsafe-swiftshader --screenshot=...`) and compare with a screen capture (GDI captures of the overlay need `CAPTUREBLT`; simulate the mouse with `SendInput`, not `SetCursorPos`).
 - `design/prototypes/` — validated HTML prototypes, the visual source of truth. `ile-noir-et-blanc.html` = the validated island (dark "A" + "blanc pur"); `mascotte-variantes.html` = mascot (card "S", without the tail); `ile-trois-noirs.html` = exploration only.
 
 ## Decisions (do not re-litigate)

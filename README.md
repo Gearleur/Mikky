@@ -12,3 +12,4 @@ Mikky est une petite mascotte (un chat noir aux grands yeux) qui vit dans une î
 | Jalon | Date | Île cachée (CPU) | Île compacte (CPU) | Mémoire | Notes |
 |---|---|---|---|---|---|
 | J0 | 2026-09-28 | 0,03 % du total (94 ms sur 30 s, souris en mouvement 1/3 du temps) | non mesuré (pas encore d'animation continue) | 73 Mo | build release, écran 1920 × 1080 à 100 %, 12 cœurs |
+| Mikky + shader | 2026-09-28 | 0,013 % du total | île **ouverte**, Mikky animé : 0,85 % du total (10 % d'un cœur) | 99 Mo (working set), 142 Mo privés | même machine ; la mémoire privée approche la limite de 150 Mo, à surveiller |
