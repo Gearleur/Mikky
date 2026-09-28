@@ -1,0 +1,11 @@
+name: mikky_engine
+description: Mikky's logic in pure Dart (no Flutter) - animation, expressions and geometry. Draws nothing.
+publish_to: none
+version: 0.1.0
+
+environment:
+  sdk: ^3.13.4
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0
