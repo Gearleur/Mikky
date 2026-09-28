@@ -120,13 +120,35 @@ Win32Window::~Win32Window() {
   Destroy();
 }
 
-bool Win32Window::Create(const std::wstring& title, const Size& size) {
+bool Win32Window::Create(const std::wstring& title, const Size& size,
+                         bool overlay) {
   Destroy();
 
   const wchar_t* window_class =
       WindowClassRegistrar::GetInstance()->GetWindowClass();
 
   logical_size_ = size;
+  overlay_ = overlay;
+
+  if (!overlay) {
+    HMONITOR monitor = MonitorFromPoint({0, 0}, MONITOR_DEFAULTTOPRIMARY);
+    MONITORINFO info{sizeof(MONITORINFO)};
+    GetMonitorInfo(monitor, &info);
+    scale_factor_ = FlutterDesktopGetDpiForMonitor(monitor) / 96.0;
+    const int width = Scale(size.width, scale_factor_);
+    const int height = Scale(size.height, scale_factor_);
+    const RECT& work = info.rcWork;
+    HWND window = CreateWindow(
+        window_class, title.c_str(), WS_OVERLAPPEDWINDOW,
+        work.left + (work.right - work.left - width) / 2,
+        work.top + (work.bottom - work.top - height) / 2, width, height,
+        nullptr, nullptr, GetModuleHandle(nullptr), this);
+    if (!window) {
+      return false;
+    }
+    UpdateTheme(window);
+    return OnCreate();
+  }
 
   // WS_EX_LAYERED + WS_EX_TRANSPARENT make the whole window ignore the mouse;
   // FlutterWindow removes WS_EX_TRANSPARENT while the cursor is over the
@@ -154,7 +176,7 @@ bool Win32Window::Create(const std::wstring& title, const Size& size) {
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNOACTIVATE);
+  return ShowWindow(window_handle_, overlay_ ? SW_SHOWNOACTIVATE : SW_SHOWNORMAL);
 }
 
 void Win32Window::SetPlacement(Edge edge, const Size& size) {
@@ -164,7 +186,7 @@ void Win32Window::SetPlacement(Edge edge, const Size& size) {
 }
 
 void Win32Window::PlaceOnPrimaryMonitor() {
-  if (!window_handle_) {
+  if (!window_handle_ || !overlay_) {
     return;
   }
   // MONITOR_DEFAULTTOPRIMARY also covers the "no primary monitor" case.
@@ -227,8 +249,20 @@ Win32Window::MessageHandler(HWND hwnd,
     // The overlay always lives at the top center of the primary monitor,
     // whatever the new DPI or screen layout.
     case WM_DPICHANGED:
-    case WM_DISPLAYCHANGE:
+      if (!overlay_) {
+        // An ordinary window takes the size Windows suggests.
+        auto rect = reinterpret_cast<RECT*>(lparam);
+        SetWindowPos(hwnd, nullptr, rect->left, rect->top,
+                     rect->right - rect->left, rect->bottom - rect->top,
+                     SWP_NOZORDER | SWP_NOACTIVATE);
+        return 0;
+      }
       PlaceOnPrimaryMonitor();
+      return 0;
+    case WM_DISPLAYCHANGE:
+      if (overlay_) {
+        PlaceOnPrimaryMonitor();
+      }
       return 0;
     case WM_SIZE: {
       RECT rect = GetClientArea();

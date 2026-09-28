@@ -67,10 +67,159 @@ void main() {
     final m = Mikky(random: math.Random(1));
     m.happy();
     run(m, .5);
-    expect(m.eyes, EyeShape.happy);
-    run(m, 1.5);
-    expect(m.eyes, EyeShape.oval);
-    expect(m.pose.earLeft, closeTo(0, 1e-9));
+    expect(m.eyeLeft, EyeShape.happy);
+    expect(m.pose.earLeft, greaterThan(.1));
+    run(m, 3);
+    expect(m.eyeLeft, EyeShape.oval);
+    expect(m.pose.earLeft, closeTo(0, .02));
+  });
+
+  group('states (spec §5.2 table)', () {
+    MikkyGeometry settle(MikkyState s) {
+      final m = Mikky(random: math.Random(2))..setState(s);
+      run(m, 2.5);
+      return MikkyGeometry.of(m, 100);
+    }
+
+    test('approval: big eyes, ears up, "!" badge', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.approval);
+      run(m, 2);
+      expect(m.pose.eyeScale, greaterThan(1.1));
+      expect(m.pose[MikkyProp.earBaseLeft], closeTo(.35, .02));
+      expect(m.badge?.kind, BadgeKind.bang);
+      expect(m.badge?.color, AgentStatus.approval);
+    });
+
+    test('question: one ear folded, head tilted, "?" badge', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.question);
+      run(m, 3);
+      expect(m.pose[MikkyProp.earBaseLeft], lessThan(-.5));
+      expect(m.pose[MikkyProp.earBaseRight], greaterThan(0));
+      expect(m.pose[MikkyProp.tilt], greaterThan(.1));
+      expect(m.badge?.kind, BadgeKind.question);
+    });
+
+    test('error: flat eyes, ears down, a shake when it starts', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.error);
+      run(m, .1);
+      expect(m.pose.offsetX.abs(), greaterThan(0));
+      expect(settle(MikkyState.error).eyes.every((e) => e.shape == EyeShape.flat), isTrue);
+      expect(m.badge?.color, AgentStatus.error);
+    });
+
+    test('finished: happy arcs, a roll and sparkles', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.finished);
+      run(m, .3);
+      expect(m.pose.tilt.abs(), greaterThan(.5));
+      expect(m.particles.where((p) => p.kind == ParticleKind.sparkle), isNotEmpty);
+      run(m, 2);
+      expect(m.pose[MikkyProp.spin], 0);
+      expect(m.eyeLeft, EyeShape.happy);
+    });
+
+    test('sleeping: closed eyes, droopy ears, "z", no blinking', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.sleeping);
+      var sawZ = false;
+      for (var i = 0; i < 60 * 8; i++) {
+        m.update(1 / 60);
+        expect(m.pose.open, 1);
+        if (m.particles.any((p) => p.kind == ParticleKind.sleep)) sawZ = true;
+      }
+      expect(sawZ, isTrue);
+      expect(m.eyeLeft, EyeShape.closed);
+      expect(m.pose[MikkyProp.earBaseLeft], lessThan(-.4));
+    });
+
+    test('rate limited: tired eyes and sweat drops', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.rateLimited);
+      run(m, 2);
+      expect(m.eyeLeft, EyeShape.tired);
+      expect(m.particles.where((p) => p.kind == ParticleKind.sweat), isNotEmpty);
+    });
+
+    test('thinking looks up and to the right, whatever the cursor', () {
+      final m = Mikky(random: math.Random(2))..setState(MikkyState.thinking);
+      run(m, 3, lookX: -1, lookY: 1);
+      expect(m.pose.yaw, greaterThan(.2));
+      expect(m.pose.pitch, greaterThan(.2));
+      // Unless the app asks for attention (the split bubble).
+      for (var i = 0; i < 180; i++) {
+        m.update(1 / 60, lookX: -1, attention: true);
+      }
+      expect(m.pose.yaw, lessThan(-.3));
+    });
+
+    test('every state has its eyes', () {
+      for (final s in MikkyState.values) {
+        final g = settle(s);
+        expect(g.eyes, isNotEmpty, reason: '$s');
+      }
+    });
+  });
+
+  group('emotes', () {
+    test('each emote changes the look, then fades', () {
+      for (final e in MikkyEmote.values) {
+        final m = Mikky(random: math.Random(3))..play(e);
+        run(m, .2);
+        expect(m.emote, e);
+        run(m, 2);
+        expect(m.emote, isNull, reason: '$e');
+      }
+    });
+
+    test('love shows hearts; proud shows stars; wink closes one eye', () {
+      final love = Mikky(random: math.Random(3))..play(MikkyEmote.love);
+      run(love, .7);
+      expect(love.eyeLeft, EyeShape.heart);
+      expect(love.particles.where((p) => p.kind == ParticleKind.heart), isNotEmpty);
+
+      final proud = Mikky(random: math.Random(3))..play(MikkyEmote.proud);
+      run(proud, .2);
+      expect(proud.particles.where((p) => p.kind == ParticleKind.star), hasLength(6));
+
+      final wink = Mikky(random: math.Random(3))..play(MikkyEmote.wink);
+      run(wink, .1);
+      expect((wink.eyeLeft, wink.eyeRight), (EyeShape.oval, EyeShape.happy));
+    });
+  });
+
+  group('interactions', () {
+    test('hover blinks and widens the eyes; still for 1.9 s, love', () {
+      final m = Mikky(random: math.Random(4));
+      m.hover(true);
+      run(m, .07);
+      expect(m.pose.open, lessThan(.2));
+      run(m, 1.5);
+      expect(m.pose.eyeScale, closeTo(1.08, .02));
+      expect(m.emote, isNull);
+      run(m, .5);
+      expect(m.emote, MikkyEmote.love);
+    });
+
+    test('moving the cursor delays the love', () {
+      final m = Mikky(random: math.Random(4))..hover(true);
+      for (var i = 0; i < 4; i++) {
+        run(m, 1);
+        m.pointerMoved();
+      }
+      expect(m.emote, isNull);
+    });
+
+    test('three clicks within 1.7 s: dizzy for a moment', () {
+      final m = Mikky(random: math.Random(4))..setState(MikkyState.working);
+      m.boop();
+      run(m, .4);
+      m.boop();
+      run(m, .4);
+      expect(m.state, MikkyState.working);
+      m.boop();
+      run(m, .1);
+      expect(m.state, MikkyState.dizzy);
+      expect(m.eyeLeft, EyeShape.spiral);
+      run(m, 3);
+      expect(m.state, MikkyState.working);
+    });
   });
 
   test('twitch without side moves both ears, the right one later', () {

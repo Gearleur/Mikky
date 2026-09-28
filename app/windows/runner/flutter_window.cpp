@@ -64,10 +64,13 @@ bool FlutterWindow::OnCreate() {
   // Event driven: called on each mouse event, nothing runs when the mouse is
   // still. If it fails the island still works on hover and click, only the
   // gaze stops following the cursor outside the window.
-  g_hook_window = this;
-  mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc,
-                                 GetModuleHandle(nullptr), 0);
-  if (!mouse_hook_) {
+  // The tuning screen is an ordinary window: no hook.
+  if (is_overlay()) {
+    g_hook_window = this;
+    mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc,
+                                   GetModuleHandle(nullptr), 0);
+  }
+  if (is_overlay() && !mouse_hook_) {
     std::cerr << "mikky: mouse hook failed, error " << GetLastError()
               << std::endl;
     g_hook_window = nullptr;
@@ -291,7 +294,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
       break;
     case WM_MOUSEACTIVATE:
       // Clicking the island must not steal focus from the user's app.
-      return MA_NOACTIVATE;
+      if (is_overlay()) {
+        return MA_NOACTIVATE;
+      }
+      break;
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

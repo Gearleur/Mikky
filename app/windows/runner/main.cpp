@@ -2,6 +2,8 @@
 #include <flutter/flutter_view_controller.h>
 #include <windows.h>
 
+#include <algorithm>
+
 #include "flutter_window.h"
 #include "utils.h"
 
@@ -21,15 +23,25 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   std::vector<std::string> command_line_arguments =
       GetCommandLineArguments();
+  // "--tuning": the tuning screen, an ordinary window (Dart sees the flag
+  // too and shows the tuning screen instead of the island).
+  const bool tuning =
+      std::find(command_line_arguments.begin(), command_line_arguments.end(),
+                "--tuning") != command_line_arguments.end();
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  // Big enough for the open island, the notification drop and the shadows,
-  // so the window never resizes during an animation.
-  Win32Window::Size size(560, 320);
-  if (!window.Create(L"Mikky", size)) {
-    return EXIT_FAILURE;
+  if (tuning) {
+    if (!window.Create(L"R\u00e9glage de Mikky", Win32Window::Size(1180, 760),
+                       /*overlay=*/false)) {
+      return EXIT_FAILURE;
+    }
+  } else {
+    // The island's window; Dart sets its final size and edge at startup.
+    if (!window.Create(L"Mikky", Win32Window::Size(560, 320))) {
+      return EXIT_FAILURE;
+    }
   }
   window.SetQuitOnClose(true);
 

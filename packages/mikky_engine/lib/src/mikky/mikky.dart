@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import '../agents/agent.dart';
 import '../anim/easing.dart';
 import '../anim/keyframes.dart';
 import '../anim/smoothing.dart';
@@ -23,20 +24,68 @@ enum MikkyProp {
   offsetX,
   offsetY,
 
-  /// Eye scale (surprise).
+  /// Eye scale (surprise, approval, hover).
   eyeScale,
 
-  /// Ear twitch, left and right: > 0 raised, < 0 lowered.
+  /// Quick ear flicks, left and right: > 0 raised, < 0 lowered.
   earLeft,
   earRight,
 
-  /// Whole body rotation (radians).
+  /// Resting ear position of the current expression, same scale.
+  earBaseLeft,
+  earBaseRight,
+
+  /// Head tilt (radians).
   tilt,
+
+  /// Rolls: whole turns, back to 0 when done.
+  spin,
 }
 
-enum EyeShape { oval, happy }
+/// Shape of one eye. No pupils, ever.
+enum EyeShape { oval, happy, flat, closed, tired, spiral, heart, star, slit }
 
 enum Ear { left, right }
+
+/// What Mikky expresses, from the agent he stands for (spec §5.2 table).
+enum MikkyState { idle, working, thinking, searching, approval, question, error, finished, rateLimited, sleeping, dizzy }
+
+/// Short expressions on top of the state.
+enum MikkyEmote { love, surprised, proud, wink, yawn, content, annoyed }
+
+/// Small sign next to Mikky's head.
+enum BadgeKind {
+  /// "•••", animated.
+  dots,
+
+  /// "!"
+  bang,
+
+  /// "?"
+  question,
+
+  /// Plain colored dot.
+  dot,
+}
+
+class MikkyBadge {
+  const MikkyBadge(this.kind, this.color);
+
+  final BadgeKind kind;
+
+  /// Status whose theme color the badge takes.
+  final AgentStatus color;
+}
+
+enum ParticleKind { sparkle, heart, star, sweat, sleep }
+
+/// One particle at one instant, in units of R from Mikky's center (y down).
+class MikkyParticle {
+  const MikkyParticle(this.kind, this.x, this.y, this.size, this.alpha, this.rotation);
+
+  final ParticleKind kind;
+  final double x, y, size, alpha, rotation;
+}
 
 /// Mikky's pose, one value per [MikkyProp].
 class MikkyPose {
@@ -60,14 +109,42 @@ class MikkyPose {
   double get offsetX => this[MikkyProp.offsetX];
   double get offsetY => this[MikkyProp.offsetY];
   double get eyeScale => this[MikkyProp.eyeScale];
-  double get earLeft => this[MikkyProp.earLeft];
-  double get earRight => this[MikkyProp.earRight];
-  double get tilt => this[MikkyProp.tilt];
+
+  /// Ear heights actually drawn: resting position plus flicks.
+  double get earLeft => this[MikkyProp.earLeft] + this[MikkyProp.earBaseLeft];
+  double get earRight => this[MikkyProp.earRight] + this[MikkyProp.earBaseRight];
+
+  /// Body rotation actually drawn: tilt plus rolls.
+  double get tilt => this[MikkyProp.tilt] + this[MikkyProp.spin];
 }
 
-/// Mikky's behaviour: keyframed gestures, random blinks and ear twitches,
-/// breathing, gaze and head tilt. Port of the validated prototypes
-/// (`design/prototypes/`), itself based on Mochi's `BotEngine.swift`.
+/// How an expression sets eyes and ears.
+class _Look {
+  const _Look({
+    this.left = EyeShape.oval,
+    EyeShape? right,
+    this.eyeScale = 1,
+    this.earLeft = 0,
+    double? earRight,
+    this.tilt = 0,
+  })  : right = right ?? left,
+        earRight = earRight ?? earLeft;
+
+  final EyeShape left, right;
+  final double eyeScale, earLeft, earRight, tilt;
+}
+
+class _Particle {
+  _Particle(this.kind, this.born, this.life, this.x, this.y, this.vx, this.vy, this.size, this.spin);
+
+  final ParticleKind kind;
+  final double born, life, x, y, vx, vy, size, spin;
+}
+
+/// Mikky's behaviour: states and emotes, keyframed gestures, random blinks
+/// and ear flicks, breathing, gaze, head tilt, particles. Port of the
+/// validated prototypes (`design/prototypes/`), itself based on Mochi's
+/// `BotEngine.swift`, with ears instead of a mouth.
 ///
 /// Time only moves through [update], so tests can drive it frame by frame.
 class Mikky {
@@ -81,6 +158,7 @@ class Mikky {
   final pose = MikkyPose();
   final Map<MikkyProp, KeyframeTrack> _tracks = {};
   final List<(double, void Function())> _scheduled = [];
+  final List<_Particle> _particles = [];
 
   /// Seconds since creation.
   double get time => _time;
@@ -90,10 +168,46 @@ class Mikky {
   late final double _phase;
   late double _nextBlink;
   late double _nextTwitch;
-  double _expressionUntil = 0;
+  double _nextBeat = 0;
+  double _nextEmit = 0;
 
-  EyeShape get eyes => _eyes;
-  EyeShape _eyes = EyeShape.oval;
+  MikkyState _state = MikkyState.idle;
+  double _stateSince = 0;
+  double _dizzyUntil = -1;
+  MikkyEmote? _emote;
+  double _emoteUntil = 0;
+
+  bool _hovered = false;
+  double _lastMove = 0;
+  bool _lovedThisHover = false;
+  final List<double> _clicks = [];
+
+  /// The state shown now (a triple click makes Mikky dizzy for a moment).
+  MikkyState get state => _time < _dizzyUntil ? MikkyState.dizzy : _state;
+  MikkyEmote? get emote => _emote;
+
+  EyeShape get eyeLeft => _look().left;
+  EyeShape get eyeRight => _look().right;
+
+  /// Sign next to the head, from the state.
+  MikkyBadge? get badge => switch (state) {
+        MikkyState.working => const MikkyBadge(BadgeKind.dots, AgentStatus.working),
+        MikkyState.thinking => const MikkyBadge(BadgeKind.dots, AgentStatus.thinking),
+        MikkyState.searching => const MikkyBadge(BadgeKind.dots, AgentStatus.searching),
+        MikkyState.approval => const MikkyBadge(BadgeKind.bang, AgentStatus.approval),
+        MikkyState.question => const MikkyBadge(BadgeKind.question, AgentStatus.question),
+        MikkyState.error => const MikkyBadge(BadgeKind.dot, AgentStatus.error),
+        MikkyState.finished => const MikkyBadge(BadgeKind.dot, AgentStatus.finished),
+        MikkyState.rateLimited => const MikkyBadge(BadgeKind.dot, AgentStatus.rateLimited),
+        MikkyState.idle || MikkyState.sleeping || MikkyState.dizzy => null,
+      };
+
+  /// Live particles, oldest first.
+  List<MikkyParticle> get particles => [
+        for (final p in _particles) _particleAt(p),
+      ];
+
+  // ------------------------------------------------------------ gestures
 
   /// Plays [keys] on [prop], from its current value, replacing any running
   /// animation of that property.
@@ -135,10 +249,18 @@ class Mikky {
     ]);
   }
 
-  /// Click on Mikky.
+  /// Click on Mikky. Three clicks within 1.7 s make him dizzy.
   void boop() {
     squash();
     blink();
+    _clicks
+      ..add(_time)
+      ..removeWhere((t) => _time - t > 1.7);
+    if (_clicks.length >= 3) {
+      _clicks.clear();
+      _dizzyUntil = _time + 2.6;
+      roll(turns: 2, ms: 1100);
+    }
   }
 
   /// Something needs attention: eyes widen, ears go up.
@@ -173,26 +295,219 @@ class Mikky {
     ]);
   }
 
-  /// Happy arcs for the eyes, a hop, ears slightly up.
-  void happy() {
-    _eyes = EyeShape.happy;
-    _expressionUntil = _time + 1.4;
-    hop();
-    animate(MikkyProp.earLeft, const [Keyframe(.25, 120, Easings.out)]);
-    animate(MikkyProp.earRight, const [Keyframe(.25, 120, Easings.out)]);
+  /// Quick "no" of the head.
+  void shake() {
+    animate(MikkyProp.offsetX, const [
+      Keyframe(.08, 60, Easings.out),
+      Keyframe(-.08, 90, Easings.inOut),
+      Keyframe(.06, 90, Easings.inOut),
+      Keyframe(-.03, 90, Easings.inOut),
+      Keyframe(0, 100, Easings.out),
+    ]);
   }
 
-  void surprised() {
-    _expressionUntil = _time + 1.2;
-    animate(MikkyProp.eyeScale, const [Keyframe(1.25, 120, Easings.back)]);
-    animate(MikkyProp.offsetY, const [Keyframe(-.15, 110, Easings.out), Keyframe(0, 260, Easings.back)]);
-    animate(MikkyProp.earLeft, const [Keyframe(.45, 90, Easings.out)]);
-    animate(MikkyProp.earRight, const [Keyframe(.45, 90, Easings.out)]);
+  /// Whole-body roll, with a hop.
+  void roll({int turns = 1, double ms = 650}) {
+    animate(MikkyProp.spin, [Keyframe(math.pi * 2 * turns, ms, Easings.inOut)]);
+    hop(small: true);
   }
+
+  /// Old names of two emotes, kept for callers.
+  void happy() => play(MikkyEmote.content);
+  void surprised() => play(MikkyEmote.surprised);
+
+  // ------------------------------------------------------ states, emotes
+
+  /// Changes the state; entering some states plays a gesture.
+  void setState(MikkyState s) {
+    if (s == _state) return;
+    _state = s;
+    _stateSince = _time;
+    _nextBeat = _time + 1.4;
+    _nextEmit = _time + .2;
+    switch (s) {
+      case MikkyState.approval:
+        alert();
+      case MikkyState.question:
+        twitch(Ear.right);
+      case MikkyState.error:
+        shake();
+      case MikkyState.finished:
+        roll();
+        _burst(ParticleKind.sparkle, 8);
+      case MikkyState.dizzy:
+        roll(turns: 2, ms: 1100);
+      case MikkyState.idle ||
+            MikkyState.working ||
+            MikkyState.thinking ||
+            MikkyState.searching ||
+            MikkyState.rateLimited ||
+            MikkyState.sleeping:
+        break;
+    }
+  }
+
+  /// Plays a short expression over the state.
+  void play(MikkyEmote e) {
+    _emote = e;
+    _nextEmit = _time;
+    _emoteUntil = _time +
+        switch (e) {
+          MikkyEmote.love => 1.8,
+          MikkyEmote.surprised => 1.2,
+          MikkyEmote.proud => 1.6,
+          MikkyEmote.wink => .9,
+          MikkyEmote.yawn => 1.8,
+          MikkyEmote.content => 1.4,
+          MikkyEmote.annoyed => 1.4,
+        };
+    switch (e) {
+      case MikkyEmote.love:
+        animate(MikkyProp.eyeScale, const [Keyframe(1.12, 160, Easings.back)]);
+      case MikkyEmote.surprised:
+        animate(MikkyProp.eyeScale, const [Keyframe(1.25, 120, Easings.back)]);
+        animate(MikkyProp.offsetY, const [Keyframe(-.15, 110, Easings.out), Keyframe(0, 260, Easings.back)]);
+      case MikkyEmote.proud:
+        _burst(ParticleKind.star, 6);
+        hop(small: true);
+      case MikkyEmote.wink:
+        break;
+      case MikkyEmote.yawn:
+        animate(MikkyProp.scaleY, const [
+          Keyframe(1.1, 500, Easings.inOut),
+          Keyframe(1.1, 500, Easings.linear),
+          Keyframe(1, 500, Easings.inOut),
+        ]);
+        animate(MikkyProp.scaleX, const [
+          Keyframe(.94, 500, Easings.inOut),
+          Keyframe(.94, 500, Easings.linear),
+          Keyframe(1, 500, Easings.inOut),
+        ]);
+      case MikkyEmote.content:
+        hop();
+      case MikkyEmote.annoyed:
+        shake();
+    }
+  }
+
+  /// Eyes and ears of the emote if any, else of the state.
+  _Look _look() {
+    final emote = _emote;
+    if (emote != null) {
+      return switch (emote) {
+        MikkyEmote.love => const _Look(left: EyeShape.heart, eyeScale: 1.1, earLeft: .15),
+        MikkyEmote.surprised => const _Look(eyeScale: 1.25, earLeft: .45),
+        MikkyEmote.proud => const _Look(left: EyeShape.star, eyeScale: 1.1, earLeft: .3),
+        MikkyEmote.wink => const _Look(right: EyeShape.happy, tilt: .1, earLeft: .1),
+        MikkyEmote.yawn => const _Look(left: EyeShape.closed, earLeft: -.3),
+        MikkyEmote.content => const _Look(left: EyeShape.happy, earLeft: .25),
+        MikkyEmote.annoyed => const _Look(left: EyeShape.slit, earLeft: -.6),
+      };
+    }
+    return switch (state) {
+      MikkyState.idle || MikkyState.working || MikkyState.searching => const _Look(),
+      MikkyState.thinking => const _Look(earLeft: .05),
+      MikkyState.approval => const _Look(eyeScale: 1.18, earLeft: .35),
+      MikkyState.question => const _Look(eyeScale: 1.05, earLeft: -.6, earRight: .12, tilt: .17),
+      MikkyState.error => const _Look(left: EyeShape.flat, earLeft: -.55),
+      MikkyState.finished => _Look(left: EyeShape.happy, earLeft: _time - _stateSince < 1.2 ? .3 : 0),
+      MikkyState.rateLimited => const _Look(left: EyeShape.tired, earLeft: -.4),
+      MikkyState.sleeping => const _Look(left: EyeShape.closed, earLeft: -.45),
+      MikkyState.dizzy => const _Look(left: EyeShape.spiral),
+    };
+  }
+
+  /// Where the state makes Mikky look, instead of the cursor.
+  (double, double)? _stateGaze() => switch (state) {
+        MikkyState.thinking => (.55, -.8),
+        MikkyState.searching => (math.sin(_time * 2.4) * .9, .15),
+        MikkyState.sleeping => (0, .35),
+        MikkyState.dizzy => (math.cos(_time * 6) * .5, math.sin(_time * 6) * .5),
+        _ => null,
+      };
+
+  // --------------------------------------------------------- interactions
+
+  /// The cursor is over Mikky ([over]) or not. On entering: a blink.
+  void hover(bool over) {
+    if (over && !_hovered) {
+      blink();
+      _lastMove = _time;
+      _lovedThisHover = false;
+    }
+    _hovered = over;
+  }
+
+  /// The cursor moved while over Mikky. Still for 1.9 s: love.
+  void pointerMoved() => _lastMove = _time;
+
+  // ------------------------------------------------------------ particles
+
+  void _burst(ParticleKind kind, int count) {
+    for (var i = 0; i < count; i++) {
+      final a = -math.pi / 2 + (i / count - .5) * math.pi * 1.6 + (_random.nextDouble() - .5) * .3;
+      final speed = 1.1 + _random.nextDouble() * .6;
+      _particles.add(_Particle(kind, _time, .9 + _random.nextDouble() * .4, math.cos(a) * .7, math.sin(a) * .6 - .2,
+          math.cos(a) * speed, math.sin(a) * speed, .16 + _random.nextDouble() * .08, (_random.nextDouble() - .5) * 4));
+    }
+  }
+
+  void _emit() {
+    final ParticleKind kind;
+    final double every;
+    if (_emote == MikkyEmote.love) {
+      kind = ParticleKind.heart;
+      every = .28;
+    } else if (_emote == null && state == MikkyState.rateLimited) {
+      kind = ParticleKind.sweat;
+      every = 1.4;
+    } else if (_emote == null && state == MikkyState.sleeping) {
+      kind = ParticleKind.sleep;
+      every = 1.6;
+    } else {
+      return;
+    }
+    if (_time < _nextEmit) return;
+    _nextEmit = _time + every;
+    final r = _random.nextDouble();
+    _particles.add(switch (kind) {
+      ParticleKind.heart => _Particle(kind, _time, 1.3, (r - .5) * 1.4, -.6, (r - .5) * .3, -.9, .2 + r * .08, (r - .5) * .6),
+      ParticleKind.sweat => _Particle(kind, _time, 1.1, 1.05, -.55, .15, .1, .16, 0),
+      ParticleKind.sleep => _Particle(kind, _time, 2, .7, -1.1, .35, -.45, .22, -.2),
+      ParticleKind.sparkle || ParticleKind.star => throw StateError('bursts only'),
+    });
+  }
+
+  MikkyParticle _particleAt(_Particle p) {
+    final age = _time - p.born;
+    final t = (age / p.life).clamp(0.0, 1.0);
+    final fade = math.min(1.0, age / .15) * (t < .6 ? 1 : 1 - (t - .6) / .4);
+    var y = p.y + p.vy * age;
+    var x = p.x + p.vx * age;
+    var size = p.size;
+    switch (p.kind) {
+      case ParticleKind.sweat:
+        y += .9 * age * age;
+      case ParticleKind.sleep:
+        size *= 1 + t * .8;
+        x += math.sin(age * 3) * .08;
+      case ParticleKind.sparkle || ParticleKind.star:
+        // Bursts slow down.
+        x = p.x + p.vx * (1 - math.exp(-age * 3)) / 3 * 2;
+        y = p.y + p.vy * (1 - math.exp(-age * 3)) / 3 * 2;
+        size *= 1 - t * .5;
+      case ParticleKind.heart:
+        x += math.sin(age * 5 + p.x * 3) * .06;
+    }
+    return MikkyParticle(p.kind, x, y, size, fade.clamp(0.0, 1.0), p.spin * age);
+  }
+
+  // ------------------------------------------------------------------ time
 
   /// Advances by [dt] seconds. [lookX] and [lookY] in [-1, 1] give where
-  /// Mikky looks (usually `tanh` of the cursor offset, see [lookAt]).
-  void update(double dt, {double lookX = 0, double lookY = 0}) {
+  /// Mikky looks (usually `tanh` of the cursor offset, see [lookAt]). Some
+  /// states look elsewhere, unless [attention] asks to look there anyway.
+  void update(double dt, {double lookX = 0, double lookY = 0, bool attention = false}) {
     _time += dt;
 
     for (final entry in _tracks.entries.toList()) {
@@ -206,38 +521,65 @@ class Mikky {
         s.$2();
       }
     }
+    if (_emote != null && _time > _emoteUntil) _emote = null;
 
     void follow(MikkyProp prop, double target, double remaining) {
       if (!isAnimating(prop)) pose[prop] = approach(pose[prop], target, remaining, dt);
     }
 
-    // The head follows the gaze; it tilts a little toward where it looks.
-    follow(MikkyProp.yaw, lookX * .5, .0025);
-    follow(MikkyProp.pitch, -lookY * .32, .0025);
-    follow(MikkyProp.tilt, pose.yaw * .16, .0008);
-    // Breathing.
-    final breath = math.sin((_time + _phase) * 1.8);
-    follow(MikkyProp.scaleY, 1 + breath * .02, .0008);
-    follow(MikkyProp.scaleX, 1 - breath * .014, .0008);
-    follow(MikkyProp.eyeScale, 1, .0008);
+    final look = _look();
+    final st = state;
+    final gaze = attention ? null : _stateGaze();
+    final (gx, gy) = gaze ?? (lookX, lookY);
 
-    if (_expressionUntil > 0 && _time > _expressionUntil) {
-      _expressionUntil = 0;
-      _eyes = EyeShape.oval;
-      for (final prop in const [MikkyProp.earLeft, MikkyProp.earRight]) {
-        if (!isAnimating(prop)) animate(prop, const [Keyframe(0, 200, Easings.inOut)]);
-      }
+    // The head follows the gaze; it tilts a little toward where it looks.
+    follow(MikkyProp.yaw, gx * .5, .0025);
+    follow(MikkyProp.pitch, -gy * .32, .0025);
+    follow(MikkyProp.tilt, pose[MikkyProp.yaw] * .16 + look.tilt, .0008);
+    if (!isAnimating(MikkyProp.spin)) pose[MikkyProp.spin] = 0;
+
+    // Breathing, slower and deeper while asleep.
+    final sleeping = st == MikkyState.sleeping;
+    final breath = math.sin((_time + _phase) * (sleeping ? 1.1 : 1.8));
+    follow(MikkyProp.scaleY, 1 + breath * (sleeping ? .035 : .02), .0008);
+    follow(MikkyProp.scaleX, 1 - breath * (sleeping ? .025 : .014), .0008);
+    follow(MikkyProp.eyeScale, look.eyeScale * (_hovered ? 1.08 : 1), .0008);
+
+    // Ears: the expression's resting position; dizzy ones go round.
+    if (st == MikkyState.dizzy && _emote == null) {
+      pose[MikkyProp.earBaseLeft] = .35 * math.sin(_time * 9);
+      pose[MikkyProp.earBaseRight] = .35 * math.sin(_time * 9 + math.pi);
+    } else {
+      follow(MikkyProp.earBaseLeft, look.earLeft, .0005);
+      follow(MikkyProp.earBaseRight, look.earRight, .0005);
     }
 
+    // Rhythm of some states.
+    if (st == MikkyState.approval && _time > _nextBeat) {
+      hop(small: true);
+      _nextBeat = _time + 1.4;
+    }
+
+    if (_hovered && !_lovedThisHover && _time - _lastMove >= 1.9) {
+      _lovedThisHover = true;
+      play(MikkyEmote.love);
+    }
+
+    final calm = st == MikkyState.sleeping || st == MikkyState.dizzy;
     if (_time > _nextBlink) {
-      blink();
-      if (_random.nextDouble() < .22) _after(.23, blink);
+      if (!calm) {
+        blink();
+        if (_random.nextDouble() < .22) _after(.23, blink);
+      }
       _nextBlink = _time + 2.2 + _random.nextDouble() * 3.2;
     }
     if (_time > _nextTwitch) {
-      twitch(_random.nextBool() ? Ear.left : Ear.right);
+      if (!calm) twitch(_random.nextBool() ? Ear.left : Ear.right);
       _nextTwitch = _time + 3 + _random.nextDouble() * 5;
     }
+
+    _emit();
+    _particles.removeWhere((p) => _time - p.born > p.life);
   }
 
   /// Gaze input for a target at ([dx], [dy]) pixels from Mikky's center.
