@@ -203,7 +203,7 @@ void main() {
   });
 
   group('forms: Mikky turns into the sign', () {
-    test('working: a fur ball that does not shake; thinking: a single ball that hops', () {
+    test('working: the fur ball, without shaking; thinking: the same fur ball, hopping', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
       run(m, 2);
       expect((m.form, m.badge), (MikkyForm.furball, null));
@@ -212,45 +212,50 @@ void main() {
         expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
       }
       m.setState(MikkyState.thinking);
-      run(m, 3);
-      expect(m.form, MikkyForm.ball);
-      expect(MikkyGeometry.of(m, 100).satellites, isEmpty);
-      // It hops: its top goes up and down.
-      final tops = <double>[];
-      for (var i = 0; i < 40; i++) {
+      run(m, 1.5);
+      expect(m.form, MikkyForm.furball);
+      final ups = <double>[];
+      for (var i = 0; i < 90; i++) {
         m.update(1 / 60);
-        final c = MikkyGeometry.of(m, 100).contour;
-        var top = 0.0;
-        for (var j = 1; j < c.length; j += 2) {
-          top = math.min(top, c[j]);
-        }
-        tops.add(top);
+        ups.add(MikkyGeometry.of(m, 100).translateY);
       }
-      expect(tops.reduce(math.max) - tops.reduce(math.min), greaterThan(20));
+      expect(ups.reduce(math.min), lessThan(-12));
     });
 
-    test('the fur ball: a lumpy body, not many thick tufts of different lengths, moving on their own', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(m, 2);
-      final c = MikkyGeometry.of(m, 100).contour;
-      final radii = [for (var j = 0; j < c.length; j += 2) math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1])];
-      expect(radii.reduce(math.max) - radii.reduce(math.min), greaterThan(8));
-
-      List<double> tips() => [
-            for (final s in MikkyGeometry.of(m, 100).fur) math.sqrt(s.tipX * s.tipX + s.tipY * s.tipY),
-          ];
-      final a = tips();
-      expect(a.length, inInclusiveRange(30, 60));
-      expect(a.reduce(math.max) - a.reduce(math.min), greaterThan(20));
-      expect(MikkyGeometry.of(m, 100).fur.every((s) => s.width > 8), isTrue);
-      run(m, .5);
-      final b = tips();
-      var moved = 0;
-      for (var j = 0; j < a.length; j++) {
-        if ((a[j] - b[j]).abs() > 1) moved++;
+    test('the fur ball is the mascot without ears, his own fur standing out all around', () {
+      double top(Mikky m) {
+        final c = MikkyGeometry.of(m, 100).contour;
+        var y = 0.0;
+        for (var j = 1; j < c.length; j += 2) {
+          y = math.min(y, c[j]);
+        }
+        return y;
       }
-      // Some tufts rose or fell, not all of them together.
-      expect(moved, inInclusiveRange(5, a.length - 3));
+
+      /// How much the outline goes in and out (the fur), on the lower half.
+      double furriness(Mikky m) {
+        final c = MikkyGeometry.of(m, 100).contour;
+        var sum = 0.0;
+        for (var j = 2; j < c.length ~/ 2; j += 2) {
+          final r0 = math.sqrt(c[j - 2] * c[j - 2] + c[j - 1] * c[j - 1]);
+          final r1 = math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1]);
+          sum += (r1 - r0).abs();
+        }
+        return sum;
+      }
+
+      final cat = Mikky(random: math.Random(5));
+      run(cat, 2);
+      final ball = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      run(ball, 2);
+      // No ears: the top is the head, not the ear tips.
+      expect(top(ball), greaterThan(top(cat) + 30));
+      // More fur, and not only on the cheeks.
+      expect(furriness(ball), greaterThan(furriness(cat) * 2));
+      // His eyes, where they always are.
+      final eyes = MikkyGeometry.of(ball, 100).eyes;
+      expect(eyes, hasLength(2));
+      expect(eyes.first.shape, EyeShape.oval);
     });
 
     test('working and thinking go back to the cat now and then', () {
@@ -335,6 +340,14 @@ void main() {
         expect(g.eyes, hasLength(s == MikkyState.approval ? 0 : 2), reason: '$s');
       }
     });
+  });
+
+  test('surprised: big round eyes and very high ears', () {
+    final m = Mikky(random: math.Random(3))..play(MikkyEmote.surprised);
+    run(m, .6);
+    expect((m.eyeLeft, m.eyeRight), (EyeShape.round, EyeShape.round));
+    expect(m.pose.eyeScale, greaterThan(1.15));
+    expect(m.pose.earLeft, greaterThan(.6));
   });
 
   group('emotes', () {

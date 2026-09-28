@@ -43,8 +43,8 @@ enum MikkyProp {
   spin,
 }
 
-/// Shape of one eye. No pupils, ever.
-enum EyeShape { oval, happy, flat, closed, tired, spiral, heart, star, slit }
+/// Shape of one eye. No pupils, ever. [round]: big round eyes (surprise).
+enum EyeShape { oval, round, happy, flat, closed, tired, spiral, heart, star, slit }
 
 enum Ear { left, right }
 
@@ -60,14 +60,12 @@ enum MikkyForm {
   /// His usual cat silhouette.
   cat,
 
-  /// A slightly lopsided heart (love).
+  /// Himself, a little squeezed into a heart (love).
   heart,
 
-  /// A big ball of fur whose fur bristles here and there (working).
+  /// Himself without ears, his fur standing out a little more all around:
+  /// a ball of fur (working; hopping while thinking).
   furball,
-
-  /// A smaller fur ball that hops (thinking).
-  ball,
 
   /// The bar of a "!", without eyes; a little fur ball below, well apart,
   /// is the dot (approval).
@@ -244,7 +242,7 @@ class Mikky {
     if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
     return switch (state) {
       MikkyState.working => _formOn ? MikkyForm.furball : MikkyForm.cat,
-      MikkyState.thinking => _formOn ? MikkyForm.ball : MikkyForm.cat,
+      MikkyState.thinking => _formOn ? MikkyForm.furball : MikkyForm.cat,
       MikkyState.approval => _approvalBang ? MikkyForm.bang : MikkyForm.cat,
       _ => MikkyForm.cat,
     };
@@ -469,7 +467,8 @@ class Mikky {
       return switch (emote) {
         // He is the heart: content eyes on it.
         MikkyEmote.love => const _Look(left: EyeShape.happy, eyeScale: 1.1, earLeft: .15),
-        MikkyEmote.surprised => const _Look(eyeScale: 1.25, earLeft: .45),
+        // Big round eyes, ears very high.
+        MikkyEmote.surprised => const _Look(left: EyeShape.round, eyeScale: 1.2, earLeft: .8),
         MikkyEmote.proud => const _Look(left: EyeShape.star, eyeScale: 1.1, earLeft: .3),
         MikkyEmote.wink => const _Look(right: EyeShape.happy, tilt: .1, earLeft: .1),
         MikkyEmote.yawn => const _Look(left: EyeShape.closed, earLeft: -.3),
@@ -641,6 +640,11 @@ class Mikky {
         _hopsLeft = _approvalBang ? 3 + _random.nextInt(2) : 2;
         _nextBeat = _time + .6;
       }
+    }
+    // Thinking: the fur ball hops (his own hop, squash and stretch).
+    if (st == MikkyState.thinking && _formOn && _emote == null && _morph.value > .6 && _time > _nextBeat) {
+      hop(height: .2);
+      _nextBeat = _time + .66;
     }
     if ((st == MikkyState.working || st == MikkyState.thinking) && _time > _formToggleAt) {
       _formOn = !_formOn;

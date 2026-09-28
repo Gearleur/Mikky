@@ -9,7 +9,6 @@ void main() {
     expect(g.pointCount, 361);
     expect(g.contour[0], closeTo(g.contour[720], 1e-9));
     expect(g.contour[1], closeTo(g.contour[721], 1e-9));
-    expect(g.fur, isEmpty);
     expect(MikkyGeometry.of(Mikky(), 9, points: 180).pointCount, 181);
   });
 
