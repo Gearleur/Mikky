@@ -13,7 +13,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - Dots grid: dark theme only, only while an agent works. Light theme: Apple system colors, no glow, no dots.
 
 ## Environment
-- Repo lives in WSL. Windows Flutter at `C:\dev\flutter` (3.38.3). Visual Studio C++ workload not installed yet (the user installs it). Building the Windows app from the `\\wsl.localhost` path must be validated in milestone J0 (fallback: sync `app/` to a Windows folder).
+- Repo lives on Windows at `C:\Users\alexa\projet\mikky` (moved out of WSL on 2026-09-28; from WSL: `/mnt/c/Users/alexa/projet/mikky`). Windows Flutter at `C:\dev\flutter` (3.47.5) with Visual Studio 2022 C++ workload and Android SDK. Always run `flutter`/`dart` with the Windows install (from WSL: `cmd.exe /c "C:\dev\flutter\bin\flutter.bat ..."`), never the WSL Flutter, on this repo.
 
 ## Rules
 - Talk to the user in French.
