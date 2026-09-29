@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikky — UX : l'activité d'abord</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="mikky-ui.css">
+<style>
+body{background:var(--board);color:var(--text);transition:background .3s}
+.page-head{padding:28px 40px 8px}
+.page-head p{color:var(--text-2)}
+.frames{display:flex;flex-wrap:wrap;gap:36px 34px;padding:24px 40px 64px;align-items:flex-start}
+.opt{margin:0;width:320px}
+.opt figcaption{height:92px;margin-bottom:14px}
+.opt figcaption b{display:block;font-size:15px;font-weight:600;margin-bottom:4px}
+.opt figcaption span{display:block;font-size:12.5px;color:var(--text-2);line-height:1.45}
+.divider{width:1px;align-self:stretch;background:var(--line)}
+
+/* Résumé en haut */
+.sum{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
+.pill{display:inline-flex;align-items:center;gap:2px;height:26px;padding:0 10px 0 2px;border-radius:999px;background:var(--well);font-size:12px;font-weight:600}
+.pill .status{width:20px;height:20px}.pill .status i{width:7px;height:7px}
+.pill[data-state=finished] .status i{width:12px;height:12px}.pill[data-state=finished] .status i svg{width:8px;height:8px}
+
+/* Carte « t'attend » */
+.wait{background:var(--well);border-radius:20px;padding:12px 12px 12px 8px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 55%,transparent)}
+.wait .row{padding:0 0 10px;background:none}
+.wait-actions{display:flex;align-items:center;gap:6px;padding-left:38px}
+.live{color:var(--text);font-weight:500}
+.meta{font-size:11.5px;color:var(--text-3);margin-top:2px;display:flex;gap:5px;align-items:center;white-space:nowrap}
+.meta .tag{font-size:10.5px;padding:0 6px}
+.row .time{align-self:flex-start;margin-top:3px}
+
+/* Fil d'événements */
+.feed .ev{display:flex;align-items:center;gap:10px;padding:7px 6px}
+.feed .ev .lead-ic{width:28px;height:28px;border-radius:50%}
+.feed .ev .lead-ic svg{width:15px;height:15px}
+.feed .ev div{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed .ev div b{font-weight:600}
+.feed .ev div span{color:var(--text-2)}
+.fab{position:absolute;right:16px;bottom:16px;--s:56px;z-index:5}
+.fab svg{width:24px;height:24px}
+
+/* B : cartes d'agents */
+.acard{background:var(--well);border-radius:22px;padding:12px 12px 12px 8px;margin-bottom:10px}
+.acard.waiting{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 55%,transparent)}
+.acard .row{padding:0;background:none}
+.now{display:flex;align-items:center;gap:8px;margin:10px 0 0 38px;font-size:13.5px;font-weight:600}
+.log{margin:6px 0 0 38px;font:400 11.5px/1.6 "Geist Mono",monospace;color:var(--text-2)}
+.log div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.log div:nth-child(2){opacity:.7}.log div:nth-child(3){opacity:.45}
+.dock{position:absolute;left:0;right:0;bottom:14px;display:flex;justify-content:center;z-index:5}
+.dock .bar{padding:6px;gap:8px}
+.badge-wrap{position:relative;display:inline-grid}
+.badge-wrap .badge{top:-3px;left:auto;right:-4px}
+
+/* C : Mikky au centre */
+.hero{display:flex;flex-direction:column;align-items:center;margin-top:-6px}
+.big-mikky{width:124px;height:124px;cursor:pointer;transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
+.big-mikky:active{transform:scale(.94)}
+.hero.listening .big-mikky{animation:listen 1.1s ease-in-out infinite}
+@keyframes listen{50%{transform:translateY(-4px) scale(1.03)}}
+.bubble{position:relative;background:var(--well);border-radius:20px;padding:12px 12px 12px 14px;margin-top:4px;width:100%}
+.bubble::before{content:"";position:absolute;top:-7px;left:50%;width:16px;height:16px;background:var(--well);border-radius:4px;transform:translateX(-50%) rotate(45deg)}
+.bubble .b-title{font-size:14px;font-weight:600;position:relative}
+.bubble .b-sub{font-size:12.5px;color:var(--text-2);margin:2px 0 10px;position:relative}
+.bubble .wait-actions{padding-left:0}
+.who{display:flex;gap:10px;justify-content:space-between;padding:0 4px}
+.who button{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:5px;font-size:11.5px;font-weight:600;color:var(--text);cursor:pointer;width:58px}
+.who .ring{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;position:relative;background:linear-gradient(var(--ctl-a),var(--ctl-b));box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl),0 0 0 2.5px var(--c);font-size:15px;font-weight:600}
+.who small{font-size:10.5px;color:var(--text-2);font-weight:500;margin-top:-4px}
+.who [data-state=working] .ring::after{content:"";position:absolute;inset:-2.5px;border-radius:50%;box-shadow:0 0 0 2.5px var(--c);animation:ring 1.6s cubic-bezier(.2,.6,.3,1) infinite}
+@keyframes ring{from{transform:scale(1);opacity:.6}to{transform:scale(1.35);opacity:0}}
+.who [data-state=working]{--c:var(--blue)}.who [data-state=approval]{--c:var(--amber)}.who [data-state=thinking]{--c:var(--purple)}.who [data-state=finished]{--c:var(--green)}
+.hint{position:absolute;left:0;right:0;bottom:22px;text-align:center;font-size:12px;color:var(--text-3);z-index:4}
+.corner{position:absolute;bottom:14px;z-index:5}.corner.l{left:14px}.corner.r{right:14px}
+
+/* Nouvelle tâche */
+.side-head .round:first-child{margin-left:4px}
+.mic-zone{display:flex;flex-direction:column;align-items:center;padding:14px 0 6px}
+.mic{--s:92px;position:relative}
+.mic svg{width:34px;height:34px}
+.mic::before,.mic::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--ink);opacity:.14;animation:micring 1.8s cubic-bezier(.2,.6,.3,1) infinite;z-index:-1}
+.mic::after{animation-delay:.9s}
+.mic-wrap{position:relative;isolation:isolate;display:grid;place-items:center;width:140px;height:128px}
+@keyframes micring{from{transform:scale(1);opacity:.16}to{transform:scale(1.55);opacity:0}}
+.wave{display:flex;gap:3px;align-items:center;height:18px;margin-top:2px}
+.wave i{width:3px;border-radius:2px;background:var(--text-2);animation:wave 1s ease-in-out infinite}
+@keyframes wave{0%,100%{height:4px}50%{height:16px}}
+.transcript{min-height:64px;margin:12px 4px 0;font-size:16.5px;font-weight:500;line-height:1.4;letter-spacing:-.01em;text-align:center}
+.transcript .caret{display:inline-block;width:2px;height:18px;background:var(--text);vertical-align:-3px;margin-left:2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.form{background:var(--well);border-radius:20px;padding:4px 12px;margin-top:14px}
+.form .frow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13.5px;font-weight:600}
+.form .frow+.frow{border-top:1px solid var(--line)}
+.form .frow>span{color:var(--text-2);font-weight:500}
+.bottom-bar{position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px;z-index:5}
+.bottom-bar .btn{flex:1}
+
+/* Détail d'un agent */
+.detail-top{padding:0 4px}
+.detail-top .row-title{font-size:16px;white-space:normal}
+.nowcard{background:var(--well);border-radius:18px;padding:12px 14px;margin-top:12px}
+.nowcard .now{margin:0}
+.steps{position:relative;padding:4px 0 0}
+.steps::before{content:"";position:absolute;left:13px;top:18px;bottom:18px;width:1.5px;background:var(--line)}
+.step{position:relative;display:flex;align-items:center;gap:10px;padding:5px 0}
+.step .lead-ic{width:28px;height:28px;border-radius:50%;background:var(--island);box-shadow:inset 0 0 0 1.5px var(--line)}
+.step .lead-ic svg{width:14px;height:14px}
+.step div{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.step div code{font:500 11.5px "Geist Mono",monospace}
+.step .ok{color:var(--green)}.step .ko{color:var(--red)}
+.files{display:flex;flex-wrap:wrap;gap:6px}
+.file{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:999px;background:var(--well);font:500 11.5px "Geist Mono",monospace}
+.file .ok{color:var(--green)}.file .ko{color:var(--red)}
+</style>
+</head><body class="t-light">
+
+<header class="page-head">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
+    <div>
+      <h1>Mikky : l'activité d'abord</h1>
+      <p>Trois façons d'organiser la petite fenêtre (A, B, C), avec les composants validés. Pas de chat en premier plan : on voit qui travaille et sur quoi. On lance une tâche sur une autre page, à la voix. Les mails et le partage passent au second plan.</p>
+    </div>
+    <div style="display:flex;gap:8px"><button class="chip on" data-theme="light">Clair</button><button class="chip" data-theme="dark">Sombre</button></div>
+  </div>
+</header>
+
+<main class="frames">
+
+  <!-- A · Le fil -->
+  <figure class="opt">
+    <figcaption><b>A · Le fil</b><span>En haut, ce qui t'attend. Puis ce qui se passe en direct, puis ce qui vient de se passer (agents, mails, fichiers reçus). Le micro en bas à droite.</span></figcaption>
+    <div class="side">
+      <div class="side-head"><img class="mini-mikky" alt="" data-mikky><div class="side-title">Activité</div><button class="round sm" aria-label="Plus"><span data-i="more"></span></button></div>
+      <div class="screens"><div class="screen on">
+        <div class="sum">
+          <span class="pill" data-state="working"><span class="status"><i></i></span>2 travaillent</span>
+          <span class="pill" data-state="approval"><span class="status"><i></i></span>1 t'attend</span>
+          <span class="pill" data-state="finished"><span class="status"><i><span data-i="check"></span></i></span>1 fini</span>
+        </div>
+        <div class="section-label"><span>T'attend</span></div>
+        <div class="wait" data-wait>
+          <div class="row" data-state="approval">
+            <span class="status"><i></i></span>
+            <div class="row-main"><div class="row-title">Met à jour le site</div><div class="meta"><span class="tag">Codex</span>site · Terminal</div></div>
+            <span class="time">1 min</span>
+          </div>
+          <div class="wait-actions"><code class="code">npm run build</code><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
+        </div>
+        <div class="section-label"><span>En direct</span></div>
+        <div class="list">
+          <div class="item" data-state="working"><div class="row"><span class="status"><i></i></span><div class="row-main"><div class="row-title">Corrige les tests du moteur</div><div class="row-sub live" data-ticker="mikky">Modifie island_machine.dart</div><div class="meta"><span class="tag">Claude</span>mikky · VS Code</div></div><span class="time">4 min</span></div></div>
+          <div class="item" data-state="thinking"><div class="row"><span class="status"><i></i></span><div class="row-main"><div class="row-title">Prépare le plan de l'API</div><div class="row-sub live" data-ticker="docs">Réfléchit au plan</div><div class="meta"><span class="tag">Claude</span>api · lancé par Mikky</div></div><span class="time">1 min</span></div></div>
+        </div>
+        <div class="section-label"><span>Tout à l'heure</span></div>
+        <div class="feed">
+          <div class="ev"><span class="lead-ic" style="background:var(--green);color:#fff"><span data-i="check"></span></span><div><b>Résume la spec</b> <span>· terminé, 3 fichiers</span></div><span class="time">2 min</span></div>
+          <div class="ev"><span class="lead-ic"><span data-i="mail"></span></span><div><b>GitHub</b> <span>· mail important</span></div><span class="time">9:12</span></div>
+          <div class="ev"><span class="lead-ic"><span data-i="file"></span></span><div><b>IMG_2041.jpg</b> <span>· reçue du téléphone</span></div><span class="time">9:05</span></div>
+        </div>
+      </div></div>
+      <button class="round ink fab" aria-label="Nouvelle tâche à la voix"><span data-i="mic"></span></button>
+    </div>
+  </figure>
+
+  <!-- B · Les agents en grand -->
+  <figure class="opt">
+    <figcaption><b>B · Les agents en grand</b><span>Une carte par agent : ce qu'il fait maintenant, en gros, et ses dernières actions. Mails et partage dans la barre du bas, avec un compteur.</span></figcaption>
+    <div class="side">
+      <div class="side-head"><img class="mini-mikky" alt="" data-mikky><div class="side-title">Mikky</div><button class="round sm" aria-label="Plus"><span data-i="more"></span></button></div>
+      <div class="screens"><div class="screen on">
+        <div class="acard waiting" data-wait>
+          <div class="row" data-state="approval"><span class="status"><i></i></span><div class="row-main"><div class="row-title">Met à jour le site</div><div class="meta"><span class="tag">Codex</span>site · Terminal</div></div><span class="time">1 min</span></div>
+          <div class="now">Veut lancer <code class="code">npm run build</code></div>
+          <div class="wait-actions" style="margin-top:10px"><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
+        </div>
+        <div class="acard">
+          <div class="row" data-state="working"><span class="status"><i></i></span><div class="row-main"><div class="row-title">Corrige les tests du moteur</div><div class="meta"><span class="tag">Claude</span>mikky · VS Code</div></div><span class="time">4 min</span></div>
+          <div class="now"><span class="spin" style="width:12px;height:12px;border-width:1.5px;color:var(--blue)"></span><span data-ticker="mikky">Modifie island_machine.dart</span></div>
+          <div class="log"><div>✓ dart test · 2 échecs</div><div>✓ lu island_view.dart</div><div>✓ lu la spec §5.3</div></div>
+        </div>
+        <div class="acard">
+          <div class="row" data-state="thinking"><span class="status"><i></i></span><div class="row-main"><div class="row-title">Prépare le plan de l'API</div><div class="meta"><span class="tag">Claude</span>api · lancé par Mikky</div></div><span class="time">1 min</span></div>
+          <div class="now"><span data-ticker="docs">Réfléchit au plan</span></div>
+        </div>
+      </div></div>
+      <div class="dock"><div class="bar">
+        <span class="badge-wrap"><button class="round" aria-label="Partage"><span data-i="share"></span></button><b class="badge">1</b></span>
+        <button class="btn primary"><span data-i="mic"></span>Nouvelle tâche</button>
+        <span class="badge-wrap"><button class="round" aria-label="Mails"><span data-i="mail"></span></button><b class="badge">2</b></span>
+      </div></div>
+    </div>
+  </figure>
+
+  <!-- C · Mikky au centre -->
+  <figure class="opt">
+    <figcaption><b>C · Mikky au centre</b><span>Mikky en grand te dit ce qui compte. Dessous, qui travaille en un coup d'œil (un rond par agent), puis ce qui vient de se passer. Appuie sur Mikky pour lui parler.</span></figcaption>
+    <div class="side">
+      <div class="screens" style="top:0"><div class="screen on" style="padding-top:14px">
+        <div class="hero" data-hero>
+          <img class="big-mikky" alt="Mikky" data-mikky data-talk>
+          <div class="bubble" data-wait>
+            <div class="b-title">Codex attend ton feu vert</div>
+            <div class="b-sub">site · veut lancer <code class="code" style="padding:3px 6px">npm run build</code></div>
+            <div class="wait-actions"><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
+          </div>
+        </div>
+        <div class="section-label"><span>Qui travaille</span><span class="count">4</span></div>
+        <div class="who">
+          <button data-state="working"><span class="ring">m</span>mikky<small>Claude</small></button>
+          <button data-state="approval"><span class="ring">s</span>site<small>Codex</small></button>
+          <button data-state="thinking"><span class="ring">a</span>api<small>Claude</small></button>
+          <button data-state="finished"><span class="ring">d</span>docs<small>Claude</small></button>
+        </div>
+        <div class="section-label"><span>Tout à l'heure</span></div>
+        <div class="feed">
+          <div class="ev"><span class="lead-ic"><span data-i="mail"></span></span><div><b>GitHub</b> <span>· mail important</span></div><span class="time">9:12</span></div>
+          <div class="ev"><span class="lead-ic"><span data-i="file"></span></span><div><b>IMG_2041.jpg</b> <span>· reçue du téléphone</span></div><span class="time">9:05</span></div>
+        </div>
+      </div></div>
+      <span class="badge-wrap corner l"><button class="round" aria-label="Partage"><span data-i="share"></span></button><b class="badge">1</b></span>
+      <div class="hint" data-hint>Appuie sur Mikky pour lui parler</div>
+      <span class="badge-wrap corner r"><button class="round" aria-label="Mails"><span data-i="mail"></span></button><b class="badge">2</b></span>
+    </div>
+  </figure>
+
+  <span class="divider"></span>
+
+  <!-- Nouvelle tâche -->
+  <figure class="opt">
+    <figcaption><b>Nouvelle tâche (pour A, B et C)</b><span>Une page à part. Le micro écoute dès l'ouverture, le texte s'écrit pendant que tu parles. Tu choisis l'agent et le dossier, puis tu lances. Le clavier reste possible.</span></figcaption>
+    <div class="side">
+      <div class="side-head"><button class="round sm" aria-label="Retour"><span data-i="left"></span></button><div class="side-title" style="margin-left:6px">Nouvelle tâche</div></div>
+      <div class="screens"><div class="screen on">
+        <div class="mic-zone">
+          <div class="mic-wrap"><button class="round ink mic" aria-label="Arrêter la dictée"><span data-i="mic"></span></button></div>
+          <div class="wave"><i style="animation-delay:0s"></i><i style="animation-delay:.12s"></i><i style="animation-delay:.24s"></i><i style="animation-delay:.36s"></i><i style="animation-delay:.18s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.06s"></i></div>
+        </div>
+        <div class="transcript"><span data-dictee></span><span class="caret"></span></div>
+        <div class="form">
+          <div class="frow"><span>Agent</span><div class="seg xs" data-seg><span class="thumb"></span><button class="on">Claude</button><button>Codex</button></div></div>
+          <div class="frow"><span>Dossier</span><button class="chip soft"><span data-i="folder"></span>mikky<span data-i="down"></span></button></div>
+        </div>
+      </div></div>
+      <div class="bottom-bar"><button class="round" aria-label="Clavier"><span data-i="keyboard"></span></button><button class="btn primary">Lancer</button></div>
+    </div>
+  </figure>
+
+  <!-- Détail d'un agent -->
+  <figure class="opt">
+    <figcaption><b>Détail d'un agent (pour A, B et C)</b><span>Quand tu touches un agent : ce qu'il fait maintenant, ses étapes et les fichiers qu'il a touchés. La conversation et le terminal restent là, mais en bas, au second plan.</span></figcaption>
+    <div class="side">
+      <div class="side-head"><button class="round sm" aria-label="Retour"><span data-i="left"></span></button><div class="side-title" style="margin-left:6px">mikky</div><button class="round sm" aria-label="Arrêter l'agent"><span data-i="stop"></span></button></div>
+      <div class="screens"><div class="screen on">
+        <div class="detail-top" data-state="working">
+          <div class="row-title">Corrige les tests du moteur</div>
+          <div class="meta" style="margin-top:4px"><span class="tag">Claude</span>mikky · VS Code · depuis 4 min</div>
+        </div>
+        <div class="nowcard" data-state="working">
+          <div class="now"><span class="status" style="width:16px;height:16px"><i></i></span><span data-ticker="mikky">Modifie island_machine.dart</span></div>
+          <div class="progress indet" style="margin:10px 0 0"><i></i></div>
+        </div>
+        <div class="section-label"><span>Étapes</span><span class="count">4</span></div>
+        <div class="steps">
+          <div class="step"><span class="lead-ic"><span data-i="edit"></span></span><div>Modifié <code>island_machine.dart</code> <span class="ok">+12</span> <span class="ko">−3</span></div><span class="time">9:41</span></div>
+          <div class="step"><span class="lead-ic"><span data-i="code"></span></span><div>Lancé <code>dart test</code> · <span class="ko">2 échecs</span></div><span class="time">9:40</span></div>
+          <div class="step"><span class="lead-ic"><span data-i="eye"></span></span><div>Lu <code>island_view.dart</code></div><span class="time">9:39</span></div>
+          <div class="step"><span class="lead-ic"><span data-i="eye"></span></span><div>Lu la spec, §5.3</div><span class="time">9:38</span></div>
+        </div>
+        <div class="section-label"><span>Fichiers touchés</span></div>
+        <div class="files"><span class="file">island_machine.dart <span class="ok">+12</span><span class="ko">−3</span></span><span class="file">island_test.dart <span class="ok">+4</span></span></div>
+      </div></div>
+      <div class="bottom-bar"><button class="btn"><span data-i="terminal"></span>Terminal</button><button class="btn"><span data-i="chat"></span>Conversation</button></div>
+    </div>
+  </figure>
+
+</main>
+
+<script>
+const I = {
+  folder:'<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
+  check:'<path d="m6 12.5 4 4 8-9"/>',
+  left:'<path d="m14.5 6-6 6 6 6"/>',
+  down:'<path d="m6 9.5 6 6 6-6"/>',
+  mail:'<rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/>',
+  share:'<path d="M12 14.5V4M7.5 8.5 12 4l4.5 4.5M5 12.5v5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-5"/>',
+  terminal:'<rect x="3.5" y="5" width="17" height="14" rx="3.5"/><path d="m7.5 10 2.5 2-2.5 2M12.5 14.5h4"/>',
+  file:'<path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M13.5 3.5v5h5"/>',
+  more:'<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
+  mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
+  keyboard:'<rect x="3" y="6.5" width="18" height="11" rx="2.5"/><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8"/>',
+  edit:'<path d="M14.5 5.5l4 4L9 19H5v-4z"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  code:'<path d="m8.5 8.5-3.5 3.5 3.5 3.5M15.5 8.5l3.5 3.5-3.5 3.5"/>',
+  stop:'<rect x="7" y="7" width="10" height="10" rx="2"/>',
+  chat:'<path d="M5 17.5V7a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 19 7v6.5a2.5 2.5 0 0 1-2.5 2.5H9z"/>',
+};
+const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+document.querySelectorAll('[data-i]').forEach(s => { s.outerHTML = svg(s.dataset.i); });
+document.querySelectorAll('.status i').forEach(i => { if (!i.innerHTML) i.innerHTML = svg('check'); });
+const CALME = location.hash.includes('calme');
+
+function swapText(el, text) {
+  el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120, easing: 'ease-in' })
+    .onfinish = () => {
+      el.textContent = text;
+      el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    };
+}
+
+// Thème.
+let theme = 'light';
+function setTheme(t) {
+  theme = t;
+  document.body.className = 't-' + t;
+  document.querySelectorAll('[data-theme]').forEach(c => c.classList.toggle('on', c.dataset.theme === t));
+  document.querySelectorAll('[data-mikky]').forEach(m => m.src = `../references/mikky-idle-${t}.png`);
+}
+document.querySelectorAll('[data-theme]').forEach(c => c.onclick = () => setTheme(c.dataset.theme));
+setTheme(location.hash.includes('sombre') ? 'dark' : 'light');
+
+// Ce que font les agents, en direct.
+const TICKS = {
+  mikky: ['Modifie island_machine.dart', 'Lance dart test', 'Lit island_test.dart', 'Modifie island_test.dart'],
+  docs: ['Réfléchit au plan', 'Lit docs/api.md', 'Écrit plan.md'],
+};
+const tickIndex = { mikky: 0, docs: 0 };
+if (!CALME) setInterval(() => {
+  for (const k in TICKS) {
+    tickIndex[k] = (tickIndex[k] + 1) % TICKS[k].length;
+    document.querySelectorAll(`[data-ticker=${k}]`).forEach(el => swapText(el, TICKS[k][tickIndex[k]]));
+  }
+}, 2600);
+
+// Oui / Non : la carte se replie.
+document.querySelectorAll('[data-wait]').forEach(w => w.querySelectorAll('[data-yes],[data-no]').forEach(b => b.onclick = () => {
+  const h = w.offsetHeight;
+  w.animate([{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px', marginBottom: '0px' }], { duration: 260, easing: 'cubic-bezier(.4,0,.2,1)' })
+    .onfinish = () => { w.style.display = 'none'; const lbl = w.previousElementSibling; if (lbl && lbl.classList.contains('section-label')) lbl.style.display = 'none'; };
+}));
+
+// C : appuyer sur Mikky pour lui parler.
+document.querySelectorAll('[data-talk]').forEach(m => m.onclick = () => {
+  const hero = m.closest('[data-hero]'), hint = document.querySelector('[data-hint]');
+  const on = hero.classList.toggle('listening');
+  hint.textContent = on ? 'Je t’écoute… (appuie encore pour arrêter)' : 'Appuie sur Mikky pour lui parler';
+});
+
+// Sélecteur (même ressort que la planche des composants).
+document.querySelectorAll('[data-seg]').forEach(seg => {
+  const th = seg.querySelector('.thumb');
+  const place = b => { th.style.transition = 'transform .38s cubic-bezier(.34,1.3,.64,1), width .38s cubic-bezier(.34,1.3,.64,1)'; th.style.transform = `translateX(${b.offsetLeft}px)`; th.style.width = b.offsetWidth + 'px'; };
+  seg.querySelectorAll('button').forEach(b => b.onclick = () => { seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); place(b); });
+  document.fonts.ready.then(() => { th.style.transform = `translateX(${seg.querySelector('.on').offsetLeft}px)`; th.style.width = seg.querySelector('.on').offsetWidth + 'px'; });
+});
+
+// Dictée : le texte s'écrit mot à mot.
+const PHRASE = 'Corrige les tests de mikky_engine et relance-les jusqu’à ce qu’ils passent';
+const out = document.querySelector('[data-dictee]');
+if (CALME) out.textContent = PHRASE;
+else (function dictate() {
+  const words = PHRASE.split(' '); let n = 0; out.textContent = '';
+  const t = setInterval(() => {
+    out.textContent = words.slice(0, ++n).join(' ');
+    if (n >= words.length) { clearInterval(t); setTimeout(dictate, 3200); }
+  }, 190);
+})();
+</script>
+</body></html>

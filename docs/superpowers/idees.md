@@ -8,8 +8,17 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 
 1. **Lancer Claude Code et Codex depuis la petite fenêtre à droite** (la position « à droite » de l'île, format téléphone) et **voir lequel est en train de travailler**.
 2. **LocalSend dans Mikky** : recevoir et envoyer des fichiers avec le téléphone et les autres PC.
-3. **Classer nos mails en local** avec un petit modèle, un truc simple. L'utilisateur a écrit « un petit JEV ou Laya » : à confirmer (Gemma ou Llama ?). Fonctions plus poussées plus tard.
+3. **Classer nos mails en local** avec **Laya** (https://huggingface.co/convaiinnovations/laya), boîte **Gmail**. Un truc simple ; fonctions plus poussées plus tard.
 4. **Designer maintenant tous les composants** (boutons, navigation, champs, listes…) **et leurs animations**, pour être tranquille ensuite. Prototype : `design/prototypes/composants.html`.
+
+### Décisions du 2026-09-29 (après la planche des composants)
+
+- **L'interface (UI) est validée** (`design/prototypes/composants.html`, quelques petits bugs à corriger plus tard). **L'UX est à repenser.**
+- **L'activité d'abord** : on veut voir qui travaille et sur quoi. Le chat n'est pas au premier plan.
+- **Lancer une tâche** : sur une page à part, avec la **dictée vocale**.
+- Les trois onglets du bas (Agents, Partage, Mails) ne sont pas forcément la bonne structure : mails et partage ne sont pas le cœur de l'app.
+- **Voir qui travaille : tout le monde**, pas seulement les agents lancés par Mikky (sessions Claude de VS Code et du terminal, sessions Codex). Claude écrit ses sessions dans `~/.claude/projects/`, Codex dans `~/.codex/sessions/AAAA/MM/JJ/` : les surveiller suffit, sans boucle.
+- Pistes d'UX : `design/prototypes/ux-activite.html` (A le fil, B les agents en grand, C Mikky au centre, plus la page « Nouvelle tâche » et le détail d'un agent).
 
 ### Référence visuelle
 
