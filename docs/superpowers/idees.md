@@ -133,6 +133,45 @@ Garde-fous communs : nombre de tours et temps maximum, arrêt près de la limite
 - Mails : tout reste sur le PC (règle « pas de télémétrie »). Identifiants dans le coffre de Windows.
 - Garder le 0 % de CPU île cachée : LocalSend et les mails doivent attendre des événements, sans boucle d'interrogation ; le modèle n'est chargé que pendant qu'il classe.
 
+## 8. Ce qu'on avait oublié (2026-09-29, retours de l'utilisateur et comparaison avec Paperclip)
+
+Après le premier essai de la petite fenêtre. ✔ = fait. Rien d'autre n'est décidé : on choisit dans cette liste.
+
+**Retours de l'utilisateur**
+41. ✔ Copier-coller : Ctrl+C / Ctrl+V dans le champ, texte du chat sélectionnable, menu « Copier » au clic droit.
+42. **Ranger les sessions** : renommer, épingler, **archiver** (cachée de l'accueil, retrouvable dans « Archives », réversible), **supprimer** (oublier dans Mikky ; en option, effacer aussi le fichier de session de Claude / Codex, avec confirmation), marquer une erreur comme **réglée**.
+43. **Sessions reprises** : une session reprise (« fork » de Claude, `resume` de Codex) recopie l'historique de l'originale, avec les mêmes identifiants de messages. Mikky peut donc les relier : une seule carte (la plus récente), l'originale repliée dedans, et son erreur n'est plus « En attente ». Cas vu : « Mikky app reprise » (erreur de connexion) reprise dans « Mikky app reprise (fork) ».
+44. **Erreurs qui traînent** : une erreur sans nouvelle depuis un moment (30 min ?) passe dans « Terminés », avec un point rouge, au lieu de rester « En attente ».
+45. **Logos** des outils sur les cartes, les pages et le menu du modèle : Claude, Codex, et ceux qu'on ajoutera. Paperclip utilise les icônes de Lobe (licence MIT) : Claude, OpenAI, pi, OpenCode, Gemini, Cursor, Grok, Kimi, Hermes, OpenClaw.
+46. **Plus d'outils** que Claude et Codex, comme Paperclip : **OpenCode** (parle ACP lui-même : `opencode acp`), **pi**, **OpenClaw**, **Gemini CLI** (ACP aussi), Cursor, Kimi, Grok, Hermes. Même principe : l'outil officiel, déjà connecté par l'utilisateur.
+
+**Ce que Paperclip a et que Mikky n'a pas encore** (en simple, pour une personne)
+47. **« Ce qui a besoin de moi »** (leur Inbox / WhatNeedsMe) : une seule liste des questions, feux verts et erreurs de tous les agents. Chez nous : le groupe « En attente », à rendre accessible d'un raccourci.
+48. **« Toujours autoriser »** : Claude et Codex proposent déjà l'option (`allow_always`) ; Mikky n'offre que Oui / Non. À ajouter, en restant par lancement.
+49. **Questions à choix** de Claude (son outil de question) : afficher les choix au lieu d'un Oui / Non.
+50. **Coûts et limites** (leur page Costs) : jetons utilisés par session, et la limite de l'abonnement (combien il reste, quand ça repart). Les adaptateurs envoient déjà l'usage (`usage_update`).
+51. **Artefacts** : les fichiers produits ou modifiés par une tâche, en un endroit, avec le diff complet et « Garder / Annuler » (idée 18).
+52. **Recherche** dans toutes les sessions (leur Search).
+53. **Journal** (leur Timeline) : qui a fait quoi, quand.
+54. **Projets** : ranger les sessions par dossier ou projet (idée 6).
+55. **Routines** (planifier, partie B du MVP) et **heartbeats** (un agent qui se réveille à heure fixe pour vérifier son travail).
+56. **Passer la main** (leur handoff) : donner le travail d'un agent à un autre (« Codex, relis ce que Claude a fait »), avec le contexte.
+57. **Consignes et compétences par agent** (leur Skill Studio, AGENTS.md / CLAUDE.md) et **serveurs MCP** : voir et choisir ce que l'agent a sous la main.
+58. **Espaces de travail** : worktree par session, ports des serveurs lancés par l'agent (idée 7).
+
+**Dans le chat**
+59. Joindre un fichier ou une image (glisser-déposer, coller une capture), mentionner un fichier avec @.
+60. Les commandes de l'agent (`/plan`, `/compact`…), que les adaptateurs annoncent déjà.
+61. Blocs de code avec bouton « Copier », liens cliquables, Markdown complet.
+62. Modifier ou renvoyer son dernier message ; arrêter pendant qu'il écrit.
+63. Ouvrir le dossier, ou le fichier modifié, dans VS Code.
+
+**L'app autour**
+64. Notification Windows quand un agent attend ou a fini, et que l'île est cachée.
+65. Icône dans la zone de notification, démarrage avec Windows, raccourci global pour ouvrir Mikky (idée 26).
+66. Premier lancement guidé : quels outils sont là, lesquels sont connectés, WSL ou pas.
+67. Écran de réglages (thème, position, permissions par défaut, outils), au lieu du seul menu du clic droit.
+
 ## 7. Inspirations
 
 - Paperclip : https://github.com/paperclipai/paperclip (agents, tickets, heartbeats, budgets, approbations, routines).
