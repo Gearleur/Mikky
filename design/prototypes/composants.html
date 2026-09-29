@@ -1,0 +1,757 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikky — composants</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Couleurs relevées sur design/references/boutons-lanceur.png (clair) ; sombre = même logique, inversée, sur le noir « A » de l'île. */
+.t-light{
+  --board:#F9F8F9; --island:#FFFFFF; --well:#F4F3F5; --raise:rgba(244,243,244,.84); --track:#E8E7E9; --thumb:#FFFFFF;
+  --ctl-a:#F1F0F2; --ctl-b:#E4E3E5; --ink:#050406; --ink-hover:#232126; --on-ink:#FFFFFF;
+  --text:#111012; --text-2:#6E6D72; --text-3:#A2A1A6; --line:rgba(0,0,0,.07); --hover:rgba(0,0,0,.035);
+  --hl:rgba(255,255,255,.95); --hl-edge:rgba(255,255,255,.9); --knob:#FFFFFF;
+  --sh-ctl:0 1px 2px rgba(0,0,0,.08),0 3px 8px rgba(0,0,0,.05);
+  --sh-thumb:0 1px 2px rgba(0,0,0,.08),0 3px 10px rgba(0,0,0,.07);
+  --sh-bar:0 10px 30px rgba(20,18,24,.10),0 2px 6px rgba(20,18,24,.06);
+  --sh-ink:0 6px 16px rgba(5,4,6,.20),0 1px 2px rgba(5,4,6,.25);
+  --inset:inset 0 1px 2px rgba(0,0,0,.06);
+  --island-sh:0 0 0 .5px rgba(0,0,0,.08),0 24px 60px rgba(20,18,24,.12),0 4px 14px rgba(20,18,24,.06);
+  --blue:#007AFF; --purple:#AF52DE; --amber:#FF9500; --green:#34C759; --red:#FF3B30; --yellow:#FFCC00; --grey:#AEAEB2;
+}
+.t-dark{
+  --board:#111113; --island:#070708; --well:#121214; --raise:rgba(24,24,27,.84); --track:#1B1B1E; --thumb:#2C2C30;
+  --ctl-a:#26262A; --ctl-b:#1B1B1E; --ink:#F7F7F7; --ink-hover:#FFFFFF; --on-ink:#070708;
+  --text:#F5F5F7; --text-2:#8E8E93; --text-3:#56565B; --line:rgba(255,255,255,.07); --hover:rgba(255,255,255,.04);
+  --hl:rgba(255,255,255,.07); --hl-edge:rgba(255,255,255,.07); --knob:#F7F7F7;
+  --sh-ctl:0 1px 2px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.3);
+  --sh-thumb:0 1px 2px rgba(0,0,0,.5),0 3px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);
+  --sh-bar:0 10px 30px rgba(0,0,0,.5),0 2px 6px rgba(0,0,0,.4);
+  --sh-ink:0 6px 18px rgba(0,0,0,.5),0 1px 2px rgba(0,0,0,.5);
+  --inset:inset 0 1px 2px rgba(0,0,0,.5);
+  --island-sh:inset 0 0 0 1.3px rgba(255,255,255,.08),0 24px 60px rgba(0,0,0,.6);
+  --blue:#3B9EFF; --purple:#A78BFA; --amber:#F5A524; --green:#34D399; --red:#F4505E; --yellow:#FB923C; --grey:#5A5A5F;
+}
+
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font:15px/1.45 Geist,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased;background:#F9F8F9;color:#111012}
+button{font:inherit;color:inherit}
+.page-head{padding:28px 40px 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.page-head h1{font-size:22px;font-weight:600;margin:0 0 4px;letter-spacing:-.015em}
+.page-head p{margin:0;color:#6E6D72;max-width:820px}
+.boards{display:grid;grid-template-columns:1fr 1fr}
+@media (max-width:1400px){.boards{grid-template-columns:1fr}}
+.board{background:var(--board);color:var(--text);padding:34px 40px 56px;min-width:0}
+.board-title{display:flex;align-items:baseline;gap:10px;margin-bottom:26px}
+.board-title h2{margin:0;font-size:17px;font-weight:600}
+.board-title span{color:var(--text-2);font-size:13px}
+.stage{display:flex;gap:44px;flex-wrap:wrap;align-items:flex-start}
+.kit{flex:1;min-width:360px;display:grid;gap:30px}
+.group h3{margin:0 0 12px;font-size:12.5px;font-weight:600;color:var(--text-2)}
+.line{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.line+.line{margin-top:12px}
+.cap{font-size:12.5px;color:var(--text-2);margin:12px 0 0;max-width:460px}
+.sep{width:1px;height:26px;background:var(--line);margin:0 4px}
+.muted{color:var(--text-2);font-size:13px}
+.grow{flex:1}
+
+/* Boutons */
+.btn{--h:44px;height:var(--h);padding:0 22px;border:0;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-weight:600;font-size:15px;letter-spacing:-.005em;cursor:pointer;white-space:nowrap;overflow:hidden;
+  background:linear-gradient(var(--ctl-a),var(--ctl-b));color:var(--text);box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl);
+  transition:transform .34s cubic-bezier(.34,1.56,.64,1),background-color .15s,filter .15s,opacity .2s}
+.btn svg{width:18px;height:18px;margin-left:-3px;flex:none}
+.btn:hover{filter:brightness(1.04)}
+.btn:active{transform:scale(.96);transition:transform .08s ease-out}
+.btn.primary{background:var(--ink);color:var(--on-ink);box-shadow:var(--sh-ink)}
+.btn.primary:hover{background:var(--ink-hover);filter:none}
+.btn.ghost{background:transparent;box-shadow:none;color:var(--text-2)}
+.btn.ghost:hover{background:var(--hover);color:var(--text);filter:none}
+.btn.sm{--h:32px;padding:0 14px;font-size:13px}
+.btn.block{width:100%}
+.btn:disabled{opacity:.35;cursor:default;transform:none;filter:none}
+.round{--s:40px;width:var(--s);height:var(--s);flex:none;border-radius:50%;border:0;padding:0;display:inline-grid;place-items:center;cursor:pointer;
+  background:linear-gradient(var(--ctl-a),var(--ctl-b));color:var(--text);box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl);
+  transition:transform .34s cubic-bezier(.34,1.56,.64,1),filter .15s}
+.round svg{width:20px;height:20px}
+.round.sm{--s:34px}.round.sm svg{width:18px;height:18px}
+.round.xs{--s:26px}.round.xs svg{width:14px;height:14px}
+.round.ink{background:var(--ink);color:var(--on-ink);box-shadow:var(--sh-ink)}
+.round:hover{filter:brightness(1.04)}
+.round:active{transform:scale(.9);transition:transform .08s ease-out}
+.bar{display:inline-flex;align-items:center;gap:10px;padding:8px;border-radius:999px;background:var(--raise);box-shadow:inset 0 0 0 1px var(--hl-edge),var(--sh-bar)}
+:focus-visible{outline:2px solid var(--text-2);outline-offset:2px}
+
+/* Sélecteurs */
+.field-label{display:block;text-align:center;font-size:12.5px;color:var(--text-2);margin-bottom:8px}
+.seg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:4px;border-radius:999px;background:var(--track);box-shadow:var(--inset);min-width:260px}
+.seg>button{position:relative;z-index:1;height:38px;padding:0 18px;border:0;background:none;border-radius:999px;font-weight:600;font-size:14.5px;color:var(--text-2);cursor:pointer;transition:color .18s;white-space:nowrap}
+.seg>button.on{color:var(--text)}
+.thumb{position:absolute;left:0;top:4px;bottom:4px;width:0;border-radius:999px;background:var(--thumb);box-shadow:var(--sh-thumb);will-change:transform,width}
+.seg.xs{min-width:0;padding:3px}.seg.xs>button{height:28px;padding:0 11px;font-size:12.5px}.seg.xs>.thumb{top:3px;bottom:3px}
+.switch{width:50px;height:30px;flex:none;border-radius:999px;border:0;padding:0;position:relative;cursor:pointer;background:var(--track);box-shadow:var(--inset);transition:background-color .25s}
+.switch>span{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:999px;background:var(--knob);box-shadow:var(--sh-thumb);transition:transform .38s cubic-bezier(.34,1.5,.64,1),width .2s cubic-bezier(.2,.8,.2,1),background-color .25s}
+.switch.on{background:var(--ink)}
+.switch.on>span{transform:translateX(20px);background:var(--on-ink)}
+.switch:active>span{width:30px}.switch.on:active>span{transform:translateX(14px)}
+.chip{height:32px;padding:0 13px;border:0;border-radius:999px;display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;flex:none;
+  background:linear-gradient(var(--ctl-a),var(--ctl-b));box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl);color:var(--text);
+  transition:background .18s,color .18s,box-shadow .18s,transform .3s cubic-bezier(.34,1.56,.64,1)}
+.chip b{font-weight:600;color:var(--text-2);font-variant-numeric:tabular-nums;transition:color .18s}
+.chip.on{background:var(--ink);color:var(--on-ink);box-shadow:var(--sh-ink)}.chip.on b{color:inherit;opacity:.6}
+.chip svg{width:15px;height:15px;flex:none}
+.chip:active{transform:scale(.95);transition:transform .08s ease-out}
+.chip.soft{background:var(--track);box-shadow:var(--inset);font-weight:500;padding:0 10px}
+.chip.soft svg:last-child{width:13px;height:13px;color:var(--text-2);margin-left:-2px}
+
+/* Champs */
+.field{height:44px;width:100%;max-width:380px;border-radius:999px;background:var(--track);box-shadow:var(--inset);display:flex;align-items:center;gap:8px;padding:0 16px;color:var(--text-2);transition:background .18s,box-shadow .18s;cursor:text}
+.field svg{width:18px;height:18px;flex:none}
+.field input{flex:1;border:0;background:none;outline:0;font:inherit;font-size:14.5px;color:var(--text);min-width:0}
+.field input::placeholder{color:var(--text-3)}
+.field:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
+
+/* La petite fenêtre (position « à droite ») */
+.side{width:320px;height:560px;border-radius:38px;background:var(--island);box-shadow:var(--island-sh);position:relative;overflow:hidden;flex:none}
+.side-head{display:flex;align-items:center;gap:8px;height:68px;padding:12px 16px 6px 10px}
+.mini-mikky{width:52px;height:52px;margin:-6px -4px -6px -6px;pointer-events:none}
+.side-title{flex:1;font-size:20px;font-weight:600;letter-spacing:-.02em}
+.screens{position:absolute;top:68px;left:0;right:0;bottom:0}
+.screen{position:absolute;inset:0;overflow-y:auto;padding:2px 16px 100px;display:none;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.on{display:block}
+.section-label{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;font-weight:600;color:var(--text-2);margin:16px 6px 8px}
+.count{font-variant-numeric:tabular-nums}
+
+.composer{background:var(--well);border-radius:22px;padding:12px 10px 10px 14px;transition:background .18s,box-shadow .18s}
+.composer:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
+.composer textarea{display:block;width:100%;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;color:var(--text);height:42px;line-height:1.45;padding:0}
+.composer textarea::placeholder{color:var(--text-3)}
+.composer-bar{display:flex;align-items:center;gap:6px;margin-top:6px}
+
+.list{background:var(--well);border-radius:20px;padding:4px}
+.item{overflow:hidden}
+.item+.item::before{content:"";display:block;height:1px;background:var(--line);margin:0 12px 0 48px}
+.row{display:flex;align-items:center;gap:10px;padding:10px 8px 10px 8px;border-radius:16px;transition:background .15s}
+.row:hover{background:var(--hover)}
+.row-main{flex:1;min-width:0}
+.row-title{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:12.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.row-sub>span:last-child{overflow:hidden;text-overflow:ellipsis}
+.row-sub:not(:has(span)){display:block}
+.row-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tag{font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--track);color:var(--text);flex:none}
+.row-end{color:var(--text-3);display:grid;place-items:center;flex:none}.row-end>svg{width:16px;height:16px}
+.row-actions{display:flex;align-items:center;gap:6px;padding:0 8px 10px 46px}
+.code{font:500 12px/1 "Geist Mono",monospace;background:var(--track);padding:7px 8px;border-radius:9px;color:var(--text);white-space:nowrap}
+.lead-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--track);color:var(--text);flex:none}
+.lead-ic svg{width:18px;height:18px}
+.avatar{width:34px;height:34px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:13px;font-weight:600;background:linear-gradient(var(--ctl-a),var(--ctl-b));box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl)}
+.time{font-size:11.5px;color:var(--text-3);flex:none}
+.cat{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--text-2);margin-top:3px}
+.cat i{width:7px;height:7px;border-radius:50%;background:var(--c)}
+
+/* États d'un agent */
+.status{width:28px;height:28px;display:grid;place-items:center;flex:none;--c:var(--grey)}
+.status i{width:10px;height:10px;border-radius:50%;background:var(--c);position:relative;display:grid;place-items:center;transition:background-color .3s,width .3s,height .3s}
+.status i svg{width:11px;height:11px;color:#fff;stroke-width:3;display:none}
+[data-state=working] .status{--c:var(--blue)}
+[data-state=working] .status i::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--c);animation:pulse 1.6s cubic-bezier(.2,.6,.3,1) infinite}
+[data-state=thinking] .status{--c:var(--purple)}
+[data-state=thinking] .status i{animation:breathe 2.4s ease-in-out infinite}
+[data-state=approval] .status{--c:var(--amber)}
+[data-state=approval] .status i{animation:hop 1.8s infinite}
+[data-state=finished] .status{--c:var(--green)}
+[data-state=finished] .status i{width:18px;height:18px;animation:pop .55s cubic-bezier(.34,1.8,.64,1)}
+[data-state=finished] .status i svg{display:block}
+[data-state=error] .status{--c:var(--red)}
+[data-state=error] .status i{animation:shake .45s}
+[data-state=limited] .status{--c:var(--yellow)}
+[data-state=limited] .status i{animation:breathe 3.2s ease-in-out infinite}
+[data-state=sleeping] .status i{animation:breathe 4s ease-in-out infinite;opacity:.7}
+@keyframes pulse{from{transform:scale(1);opacity:.5}to{transform:scale(2.8);opacity:0}}
+@keyframes breathe{50%{transform:scale(.72);opacity:.55}}
+@keyframes hop{0%,42%,100%{transform:translateY(0);animation-timing-function:cubic-bezier(.3,0,.5,1)}
+  10%{transform:translateY(-5px);animation-timing-function:cubic-bezier(.5,0,.7,1)}20%{transform:translateY(0);animation-timing-function:cubic-bezier(.3,0,.5,1)}
+  30%{transform:translateY(-5px);animation-timing-function:cubic-bezier(.5,0,.7,1)}}
+@keyframes pop{from{transform:scale(.3)}to{transform:scale(1)}}
+@keyframes shake{20%{transform:translateX(-3px)}40%{transform:translateX(3px)}60%{transform:translateX(-2px)}80%{transform:translateX(1px)}}
+.states{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px 16px}
+.st{display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:12px;padding:4px 8px 4px 2px;transition:background .15s}
+.st:hover{background:var(--hover)}
+.st b{display:block;font-size:13.5px;font-weight:600}.st small{display:block;font-size:12px;color:var(--text-2)}
+
+/* Navigation */
+.tabbar{position:absolute;left:12px;right:12px;bottom:12px;height:62px;border-radius:31px;padding:5px;z-index:5;display:grid;grid-template-columns:repeat(3,1fr);
+  background:var(--raise);-webkit-backdrop-filter:blur(20px) saturate(1.5);backdrop-filter:blur(20px) saturate(1.5);box-shadow:inset 0 0 0 1px var(--hl-edge),var(--sh-bar)}
+.tabbar>.thumb{top:5px;bottom:5px;border-radius:26px}
+.tab{position:relative;z-index:1;border:0;background:none;border-radius:26px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:600;color:var(--text-2);cursor:pointer;transition:color .18s}
+.tab svg{width:21px;height:21px}
+.tab.on{color:var(--text)}
+.tabbar.mini{position:relative;left:auto;right:auto;bottom:auto;display:inline-grid;grid-template-columns:repeat(4,50px);height:52px;border-radius:26px}
+.tabbar.mini>.thumb{border-radius:21px}
+.badge{position:absolute;top:5px;left:calc(50% + 5px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--ink);color:var(--on-ink);font:700 10px/17px Geist,sans-serif;text-align:center;box-shadow:0 0 0 2px var(--island)}
+.dot-badge{position:absolute;top:8px;left:calc(50% + 7px);width:9px;height:9px;border-radius:50%;background:var(--amber);box-shadow:0 0 0 2px var(--island);transform:scale(0);transition:transform .35s cubic-bezier(.34,1.8,.64,1)}
+.dot-badge.show{transform:scale(1)}
+.badge-demo{position:relative;display:inline-grid}
+.badge-demo .badge{top:-4px;left:auto;right:-6px;box-shadow:0 0 0 2px var(--board)}
+.badge-demo .dot-badge{top:0;left:auto;right:0;transform:scale(1);box-shadow:0 0 0 2px var(--board)}
+.topbar{display:flex;align-items:center;justify-content:space-between;width:300px;padding:6px;border-radius:999px;background:var(--raise);box-shadow:inset 0 0 0 1px var(--hl-edge),var(--sh-bar)}
+.topbar>span{font-weight:600;font-size:15px}
+
+/* Partage */
+.devices{display:flex;gap:12px;padding:2px 2px 0}
+.device{border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text);cursor:pointer;width:62px}
+.device .bubble{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(var(--ctl-a),var(--ctl-b));box-shadow:inset 0 1px 0 var(--hl),var(--sh-ctl);transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
+.device .bubble svg{width:24px;height:24px}
+.device:active .bubble{transform:scale(.9);transition:transform .08s ease-out}
+.device.add{color:var(--text-2)}
+.device.add .bubble{background:none;box-shadow:none;border:1.5px dashed var(--text-3)}
+.looking{display:inline-flex;gap:3px}
+.looking i{width:4px;height:4px;border-radius:50%;background:var(--text-2);animation:dots 1.2s infinite}
+.looking i:nth-child(2){animation-delay:.15s}.looking i:nth-child(3){animation-delay:.3s}
+@keyframes dots{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-3px);opacity:1}}
+
+/* Retours */
+.progress{height:4px;border-radius:2px;background:var(--track);overflow:hidden;margin:6px 0 5px}
+.progress>i{display:block;height:100%;border-radius:2px;background:var(--ink)}
+.progress.indet>i{width:35%;animation:indet 1.3s cubic-bezier(.6,0,.4,1) infinite}
+@keyframes indet{from{transform:translateX(-100%)}to{transform:translateX(300%)}}
+.spin{width:16px;height:16px;flex:none;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+.toast{position:absolute;top:10px;left:10px;right:10px;z-index:10;display:flex;align-items:center;gap:10px;padding:9px 9px 9px 10px;border-radius:24px;
+  background:var(--raise);-webkit-backdrop-filter:blur(24px) saturate(1.6);backdrop-filter:blur(24px) saturate(1.6);box-shadow:inset 0 0 0 1px var(--hl-edge),var(--sh-bar)}
+.toast.static{position:relative;inset:auto;width:300px}
+.toast .lead-ic{border-radius:50%;background:var(--ink);color:var(--on-ink)}
+.t-main{flex:1;min-width:0}
+.t-title{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.t-sub{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{display:flex;align-items:center;gap:6px;justify-content:center;font-size:12px;color:var(--text-3);margin-top:14px}
+.note svg{width:13px;height:13px}
+.chips-row{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px 12px;padding:4px 16px 6px}
+.chips-row::-webkit-scrollbar{display:none}
+
+/* Tableau des animations */
+.motion{padding:40px 40px 64px;max-width:1100px}
+.motion h2{font-size:17px;margin:0 0 6px}
+.motion p{color:#6E6D72;margin:0 0 16px}
+.motion table{border-collapse:collapse;width:100%;font-size:14px}
+.motion td,.motion th{text-align:left;padding:9px 12px;border-bottom:1px solid rgba(0,0,0,.07);vertical-align:top}
+.motion th{font-size:12.5px;color:#6E6D72;font-weight:600}
+.motion td:first-child{font-weight:600;white-space:nowrap}
+.motion td:last-child{font-family:"Geist Mono",monospace;font-size:12.5px;color:#3A393D}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</head><body>
+
+<header class="page-head t-light">
+  <div>
+    <h1>Mikky : boutons, navigation et animations</h1>
+    <p>Couleurs et formes reprises de ton image : gris, blanc, noir ; capsules, boutons ronds, capsule blanche pour le choix actif, ombres douces. À gauche le clair, à droite le sombre. Tout est cliquable : onglets, sélecteurs, Oui / Non, envoyer, appareils, filtres des mails.</p>
+  </div>
+  <button class="btn primary" id="replay"><span data-i="refresh"></span>Rejouer</button>
+</header>
+
+<main class="boards">
+  <section class="board t-light" data-board="light"></section>
+  <section class="board t-dark" data-board="dark"></section>
+</main>
+
+<section class="motion">
+  <h2>Les animations</h2>
+  <p>Valeurs à reprendre telles quelles dans Flutter. Les ressorts sont les mêmes que ceux de l'île (raideur, amortissement).</p>
+  <table>
+    <tr><th>Quoi</th><th>Ce qu'on voit</th><th>Valeurs</th></tr>
+    <tr><td>Appui</td><td>Le bouton rétrécit un peu, puis revient avec un léger rebond.</td><td>0,96 (rond : 0,90) en 80 ms · retour 340 ms, dépassement ~5 %</td></tr>
+    <tr><td>Sélecteur, onglets</td><td>La capsule blanche glisse et s'étire un peu pendant le trajet, comme de la gelée.</td><td>ressort 420 / 0,78 · étirement ≤ 10 px</td></tr>
+    <tr><td>Changement d'écran</td><td>L'ancien écran part en fondu et en flou, le nouveau arrive du côté de l'onglet choisi.</td><td>sortie 150 ms · entrée 260 ms · 16 px · flou 4 px</td></tr>
+    <tr><td>Icône d'onglet</td><td>Petit rebond de l'icône choisie ; le titre change en fondu.</td><td>ressort 500 / 0,45 · titre 120 + 220 ms</td></tr>
+    <tr><td>Interrupteur</td><td>Le rond glisse avec rebond ; il s'allonge tant qu'on appuie.</td><td>380 ms · 24 → 30 px</td></tr>
+    <tr><td>Nouvelle ligne</td><td>La place s'ouvre, la ligne descend un peu et apparaît.</td><td>320 ms · 8 px</td></tr>
+    <tr><td>Ligne qui part</td><td>Elle se replie en fondu.</td><td>240 ms</td></tr>
+    <tr><td>Notification</td><td>La bulle tombe du haut avec un ressort, reste, puis remonte en fondu.</td><td>ressort 300 / 0,62 · reste 2,8 s · sortie 220 ms</td></tr>
+    <tr><td>Travaille</td><td>Point bleu et onde qui s'élargit.</td><td>1,6 s en boucle</td></tr>
+    <tr><td>Réfléchit, limité, dort</td><td>Le point respire, de plus en plus lentement.</td><td>2,4 s · 3,2 s · 4 s</td></tr>
+    <tr><td>Attend ton feu vert</td><td>Deux petits sauts, puis une pause, comme Mikky.</td><td>1,8 s en boucle · 5 px</td></tr>
+    <tr><td>Terminé</td><td>La coche verte apparaît avec un rebond.</td><td>550 ms</td></tr>
+    <tr><td>Erreur</td><td>Le point rouge tremble une fois.</td><td>450 ms</td></tr>
+    <tr><td>Moins d'animations</td><td>Si Windows le demande : fondus seuls, sans rebond.</td><td>prefers-reduced-motion</td></tr>
+  </table>
+</section>
+
+<template id="tpl">
+<div class="board-title"><h2 data-name></h2><span data-sub></span></div>
+<div class="stage">
+  <div class="side">
+    <div class="side-head">
+      <img class="mini-mikky" alt="" data-mikky>
+      <div class="side-title" data-title>Agents</div>
+      <button class="round sm" data-head-btn aria-label="Réglages"><span data-i="sliders"></span></button>
+    </div>
+    <div class="screens">
+
+      <div class="screen on" data-screen="agents">
+        <div class="composer">
+          <textarea rows="2" placeholder="Que doit faire l'agent ?" data-prompt></textarea>
+          <div class="composer-bar">
+            <button class="chip soft"><span data-i="folder"></span>mikky<span data-i="down"></span></button>
+            <div class="seg xs" data-seg data-who><span class="thumb"></span><button class="on">Claude</button><button>Codex</button></div>
+            <span class="grow"></span>
+            <button class="round sm ink" data-send aria-label="Lancer"><span data-i="up"></span></button>
+          </div>
+        </div>
+        <div class="section-label"><span>En cours</span><span class="count" data-count>3</span></div>
+        <div class="list" data-agents>
+          <div class="item" data-state="working">
+            <div class="row">
+              <span class="status"><i><span data-i="check"></span></i></span>
+              <div class="row-main"><div class="row-title">Corrige les tests du moteur</div><div class="row-sub"><span class="tag">Claude</span><span>mikky · travaille · 4 min</span></div></div>
+              <span class="row-end"><span data-i="right"></span></span>
+            </div>
+          </div>
+          <div class="item" data-state="approval">
+            <div class="row">
+              <span class="status"><i><span data-i="check"></span></i></span>
+              <div class="row-main"><div class="row-title">Met à jour le site</div><div class="row-sub"><span class="tag">Codex</span><span data-sub-text>site · attend ton feu vert</span></div></div>
+              <span class="row-end"><span data-i="right"></span></span>
+            </div>
+            <div class="row-actions" data-actions>
+              <code class="code">npm run build</code>
+              <span class="grow"></span>
+              <button class="btn sm" data-no>Non</button>
+              <button class="btn sm primary" data-yes>Oui</button>
+            </div>
+          </div>
+          <div class="item" data-state="finished">
+            <div class="row">
+              <span class="status"><i><span data-i="check"></span></i></span>
+              <div class="row-main"><div class="row-title">Résume la spec de l'étape 1</div><div class="row-sub"><span class="tag">Claude</span><span>docs · terminé · 12 min</span></div></div>
+              <span class="row-end"><span data-i="right"></span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" data-screen="partage">
+        <div class="list">
+          <div class="item"><div class="row">
+            <span class="lead-ic"><span data-i="share"></span></span>
+            <div class="row-main"><div class="row-title">Visible sur le réseau</div><div class="row-sub">Nom : Mikky · PC</div></div>
+            <button class="switch on" data-switch aria-label="Visible"><span></span></button>
+          </div></div>
+        </div>
+        <div class="section-label"><span>Appareils autour</span><span class="looking"><i></i><i></i><i></i></span></div>
+        <div class="devices">
+          <button class="device" data-device="Téléphone"><span class="bubble"><span data-i="phone"></span></span><span>Téléphone</span></button>
+          <button class="device" data-device="Portable"><span class="bubble"><span data-i="laptop"></span></span><span>Portable</span></button>
+          <button class="device add"><span class="bubble"><span data-i="plus"></span></span><span>Autre</span></button>
+        </div>
+        <div class="section-label"><span>Transferts</span></div>
+        <div class="list">
+          <div class="item" data-transfer>
+            <div class="row">
+              <span class="lead-ic"><span data-i="file"></span></span>
+              <div class="row-main"><div class="row-title">IMG_2041.jpg</div><div class="progress" data-bar><i style="width:62%"></i></div><div class="row-sub" data-tx-sub>De Téléphone · 1,5 / 2,4 Mo</div></div>
+              <span class="row-end" data-tx-end><button class="round xs" aria-label="Annuler"><span data-i="x"></span></button></span>
+            </div>
+          </div>
+          <div class="item" data-state="finished">
+            <div class="row">
+              <span class="lead-ic"><span data-i="file"></span></span>
+              <div class="row-main"><div class="row-title">notes-reunion.pdf</div><div class="row-sub">Envoyé à Portable · 312 Ko</div></div>
+              <span class="status"><i><span data-i="check"></span></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="screen" data-screen="mails">
+        <div class="chips-row" data-chips>
+          <button class="chip on" data-cat="tous">Tous <b>6</b></button>
+          <button class="chip" data-cat="important">Important <b>2</b></button>
+          <button class="chip" data-cat="repondre">À répondre <b>1</b></button>
+          <button class="chip" data-cat="factures">Factures <b>1</b></button>
+          <button class="chip" data-cat="pubs">Pubs <b>2</b></button>
+        </div>
+        <div class="list" data-mails>
+          <div class="item" data-cat="important"><div class="row"><span class="avatar">G</span><div class="row-main"><div class="row-top"><span class="row-title">GitHub</span><span class="time">9:12</span></div><div class="row-sub">Les tests ont échoué sur main</div><span class="cat" style="--c:var(--red)"><i></i>Important</span></div></div></div>
+          <div class="item" data-cat="repondre"><div class="row"><span class="avatar">É</span><div class="row-main"><div class="row-top"><span class="row-title">Équipe projet</span><span class="time">8:47</span></div><div class="row-sub">On se cale jeudi pour la démo ?</div><span class="cat" style="--c:var(--blue)"><i></i>À répondre</span></div></div></div>
+          <div class="item" data-cat="factures"><div class="row"><span class="avatar">B</span><div class="row-main"><div class="row-top"><span class="row-title">Banque</span><span class="time">8:30</span></div><div class="row-sub">Votre relevé de septembre est disponible</div><span class="cat" style="--c:var(--amber)"><i></i>Factures</span></div></div></div>
+          <div class="item" data-cat="important"><div class="row"><span class="avatar">L</span><div class="row-main"><div class="row-top"><span class="row-title">Livraison</span><span class="time">Hier</span></div><div class="row-sub">Votre colis arrive demain entre 9 h et 13 h</div><span class="cat" style="--c:var(--red)"><i></i>Important</span></div></div></div>
+          <div class="item" data-cat="pubs"><div class="row"><span class="avatar">N</span><div class="row-main"><div class="row-top"><span class="row-title">Newsletter</span><span class="time">Hier</span></div><div class="row-sub">Les nouveautés du mois</div><span class="cat" style="--c:var(--grey)"><i></i>Pubs</span></div></div></div>
+          <div class="item" data-cat="pubs"><div class="row"><span class="avatar">B</span><div class="row-main"><div class="row-top"><span class="row-title">Boutique</span><span class="time">Lun.</span></div><div class="row-sub">-30 % sur tout le site ce week-end</div><span class="cat" style="--c:var(--grey)"><i></i>Pubs</span></div></div></div>
+        </div>
+        <div class="note"><span data-i="lock"></span>Classés sur ce PC, rien ne sort.</div>
+      </div>
+
+    </div>
+    <nav class="tabbar" data-tabs>
+      <span class="thumb"></span>
+      <button class="tab on" data-to="agents"><span data-i="agents"></span>Agents<i class="dot-badge show" data-wait-dot></i></button>
+      <button class="tab" data-to="partage"><span data-i="share"></span>Partage</button>
+      <button class="tab" data-to="mails"><span data-i="mail"></span>Mails<b class="badge">2</b></button>
+    </nav>
+  </div>
+
+  <div class="kit">
+    <section class="group">
+      <h3>Boutons</h3>
+      <div class="line"><button class="btn primary">Lancer</button><button class="btn">Annuler</button><button class="btn ghost">Plus tard</button></div>
+      <div class="line"><button class="btn sm primary">Oui</button><button class="btn sm">Non</button><span class="sep"></span><button class="btn primary" disabled>Lancer</button><button class="btn primary" data-loading>Envoyer</button></div>
+      <div class="line">
+        <button class="round" aria-label="Dossier"><span data-i="folder"></span></button>
+        <button class="round" aria-label="Réglages"><span data-i="sliders"></span></button>
+        <button class="round" aria-label="Ajouter"><span data-i="plus"></span></button>
+        <button class="round ink" aria-label="Lancer"><span data-i="up"></span></button>
+        <button class="round sm" aria-label="Plus"><span data-i="more"></span></button>
+        <button class="round xs" aria-label="Fermer"><span data-i="x"></span></button>
+      </div>
+      <div class="line"><div class="bar">
+        <button class="round" aria-label="Joindre"><span data-i="clip"></span></button>
+        <button class="btn primary"><span data-i="share"></span>Envoyer à Téléphone</button>
+        <button class="round" aria-label="Réglages"><span data-i="sliders"></span></button>
+      </div></div>
+      <p class="cap">Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Rond : une action en icône. Barre : un groupe d'actions posé sur une capsule. Clique sur « Envoyer » pour voir le chargement.</p>
+    </section>
+
+    <section class="group">
+      <h3>Sélecteurs</h3>
+      <div class="line"><div><span class="field-label">Agent</span><div class="seg" data-seg><span class="thumb"></span><button class="on">Claude</button><button>Codex</button></div></div></div>
+      <div class="line"><div class="seg" data-seg><span class="thumb"></span><button class="on">Tous</button><button>En cours</button><button>Finis</button></div></div>
+      <div class="line">
+        <button class="switch on" data-switch aria-label="Activé"><span></span></button>
+        <button class="switch" data-switch aria-label="Désactivé"><span></span></button>
+        <span class="sep"></span>
+        <button class="chip on" data-toggle>Important <b>2</b></button>
+        <button class="chip" data-toggle>À répondre <b>1</b></button>
+        <button class="chip soft"><span data-i="folder"></span>mikky<span data-i="down"></span></button>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Champs</h3>
+      <div class="line"><label class="field"><span data-i="search"></span><input placeholder="Chercher une session, un fichier…"></label></div>
+      <div class="line"><label class="field"><input placeholder="Nom du projet" value="mikky"></label></div>
+    </section>
+
+    <section class="group">
+      <h3>Navigation</h3>
+      <div class="line"><div class="topbar"><button class="round sm" aria-label="Retour"><span data-i="left"></span></button><span>Réglages</span><button class="round sm" aria-label="Plus"><span data-i="more"></span></button></div></div>
+      <div class="line"><nav class="tabbar mini" data-tabs-mini><span class="thumb"></span>
+        <button class="tab on" aria-label="Agents"><span data-i="agents"></span></button>
+        <button class="tab" aria-label="Partage"><span data-i="share"></span></button>
+        <button class="tab" aria-label="Mails"><span data-i="mail"></span></button>
+        <button class="tab" aria-label="Réglages"><span data-i="sliders"></span></button>
+      </nav></div>
+      <p class="cap">Dans la petite fenêtre : barre d'onglets flottante en bas (à gauche). Barre de titre avec retour pour les écrans de détail. Version en icônes seules pour les endroits étroits.</p>
+    </section>
+
+    <section class="group">
+      <h3>États d'un agent (clique pour rejouer)</h3>
+      <div class="states">
+        <div class="st" data-state="working"><span class="status"><i><span data-i="check"></span></i></span><div><b>Travaille</b><small>onde bleue</small></div></div>
+        <div class="st" data-state="thinking"><span class="status"><i><span data-i="check"></span></i></span><div><b>Réfléchit</b><small>respire</small></div></div>
+        <div class="st" data-state="approval"><span class="status"><i><span data-i="check"></span></i></span><div><b>Attend ton feu vert</b><small>deux sauts, une pause</small></div></div>
+        <div class="st" data-state="finished"><span class="status"><i><span data-i="check"></span></i></span><div><b>Terminé</b><small>coche qui rebondit</small></div></div>
+        <div class="st" data-state="error"><span class="status"><i><span data-i="check"></span></i></span><div><b>Erreur</b><small>tremble une fois</small></div></div>
+        <div class="st" data-state="limited"><span class="status"><i><span data-i="check"></span></i></span><div><b>Limité</b><small>attend la fin de la limite</small></div></div>
+        <div class="st" data-state="sleeping"><span class="status"><i><span data-i="check"></span></i></span><div><b>Dort</b><small>presque éteint</small></div></div>
+      </div>
+    </section>
+
+    <section class="group">
+      <h3>Retours</h3>
+      <div class="line"><div class="toast static"><span class="lead-ic"><span data-i="file"></span></span><div class="t-main"><div class="t-title">IMG_2041.jpg reçue</div><div class="t-sub">De Téléphone · rangée dans Téléchargements</div></div><button class="btn sm">Ouvrir</button></div></div>
+      <div class="line"><button class="btn sm" data-show-toast>Montrer une notification</button></div>
+      <div class="line" style="max-width:380px"><div class="progress" style="flex:1"><i style="width:40%"></i></div></div>
+      <div class="line" style="max-width:380px"><div class="progress indet" style="flex:1"><i></i></div></div>
+      <div class="line"><span class="spin"></span><span class="muted">Recherche des appareils…</span><span class="sep"></span>
+        <span class="badge-demo"><button class="round" aria-label="Mails"><span data-i="mail"></span></button><b class="badge">2</b></span>
+        <span class="badge-demo"><button class="round" aria-label="Agents"><span data-i="agents"></span></button><i class="dot-badge"></i></span>
+      </div>
+    </section>
+  </div>
+</div>
+</template>
+
+<script>
+const I = {
+  folder:'<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
+  sliders:'<path d="M4 7h9M17 7h3M4 12h3M11 12h9M4 17h11M19 17h1"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="17" r="2"/>',
+  up:'<path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  check:'<path d="m6 12.5 4 4 8-9"/>',
+  x:'<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>',
+  right:'<path d="m9.5 6 6 6-6 6"/>',
+  left:'<path d="m14.5 6-6 6 6 6"/>',
+  down:'<path d="m6 9.5 6 6 6-6"/>',
+  search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',
+  mail:'<rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/>',
+  share:'<path d="M12 14.5V4M7.5 8.5 12 4l4.5 4.5M5 12.5v5A2.5 2.5 0 0 0 7.5 20h9a2.5 2.5 0 0 0 2.5-2.5v-5"/>',
+  agents:'<rect x="3.5" y="5" width="17" height="14" rx="3.5"/><path d="m7.5 10 2.5 2-2.5 2M12.5 14.5h4"/>',
+  phone:'<rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/>',
+  laptop:'<path d="M5.5 16V7A1.5 1.5 0 0 1 7 5.5h10A1.5 1.5 0 0 1 18.5 7v9M3 18.5h18"/>',
+  file:'<path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M13.5 3.5v5h5"/>',
+  refresh:'<path d="M19.5 12a7.5 7.5 0 1 1-2.2-5.3M19.5 4.5v4h-4"/>',
+  lock:'<rect x="5.5" y="11" width="13" height="9" rx="2"/><path d="M8.5 11V8.5a3.5 3.5 0 0 1 7 0V11"/>',
+  clip:'<path d="m19.5 11.5-7.8 7.8a4.6 4.6 0 0 1-6.5-6.5l8.1-8.1a3.1 3.1 0 0 1 4.4 4.4l-8.1 8.1a1.5 1.5 0 0 1-2.2-2.2l7.4-7.4"/>',
+  more:'<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
+};
+const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+const icons = root => root.querySelectorAll('[data-i]').forEach(s => { s.outerHTML = svg(s.dataset.i); });
+icons(document.querySelector('.page-head'));
+
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches || location.hash.includes('calme');
+
+// Ressort échantillonné en easing CSS linear(), pour les animations Web.
+function springEase(k, z) {
+  if (RM) return { easing: 'linear', duration: 1 };
+  const dt = 1 / 60, c = 2 * Math.sqrt(k) * z, pts = [0];
+  let x = 0, v = 0, n = 0;
+  do {
+    for (let i = 0; i < 8; i++) { const a = k * (1 - x) - c * v; v += a * dt / 8; x += v * dt / 8; }
+    pts.push(+x.toFixed(4)); n++;
+  } while (n < 240 && !(Math.abs(1 - x) < .002 && Math.abs(v) < .02));
+  pts[pts.length - 1] = 1;
+  return { easing: `linear(${pts.join(',')})`, duration: Math.round(n * dt * 1000) };
+}
+const POP = springEase(500, .45), DROP = springEase(300, .62);
+const OUT = { duration: RM ? 1 : 150, easing: 'ease-in' }, IN = { duration: RM ? 1 : 260, easing: 'cubic-bezier(.2,.8,.2,1)' };
+
+// Une seule boucle d'animation, arrêtée dès qu'il n'y a plus rien à faire.
+const jobs = new Set(); let raf = 0, last = 0;
+function run(job) { jobs.add(job); if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } }
+function tick(t) {
+  const dt = Math.min(.033, (t - last) / 1000); last = t;
+  for (const j of [...jobs]) if (j(dt)) jobs.delete(j);
+  raf = jobs.size ? requestAnimationFrame(tick) : 0;
+}
+function step(o, target, dt, k, z) {
+  const c = 2 * Math.sqrt(k) * z;
+  for (let i = 0; i < 4; i++) { const a = k * (target - o.x) - c * o.v; o.v += a * dt / 4; o.x += o.v * dt / 4; }
+}
+
+// Capsule qui glisse (sélecteurs, onglets) : ressort 420 / 0,78, étirée par la vitesse.
+const thumbs = new WeakMap();
+function placeThumb(host, btn, instant) {
+  const th = host.querySelector(':scope>.thumb'), x = btn.offsetLeft, w = btn.offsetWidth;
+  let s = thumbs.get(host);
+  if (!s || instant || RM) {
+    s = { x: { x, v: 0 }, w: { x: w, v: 0 }, tx: x, tw: w, job: null };
+    thumbs.set(host, s); th.style.transform = `translateX(${x}px)`; th.style.width = w + 'px'; return;
+  }
+  s.tx = x; s.tw = w;
+  if (s.job) return;
+  s.job = dt => {
+    step(s.x, s.tx, dt, 420, .78); step(s.w, s.tw, dt, 420, .78);
+    const stretch = Math.min(10, Math.abs(s.x.v) * .012), off = s.x.v > 0 ? stretch : 0;
+    th.style.transform = `translateX(${s.x.x - off}px)`; th.style.width = (s.w.x + stretch) + 'px';
+    const done = Math.abs(s.tx - s.x.x) < .1 && Math.abs(s.x.v) < 1 && Math.abs(s.tw - s.w.x) < .1;
+    if (done) { th.style.transform = `translateX(${s.tx}px)`; th.style.width = s.tw + 'px'; s.job = null; }
+    return done;
+  };
+  run(s.job);
+}
+function placeAll(board, instant) {
+  board.querySelectorAll('[data-seg],[data-tabs],[data-tabs-mini]').forEach(h => {
+    const on = h.querySelector(':scope>button.on'); if (on) placeThumb(h, on, instant);
+  });
+}
+
+function swapText(el, text) {
+  el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: RM ? 1 : 120, easing: 'ease-in' })
+    .onfinish = () => {
+      el.textContent = text;
+      el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: RM ? 1 : 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    };
+}
+function expand(el) {
+  el.style.display = '';
+  const h = el.offsetHeight;
+  el.animate([{ height: '0px', opacity: 0, transform: 'translateY(-8px)' }, { height: h + 'px', opacity: 1, transform: 'none' }],
+    { duration: RM ? 1 : 320, easing: 'cubic-bezier(.2,.8,.2,1)' });
+}
+function collapse(el, then) {
+  const h = el.offsetHeight;
+  el.style.overflow = 'hidden';
+  el.animate([{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' }],
+    { duration: RM ? 1 : 240, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => then(el);
+}
+function restartStatus(el) {
+  const i = el.querySelector('.status i');
+  i.style.animation = 'none'; void i.offsetWidth; i.style.animation = '';
+}
+
+function toast(board, title, sub, ic, action) {
+  const side = board.querySelector('.side');
+  side.querySelector('.toast')?.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = `<span class="lead-ic">${svg(ic)}</span><div class="t-main"><div class="t-title">${title}</div><div class="t-sub">${sub}</div></div>` +
+    (action ? `<button class="btn sm primary">${action.label}</button>` : '');
+  if (action) t.querySelector('button').onclick = () => { action.fn(); hide(); };
+  side.append(t);
+  t.animate([{ transform: 'translateY(-130%) scale(.9)', opacity: 0 }, { transform: 'none', opacity: 1 }], DROP);
+  let gone = false;
+  function hide() {
+    if (gone) return; gone = true;
+    t.animate([{ transform: 'none', opacity: 1, filter: 'blur(0)' }, { transform: 'translateY(-40%) scale(.96)', opacity: 0, filter: 'blur(4px)' }],
+      { duration: RM ? 1 : 220, easing: 'ease-in' }).onfinish = () => t.remove();
+  }
+  setTimeout(hide, 2800);
+}
+
+const ORDER = ['agents', 'partage', 'mails'];
+const TITLES = { agents: 'Agents', partage: 'Partage', mails: 'Mails' };
+const HEAD = { agents: 'sliders', partage: 'share', mails: 'refresh' };
+function go(board, to) {
+  const cur = board.querySelector('.screen.on:not(.leaving)'), next = board.querySelector(`.screen[data-screen=${to}]`);
+  if (cur === next) return;
+  const dir = ORDER.indexOf(to) > ORDER.indexOf(cur.dataset.screen) ? 1 : -1;
+  const tabs = board.querySelector('[data-tabs]');
+  tabs.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.to === to));
+  const btn = tabs.querySelector(`[data-to=${to}]`);
+  placeThumb(tabs, btn);
+  btn.querySelector('svg').animate([{ transform: 'scale(.78)' }, { transform: 'scale(1)' }], POP);
+  swapText(board.querySelector('[data-title]'), TITLES[to]);
+  const hb = board.querySelector('[data-head-btn]');
+  hb.innerHTML = svg(HEAD[to]); hb.classList.toggle('ink', to === 'partage'); hb.animate([{ transform: 'scale(.8)', opacity: .4 }, { transform: 'scale(1)', opacity: 1 }], POP);
+  cur.classList.add('leaving');
+  cur.animate([{ opacity: 1, transform: 'none', filter: 'blur(0)' }, { opacity: 0, transform: `translateX(${-dir * 16}px)`, filter: 'blur(4px)' }], OUT)
+    .onfinish = () => cur.classList.remove('on', 'leaving');
+  next.classList.remove('leaving'); next.classList.add('on');
+  next.animate([{ opacity: 0, transform: `translateX(${dir * 16}px)`, filter: 'blur(4px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }],
+    { ...IN, delay: RM ? 0 : 60, fill: 'backwards' });
+  if (to === 'partage') showPartage(board);
+}
+
+function refreshAgents(board) {
+  const list = board.querySelector('[data-agents]');
+  board.querySelector('[data-count]').textContent = list.querySelectorAll('.item').length;
+  board.querySelector('[data-wait-dot]').classList.toggle('show', !!list.querySelector('[data-state=approval]'));
+}
+function bindApproval(board, item) {
+  const sub = item.querySelector('[data-sub-text]'), actions = item.querySelector('[data-actions]');
+  const answer = (state, text) => {
+    item.dataset.state = state; restartStatus(item);
+    item.querySelector('.status i').animate([{ transform: 'scale(.4)' }, { transform: 'scale(1)' }], POP);
+    swapText(sub, text);
+    collapse(actions, el => { el.remove(); refreshAgents(board); });
+  };
+  item.querySelector('[data-yes]').onclick = () => answer('working', 'site · travaille');
+  item.querySelector('[data-no]').onclick = () => answer('idle', 'site · refusé, attend une autre consigne');
+}
+
+function showPartage(board) {
+  board.querySelectorAll('.device').forEach((d, i) =>
+    d.querySelector('.bubble').animate([{ transform: 'scale(.5)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { ...POP, delay: RM ? 0 : 120 + i * 70, fill: 'backwards' }));
+  if (board._tx) return; board._tx = true;
+  const row = board.querySelector('[data-transfer]'), bar = row.querySelector('[data-bar] i'), sub = row.querySelector('[data-tx-sub]');
+  let p = .62;
+  run(dt => {
+    p = Math.min(1, p + dt * .12);
+    bar.style.width = (p * 100) + '%';
+    sub.textContent = `De Téléphone · ${(2.4 * p).toFixed(1).replace('.', ',')} / 2,4 Mo`;
+    if (p < 1) return false;
+    collapse(row.querySelector('[data-bar]'), el => el.remove());
+    row.dataset.state = 'finished';
+    row.querySelector('[data-tx-end]').outerHTML = `<span class="status"><i>${svg('check')}</i></span>`;
+    swapText(sub, 'Reçu de Téléphone · 2,4 Mo');
+    toast(board, 'IMG_2041.jpg reçue', 'De Téléphone · rangée dans Téléchargements', 'file', { label: 'Ouvrir', fn: () => {} });
+    return true;
+  });
+}
+
+function build(board, theme) {
+  board._tx = false;
+  board.innerHTML = document.getElementById('tpl').innerHTML;
+  icons(board);
+  board.querySelector('[data-name]').textContent = theme === 'light' ? 'Clair' : 'Sombre';
+  board.querySelector('[data-sub]').textContent = theme === 'light' ? 'avec l’île blanc pur' : 'avec l’île noir A';
+  board.querySelector('[data-mikky]').src = `../references/mikky-idle-${theme}.png`;
+
+  board.querySelectorAll('[data-seg],[data-tabs-mini]').forEach(h => h.querySelectorAll(':scope>button').forEach(b => b.onclick = () => {
+    h.querySelectorAll(':scope>button').forEach(x => x.classList.toggle('on', x === b));
+    placeThumb(h, b);
+    if (h.matches('[data-tabs-mini]')) b.querySelector('svg').animate([{ transform: 'scale(.78)' }, { transform: 'scale(1)' }], POP);
+  }));
+  board.querySelectorAll('[data-tabs] .tab').forEach(b => b.onclick = () => go(board, b.dataset.to));
+  board.querySelectorAll('[data-switch]').forEach(s => s.onclick = () => s.classList.toggle('on'));
+  board.querySelectorAll('[data-toggle]').forEach(c => c.onclick = () => c.classList.toggle('on'));
+  board.querySelectorAll('.st').forEach(s => s.onclick = () => restartStatus(s));
+
+  // Agents : lancer, Oui / Non.
+  board.querySelectorAll('[data-agents] .item').forEach(it => { if (it.querySelector('[data-yes]')) bindApproval(board, it); });
+  board.querySelector('[data-send]').onclick = () => {
+    const ta = board.querySelector('[data-prompt]'), who = board.querySelector('[data-who] .on').textContent;
+    const title = ta.value.trim() || 'Nouvelle tâche';
+    const it = document.createElement('div');
+    it.className = 'item'; it.dataset.state = 'working';
+    it.innerHTML = `<div class="row"><span class="status"><i>${svg('check')}</i></span><div class="row-main"><div class="row-title"></div><div class="row-sub"><span class="tag">${who}</span><span>mikky · démarre…</span></div></div><span class="row-end">${svg('right')}</span></div>`;
+    it.querySelector('.row-title').textContent = title;
+    board.querySelector('[data-agents]').prepend(it);
+    expand(it); ta.value = ''; refreshAgents(board);
+    setTimeout(() => swapText(it.querySelector('.row-sub span:last-child'), 'mikky · travaille · 0 min'), 1400);
+  };
+  board.querySelector('[data-prompt]').onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); board.querySelector('[data-send]').click(); } };
+
+  // Partage.
+  board.querySelectorAll('[data-device]').forEach(d => d.onclick = () =>
+    toast(board, `Envoyer à ${d.dataset.device}`, 'Choisis des fichiers, ou glisse-les sur Mikky', 'share'));
+
+  // Mails : filtres.
+  board.querySelectorAll('[data-chips] .chip').forEach(c => c.onclick = () => {
+    board.querySelectorAll('[data-chips] .chip').forEach(x => x.classList.toggle('on', x === c));
+    board.querySelectorAll('[data-mails] .item').forEach(it => {
+      const show = c.dataset.cat === 'tous' || it.dataset.cat === c.dataset.cat, hidden = it.style.display === 'none';
+      if (show && hidden) expand(it);
+      if (!show && !hidden) collapse(it, el => { el.style.display = 'none'; el.style.overflow = ''; });
+    });
+  });
+  board.querySelector('[data-head-btn]').onclick = e => {
+    const scr = board.querySelector('.screen.on:not(.leaving)').dataset.screen;
+    const s = e.currentTarget.querySelector('svg');
+    if (scr === 'partage') toast(board, 'Envoyer des fichiers', 'Choisis un appareil juste en dessous', 'share');
+    if (scr === 'mails') {
+      s.animate([{ transform: 'rotate(0)' }, { transform: 'rotate(360deg)' }], { duration: RM ? 1 : 700, easing: 'cubic-bezier(.4,0,.2,1)' });
+      toast(board, '2 nouveaux mails classés', 'Important · Pubs', 'mail');
+    }
+  };
+
+  // Kit.
+  board.querySelectorAll('[data-loading]').forEach(b => b.onclick = () => {
+    if (b.disabled) return;
+    const html = b.innerHTML, set = (h, dis) => {
+      const w0 = b.offsetWidth; b.innerHTML = h; b.disabled = dis; const w1 = b.offsetWidth;
+      b.animate([{ width: w0 + 'px' }, { width: w1 + 'px' }], { duration: RM ? 1 : 260, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    };
+    set('<span class="spin"></span>Envoi…', true);
+    b.style.opacity = 1;
+    setTimeout(() => { set(svg('check') + 'Envoyé', false); setTimeout(() => set(html, false), 1100); }, 1500);
+  });
+  board.querySelector('[data-show-toast]').onclick = () =>
+    toast(board, 'Codex attend ton feu vert', 'site · npm run build', 'agents', { label: 'Voir', fn: () => go(board, 'agents') });
+
+  placeAll(board, true);
+}
+
+function intro(board) {
+  board.querySelectorAll('.screen.on .item, .screen.on .composer').forEach((el, i) =>
+    el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { ...IN, duration: RM ? 1 : 380, delay: RM ? 0 : 120 + i * 60, fill: 'backwards' }));
+  setTimeout(() => toast(board, 'Codex attend ton feu vert', 'site · npm run build', 'agents', { label: 'Voir', fn: () => go(board, 'agents') }), RM ? 0 : 1100);
+}
+
+// #mails, #partage : ouvre cet onglet ; #calme : sans animation d'entrée (captures d'écran).
+const boards = [...document.querySelectorAll('[data-board]')];
+const HASH = location.hash.slice(1).split(',');
+function all() {
+  boards.forEach(b => build(b, b.dataset.board));
+  const tab = ORDER.find(t => HASH.includes(t));
+  if (tab) boards.forEach(b => go(b, tab));
+  if (!HASH.includes('calme')) boards.forEach(intro);
+}
+document.fonts.ready.then(() => { all(); });
+document.getElementById('replay').onclick = all;
+addEventListener('resize', () => boards.forEach(b => placeAll(b, true)));
+</script>
+</body></html>

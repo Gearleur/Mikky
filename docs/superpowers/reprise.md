@@ -38,6 +38,8 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 
 ## 4. Ce qui reste (prochaines étapes)
 
+**Nouveau (2026-09-29)** : Mikky devient un compagnon d'agents. MVP choisi : lancer Claude et Codex depuis la fenêtre « à droite » et voir lequel travaille, LocalSend, classement des mails en local, tous les composants et animations designés d'avance. Détails et idées pour plus tard : `idees.md`. Maquette : `design/prototypes/composants.html` (à valider).
+
 1. **Valider avec l'utilisateur** les expressions qui n'ont pas encore de transformation : question, erreur, limité, cherche, dort, sonné (et les oreilles rabattues). Idées proposées, non décidées : « ? » pour la question, s'affaisser pour l'erreur, se gonfler pour le terminé.
 2. Figer les proportions validées dans `MikkyTuning` (et mettre à jour les goldens).
 3. J3 : goutte de notification, points vivants du thème noir (uniformes déjà prévus dans le shader).
