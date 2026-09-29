@@ -15,6 +15,9 @@ namespace {
 constexpr UINT_PTR kCursorTimerId = 1;
 // ~60 Hz. Windows timers tick at ~15.6 ms anyway.
 constexpr UINT kCursorTimerMs = 16;
+// Posted by the hook, handled in the window procedure: the hook itself must
+// not call into Flutter.
+constexpr UINT kOutsideClickMessage = WM_APP + 1;
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
@@ -150,10 +153,15 @@ void FlutterWindow::OnDestroy() {
 // static
 LRESULT CALLBACK FlutterWindow::LowLevelMouseProc(int code, WPARAM wparam,
                                                   LPARAM lparam) {
-  if (code == HC_ACTION && wparam == WM_MOUSEMOVE && g_hook_window) {
+  if (code == HC_ACTION && g_hook_window) {
     // Physical screen coordinates: the process is per-monitor DPI aware (v2).
-    g_hook_window->OnGlobalCursor(
-        reinterpret_cast<MSLLHOOKSTRUCT*>(lparam)->pt);
+    const POINT pt = reinterpret_cast<MSLLHOOKSTRUCT*>(lparam)->pt;
+    if (wparam == WM_MOUSEMOVE) {
+      g_hook_window->OnGlobalCursor(pt);
+    } else if (wparam == WM_LBUTTONDOWN || wparam == WM_RBUTTONDOWN ||
+               wparam == WM_MBUTTONDOWN) {
+      g_hook_window->OnGlobalButton(pt);
+    }
   }
   return CallNextHookEx(nullptr, code, wparam, lparam);
 }
@@ -167,6 +175,21 @@ void FlutterWindow::OnGlobalCursor(POINT screen_point) {
     cursor_timer_pending_ = true;
     SetTimer(GetHandle(), kCursorTimerId, kCursorTimerMs, nullptr);
   }
+}
+
+void FlutterWindow::OnGlobalButton(POINT screen_point) {
+  UpdateClickThrough(screen_point);
+  if (!click_through_) {
+    return;  // On the island itself.
+  }
+  // Mikky's own popup menu or folder dialog: not "outside".
+  HWND under = WindowFromPoint(screen_point);
+  DWORD pid = 0;
+  GetWindowThreadProcessId(under, &pid);
+  if (pid == GetCurrentProcessId()) {
+    return;
+  }
+  PostMessage(GetHandle(), kOutsideClickMessage, 0, 0);
 }
 
 void FlutterWindow::UpdateClickThrough(POINT screen_point) {
@@ -349,6 +372,11 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         return 0;
       }
       break;
+    case kOutsideClickMessage:
+      if (channel_) {
+        channel_->InvokeMethod("outsideClick", nullptr);
+      }
+      return 0;
     case WM_MOUSEACTIVATE:
       // Clicking the island must not steal focus from the user's app.
       if (is_overlay()) {

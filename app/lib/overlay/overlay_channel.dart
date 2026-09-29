@@ -17,10 +17,16 @@ class OverlayChannel {
   /// It can be outside the window.
   void Function(Offset cursor)? onCursor;
 
+  /// A mouse button went down outside the island and outside Mikky's own
+  /// menus and dialogs (the click goes on to the app below).
+  void Function()? onOutsideClick;
+
   Rect? _hitRect;
 
   Future<void> _handle(MethodCall call) async {
-    if (call.method == 'cursor') {
+    if (call.method == 'outsideClick') {
+      onOutsideClick?.call();
+    } else if (call.method == 'cursor') {
       final args = call.arguments as List<Object?>;
       onCursor?.call(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
     }

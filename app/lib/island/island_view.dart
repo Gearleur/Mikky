@@ -121,6 +121,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   void initState() {
     super.initState();
     _overlay.onCursor = _onCursor;
+    _overlay.onOutsideClick = _onOutsideClick;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
     // Real agents move on their own: the island follows them.
@@ -134,6 +135,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _overlay.onCursor = null;
+    _overlay.onOutsideClick = null;
     _agentsSub?.cancel();
     _deadlineTimer?.cancel();
     _ticker.dispose();
@@ -286,6 +288,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final overMikky = _motion.visibility > 0 && (cursor - _mikkyCenter).distance < _motion.mikkyRadius * 1.3;
     _mikky.hover(overMikky);
     if (overMikky) _mikky.pointerMoved();
+    _apply();
+  }
+
+  /// A click elsewhere closes the island the user opened (click, hover), like
+  /// a popover. An agent waiting for a yes keeps it open until answered.
+  void _onOutsideClick() {
+    final reason = _snap.openReason;
+    if (_snap.shape != IslandShape.open || reason == OpenReason.alert) return;
+    _machine.close(_clock.now);
     _apply();
   }
 
