@@ -108,19 +108,6 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   /// The new agent becomes its agent page (a short fade, no slide).
   void _replaceTop(_Page page) => setState(() => _pages[_pages.length - 1] = page);
 
-  /// Back to the home at once (Escape on a page…).
-  void home() {
-    if (_pages.length == 1) return;
-    setState(() => _pages.removeRange(1, _pages.length));
-    widget.onHome?.call(true);
-  }
-
-  /// Opens agent [id]'s page (a click on the island's bubble…).
-  void openAgent(String id) {
-    home();
-    _open(id);
-  }
-
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);

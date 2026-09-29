@@ -547,19 +547,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (key != _openContentKey || _openContent == null) {
       _openContentKey = key;
       final text = IslandText.of(s, now);
-      final m = _motion.metrics;
-      final open = m.open(_motion.layout);
+      final open = _motion.metrics.open(_motion.layout);
+      // At the top only: on the right, the island shows the small window.
       _openContent = RepaintBoundary(
-        child: switch (_edge) {
-          IslandEdge.top => FocusWideView(text: text, theme: theme, onAnswer: _answer, width: open.width - 104 - 18),
-          IslandEdge.right => FocusPortraitView(
-              text: text,
-              theme: theme,
-              onAnswer: _answer,
-              size: Size(open.width, open.height),
-              mikkyBottom: m.mikkyOpen.y + m.mikkyOpen.radius,
-            ),
-        },
+        child: FocusWideView(text: text, theme: theme, onAnswer: _answer, width: open.width - 104 - 18),
       );
     }
     return _openContent!;

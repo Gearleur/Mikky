@@ -6,11 +6,14 @@ Dernière mise à jour : 2026-09-29 (fin de session) · Dépôt : https://github
 
 ## 0. En bref
 
-- **L'étape 1 marche** : Mikky et son île sous Windows, avec de faux agents (§1).
-- **Le 2026-09-29, le projet a grandi** : Mikky devient un compagnon qui suit et pilote nos agents Claude Code et Codex, un « Paperclip plus simple », à terme un mini-téléphone avec des mini-apps. Tout est noté et numéroté dans `idees.md`.
-- **L'UI et l'UX de la petite fenêtre (position « à droite ») sont validées** sur maquettes HTML (§3). L'utilisateur a dit : « tout est pas mal, on peut avancer ».
-- **Prochaine étape : commencer l'app** (§4), en commençant par brancher Claude (abonnement) et Codex comme le fait Paperclip (§5).
-- **Fait le 2026-09-29 (après-midi)** : spec du MVP validée (`specs/2026-09-29-mvp-design.md` : Claude et Codex par ACP comme Paperclip, pas d'API, pas un harnais), plan de la partie A (`plans/2026-09-29-mvp-plan.md`), **A0** (essai ACP réussi sous Windows et dans WSL, résultats dans le plan) et **A1** (moteur des sessions, 100 tests). Claude installé sous Windows ; Codex connecté dans WSL ; Node privé de Mikky dans WSL. **A2** fait aussi (`packages/mikky_agents`, 28 tests, essai en vrai réussi). Pas de Haiku dans les modèles proposés (décision). **A3** fait aussi (composants dans `app/lib/ui/`, `mikky.exe --kit`, à valider). L'arrêt d'un agent passe par un job object Windows. **Suite : A4** (la petite fenêtre).
+- **L'étape 1 marche** : Mikky et son île sous Windows (§1).
+- **Depuis le 2026-09-29, Mikky est un compagnon d'agents** : il lance et suit Claude Code et Codex, un « Paperclip plus simple » (`idees.md`). Spec du MVP validée : `specs/2026-09-29-mvp-design.md`. Plan et avancement détaillé : `plans/2026-09-29-mvp-plan.md`.
+- **Partie A du MVP, où on en est** :
+  - **A0** essai ACP réussi (Claude et Codex, Windows et WSL) ; **A1** moteur des sessions ; **A2** `packages/mikky_agents` (lancer, suivre, connexion, surveillance des sessions, magasin) ; **A3** composants de la petite fenêtre (`app/lib/ui/`, `mikky.exe --kit`) ; **A4** la petite fenêtre elle-même (`app/lib/side/`), branchée sur les vrais agents. Tous faits.
+  - **A5** en cours : Claude sous Windows et Codex dans WSL lancés depuis la fenêtre, avec Oui / Non, de bout en bout (voir le plan). Un clic en dehors referme l'île.
+  - **Suite** : fin d'A5 (continuer une session extérieure, la position « en haut » avec les vrais agents), puis A6 (finition, mesures, push).
+- **À valider par l'utilisateur** : l'ensemble de la petite fenêtre en vrai (il a validé le kit, « le reste est parfait »).
+- **Décisions de la session** : ACP comme Paperclip ; abonnements seulement, pas d'API ; Mikky n'est pas un harnais ; pas de Haiku ; Node privé de Mikky dans WSL ; agents dans un job object Windows ; sélecteurs un peu plus gluants (ressort 380 / 0,70) ; barre d'onglets gardée pour plus tard.
 
 ## 1. Ce qui marche (étape 1, sous Windows)
 
@@ -43,30 +46,37 @@ Ensuite, dans l'ordre voulu par l'utilisateur : gérer Claude et Codex, **planif
 - Mikky en petit en haut à gauche de l'accueil (images `design/references/mikky-idle-{light,dark}.png`, rendues par le vrai painter).
 - Captures des maquettes : Chrome headless avec `#calme` dans l'URL (animations figées) ; `#sombre` pour le thème sombre ; `#grand` pour des fenêtres plus hautes.
 
-## 4. Prochaine session : commencer l'app
+## 4. Comment le code est rangé (partie A du MVP)
 
-Proposé (à valider avec l'utilisateur au début du chat) :
+```
+packages/mikky_engine/    Dart pur : Mikky, l'île (IslandMachine), agents (AgentSource),
+                          sessions (lib/src/sessions : SessionEvent, lecteurs ACP / Claude / Codex,
+                          SessionLog = fil + tours + plan + état, groupes de l'accueil)
+packages/mikky_agents/    Dart + dart:io : Target (Windows / WSL), job.dart (job object),
+                          acp/ (AcpConnection, AgentRun), setup.dart (dossier de Mikky, adaptateurs,
+                          Node privé WSL), auth.dart (connexion), watch/ (SessionWatcher),
+                          store.dart (agents.json), real_source.dart (RealAgentSource)
+app/lib/agents/           AgentsService : les vrais agents dans l'app
+app/lib/ui/               les composants (A3) et l'écran --kit
+app/lib/side/             la petite fenêtre (A4) : side_app (navigation + accueil), agent_page,
+                          new_agent_page (+ connexion), session_views (Suivi / Chat)
+app/lib/island/           l'île ; à droite et ouverte, elle affiche la petite fenêtre
+app/windows/runner/       overlay natif : clics traversants, crochet souris (curseur et clic
+                          en dehors), menu natif, sélecteur de dossier, activation du clavier
+```
 
-1. Écrire la **spec du MVP** (`docs/superpowers/specs/`) à partir de `idees.md` et des maquettes, puis le plan.
-2. **Brancher Claude et Codex** en reprenant l'approche de Paperclip (§5) : une `AgentSource` réelle derrière l'interface existante.
-3. Porter la **petite fenêtre** (accueil, page d'un agent, champ) en Flutter avec les composants validés.
-4. Puis : planifier des tâches ; LocalSend ; mails ; dictée.
+Où Mikky écrit : `%APPDATA%\Mikky\` (`settings.json`, `tuning.json`, `agents.json`) ; adaptateurs dans `%LOCALAPPDATA%\Mikky\acp` et, dans WSL, `~/.local/share/mikky` (Node privé, adaptateurs, sonde `watch.mjs`). Aucun identifiant.
 
-Décision prise pour le MVP (proposée, non contestée) : **pas encore de `mikkyd`** (le démon Rust) ; l'app lance Claude et Codex elle-même. `mikkyd` viendra avec le VPS et le téléphone.
+Pas encore de `mikkyd` : l'app lance Claude et Codex elle-même, et ils s'arrêtent avec elle. `mikkyd` viendra avec le VPS et le téléphone.
 
-## 5. Brancher Claude et Codex comme Paperclip
+## 5. Brancher Claude et Codex (comme Paperclip, par ACP)
 
-Paperclip est sous licence **MIT** : on peut reprendre ses idées et du code (en gardant la mention de licence). Ses adaptateurs : `packages/adapters/claude-local/` et `packages/adapters/codex-local/` sur https://github.com/paperclipai/paperclip.
-
-- **Claude** (`claude-local/src/server/execute.ts`) : lance le `claude` officiel avec `--print --output-format stream-json --verbose`, et `--resume <id>` pour reprendre une session. Mode **abonnement** si `ANTHROPIC_API_KEY` n'est pas défini (l'utilisateur est connecté lui-même dans `claude`) ; sinon mode API. Autres fichiers utiles : `parse.ts` (lecture du flux), `auth-check.ts`, `quota.ts` / `quota-probe.ts` (limites), `permissions.ts`, `setup-token-runner.ts`.
-- **Codex** (`codex-local/src/server/codex-args.ts`, `execute.ts`) : `codex exec --json`, sandbox `workspace-write` par défaut (`-c sandbox_mode="workspace-write"`), `resume <id> -` pour reprendre. Connexion par le compte ChatGPT : voir `codex-home.ts`, `auth-check.ts`, `device-login-runner.ts`, `CODEX-AUTH-CACHE.md`.
-- **Permissions (décision du 2026-09-29)** : Paperclip saute les permissions par défaut ; Mikky, lui, propose **un choix par lancement** : **Demander** (par défaut : chaque demande arrive dans Mikky, Oui / Non, via les hooks de Claude Code ou `--permission-prompt-tool`) ou **Auto** (le mode de permission automatique de Claude, et l'équivalent Codex : `approval_policy` / sandbox), que l'utilisateur choisit lui-même.
-- **Où tournent les agents (décision du 2026-09-29)** : l'utilisateur veut pouvoir lancer Claude et Codex **sous Windows ou dans WSL**, au choix, et que **l'app marche aussi sous Linux**. Donc une cible par lancement : Windows natif, WSL (`wsl.exe -d Ubuntu -- claude …`), plus tard Linux natif. Sur ce PC :
-  - **WSL (Ubuntu)** : `claude` 2.1.284 (`/home/gearleur/.local/bin/claude`) et `codex` installés ; sessions dans `/home/gearleur/.claude/projects` et `/home/gearleur/.codex/sessions` (vues de Windows par `\\wsl.localhost\Ubuntu\home\gearleur\…`).
-  - **Windows** : `codex` 0.153.4 (npm) ; `claude` pas dans le PATH (seulement celui de l'extension VS Code), à installer si on veut Claude côté Windows.
-  - Pour « voir qui travaille », surveiller les sessions des deux côtés.
-  - App sous Linux : Flutter le permet, mais l'overlay natif (`app/windows/runner/`) est à refaire pour Linux (X11 / Wayland : fenêtre toujours au premier plan et clics traversants plus difficiles sous Wayland).
-- Mikky ne touche jamais aux jetons : il lance les CLI officiels sur lesquels l'utilisateur s'est connecté.
+Tout est dans la spec du MVP (§3) et dans le résultat d'A0 (plan). L'essentiel :
+- Mikky lance les adaptateurs officiels `claude-agent-acp` et `codex-acp` (comme Paperclip, MIT) et leur parle en ACP ; ils font tourner le vrai Claude Code et le vrai Codex, sur le compte de l'utilisateur. Mikky ne touche jamais aux jetons.
+- Permissions choisies à chaque lancement : **Demander** (Claude `default`, Codex `read-only`) ou **Auto** (Claude `auto`, Codex `agent`). Avec Codex, « Non » arrête le tour.
+- Cible par lancement, déduite du dossier : Windows, ou WSL (`wsl.exe`, chemin Linux donné à la session). Sur ce PC, Claude et Codex sont installés et connectés des deux côtés.
+- Sessions lancées ailleurs : fichiers de Claude (`~/.claude/projects`) et de Codex (`~/.codex/sessions`) surveillés, des deux côtés (dans WSL par une petite sonde, Windows ne voyant pas les changements de WSL).
+- App sous Linux (plus tard) : seul l'overlay natif (`app/windows/runner/`) est à refaire.
 
 ## 6. Direction artistique de Mikky (validée, ne pas revenir dessus)
 
@@ -89,6 +99,8 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 - Moteur : `C:\dev\flutter\bin\dart.bat test` dans `packages/mikky_engine`.
 - Goldens : `C:\dev\flutter\bin\flutter.bat test --update-goldens test/mikky_expressions_test.dart` dans `app/`, puis **regarder les images**.
 - Vérif à l'écran : captures GDI avec `CAPTUREBLT`, souris simulée avec `SendInput` (pas `SetCursorPos`), prototypes rendus avec Chrome headless (voir `CLAUDE.md`).
+- Composants : `mikky.exe --kit` (`--perf` pour les temps d'image). Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
+- Essais à l'écran de la petite fenêtre : souris simulée par `SendInput` (structure `INPUT` de 40 octets en x64 !), clavier par `SendKeys`, capture avec `CAPTUREBLT`.
 
 ## 8. Pièges déjà rencontrés
 
@@ -108,6 +120,11 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 - Flux Dart `broadcast(sync: true)` : un écouteur qui répond tout de suite (ou un `await` sur `firstWhere`) repasse dans le flux en cours d'envoi. Les flux lus par l'app ou les tests (`changes`, `updates`) sont asynchrones.
 - Chaînes Dart : `$HOME` dans une chaîne est une interpolation, écrire `\$HOME`.
 - **Exporter Mikky en PNG transparent** : un test Flutter temporaire avec `matchesGoldenFile('../../design/references/…')` et `--update-goldens`, puis supprimer le test.
+
+- **`future.whenComplete(() => map.remove(k))`** quand la map contient ce même futur : la flèche renvoie le futur, que `whenComplete` attend… lui-même, pour toujours. Écrire un bloc `{ map.remove(k); }`.
+- **Agent dans WSL** : la session ACP doit recevoir le chemin Linux (`/tmp/x`), pas `\\wsl.localhost\…` ; sinon Codex part de `/tmp` et ses commandes échouent (`AgentRun.workingDirectory`).
+- **Scripts Python avec des antislashs** (chemins Windows) dans un heredoc : `\U`, `\x`… cassent la chaîne. Écrire le script dans un fichier, avec des chaînes `r'...'`, ou passer par l'outil d'édition.
+- Un `Stack` dont les enfants ne sont pas positionnés les laisse à leur taille : les pages de la petite fenêtre ont besoin de `StackFit.expand`.
 
 ## 9. Mesures (release, 1920 × 1080 à 100 %, 12 cœurs)
 
