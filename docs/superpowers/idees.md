@@ -24,8 +24,7 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 
 Maquette : `design/prototypes/ux-a.html`. Retours de l'utilisateur : beaucoup trop d'informations, il faut du plus simple.
 
-- **Accueil** : les agents rangés en trois groupes, **En attente**, **Travaillent**, **Terminés**, avec une petite différence visuelle (contour orange, carte grise, carte en simple trait). Chaque groupe **se replie** en cliquant son titre. Pour chaque agent : titre, ce qu'il fait à l'instant, Claude / Codex. Pas de barre horizontale.
-- **Accueil** : les agents rangés en **En attente**, **Travaillent**, **Terminés** et **Historique** (replié par défaut), avec une petite différence visuelle. Chaque groupe se replie en cliquant son titre.
+- **Accueil** : les agents rangés en **En attente**, **Travaillent**, **Terminés** et **Historique** (replié par défaut), avec une petite différence visuelle (contour orange, carte grise, carte en simple trait). Chaque groupe se replie en cliquant son titre. Pour chaque agent : titre, ce qu'il fait à l'instant, Claude / Codex. Pas de barre horizontale.
 - **Pas de chat sur l'accueil** : juste un bouton rond noir avec une **flèche vers la droite**, en bas à droite, qui ouvre un **chat pour un nouvel agent** (dossier et modèle sous la bulle).
 - **Un seul fil par agent** : la conversation et les étapes sur **la même ligne verticale** (ligne de métro). Tes messages à droite, ses réponses et ses étapes sur la ligne ; sous l'étape en cours, le trait bleu qui avance avec un halo léger et lent, et le code en direct. Tes messages envoyés pendant le travail se placent au point où en est l'agent. C'est aussi **l'historique** : un agent terminé garde son fil (fin en vert) et on peut lui écrire pour continuer.
 - **La bulle de saisie** : petit micro, flèche d'envoi, texte centré sur une ligne, grandit jusqu'à 5 lignes, sans flèches de défilement.
