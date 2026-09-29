@@ -25,8 +25,8 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 Maquette : `design/prototypes/ux-a.html`. Retours de l'utilisateur : beaucoup trop d'informations, il faut du plus simple.
 
 - **Accueil** : les agents rangés en trois groupes, **En attente**, **Travaillent**, **Terminés**, avec une petite différence visuelle (contour orange, carte grise, carte en simple trait). Chaque groupe **se replie** en cliquant son titre. Pour chaque agent : titre, ce qu'il fait à l'instant, Claude / Codex. Pas de barre horizontale.
-- **Le chat en bas** : une bulle avec un petit micro et une flèche d'envoi (pas de gros « + »), qui **grandit jusqu'à 5 lignes**, sans flèches de défilement. Le dossier et l'agent sont sous la bulle, **à moitié dedans**.
-- **Page de chat** : envoyer un message ouvre une page à part, où l'on parle à Mikky et aux agents ; la tâche lancée y apparaît et s'ouvre d'un clic.
+- **Pas de chat sur l'accueil** : juste un bouton rond d'envoi en bas à droite, qui ouvre un **chat pour un nouvel agent**.
+- **Le chat** : une bulle avec un petit micro et une flèche d'envoi, texte centré sur une ligne, qui **grandit jusqu'à 5 lignes**, sans flèches de défilement. Le **dossier et le modèle** sont sous la bulle, **à moitié dedans**. Après envoi : ton message, la réponse de Mikky, et l'agent lancé qui s'ouvre d'un clic.
 - **Parler** : micro cliqué ou **raccourci clavier maintenu** (proposition : Ctrl + Win, comme Wispr Flow) ; le texte s'écrit dans la bulle. Pas d'étape « parler ou écrire » : trop de friction.
 - **Détail d'un agent** : ce qu'il fait et « 3 sur 5 » ; les étapes en ligne de métro, compactes (une ligne chacune) ; **sous l'étape en cours, un trait bleu avance doucement sur la ligne**, avec un halo très léger et lent ; le code en direct sous l'étape en cours. Le chat en bas parle à cet agent, pour l'orienter pendant qu'il travaille : **à garder** (validé par l'utilisateur).
 - Thème sombre : gris des cartes un peu plus contrasté (`--well` `#17171A`).
