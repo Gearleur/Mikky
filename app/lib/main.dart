@@ -5,10 +5,17 @@ import 'island/island_view.dart';
 import 'overlay/overlay_channel.dart';
 import 'settings.dart';
 import 'tuning/tuning_app.dart';
+import 'ui/kit_app.dart';
 
 Future<void> main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
   final tuning = await Settings.loadTuning();
+
+  // The UI components board (A3): a normal window, in its own process.
+  if (args.contains('--kit')) {
+    runApp(const KitApp());
+    return;
+  }
 
   // The tuning screen: a normal window, in its own process.
   if (args.contains('--tuning')) {
