@@ -13,9 +13,9 @@
   --blue:#007AFF; --purple:#AF52DE; --amber:#FF9500; --green:#34C759; --red:#FF3B30; --yellow:#FFCC00; --grey:#AEAEB2;
 }
 .t-dark{
-  --board:#111113; --island:#070708; --well:#121214; --raise:rgba(24,24,27,.84); --track:#1B1B1E; --thumb:#2C2C30;
+  --board:#111113; --island:#070708; --well:#17171A; --raise:rgba(24,24,27,.84); --track:#212125; --thumb:#2C2C30;
   --ctl-a:#26262A; --ctl-b:#1B1B1E; --ink:#F7F7F7; --ink-hover:#FFFFFF; --on-ink:#070708;
-  --text:#F5F5F7; --text-2:#8E8E93; --text-3:#56565B; --line:rgba(255,255,255,.07); --hover:rgba(255,255,255,.04);
+  --text:#F5F5F7; --text-2:#8E8E93; --text-3:#66666C; --line:rgba(255,255,255,.09); --hover:rgba(255,255,255,.04);
   --hl:rgba(255,255,255,.07); --hl-edge:rgba(255,255,255,.07); --knob:#F7F7F7;
   --sh-ctl:0 1px 2px rgba(0,0,0,.6),0 3px 8px rgba(0,0,0,.3);
   --sh-thumb:0 1px 2px rgba(0,0,0,.5),0 3px 10px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.05);

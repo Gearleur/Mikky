@@ -20,14 +20,15 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 - **Voir qui travaille : tout le monde**, pas seulement les agents lancés par Mikky (sessions Claude de VS Code et du terminal, sessions Codex). Claude écrit ses sessions dans `~/.claude/projects/`, Codex dans `~/.codex/sessions/AAAA/MM/JJ/` : les surveiller suffit, sans boucle.
 - Pistes d'UX : `design/prototypes/ux-activite.html` (A le fil, B les agents en grand, C Mikky au centre, plus la page « Nouvelle tâche » et le détail d'un agent).
 
-### Piste A retenue (2026-09-29)
+### Piste A retenue, en simple (2026-09-29)
 
-Maquette : `design/prototypes/ux-a.html`.
+Maquette : `design/prototypes/ux-a.html`. Retours de l'utilisateur : beaucoup trop d'informations, il faut du plus simple.
 
-- **Accueil = le fil** : ce qui t'attend (Oui / Non), puis les agents en direct (ce qu'ils font à l'instant), puis ce qui vient de se passer (agent terminé, mail important, fichier reçu). Un « + » pour une nouvelle tâche.
-- **Détail d'un agent** (on touche un agent) : temps écoulé, où il travaille (dossier, branche), ses modifs (+/−), et ses **étapes en ligne de métro** : faites (avec des « poinçons » pour chaque action : lecture, commande…), en cours (avec le **code en direct**, façon diff), à venir (écrire le code, bash, tests…). Terminal et conversation en bas, au second plan. Les étapes viennent de la liste de tâches de l'agent (todo de Claude, plan de Codex), écrite dans ses fichiers de session.
-- **Nouvelle tâche** : une page qui commence par un choix **Parler / Écrire**, la préférence en premier ; puis dictée ou clavier (on bascule de l'un à l'autre), agent et dossier, « Lancer ». Tâches récentes pour relancer.
-- **Premier lancement** : Mikky demande une fois si on préfère parler ou écrire (modifiable dans les réglages).
+- **Accueil** : juste les agents. Pour chacun : le titre, ce qu'il fait à l'instant, qui (Claude / Codex) et une **barre de progression bleue** qui avance doucement, avec un halo très léger et lent. Celui qui attend ton feu vert a Oui / Non. Pas de résumé (« 2 travaillent… »), pas de fil d'événements pour l'instant.
+- **Le chat directement en bas** : une bulle avec un petit micro et une flèche d'envoi (pas de gros « + »). Le dossier et l'agent sont sous la bulle, **à moitié dedans**.
+- **Parler** : micro cliqué ou **raccourci clavier maintenu** (proposition : Ctrl + Win, comme Wispr Flow) ; le texte s'écrit dans la bulle. Pas d'étape « parler ou écrire » : trop de friction.
+- **Détail d'un agent** : ce qu'il fait, « 3 sur 5 », la barre ; les étapes en ligne de métro, compactes (une ligne chacune) ; le code en direct sous l'étape en cours. Le chat en bas parle à cet agent. Pas de temps, dossier ni modifs pour l'instant.
+- Thème sombre : gris des cartes un peu plus contrasté (`--well` `#17171A`).
 
 ### Référence visuelle
 
