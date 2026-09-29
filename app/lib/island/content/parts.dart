@@ -25,8 +25,8 @@ TextStyle monoStyle(MikkyTheme t, {double size = 11, FontWeight weight = FontWei
     );
 
 /// Colored status dot; glows on the dark theme only.
-class StatusDot extends StatelessWidget {
-  const StatusDot({super.key, required this.color, required this.theme, this.size = 7, this.glowRadius = 10});
+class IslandDot extends StatelessWidget {
+  const IslandDot({super.key, required this.color, required this.theme, this.size = 7, this.glowRadius = 10});
 
   final Color color;
   final MikkyTheme theme;
@@ -125,7 +125,7 @@ class AgentChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          StatusDot(color: color, theme: t, size: 6, glowRadius: 0),
+          IslandDot(color: color, theme: t, size: 6, glowRadius: 0),
           const SizedBox(width: 6),
           Text(name, style: sansStyle(t, size: 11.5, color: t.secondary)),
           if (value != null) ...[

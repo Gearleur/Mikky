@@ -17,10 +17,16 @@ class OverlayChannel {
   /// It can be outside the window.
   void Function(Offset cursor)? onCursor;
 
+  /// A mouse button went down outside the island and outside Mikky's own
+  /// menus and dialogs (the click goes on to the app below).
+  void Function()? onOutsideClick;
+
   Rect? _hitRect;
 
   Future<void> _handle(MethodCall call) async {
-    if (call.method == 'cursor') {
+    if (call.method == 'outsideClick') {
+      onOutsideClick?.call();
+    } else if (call.method == 'cursor') {
       final args = call.arguments as List<Object?>;
       onCursor?.call(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
     }
@@ -53,6 +59,10 @@ class OverlayChannel {
   /// Takes the keyboard focus, for Escape and the N / Y shortcuts. Only
   /// right after the user clicked the island.
   void activate() => _channel.invokeMethod<void>('activate');
+
+  /// Windows' folder picker, on top of the island. Null if cancelled.
+  /// WSL folders are reachable through `\\wsl.localhost\…`.
+  Future<String?> pickFolder(String title) => _channel.invokeMethod<String>('pickFolder', title);
 
   void quit() => _channel.invokeMethod<void>('quit');
 }

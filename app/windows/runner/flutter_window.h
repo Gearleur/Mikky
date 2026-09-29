@@ -49,6 +49,11 @@ class FlutterWindow : public Win32Window {
   // the whole system waits for it.
   void OnGlobalCursor(POINT screen_point);
 
+  // A mouse button went down somewhere on screen (from the hook): if it is
+  // outside the island and outside Mikky's own windows (menus, dialogs),
+  // Dart hears "outsideClick" (the island may close, like a popover).
+  void OnGlobalButton(POINT screen_point);
+
   // Sends the latest cursor position to Dart, at most once per timer tick.
   void FlushCursor();
 

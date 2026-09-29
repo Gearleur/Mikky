@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   mikky_engine:
     path: ../packages/mikky_engine
+  mikky_agents:
+    path: ../packages/mikky_agents
 
 dev_dependencies:
   flutter_test:

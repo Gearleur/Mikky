@@ -2,6 +2,8 @@
 
 #include <flutter/standard_method_codec.h>
 
+#include <shobjidl.h>
+
 #include <iostream>
 #include <string>
 #include <optional>
@@ -13,9 +15,26 @@ namespace {
 constexpr UINT_PTR kCursorTimerId = 1;
 // ~60 Hz. Windows timers tick at ~15.6 ms anyway.
 constexpr UINT kCursorTimerMs = 16;
+// Posted by the hook, handled in the window procedure: the hook itself must
+// not call into Flutter.
+constexpr UINT kOutsideClickMessage = WM_APP + 1;
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
+
+std::string Utf8FromUtf16(const std::wstring& utf16) {
+  if (utf16.empty()) {
+    return std::string();
+  }
+  const int length = WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
+                                         static_cast<int>(utf16.size()),
+                                         nullptr, 0, nullptr, nullptr);
+  std::string utf8(length, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
+                      static_cast<int>(utf16.size()), utf8.data(), length,
+                      nullptr, nullptr);
+  return utf8;
+}
 
 std::wstring Utf16FromUtf8(const std::string& utf8) {
   if (utf8.empty()) {
@@ -27,6 +46,35 @@ std::wstring Utf16FromUtf8(const std::string& utf8) {
   MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
                       utf16.data(), length);
   return utf16;
+}
+
+// Windows' folder picker, owned by |owner|. Empty if cancelled.
+std::string PickFolder(HWND owner, const std::string& title) {
+  std::string chosen;
+  IFileOpenDialog* dialog = nullptr;
+  if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+                              IID_PPV_ARGS(&dialog)))) {
+    return chosen;
+  }
+  DWORD options = 0;
+  dialog->GetOptions(&options);
+  dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+  if (!title.empty()) {
+    dialog->SetTitle(Utf16FromUtf8(title).c_str());
+  }
+  if (SUCCEEDED(dialog->Show(owner))) {
+    IShellItem* item = nullptr;
+    if (SUCCEEDED(dialog->GetResult(&item))) {
+      PWSTR path = nullptr;
+      if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
+        chosen = Utf8FromUtf16(path);
+        CoTaskMemFree(path);
+      }
+      item->Release();
+    }
+  }
+  dialog->Release();
+  return chosen;
 }
 
 }  // namespace
@@ -105,10 +153,15 @@ void FlutterWindow::OnDestroy() {
 // static
 LRESULT CALLBACK FlutterWindow::LowLevelMouseProc(int code, WPARAM wparam,
                                                   LPARAM lparam) {
-  if (code == HC_ACTION && wparam == WM_MOUSEMOVE && g_hook_window) {
+  if (code == HC_ACTION && g_hook_window) {
     // Physical screen coordinates: the process is per-monitor DPI aware (v2).
-    g_hook_window->OnGlobalCursor(
-        reinterpret_cast<MSLLHOOKSTRUCT*>(lparam)->pt);
+    const POINT pt = reinterpret_cast<MSLLHOOKSTRUCT*>(lparam)->pt;
+    if (wparam == WM_MOUSEMOVE) {
+      g_hook_window->OnGlobalCursor(pt);
+    } else if (wparam == WM_LBUTTONDOWN || wparam == WM_RBUTTONDOWN ||
+               wparam == WM_MBUTTONDOWN) {
+      g_hook_window->OnGlobalButton(pt);
+    }
   }
   return CallNextHookEx(nullptr, code, wparam, lparam);
 }
@@ -122,6 +175,21 @@ void FlutterWindow::OnGlobalCursor(POINT screen_point) {
     cursor_timer_pending_ = true;
     SetTimer(GetHandle(), kCursorTimerId, kCursorTimerMs, nullptr);
   }
+}
+
+void FlutterWindow::OnGlobalButton(POINT screen_point) {
+  UpdateClickThrough(screen_point);
+  if (!click_through_) {
+    return;  // On the island itself.
+  }
+  // Mikky's own popup menu or folder dialog: not "outside".
+  HWND under = WindowFromPoint(screen_point);
+  DWORD pid = 0;
+  GetWindowThreadProcessId(under, &pid);
+  if (pid == GetCurrentProcessId()) {
+    return;
+  }
+  PostMessage(GetHandle(), kOutsideClickMessage, 0, 0);
 }
 
 void FlutterWindow::UpdateClickThrough(POINT screen_point) {
@@ -260,6 +328,18 @@ void FlutterWindow::HandleMethodCall(
       SetFocus(flutter_controller_->view()->GetNativeWindow());
     }
     result->Success();
+  } else if (call.method_name() == "pickFolder") {
+    // The new agent's folder. Modal: the dialog comes on top of the island.
+    std::string title;
+    if (const auto* s = std::get_if<std::string>(call.arguments())) {
+      title = *s;
+    }
+    const std::string chosen = PickFolder(GetHandle(), title);
+    if (chosen.empty()) {
+      result->Success();
+    } else {
+      result->Success(flutter::EncodableValue(chosen));
+    }
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);
@@ -292,6 +372,11 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         return 0;
       }
       break;
+    case kOutsideClickMessage:
+      if (channel_) {
+        channel_->InvokeMethod("outsideClick", nullptr);
+      }
+      return 0;
     case WM_MOUSEACTIVATE:
       // Clicking the island must not steal focus from the user's app.
       if (is_overlay()) {

@@ -28,11 +28,20 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   const bool tuning =
       std::find(command_line_arguments.begin(), command_line_arguments.end(),
                 "--tuning") != command_line_arguments.end();
+  // "--kit": the UI components board (A3), an ordinary window too.
+  const bool kit =
+      std::find(command_line_arguments.begin(), command_line_arguments.end(),
+                "--kit") != command_line_arguments.end();
 
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  if (tuning) {
+  if (kit) {
+    if (!window.Create(L"Composants de Mikky", Win32Window::Size(1320, 900),
+                       /*overlay=*/false)) {
+      return EXIT_FAILURE;
+    }
+  } else if (tuning) {
     if (!window.Create(L"R\u00e9glage de Mikky", Win32Window::Size(1180, 760),
                        /*overlay=*/false)) {
       return EXIT_FAILURE;
