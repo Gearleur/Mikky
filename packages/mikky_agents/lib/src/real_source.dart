@@ -48,6 +48,9 @@ class AgentEntry {
   /// The first message, until the agent names the session.
   String? firstPrompt;
 
+  /// The name kept in `agents.json` (the agent's title, for Mikky's own).
+  String? storedTitle;
+
   /// State as last computed, and since when (island clock).
   AgentStatus status = AgentStatus.idle;
   double statusSince = 0;
@@ -74,7 +77,8 @@ class AgentEntry {
   DateTime get lastActivity => log.lastEventAt ?? watched?.modified ?? createdAt;
 
   String get name {
-    final title = log.title;
+    // A resumed run replays no title: the file's, or the one kept, then.
+    final title = log.title ?? watched?.log.title ?? storedTitle;
     if (title != null && title.isNotEmpty) return title;
     final first = firstPrompt ?? log.items.whereType<UserItem>().firstOrNull?.text;
     if (first != null && first.isNotEmpty) {
@@ -99,10 +103,13 @@ class RealAgentSource implements AgentSource {
     this.finishedLinger = 8,
     this.staleAfter = const Duration(minutes: 15),
   }) : _now = now ?? DateTime.now {
+    // An agent that never got a session (it could not start) cannot be
+    // continued: forgotten.
+    store?.agents.removeWhere((a) => a.sessionId == null);
     for (final a in store?.agents ?? const <StoredAgent>[]) {
       final e = AgentEntry._(a.id, a.provider, a.host, AgentOrigin.mikky, a.cwd, a.createdAt)
         ..permissions = a.permissions
-        ..firstPrompt = a.title;
+        ..storedTitle = a.title;
       _entries.add(e);
       _stored[a.id] = a;
     }
@@ -290,6 +297,7 @@ class RealAgentSource implements AgentSource {
         s.log.startedAt ?? s.modified,
       )
         ..permissions = stored?.permissions
+        ..storedTitle = stored?.title
         ..startedAt = clock()
         ..statusSince = clock();
       if (stored != null) _entries.removeWhere((x) => x.id == stored.id);

@@ -10,8 +10,8 @@ Dernière mise à jour : 2026-09-29 (fin de session) · Dépôt : https://github
 - **Depuis le 2026-09-29, Mikky est un compagnon d'agents** : il lance et suit Claude Code et Codex, un « Paperclip plus simple » (`idees.md`). Spec du MVP validée : `specs/2026-09-29-mvp-design.md`. Plan et avancement détaillé : `plans/2026-09-29-mvp-plan.md`.
 - **Partie A du MVP, où on en est** :
   - **A0** essai ACP réussi (Claude et Codex, Windows et WSL) ; **A1** moteur des sessions ; **A2** `packages/mikky_agents` (lancer, suivre, connexion, surveillance des sessions, magasin) ; **A3** composants de la petite fenêtre (`app/lib/ui/`, `mikky.exe --kit`) ; **A4** la petite fenêtre elle-même (`app/lib/side/`), branchée sur les vrais agents. Tous faits.
-  - **A5** en cours : Claude sous Windows et Codex dans WSL lancés depuis la fenêtre, avec Oui / Non, de bout en bout (voir le plan). Un clic en dehors referme l'île.
-  - **Suite** : fin d'A5 (continuer une session extérieure, la position « en haut » avec les vrais agents), puis A6 (finition, mesures, push).
+  - **A5** fait : les quatre combinaisons (Claude / Codex, Windows / WSL) lancées depuis la fenêtre avec Oui / Non, continuer un agent, position « en haut », clic en dehors qui referme.
+  - **Suite** : A6 (finition : menus aux couleurs des maquettes, mesures, push), puis la partie B (gérer Claude et Codex, tâches planifiées).
 - **À valider par l'utilisateur** : l'ensemble de la petite fenêtre en vrai (il a validé le kit, « le reste est parfait »).
 - **Décisions de la session** : ACP comme Paperclip ; abonnements seulement, pas d'API ; Mikky n'est pas un harnais ; pas de Haiku ; Node privé de Mikky dans WSL ; agents dans un job object Windows ; sélecteurs un peu plus gluants (ressort 380 / 0,70) ; barre d'onglets gardée pour plus tard.
 

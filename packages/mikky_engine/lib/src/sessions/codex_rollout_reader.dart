@@ -9,7 +9,6 @@ import 'session_event.dart';
 class CodexRolloutReader {
   bool _turn = false;
   bool _userInTurn = false;
-  bool _titled = false;
 
   List<SessionEvent> read(Map<String, dynamic> line) {
     final at = DateTime.tryParse(line['timestamp'] as String? ?? '');
@@ -65,13 +64,10 @@ class CodexRolloutReader {
         if (text.isEmpty) return const [];
         final queued = _userInTurn;
         _userInTurn = true;
-        final events = <SessionEvent>[UserMessage(text, queued: queued, at: at)];
-        if (!_titled) {
-          _titled = true;
-          final first = text.trim().split('\n').first;
-          events.add(TitleChanged(first.length <= 60 ? first : '${first.substring(0, 59)}…', at: at));
-        }
-        return events;
+        // Codex writes no title in this file: none is made up here, so a
+        // better one (Mikky's, from ACP) wins; the app falls back to the
+        // first message.
+        return [UserMessage(text, queued: queued, at: at)];
       case 'AgentMessage':
         final text = _text(item['content']);
         return [if (text.isNotEmpty) AgentMessage(text, messageId: id, at: at)];

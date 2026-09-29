@@ -59,7 +59,8 @@ void main() {
     test('a slipped message, then done', () {
       final log = replayCodex('windows_steer.jsonl');
       expect(log.sessionId, '01a0ed3d-5250-7a31-adca-693bec6dcd0f');
-      expect(log.title, startsWith('Essai technique'));
+      expect(log.title, isNull);
+      expect(log.items.whereType<UserItem>().first.text, startsWith('Essai technique'));
       expect(log.turns.single.reason, StopReason.endTurn);
       expect(log.statusAt(log.lastEventAt!), AgentStatus.finished);
       expect(log.items.whereType<UserItem>().map((u) => u.queued), [false, true]);
