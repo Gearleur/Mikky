@@ -16,39 +16,41 @@ body.grand .side{height:900px}
 
 /* Pages empilées dans la petite fenêtre */
 .page{position:absolute;inset:0;background:var(--island);will-change:transform}
-.page .body{position:absolute;top:68px;left:0;right:0;bottom:84px;overflow-y:auto;padding:2px 16px 16px;scrollbar-width:none}
+.page .body{position:absolute;top:68px;left:0;right:0;bottom:var(--dock,84px);overflow-y:auto;padding:2px 16px 16px;scrollbar-width:none;transition:bottom .2s}
 .page .body::-webkit-scrollbar{display:none}
 .side-head .round:first-child{margin-left:4px}
 .side-title.sm{margin-left:6px;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes ring{from{transform:scale(1);opacity:.45}to{transform:scale(1.6);opacity:0}}
 
-/* La barre de progression : bleue, qui avance doucement, halo très léger et lent */
-.prog{position:relative;height:4px;border-radius:2px;background:var(--track);margin-top:8px}
-.prog>i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;width:var(--p);background:var(--blue);
-  box-shadow:0 0 6px color-mix(in srgb,var(--blue) 30%,transparent);animation:creep 40s cubic-bezier(.2,.6,.3,1) forwards}
-.prog>i::after{content:"";position:absolute;right:-7px;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;
-  background:radial-gradient(circle,color-mix(in srgb,var(--blue) 40%,transparent),transparent 65%);animation:halo 4.2s ease-in-out infinite}
-@keyframes creep{to{width:var(--p2)}}
-@keyframes halo{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.7;transform:scale(1.15)}}
-.prog.big{height:5px;margin-top:10px}
-
-/* Accueil : juste les agents */
-.agents{display:grid;gap:8px}
-.agent{background:var(--well);border-radius:18px;padding:12px 14px 13px 8px;cursor:pointer;transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
+/* Accueil : les agents par groupe, repliables */
+.group-h{display:flex;align-items:center;gap:7px;width:100%;border:0;background:none;padding:12px 6px 8px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
+.group-h:first-child{padding-top:4px}
+.group-h .gdot{width:7px;height:7px;border-radius:50%;background:var(--c)}
+.group-h .n{font-variant-numeric:tabular-nums;color:var(--text-3)}
+.group-h svg{width:14px;height:14px;margin-left:auto;color:var(--text-3);transition:transform .3s cubic-bezier(.34,1.4,.64,1)}
+.group-h.closed svg{transform:rotate(-90deg)}
+.group{display:grid;gap:8px;overflow:hidden}
+.agent{background:var(--well);border-radius:18px;padding:12px 14px 12px 8px;cursor:pointer;transition:transform .34s cubic-bezier(.34,1.56,.64,1)}
 .agent:active{transform:scale(.98);transition:transform .08s ease-out}
 .agent .row{padding:0;background:none;align-items:flex-start}
 .agent .status{margin-top:-4px}
-.who{font-size:11px;color:var(--text-3);font-weight:500;flex:none}
 .agent .row-top{align-items:center}
 .agent .row-sub{margin-top:1px}
+.who{font-size:11px;color:var(--text-3);font-weight:500;flex:none}
 .agent.waiting{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 55%,transparent)}
+.agent.done{background:none;box-shadow:inset 0 0 0 1px var(--line)}
+.agent.done .row-title{font-weight:500}
 .wait-actions{display:flex;align-items:center;gap:6px;margin-top:10px}
 .wait-actions .code{padding:6px 8px}
 
-/* Le chat : bulle, petit micro, flèche ; dossier et agent à moitié dans la bulle */
+/* Le chat : bulle qui grandit (jusqu'à 5 lignes), petit micro, flèche ; dossier et agent à moitié dans la bulle */
 .composer2{position:absolute;left:12px;right:12px;bottom:26px;z-index:5}
-.cbox{display:flex;align-items:flex-end;gap:6px;min-height:52px;padding:9px 8px 17px 14px;border-radius:24px;background:var(--well);box-shadow:inset 0 0 0 1px var(--line);transition:background .18s,box-shadow .18s}
+.composer2.nochips{bottom:14px}
+.cbox{display:flex;align-items:flex-end;gap:6px;min-height:52px;padding:9px 8px 10px 14px;border-radius:24px;background:var(--well);box-shadow:inset 0 0 0 1px var(--line);transition:background .18s,box-shadow .18s}
+.composer2:not(.nochips) .cbox{padding-bottom:17px}
 .cbox:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
-.cbox textarea{flex:1;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;line-height:20px;height:20px;margin:6px 0 0;padding:0;color:var(--text);min-width:0}
+.cbox textarea{flex:1;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;line-height:20px;height:20px;max-height:100px;margin:6px 0 0;padding:0;color:var(--text);min-width:0;overflow-y:auto;scrollbar-width:none}
+.cbox textarea::-webkit-scrollbar{display:none}
 .cbox textarea::placeholder{color:var(--text-3)}
 .cbox .round.ghost{background:none;box-shadow:none;color:var(--text-2)}
 .cbox .round.ghost:hover{color:var(--text);background:var(--hover)}
@@ -58,9 +60,6 @@ body.grand .side{height:900px}
   background:var(--thumb);color:var(--text);box-shadow:var(--sh-thumb),0 0 0 3px var(--island);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
 .cchip:active{transform:scale(.95);transition:transform .08s ease-out}
 .cchip svg{width:13px;height:13px}.cchip svg:last-child{width:11px;height:11px;color:var(--text-2)}
-.kbd{position:absolute;right:14px;bottom:-9px;font-size:10.5px;color:var(--text-3);font-weight:500}
-.kbd b{font:600 10px "Geist Mono",monospace;padding:1px 5px;border-radius:5px;background:var(--track);color:var(--text-2)}
-/* En train de parler */
 .cbox.listening{background:var(--thumb);box-shadow:0 0 0 1.5px var(--blue),0 0 18px color-mix(in srgb,var(--blue) 18%,transparent)}
 .said{flex:1;font-size:14px;line-height:20px;margin:6px 0 0;min-height:20px}
 .caret{display:inline-block;width:1.5px;height:15px;background:var(--text);vertical-align:-2px;margin-left:1px;animation:blink 1s steps(1) infinite}
@@ -71,25 +70,45 @@ body.grand .side{height:900px}
 .wave{display:flex;gap:2px;align-items:center;height:16px;margin:0 4px 8px 0}
 .wave i{width:2.5px;border-radius:2px;background:var(--blue);animation:wave 1s ease-in-out infinite}
 @keyframes wave{0%,100%{height:3px}50%{height:14px}}
-@keyframes ring{from{transform:scale(1);opacity:.45}to{transform:scale(1.6);opacity:0}}
 
-/* Détail : où il en est */
+/* Page de chat */
+.msgs{display:flex;flex-direction:column;gap:10px;padding-top:4px}
+.msg{max-width:84%;padding:9px 13px;border-radius:20px;font-size:14px;line-height:1.4}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--on-ink);border-bottom-right-radius:8px}
+.msg.it{align-self:flex-start;background:var(--well);border-bottom-left-radius:8px}
+.msg-meta{font-size:11px;color:var(--text-3);margin:-4px 4px 0;align-self:flex-start}
+.msg-meta.me{align-self:flex-end}
+.act{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:8px 12px 8px 6px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;cursor:pointer}
+.act .status{width:22px;height:22px}
+.act b{font-weight:600}.act span{color:var(--text-2)}
+.act svg{width:14px;height:14px;color:var(--text-3)}
+.typing{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;border-radius:20px;border-bottom-left-radius:8px;background:var(--well)}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--text-3);animation:dots 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+
+/* Détail : où il en est ; la ligne de métro et son bleu qui avance */
 .now{padding:2px 4px 0}
 .now-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .now-top b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .now-top span{font-size:12px;color:var(--text-2);flex:none;font-variant-numeric:tabular-nums}
-.metro{margin-top:16px}
+.metro{margin-top:14px}
 .stop{position:relative;padding:3px 0 9px 30px;font-size:13px;line-height:18px}
 .stop::before{content:"";position:absolute;left:9px;top:12px;bottom:-12px;width:2.5px;border-radius:2px;background:var(--track)}
 .stop:last-child::before{display:none}
 .stop[data-s=done]::before{background:var(--ink)}
-.stop .dot{position:absolute;left:10.25px;top:12px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;z-index:1}
+.stop .dot{position:absolute;left:10.25px;top:12px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;z-index:2}
 .stop[data-s=done] .dot{width:14px;height:14px;background:var(--ink);color:var(--on-ink)}
 .stop[data-s=done] .dot svg{width:9px;height:9px;stroke-width:3.2}
 .stop[data-s=done]{color:var(--text-2)}
 .stop[data-s=now] .dot{width:18px;height:18px;background:var(--island);box-shadow:inset 0 0 0 3px var(--blue)}
 .stop[data-s=now] .dot::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 2.5px var(--blue);animation:ring 2.4s cubic-bezier(.2,.6,.3,1) infinite}
 .stop[data-s=now]{font-weight:600}
+.flow{position:absolute;left:9px;top:12px;width:2.5px;border-radius:2px;height:18%;background:var(--blue);z-index:1;
+  box-shadow:0 0 6px color-mix(in srgb,var(--blue) 30%,transparent);animation:creep 40s cubic-bezier(.2,.6,.3,1) forwards}
+.flow::after{content:"";position:absolute;left:50%;bottom:-8px;width:16px;height:16px;margin-left:-8px;border-radius:50%;
+  background:radial-gradient(circle,color-mix(in srgb,var(--blue) 40%,transparent),transparent 65%);animation:halo 4.2s ease-in-out infinite}
+@keyframes creep{to{height:62%}}
+@keyframes halo{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.7;transform:scale(1.15)}}
 .stop[data-s=todo] .dot{width:11px;height:11px;background:var(--island);box-shadow:inset 0 0 0 2.5px var(--track)}
 .stop[data-s=todo]{color:var(--text-3)}
 .stop .x{color:var(--red);font-weight:500}
@@ -110,16 +129,17 @@ body.grand .side{height:900px}
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
     <div>
       <h1>Mikky : piste A, en simple</h1>
-      <p>Juste les agents et où ils en sont, et le chat en bas pour lancer une tâche. Touche un agent pour voir ses étapes, clique le micro pour parler.</p>
+      <p>Les agents par groupe (clique un titre pour replier), le chat en bas. Envoie un message pour ouvrir la page de chat, touche un agent pour voir ses étapes, clique le micro pour parler.</p>
     </div>
     <div style="display:flex;gap:8px"><button class="chip on" data-theme="light">Clair</button><button class="chip" data-theme="dark">Sombre</button></div>
   </div>
 </header>
 
 <main class="frames">
-  <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>Les agents, où ils en sont, et le chat. Touche un agent pour ouvrir son détail.</span></figcaption><div class="side" data-frame="home"></div></figure>
-  <figure class="opt"><figcaption><b>En train de parler</b><span>Micro cliqué, ou raccourci clavier maintenu : le texte s'écrit dans la bulle.</span></figcaption><div class="side" data-frame="home" data-listen></div></figure>
-  <figure class="opt"><figcaption><b>Détail d'un agent</b><span>Où il en est, ses étapes en ligne de métro, le code en direct. Le chat parle à cet agent.</span></figcaption><div class="side" data-frame="detail"></div></figure>
+  <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>En attente, travaillent, terminés : chaque groupe se replie. Le chat en bas.</span></figcaption><div class="side" data-frame="home"></div></figure>
+  <figure class="opt"><figcaption><b>Page de chat</b><span>Elle s'ouvre quand tu envoies un message. Tu y parles à Mikky et aux agents ; la tâche lancée apparaît dedans.</span></figcaption><div class="side" data-frame="chat"></div></figure>
+  <figure class="opt"><figcaption><b>En train de parler</b><span>Micro cliqué ou raccourci maintenu : le texte s'écrit dans la bulle, qui grandit.</span></figcaption><div class="side" data-frame="chat" data-listen></div></figure>
+  <figure class="opt"><figcaption><b>Détail d'un agent</b><span>Où il en est, et ses étapes en ligne de métro : le bleu avance doucement vers l'étape suivante.</span></figcaption><div class="side" data-frame="detail"></div></figure>
 </main>
 
 <script>
@@ -127,20 +147,23 @@ const I = {
   folder:'<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
   check:'<path d="m6 12.5 4 4 8-9"/>',
   left:'<path d="m14.5 6-6 6 6 6"/>',
+  right:'<path d="m9.5 6 6 6-6 6"/>',
   down:'<path d="m6 9.5 6 6 6-6"/>',
   up:'<path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/>',
   more:'<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
   mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
   stop:'<rect x="7" y="7" width="10" height="10" rx="2"/>',
+  chat:'<path d="M5 17.5V7a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 19 7v6.5a2.5 2.5 0 0 1-2.5 2.5H9z"/>',
 };
 const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 const CALME = location.hash.includes('calme');
 let theme = 'light';
 const mikkySrc = () => `../references/mikky-idle-${theme}.png`;
 const st = s => `<span class="status"><i>${s === 'finished' ? svg('check') : ''}</i></span>`;
+const esc = t => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
 const COMPOSER = (placeholder, chips) => `
-  <div class="composer2">
+  <div class="composer2${chips ? '' : ' nochips'}">
     <div class="cbox">
       <textarea rows="1" placeholder="${placeholder}"></textarea>
       <button class="round ghost" aria-label="Parler (Ctrl + Win maintenus)" data-mic>${svg('mic')}</button>
@@ -149,51 +172,68 @@ const COMPOSER = (placeholder, chips) => `
     ${chips ? `<div class="cchips"><button class="cchip">${svg('folder')}mikky${svg('down')}</button><button class="cchip">Claude${svg('down')}</button></div>` : ''}
   </div>`;
 
+const GROUP = (id, label, color, n) =>
+  `<button class="group-h" data-toggle="${id}"><span class="gdot" style="--c:var(--${color})"></span>${label} <span class="n">${n}</span>${svg('down')}</button>`;
+
 const PAGES = {
   home: () => `
     <div class="side-head"><img class="mini-mikky" alt="" data-mikky><div class="side-title">Agents</div><button class="round sm" aria-label="Plus">${svg('more')}</button></div>
-    <div class="body"><div class="agents">
-      <div class="agent waiting" data-state="approval">
-        <div class="row">${st()}<div class="row-main">
-          <div class="row-top"><span class="row-title">Met à jour le site</span><span class="who">Codex</span></div>
-          <div class="row-sub">Veut lancer une commande</div>
-          <div class="wait-actions"><code class="code">npm run build</code><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
-        </div></div>
+    <div class="body">
+      ${GROUP('wait', 'En attente', 'amber', 1)}
+      <div class="group" data-group="wait">
+        <div class="agent waiting" data-state="approval">
+          <div class="row">${st()}<div class="row-main">
+            <div class="row-top"><span class="row-title">Met à jour le site</span><span class="who">Codex</span></div>
+            <div class="row-sub">Veut lancer une commande</div>
+            <div class="wait-actions"><code class="code">npm run build</code><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
+          </div></div>
+        </div>
       </div>
-      <div class="agent" data-state="working" data-open="detail">
-        <div class="row">${st()}<div class="row-main">
-          <div class="row-top"><span class="row-title">Corrige les tests du moteur</span><span class="who">Claude</span></div>
-          <div class="row-sub live" data-ticker>Modifie island_machine.dart</div>
-          <div class="prog" style="--p:46%;--p2:58%"><i></i></div>
-        </div></div>
+      ${GROUP('work', 'Travaillent', 'blue', 2)}
+      <div class="group" data-group="work">
+        <div class="agent" data-state="working" data-open="detail">
+          <div class="row">${st()}<div class="row-main">
+            <div class="row-top"><span class="row-title">Corrige les tests du moteur</span><span class="who">Claude</span></div>
+            <div class="row-sub live" data-ticker>Modifie island_machine.dart</div>
+          </div></div>
+        </div>
+        <div class="agent" data-state="thinking" data-open="detail">
+          <div class="row">${st()}<div class="row-main">
+            <div class="row-top"><span class="row-title">Prépare le plan de l'API</span><span class="who">Claude</span></div>
+            <div class="row-sub live">Réfléchit au plan</div>
+          </div></div>
+        </div>
       </div>
-      <div class="agent" data-state="thinking" data-open="detail">
-        <div class="row">${st()}<div class="row-main">
-          <div class="row-top"><span class="row-title">Prépare le plan de l'API</span><span class="who">Claude</span></div>
-          <div class="row-sub live">Réfléchit au plan</div>
-          <div class="prog" style="--p:12%;--p2:22%"><i></i></div>
-        </div></div>
+      ${GROUP('done', 'Terminés', 'green', 1)}
+      <div class="group" data-group="done">
+        <div class="agent done" data-state="finished" data-open="detail">
+          <div class="row">${st('finished')}<div class="row-main">
+            <div class="row-top"><span class="row-title">Résume la spec</span><span class="who">Claude</span></div>
+            <div class="row-sub">Il y a 2 min</div>
+          </div></div>
+        </div>
       </div>
-      <div class="agent" data-state="finished" data-open="detail">
-        <div class="row">${st('finished')}<div class="row-main">
-          <div class="row-top"><span class="row-title">Résume la spec</span><span class="who">Claude</span></div>
-          <div class="row-sub">Terminé il y a 2 min</div>
-        </div></div>
-      </div>
-    </div></div>
+    </div>
     ${COMPOSER('Demande à un agent…', true)}`,
+
+  chat: (text = 'Corrige les tests de mikky_engine et relance-les jusqu’à ce qu’ils passent') => `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvelle tâche</div></div>
+    <div class="body"><div class="msgs">
+      <div class="msg me">${esc(text)}</div>
+      <div class="msg-meta me">mikky · Claude</div>
+      <div class="msg it">C'est parti. Je lance Claude sur mikky ; tu peux suivre ici ou dans Agents.</div>
+      <div class="act" data-state="working" data-open="detail">${st()}<div><b>Corrige les tests</b> <span data-ticker>· Lit island_test.dart</span></div>${svg('right')}</div>
+    </div></div>
+    ${COMPOSER('Répondre…', false)}`,
 
   detail: () => `
     <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Corrige les tests du moteur</div><button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button></div>
     <div class="body">
-      <div class="now">
-        <div class="now-top"><b data-ticker>Modifie island_machine.dart</b><span>3 sur 5</span></div>
-        <div class="prog big" style="--p:46%;--p2:58%"><i></i></div>
-      </div>
+      <div class="now"><div class="now-top"><b data-ticker>Modifie island_machine.dart</b><span>3 sur 5</span></div></div>
       <div class="metro">
         <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>Lire la spec et les tests</div>
         <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>Lancer les tests · <span class="x">2 échecs</span></div>
-        <div class="stop" data-s="now"><span class="dot"></span>Corriger la fermeture auto
+        <div class="stop" data-s="now"><span class="dot"></span><span class="flow"></span>Corriger la fermeture auto
           <div class="codecard">
             <div class="code-tab"><i></i>island_machine.dart</div>
             <div class="code-lines"><div class="ln del"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m">60</span>;</span></div><div class="ln add"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m" data-typing></span><span class="caret"></span></span></div><div class="ln"><span class="n">13</span><span class="c"></span></div><div class="ln"><span class="n">14</span><span class="c"><span class="k">bool</span> <span class="f">closes</span>(<span class="k">int</span> idle) =&gt;</span></div></div>
@@ -207,18 +247,19 @@ const PAGES = {
 
 // ---------- Navigation ----------
 const PUSH = { duration: CALME ? 1 : 380, easing: 'cubic-bezier(.2,.9,.25,1)' };
-function makePage(side, name) {
+function makePage(side, name, arg) {
   const p = document.createElement('div');
-  p.className = 'page'; p.innerHTML = PAGES[name]();
+  p.className = 'page'; p.dataset.name = name; p.innerHTML = PAGES[name](arg);
   p.querySelectorAll('[data-mikky]').forEach(m => m.src = mikkySrc());
   bind(side, p);
   return p;
 }
-function push(side, name) {
-  const prev = side.lastElementChild, p = makePage(side, name);
+function push(side, name, arg) {
+  const prev = side.lastElementChild, p = makePage(side, name, arg);
   side.append(p); typeCode();
   p.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], PUSH);
   prev.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateX(-28%)', opacity: .5 }], { ...PUSH, fill: 'forwards' });
+  return p;
 }
 function back(side) {
   const pages = side.querySelectorAll(':scope>.page');
@@ -229,8 +270,16 @@ function back(side) {
   top.animate([{ transform: 'none' }, { transform: 'translateX(100%)' }], PUSH).onfinish = () => top.remove();
 }
 
+// ---------- La bulle de saisie : grandit jusqu'à 5 lignes ----------
+function fit(p) {
+  const ta = p.querySelector('textarea'); if (!ta) return;
+  ta.style.height = '20px'; ta.style.height = Math.min(ta.scrollHeight, 100) + 'px';
+  const dock = p.querySelector('.composer2'), body = p.querySelector('.body');
+  body.style.setProperty('--dock', (p.offsetHeight - dock.offsetTop + 8) + 'px');
+}
+
 // ---------- Parler : le texte s'écrit dans la bulle ----------
-const PHRASE = 'Corrige les tests de mikky_engine et relance-les jusqu’à ce qu’ils passent';
+const PHRASE = 'Et quand c’est vert, lance aussi les tests de l’app et dis-moi si un golden a changé';
 function listen(p, on) {
   const box = p.querySelector('.cbox'), mic = p.querySelector('[data-mic]');
   clearInterval(box._t);
@@ -238,33 +287,52 @@ function listen(p, on) {
     box.classList.remove('listening'); mic.classList.remove('mic-on');
     const said = box.querySelector('[data-said]'), text = said ? said.textContent : '';
     box.querySelector('.said')?.remove(); box.querySelector('.wave')?.remove();
-    const ta = box.querySelector('textarea'); ta.style.display = ''; ta.value = text; return;
+    const ta = box.querySelector('textarea'); ta.style.display = ''; ta.value = text; fit(p); return;
   }
   box.classList.add('listening'); mic.classList.add('mic-on');
   box.querySelector('textarea').style.display = 'none';
   box.insertAdjacentHTML('afterbegin', `<div class="said"><span data-said></span><span class="caret"></span></div>`);
   mic.insertAdjacentHTML('beforebegin', `<div class="wave">${[0,.15,.3,.1,.25].map(d => `<i style="animation-delay:${d}s"></i>`).join('')}</div>`);
   const out = box.querySelector('[data-said]'), words = PHRASE.split(' ');
-  if (CALME) { out.textContent = words.slice(0, 8).join(' '); return; }
+  if (CALME) { out.textContent = words.slice(0, 12).join(' '); fit(p); return; }
   let n = 0;
-  box._t = setInterval(() => { out.textContent = words.slice(0, ++n).join(' '); if (n >= words.length) clearInterval(box._t); }, 200);
+  box._t = setInterval(() => { out.textContent = words.slice(0, ++n).join(' '); fit(p); if (n >= words.length) clearInterval(box._t); }, 200);
 }
 
 function bind(side, p) {
   p.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', e => { if (e.target.closest('button')) return; push(side, el.dataset.open); }));
   p.querySelectorAll('[data-back]').forEach(el => el.onclick = () => back(side));
+  p.querySelectorAll('[data-toggle]').forEach(h => h.onclick = () => {
+    const g = p.querySelector(`[data-group=${h.dataset.toggle}]`), closed = h.classList.toggle('closed');
+    const full = g.scrollHeight;
+    g.animate(closed ? [{ height: full + 'px', opacity: 1 }, { height: '0px', opacity: 0 }] : [{ height: '0px', opacity: 0 }, { height: full + 'px', opacity: 1 }],
+      { duration: CALME ? 1 : 280, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = () => { g.style.display = closed ? 'none' : ''; };
+    if (!closed) g.style.display = '';
+  });
   p.querySelectorAll('[data-yes],[data-no]').forEach(b => b.onclick = () => {
     const card = b.closest('.agent'), yes = b.hasAttribute('data-yes');
     const acts = card.querySelector('.wait-actions'), h = acts.offsetHeight;
     card.classList.remove('waiting'); card.dataset.state = yes ? 'working' : 'idle';
     card.querySelector('.row-sub').textContent = yes ? 'Lance npm run build' : 'Refusé, attend une autre consigne';
     acts.animate([{ height: h + 'px', opacity: 1, marginTop: '10px' }, { height: '0px', opacity: 0, marginTop: '0px' }], { duration: 240, easing: 'cubic-bezier(.4,0,.2,1)' })
-      .onfinish = () => { acts.remove(); if (yes) card.querySelector('.row-main').insertAdjacentHTML('beforeend', '<div class="prog" style="--p:70%;--p2:80%"><i></i></div>'); };
+      .onfinish = () => acts.remove();
   });
-  const mic = p.querySelector('[data-mic]');
-  if (mic) mic.onclick = () => listen(p, !mic.classList.contains('mic-on'));
-  const send = p.querySelector('[data-send]');
-  if (send) send.onclick = () => { if (mic.classList.contains('mic-on')) listen(p, false); p.querySelector('textarea').value = ''; };
+  const ta = p.querySelector('textarea'), mic = p.querySelector('[data-mic]'), send = p.querySelector('[data-send]');
+  if (!ta) return;
+  ta.addEventListener('input', () => fit(p));
+  ta.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send.click(); } });
+  mic.onclick = () => listen(p, !mic.classList.contains('mic-on'));
+  send.onclick = () => {
+    if (mic.classList.contains('mic-on')) listen(p, false);
+    const text = ta.value.trim(); ta.value = ''; fit(p);
+    if (!text) return;
+    if (p.dataset.name === 'chat') {
+      const msgs = p.querySelector('.msgs');
+      msgs.insertAdjacentHTML('beforeend', `<div class="msg me">${esc(text)}</div><div class="typing"><i></i><i></i><i></i></div>`);
+      const b = p.querySelector('.body'); b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' });
+      setTimeout(() => { const t = msgs.querySelector('.typing'); if (!t) return; t.outerHTML = `<div class="msg it">Noté, je le dis à l'agent.</div>`; b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' }); }, 1200);
+    } else push(side, 'chat', text);
+  };
 }
 
 // ---------- Le vivant ----------
@@ -273,7 +341,8 @@ let tick = 0;
 if (!CALME) setInterval(() => {
   tick = (tick + 1) % TICKS.length;
   document.querySelectorAll('[data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
-    el.textContent = TICKS[tick]; el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+    el.textContent = (el.closest('.act') ? '· ' : '') + TICKS[tick];
+    el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
   });
 }, 2800);
 const CODE = '45;';
@@ -294,7 +363,7 @@ if (location.hash.includes('grand')) document.body.classList.add('grand');
 document.fonts.ready.then(() => {
   document.querySelectorAll('[data-frame]').forEach(side => {
     const p = makePage(side, side.dataset.frame);
-    side.append(p);
+    side.append(p); fit(p);
     if (side.hasAttribute('data-listen')) listen(p, true);
   });
   typeCode();
