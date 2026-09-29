@@ -117,12 +117,16 @@ class SessionLog {
   final Map<String, int> _tools = {};
   final List<TurnSpan> _turns = [];
   final Map<Object, PermissionAsked> _pending = {};
+  QuestionAsked? _question;
 
   List<ThreadItem> get items => List.unmodifiable(_items);
   List<TurnSpan> get turns => List.unmodifiable(_turns);
 
   /// Permission requests waiting for the user, oldest first.
   List<PermissionAsked> get pending => List.unmodifiable(_pending.values);
+
+  /// A question with choices waiting for the user, if any.
+  QuestionAsked? get question => _question;
 
   /// True while the agent works on a turn.
   bool get working => _turns.isNotEmpty && _turns.last.running;
@@ -160,6 +164,7 @@ class SessionLog {
       case TurnEnded():
         _closeTurn(e.reason, e.message);
         _pending.clear();
+        _question = null;
       case UserMessage():
         _items.add(UserItem(e.text, queued: e.queued, at: at));
       case AgentMessage():
@@ -191,6 +196,10 @@ class SessionLog {
         _pending[e.requestId] = e;
       case PermissionAnswered():
         _pending.remove(e.requestId);
+      case QuestionAsked():
+        _question = e;
+      case QuestionAnswered():
+        if (_question?.requestId == e.requestId) _question = null;
     }
   }
 
@@ -209,6 +218,7 @@ class SessionLog {
   /// [staleAfter]: for sessions Mikky only watches, a turn with no news for
   /// that long is taken as dropped (its VS Code window was closed…).
   AgentStatus statusAt(DateTime now, {Duration? staleAfter}) {
+    if (_question != null) return AgentStatus.question;
     if (_pending.isNotEmpty) {
       return _toolFor(_pending.values.first)?.name == 'AskUserQuestion' ? AgentStatus.question : AgentStatus.approval;
     }
@@ -244,6 +254,8 @@ class SessionLog {
   /// One line for the island and the home card: the command waiting for a
   /// yes, what the agent does now, its answer, or the error.
   String get detail {
+    final q = _question;
+    if (q != null) return _line(q.questions.length == 1 && q.questions.first.text.isNotEmpty ? q.questions.first.text : q.message);
     final asked = _pending.isEmpty ? null : _pending.values.first;
     if (asked != null) {
       // The tool's title is the clean command; the request's may be wrapped

@@ -27,8 +27,8 @@ class SideHost {
 
   final AgentsService service;
 
-  /// Oui / Non to agent [id] (the island makes Mikky react).
-  final void Function(String id, bool allow) answer;
+  /// Oui / Non / Toujours to agent [id] (the island makes Mikky react).
+  final void Function(String id, AgentAnswer answer) answer;
   final Future<String?> Function(String title) pickFolder;
   final Future<int?> Function(List<MenuEntry> entries) showMenu;
 
@@ -252,6 +252,15 @@ class HomePage extends StatelessWidget {
     final external = e.origin == AgentOrigin.external;
     final where = external ? ' · hors de Mikky' : '';
     return switch (g) {
+      HomeGroup.waiting when e.log.question != null => AgentCard(
+          status: UiStatus.approval,
+          title: e.name,
+          who: whoOf(e),
+          pinned: e.mark.pinned,
+          subtitle: 'Pose une question : ${log.detail}',
+          style: AgentCardStyle.waiting,
+          onTap: () => open(e.id),
+        ),
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
           status: UiStatus.approval,
           title: e.name,
@@ -261,7 +270,12 @@ class HomePage extends StatelessWidget {
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
           actions: e.live
-              ? WaitActions(command: log.detail, onYes: () => host.answer(e.id, true), onNo: () => host.answer(e.id, false))
+              ? WaitActions(
+                  command: log.detail,
+                  onYes: () => host.answer(e.id, AgentAnswer.allow),
+                  onNo: () => host.answer(e.id, AgentAnswer.deny),
+                  onAlways: canAlways(log) ? () => host.answer(e.id, AgentAnswer.allowAlways) : null,
+                )
               : null,
         ),
       HomeGroup.waiting => AgentCard(

@@ -84,7 +84,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     key: _sideKey,
     host: SideHost(
       service: widget.agents,
-      answer: (id, allow) => _answerId(id, allow ? AgentAnswer.allow : AgentAnswer.deny),
+      answer: _answerId,
       pickFolder: _overlay.pickFolder,
       showMenu: _overlay.showMenu,
       islandMenu: _showMenu,
@@ -346,7 +346,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _machine.click(now);
     if (_source.answer(agent.id, answer, now)) _machine.setAgents(_source.agents, now);
     switch (answer) {
-      case AgentAnswer.allow:
+      case AgentAnswer.allow || AgentAnswer.allowAlways:
         _mikky.happy();
       case AgentAnswer.deny:
         _mikky.twitch();

@@ -455,8 +455,8 @@ class RealAgentSource implements AgentSource {
     final e = entry(id);
     if (e == null) return false;
     switch (answer) {
-      case AgentAnswer.allow || AgentAnswer.deny:
-        final ok = e.run?.answer(allow: answer == AgentAnswer.allow) ?? false;
+      case AgentAnswer.allow || AgentAnswer.allowAlways || AgentAnswer.deny:
+        final ok = e.run?.answer(allow: answer != AgentAnswer.deny, always: answer == AgentAnswer.allowAlways) ?? false;
         if (ok) _refresh();
         return ok;
       case AgentAnswer.retry:
@@ -467,6 +467,13 @@ class RealAgentSource implements AgentSource {
         e.dismissed = true;
         return true;
     }
+  }
+
+  /// Answers agent [id]'s question (see [AgentRun.answerQuestion]).
+  bool answerQuestion(String id, Map<String, Object>? answers) {
+    final ok = entry(id)?.run?.answerQuestion(answers) ?? false;
+    if (ok) _changed();
+    return ok;
   }
 
   /// When a finished agent leaves the island, or a watched session goes

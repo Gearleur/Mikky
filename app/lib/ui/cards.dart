@@ -197,12 +197,14 @@ class AgentCard extends StatelessWidget {
   }
 }
 
-/// The Oui / Non of a waiting agent: the command, then the two buttons.
+/// The Oui / Non of a waiting agent: the command, then the buttons.
+/// [onAlways]: « Toujours », when the agent offers to allow this kind of
+/// action from now on.
 class WaitActions extends StatelessWidget {
-  const WaitActions({super.key, required this.command, this.onYes, this.onNo});
+  const WaitActions({super.key, required this.command, this.onYes, this.onNo, this.onAlways});
 
   final String command;
-  final VoidCallback? onYes, onNo;
+  final VoidCallback? onYes, onNo, onAlways;
 
   /// Longer than this, the command gets a line of its own (up to three),
   /// above the buttons: the user must read what they say yes to.
@@ -215,7 +217,7 @@ class WaitActions extends StatelessWidget {
       const SizedBox(width: 6),
       MButton('Oui', small: true, kind: ButtonKind.primary, onPressed: onYes),
     ];
-    if (command.length <= shortCommand) {
+    if (command.length <= shortCommand && onAlways == null) {
       return Row(
         children: [
           Expanded(child: Align(alignment: Alignment.centerLeft, child: CodePill(command))),
@@ -229,7 +231,11 @@ class WaitActions extends StatelessWidget {
       children: [
         CodePill(command, maxLines: 3),
         const SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
+        Row(children: [
+          if (onAlways != null) MButton('Toujours', small: true, kind: ButtonKind.ghost, onPressed: onAlways),
+          const Spacer(),
+          ...buttons,
+        ]),
       ],
     );
   }

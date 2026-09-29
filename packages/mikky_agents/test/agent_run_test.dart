@@ -62,6 +62,28 @@ void main() {
     expect(run.answer(allow: true), isFalse);
   });
 
+  test('« toujours » picks the agent\'s always-allow option', () async {
+    final (agent, run) = await opened();
+    final done = run.prompt('write');
+    await until(run, (log) => log.pending.isNotEmpty);
+    expect(run.log.pending.single.options.any((o) => o.kind == 'allow_always'), isTrue);
+    run.answer(allow: true, always: true);
+    await done;
+    expect(agent.lastPermission, 'allow-always');
+  });
+
+  test('a question: its choices, then the answer goes back to the agent', () async {
+    final (_, run) = await opened();
+    final done = run.prompt('ask');
+    await until(run, (log) => log.question != null);
+    expect(run.log.statusAt(_now), AgentStatus.question);
+    expect(run.log.question!.questions.single.choices.map((c) => c.label), ['SQLite', 'Postgres']);
+    expect(run.answerQuestion({'question_0': 'Postgres'}), isTrue);
+    await done;
+    expect(run.log.question, isNull);
+    expect(run.log.detail, 'Choix : Postgres');
+  });
+
   test('a no refuses the tool', () async {
     final (_, run) = await opened();
     final done = run.prompt('write');

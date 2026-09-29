@@ -12,6 +12,7 @@ class AcpReader {
   final Map<Object, String> _requestedModes = {};
   final Map<Object, String> _requestedModels = {};
   final Map<Object, List<PermissionOption>> _permissionOptions = {};
+  final Set<Object> _questions = {};
   final List<Object> _prompts = [];
   Object? _loading;
   bool _modeReported = false;
@@ -29,10 +30,12 @@ class AcpReader {
     if (outgoing) {
       if (method != null) return _request(id, method, params, at);
       if (id != null && _permissionOptions.containsKey(id)) return _answer(id, msg, at);
+      if (id != null && _questions.remove(id)) return [QuestionAnswered(id, at: at)];
       return const [];
     }
     if (method == 'session/update') return _update((params['update'] as Map).cast<String, dynamic>(), at);
     if (method == 'session/request_permission') return _permission(id!, params, at);
+    if (method == 'elicitation/create' && params['mode'] == 'form') return [_question(id!, params, at)];
     if (method == null && id != null) return _response(id, msg, at);
     return const [];
   }
@@ -139,6 +142,35 @@ class AcpReader {
         at: at,
       ),
     ];
+  }
+
+  /// An ACP form: one field per question (`question_0`…, a string with
+  /// `oneOf` choices, or an array of `anyOf` for several), and its free
+  /// text companion (`question_0_custom`).
+  QuestionAsked _question(Object id, Map<String, dynamic> params, DateTime? at) {
+    _questions.add(id);
+    final message = params['message'] as String? ?? '';
+    final props = ((params['requestedSchema'] as Map?)?['properties'] as Map?)?.cast<String, dynamic>() ?? const {};
+    final questions = <Question>[];
+    for (final e in props.entries) {
+      if (e.key.endsWith('_custom')) continue;
+      final f = (e.value as Map).cast<String, dynamic>();
+      final multiple = f['type'] == 'array';
+      final raw = multiple ? ((f['items'] as Map?)?['anyOf'] as List?) : (f['oneOf'] as List?);
+      final other = '${e.key}_custom';
+      questions.add(Question(
+        e.key,
+        text: f['description'] as String? ?? (props.length <= 2 ? message : ''),
+        title: f['title'] as String?,
+        multiple: multiple,
+        otherKey: props.containsKey(other) ? other : null,
+        choices: [
+          for (final o in raw ?? const [])
+            QuestionChoice('${(o as Map)['const'] ?? o['title']}', o['description'] as String? ?? ''),
+        ],
+      ));
+    }
+    return QuestionAsked(id, message: message, questions: questions, at: at);
   }
 
   List<SessionEvent> _answer(Object id, Map<String, dynamic> msg, DateTime? at) {

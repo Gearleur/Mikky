@@ -213,3 +213,46 @@ class PermissionAnswered extends SessionEvent {
   final Object requestId;
   final bool allowed;
 }
+
+/// One choice of a [Question].
+class QuestionChoice {
+  const QuestionChoice(this.label, [this.description = '']);
+
+  final String label;
+  final String description;
+}
+
+/// One question of a [QuestionAsked] form, with its choices.
+class Question {
+  const Question(this.key, {required this.text, this.title, this.choices = const [], this.multiple = false, this.otherKey});
+
+  /// The form field to answer in.
+  final String key;
+  final String text;
+
+  /// Short header (« Base de données »…).
+  final String? title;
+  final List<QuestionChoice> choices;
+
+  /// Several choices at once.
+  final bool multiple;
+
+  /// The free-text field that goes with it (« Autre »), if any.
+  final String? otherKey;
+}
+
+/// The agent asks the user to choose (Claude's question tool, as an ACP
+/// form: `elicitation/create`). It waits for the answer.
+class QuestionAsked extends SessionEvent {
+  const QuestionAsked(this.requestId, {required this.message, required this.questions, super.at});
+
+  final Object requestId;
+  final String message;
+  final List<Question> questions;
+}
+
+class QuestionAnswered extends SessionEvent {
+  const QuestionAnswered(this.requestId, {super.at});
+
+  final Object requestId;
+}

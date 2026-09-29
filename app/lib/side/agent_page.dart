@@ -90,10 +90,12 @@ class _AgentPageState extends State<AgentPage> {
 
     final content = <Widget>[
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
-      if (log.pending.isNotEmpty && e.live)
+      if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: AskCard(log: log, onAnswer: (allow) => widget.host.answer(e.id, allow)),
+          child: log.question != null
+              ? QuestionCard(question: log.question!, onAnswer: (answers) => _source.answerQuestion(e.id, answers))
+              : AskCard(log: log, onAnswer: (a) => widget.host.answer(e.id, a)),
         ),
     ];
 
