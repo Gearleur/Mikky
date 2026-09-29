@@ -25,10 +25,11 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 Maquette : `design/prototypes/ux-a.html`. Retours de l'utilisateur : beaucoup trop d'informations, il faut du plus simple.
 
 - **Accueil** : les agents rangés en trois groupes, **En attente**, **Travaillent**, **Terminés**, avec une petite différence visuelle (contour orange, carte grise, carte en simple trait). Chaque groupe **se replie** en cliquant son titre. Pour chaque agent : titre, ce qu'il fait à l'instant, Claude / Codex. Pas de barre horizontale.
-- **Pas de chat sur l'accueil** : juste un bouton rond d'envoi en bas à droite, qui ouvre un **chat pour un nouvel agent**.
-- **Le chat** : une bulle avec un petit micro et une flèche d'envoi, texte centré sur une ligne, qui **grandit jusqu'à 5 lignes**, sans flèches de défilement. Le **dossier et le modèle** sont sous la bulle, **à moitié dedans**. Après envoi : ton message, la réponse de Mikky, et l'agent lancé qui s'ouvre d'un clic.
-- **Parler** : micro cliqué ou **raccourci clavier maintenu** (proposition : Ctrl + Win, comme Wispr Flow) ; le texte s'écrit dans la bulle. Pas d'étape « parler ou écrire » : trop de friction.
-- **Détail d'un agent** : ce qu'il fait et « 3 sur 5 » ; les étapes en ligne de métro, compactes (une ligne chacune) ; **sous l'étape en cours, un trait bleu avance doucement sur la ligne**, avec un halo très léger et lent ; le code en direct sous l'étape en cours. Le chat en bas parle à cet agent, pour l'orienter pendant qu'il travaille : **à garder** (validé par l'utilisateur).
+- **Accueil** : les agents rangés en **En attente**, **Travaillent**, **Terminés** et **Historique** (replié par défaut), avec une petite différence visuelle. Chaque groupe se replie en cliquant son titre.
+- **Pas de chat sur l'accueil** : juste un bouton rond noir avec une **flèche vers la droite**, en bas à droite, qui ouvre un **chat pour un nouvel agent** (dossier et modèle sous la bulle).
+- **Un seul fil par agent** : la conversation et les étapes sur **la même ligne verticale** (ligne de métro). Tes messages à droite, ses réponses et ses étapes sur la ligne ; sous l'étape en cours, le trait bleu qui avance avec un halo léger et lent, et le code en direct. Tes messages envoyés pendant le travail se placent au point où en est l'agent. C'est aussi **l'historique** : un agent terminé garde son fil (fin en vert) et on peut lui écrire pour continuer.
+- **La bulle de saisie** : petit micro, flèche d'envoi, texte centré sur une ligne, grandit jusqu'à 5 lignes, sans flèches de défilement.
+- **Parler** : micro cliqué ou **raccourci clavier maintenu** (proposition : Ctrl + Win, comme Wispr Flow) ; le texte s'écrit dans la bulle. Pas d'étape « parler ou écrire ».
 - Thème sombre : gris des cartes un peu plus contrasté (`--well` `#17171A`).
 
 ### Référence visuelle

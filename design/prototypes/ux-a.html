@@ -16,7 +16,7 @@ body.grand .side{height:900px}
 
 /* Pages empilées dans la petite fenêtre */
 .page{position:absolute;inset:0;background:var(--island);will-change:transform}
-.page .body{position:absolute;top:68px;left:0;right:0;bottom:var(--dock,16px);overflow-y:auto;padding:2px 16px 16px;scrollbar-width:none;transition:bottom .2s}
+.page .body{position:absolute;top:68px;left:0;right:0;bottom:var(--dock,16px);overflow-y:auto;padding:2px 16px 16px;scrollbar-width:none}
 .page .body::-webkit-scrollbar{display:none}
 .side-head .round:first-child{margin-left:4px}
 .side-title.sm{margin-left:6px;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -24,7 +24,7 @@ body.grand .side{height:900px}
 
 /* Accueil : les agents par groupe, repliables */
 .group-h{display:flex;align-items:center;gap:7px;width:100%;border:0;background:none;padding:12px 6px 8px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
-.group-h:first-child{padding-top:4px}
+.body>.group-h:first-child{padding-top:4px}
 .group-h .gdot{width:7px;height:7px;border-radius:50%;background:var(--c)}
 .group-h .n{font-variant-numeric:tabular-nums;color:var(--text-3)}
 .group-h svg{width:14px;height:14px;margin-left:auto;color:var(--text-3);transition:transform .3s cubic-bezier(.34,1.4,.64,1)}
@@ -40,13 +40,19 @@ body.grand .side{height:900px}
 .agent.waiting{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 55%,transparent)}
 .agent.done{background:none;box-shadow:inset 0 0 0 1px var(--line)}
 .agent.done .row-title{font-weight:500}
+.agent.old{background:none;padding:8px 14px 8px 8px;border-radius:14px}
+.agent.old:hover{background:var(--hover)}
+.agent.old .row-title{font-weight:500;color:var(--text-2)}
 .wait-actions{display:flex;align-items:center;gap:6px;margin-top:10px}
 .wait-actions .code{padding:6px 8px}
+.fab{position:absolute;right:16px;bottom:16px;--s:46px;z-index:5}
+.fab svg{width:21px;height:21px}
+.page[data-name=home] .body{padding-bottom:72px}
 
-/* Le chat : bulle qui grandit (jusqu'à 5 lignes), petit micro, flèche ; dossier et agent à moitié dans la bulle */
+/* Le chat : bulle qui grandit (jusqu'à 5 lignes), petit micro, flèche ; dossier et modèle à moitié dans la bulle */
 .composer2{position:absolute;left:12px;right:12px;bottom:26px;z-index:5}
 .composer2.nochips{bottom:14px}
-.cbox{display:flex;align-items:flex-end;gap:6px;min-height:52px;padding:9px 8px 10px 14px;border-radius:24px;background:var(--well);box-shadow:inset 0 0 0 1px var(--line);transition:background .18s,box-shadow .18s}
+.cbox{display:flex;align-items:flex-end;gap:6px;min-height:52px;padding:10px 8px 10px 14px;border-radius:24px;background:var(--well);box-shadow:inset 0 0 0 1px var(--line);transition:background .18s,box-shadow .18s}
 .cbox:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
 .cbox textarea{flex:1;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;line-height:20px;height:20px;max-height:100px;margin:0 0 6px;padding:0;color:var(--text);min-width:0;overflow-y:auto;scrollbar-width:none}
 .cbox textarea::-webkit-scrollbar{display:none}
@@ -69,53 +75,49 @@ body.grand .side{height:900px}
 .wave{display:flex;gap:2px;align-items:center;height:16px;margin:0 4px 8px 0;align-self:flex-end}
 .wave i{width:2.5px;border-radius:2px;background:var(--blue);animation:wave 1s ease-in-out infinite}
 @keyframes wave{0%,100%{height:3px}50%{height:14px}}
-
-.fab{position:absolute;right:16px;bottom:16px;--s:46px;z-index:5}
-.page[data-name=home] .body{padding-bottom:72px}
-.fab svg{width:21px;height:21px}
 .empty{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:120px;color:var(--text-2);font-size:14px;font-weight:500}
 .empty .mini-mikky{width:64px;height:64px;margin:0}
-/* Page de chat */
-.msgs{display:flex;flex-direction:column;gap:10px;padding-top:4px}
-.msg{max-width:84%;padding:9px 13px;border-radius:20px;font-size:14px;line-height:1.4}
-.msg.me{align-self:flex-end;background:var(--ink);color:var(--on-ink);border-bottom-right-radius:8px}
-.msg.it{align-self:flex-start;background:var(--well);border-bottom-left-radius:8px}
-.msg-meta{font-size:11px;color:var(--text-3);margin:-4px 4px 0;align-self:flex-start}
-.msg-meta.me{align-self:flex-end}
-.act{align-self:flex-start;display:flex;align-items:center;gap:8px;padding:8px 12px 8px 6px;border-radius:16px;box-shadow:inset 0 0 0 1px var(--line);font-size:12.5px;cursor:pointer}
-.act .status{width:22px;height:22px}
-.act b{font-weight:600}.act span{color:var(--text-2)}
-.act svg{width:14px;height:14px;color:var(--text-3)}
-.typing{align-self:flex-start;display:flex;gap:4px;padding:12px 14px;border-radius:20px;border-bottom-left-radius:8px;background:var(--well)}
-.typing i{width:6px;height:6px;border-radius:50%;background:var(--text-3);animation:dots 1.2s infinite}
-.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 
-/* Détail : où il en est ; la ligne de métro et son bleu qui avance */
-.now{padding:2px 4px 0}
-.now-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.now-top b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.now-top span{font-size:12px;color:var(--text-2);flex:none;font-variant-numeric:tabular-nums}
-.metro{margin-top:14px}
-.stop{position:relative;padding:3px 0 9px 30px;font-size:13px;line-height:18px}
-.stop::before{content:"";position:absolute;left:9px;top:12px;bottom:-12px;width:2.5px;border-radius:2px;background:var(--track)}
-.stop:last-child::before{display:none}
-.stop[data-s=done]::before{background:var(--ink)}
-.stop .dot{position:absolute;left:10.25px;top:12px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;z-index:2}
-.stop[data-s=done] .dot{width:14px;height:14px;background:var(--ink);color:var(--on-ink)}
-.stop[data-s=done] .dot svg{width:9px;height:9px;stroke-width:3.2}
-.stop[data-s=done]{color:var(--text-2)}
-.stop[data-s=now] .dot{width:18px;height:18px;background:var(--island);box-shadow:inset 0 0 0 3px var(--blue)}
-.stop[data-s=now] .dot::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 2.5px var(--blue);animation:ring 2.4s cubic-bezier(.2,.6,.3,1) infinite}
-.stop[data-s=now]{font-weight:600}
-.flow{position:absolute;left:9px;top:12px;width:2.5px;border-radius:2px;height:18%;background:var(--blue);z-index:1;
+/* Le fil d'un agent : la conversation et ses étapes sur une seule ligne verticale */
+.thread{padding-top:4px}
+.ti{position:relative;padding:3px 0 10px 30px;font-size:13px;line-height:18px;--seg:var(--track)}
+.ti::before{content:"";position:absolute;left:9px;top:0;bottom:0;width:2.5px;background:var(--seg)}
+.ti.past{--seg:var(--ink)}
+.thread>.ti:first-child::before{top:12px}
+.thread>.ti:last-child::before{bottom:auto;height:12px}
+.ti .dot{position:absolute;left:10.25px;top:12px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;z-index:2}
+.ti[data-s=done] .dot{width:14px;height:14px;background:var(--ink);color:var(--on-ink)}
+.ti[data-s=done] .dot svg{width:9px;height:9px;stroke-width:3.2}
+.ti[data-s=done]{color:var(--text-2)}
+.ti[data-s=end] .dot{width:16px;height:16px;background:var(--green);color:#fff}
+.ti[data-s=end] .dot svg{width:10px;height:10px;stroke-width:3.2}
+.ti[data-s=end]{font-weight:600}
+.ti[data-s=now]::before{background:linear-gradient(var(--ink) 12px,var(--track) 12px)}
+.thread>.ti[data-s=now]:first-child::before{background:var(--track)}
+.ti[data-s=now] .dot{width:18px;height:18px;background:var(--island);box-shadow:inset 0 0 0 3px var(--blue)}
+.ti[data-s=now] .dot::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 2.5px var(--blue);animation:ring 2.4s cubic-bezier(.2,.6,.3,1) infinite}
+.ti[data-s=now]{font-weight:600}
+.ti[data-s=todo] .dot{width:11px;height:11px;background:var(--island);box-shadow:inset 0 0 0 2.5px var(--track)}
+.ti[data-s=todo]{color:var(--text-3)}
+.ti .x{color:var(--red);font-weight:500}
+.ti .ok{color:var(--green);font-weight:500}
+.flow{position:absolute;left:9px;top:12px;width:2.5px;border-radius:2px;height:20%;background:var(--blue);z-index:1;
   box-shadow:0 0 6px color-mix(in srgb,var(--blue) 30%,transparent);animation:creep 40s cubic-bezier(.2,.6,.3,1) forwards}
 .flow::after{content:"";position:absolute;left:50%;bottom:-8px;width:16px;height:16px;margin-left:-8px;border-radius:50%;
   background:radial-gradient(circle,color-mix(in srgb,var(--blue) 40%,transparent),transparent 65%);animation:halo 4.2s ease-in-out infinite}
 @keyframes creep{to{height:62%}}
 @keyframes halo{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.7;transform:scale(1.15)}}
-.stop[data-s=todo] .dot{width:11px;height:11px;background:var(--island);box-shadow:inset 0 0 0 2.5px var(--track)}
-.stop[data-s=todo]{color:var(--text-3)}
-.stop .x{color:var(--red);font-weight:500}
+/* Messages dans le fil */
+.ti.msg-me{display:flex;flex-direction:column;align-items:flex-end;padding-bottom:12px}
+.bub{max-width:88%;padding:9px 13px;border-radius:20px;font-size:14px;line-height:1.4;font-weight:400}
+.msg-me .bub{background:var(--ink);color:var(--on-ink);border-bottom-right-radius:8px}
+.t-meta{font-size:11px;color:var(--text-3);margin-top:4px}
+.ti.msg-it{padding-bottom:12px}
+.ti.msg-it .dot{width:8px;height:8px;background:var(--island);box-shadow:inset 0 0 0 2px var(--text-3)}
+.msg-it .bub{display:inline-block;background:var(--well);border-top-left-radius:8px;color:var(--text)}
+.typing{display:inline-flex;gap:4px;padding:12px 14px;border-radius:20px;border-top-left-radius:8px;background:var(--well)}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--text-3);animation:dots 1.2s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
 .codecard{margin-top:8px;background:var(--well);border-radius:14px;overflow:hidden;font-weight:400;box-shadow:inset 0 0 0 1px var(--line)}
 .code-tab{display:flex;align-items:center;gap:6px;padding:6px 10px;font:500 10.5px "Geist Mono",monospace;color:var(--text-2);border-bottom:1px solid var(--line)}
 .code-tab i{display:block;flex:none;width:6px;height:6px;border-radius:50%;background:var(--amber)}
@@ -133,18 +135,18 @@ body.grand .side{height:900px}
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
     <div>
       <h1>Mikky : piste A, en simple</h1>
-      <p>Les agents par groupe (clique un titre pour replier). Le bouton rond en bas à droite ouvre un chat pour un nouvel agent. Touche un agent pour voir ses étapes et lui écrire.</p>
+      <p>Chaque agent a un seul fil : tes messages et ses étapes sur la même ligne verticale. Les terminés et l'historique gardent leur fil. Le bouton rond de l'accueil ouvre un nouvel agent.</p>
     </div>
     <div style="display:flex;gap:8px"><button class="chip on" data-theme="light">Clair</button><button class="chip" data-theme="dark">Sombre</button></div>
   </div>
 </header>
 
 <main class="frames">
-  <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>En attente, travaillent, terminés : chaque groupe se replie. Le bouton rond ouvre un chat pour un nouvel agent.</span></figcaption><div class="side" data-frame="home"></div></figure>
-  <figure class="opt"><figcaption><b>Nouvel agent</b><span>Le bouton rond de l'accueil ouvre ce chat vide. Dossier et agent sous la bulle.</span></figcaption><div class="side" data-frame="newchat"></div></figure>
-  <figure class="opt"><figcaption><b>Chat, après envoi</b><span>Ton message, la réponse de Mikky, et l'agent lancé, qui s'ouvre d'un clic.</span></figcaption><div class="side" data-frame="chat"></div></figure>
-  <figure class="opt"><figcaption><b>En train de parler</b><span>Micro cliqué ou raccourci maintenu : le texte s'écrit dans la bulle, qui grandit.</span></figcaption><div class="side" data-frame="chat" data-listen></div></figure>
-  <figure class="opt"><figcaption><b>Détail d'un agent</b><span>Où il en est, et ses étapes en ligne de métro : le bleu avance doucement vers l'étape suivante.</span></figcaption><div class="side" data-frame="detail"></div></figure>
+  <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>En attente, travaillent, terminés, historique : chaque groupe se replie. Touche un agent pour ouvrir son fil.</span></figcaption><div class="side" data-frame="home"></div></figure>
+  <figure class="opt"><figcaption><b>Nouvel agent</b><span>Ouvert par le bouton rond. Dossier et modèle sous la bulle. En envoyant, tu arrives sur son fil.</span></figcaption><div class="side" data-frame="newchat"></div></figure>
+  <figure class="opt"><figcaption><b>Fil d'un agent au travail</b><span>Tes messages, ses réponses et ses étapes sur la ligne ; le bleu avance vers l'étape suivante. Écris pour l'orienter.</span></figcaption><div class="side" data-frame="agent" data-arg="live"></div></figure>
+  <figure class="opt"><figcaption><b>Fil d'un agent terminé</b><span>L'historique : tout le trajet, et la fin en vert. On peut lui écrire pour continuer.</span></figcaption><div class="side" data-frame="agent" data-arg="done"></div></figure>
+  <figure class="opt"><figcaption><b>En train de parler</b><span>Micro cliqué ou raccourci maintenu : le texte s'écrit dans la bulle, qui grandit.</span></figcaption><div class="side" data-frame="agent" data-arg="live" data-listen></div></figure>
 </main>
 
 <script>
@@ -152,13 +154,12 @@ const I = {
   folder:'<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
   check:'<path d="m6 12.5 4 4 8-9"/>',
   left:'<path d="m14.5 6-6 6 6 6"/>',
-  right:'<path d="m9.5 6 6 6-6 6"/>',
   down:'<path d="m6 9.5 6 6 6-6"/>',
   up:'<path d="M12 19V5M6.5 10.5 12 5l5.5 5.5"/>',
+  go:'<path d="M5 12h14M13.5 6.5 19 12l-5.5 5.5"/>',
   more:'<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
   mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
   stop:'<rect x="7" y="7" width="10" height="10" rx="2"/>',
-  chat:'<path d="M5 17.5V7a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 19 7v6.5a2.5 2.5 0 0 1-2.5 2.5H9z"/>',
 };
 const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
 const CALME = location.hash.includes('calme');
@@ -177,8 +178,54 @@ const COMPOSER = (placeholder, chips) => `
     ${chips ? `<div class="cchips"><button class="cchip">${svg('folder')}mikky${svg('down')}</button><button class="cchip">Claude${svg('down')}</button></div>` : ''}
   </div>`;
 
-const GROUP = (id, label, color, n) =>
-  `<button class="group-h" data-toggle="${id}"><span class="gdot" style="--c:var(--${color})"></span>${label} <span class="n">${n}</span>${svg('down')}</button>`;
+const GROUP = (id, label, color, n, closed) =>
+  `<button class="group-h${closed ? ' closed' : ''}" data-toggle="${id}"><span class="gdot" style="--c:var(--${color})"></span>${label} <span class="n">${n}</span>${svg('down')}</button>`;
+const CARD = (state, title, who, sub, arg, cls = '') => `
+  <div class="agent ${cls}" data-state="${state}" data-open="agent" data-arg="${arg}">
+    <div class="row">${st(state)}<div class="row-main">
+      <div class="row-top"><span class="row-title">${title}</span><span class="who">${who}</span></div>
+      ${sub ? `<div class="row-sub${state === 'working' ? ' live' : ''}"${state === 'working' ? ' data-ticker' : ''}>${sub}</div>` : ''}
+    </div></div>
+  </div>`;
+
+// Les étapes et les messages d'un fil.
+const S = (s, text, past) => `<div class="ti${past ? ' past' : ''}" data-s="${s}"><span class="dot">${s === 'done' || s === 'end' ? svg('check') : ''}</span>${text}</div>`;
+const ME = (text, meta, past) => `<div class="ti msg-me${past ? ' past' : ''}"><div class="bub">${text}</div>${meta ? `<div class="t-meta">${meta}</div>` : ''}</div>`;
+const IT = (text, past) => `<div class="ti msg-it${past ? ' past' : ''}"><span class="dot"></span><div class="bub">${text}</div></div>`;
+const CODE_NOW = `<span class="flow"></span>
+  <div class="codecard">
+    <div class="code-tab"><i></i>island_machine.dart</div>
+    <div class="code-lines"><div class="ln del"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m">60</span>;</span></div><div class="ln add"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m" data-typing></span><span class="caret"></span></span></div><div class="ln"><span class="n">13</span><span class="c"></span></div><div class="ln"><span class="n">14</span><span class="c"><span class="k">bool</span> <span class="f">closes</span>(<span class="k">int</span> idle) =&gt;</span></div></div>
+  </div>`;
+
+const THREADS = {
+  live: {
+    title: 'Corrige les tests du moteur', stop: true,
+    html: ME('Corrige les tests du moteur et relance-les jusqu’à ce qu’ils passent', '9:37 · mikky · Claude', true)
+      + S('done', 'Lire la spec et les tests', true)
+      + S('done', 'Lancer les tests · <span class="x">2 échecs</span>', true)
+      + IT('Deux tests échouent sur la fermeture auto. Je corrige island_machine.dart.', true)
+      + ME('Garde 45 s, pas 30', '9:40', true)
+      + S('now', 'Corriger la fermeture auto' + CODE_NOW)
+      + S('todo', 'Relancer les tests')
+      + S('todo', 'Terminé'),
+  },
+  done: {
+    title: 'Résume la spec',
+    html: ME('Résume la spec de l’étape 1 en une page', '9:12 · mikky · Claude', true)
+      + S('done', 'Lire la spec', true)
+      + S('done', 'Écrire le résumé', true)
+      + IT('C’est fait : docs/resume-etape-1.md, une page, 6 sections.', true)
+      + S('end', 'Terminé · <span class="ok">1 fichier</span>', true),
+  },
+  fresh: text => ({
+    title: text,
+    html: ME(esc(text), 'à l’instant · mikky · Claude', true)
+      + IT('C’est parti, je lance Claude sur mikky.', true)
+      + `<div class="ti" data-s="now"><span class="dot"></span><span class="flow"></span><span data-ticker>Lit le projet</span></div>`
+      + S('todo', 'La suite arrive quand Claude aura fait son plan'),
+  }),
+};
 
 const PAGES = {
   home: () => `
@@ -196,63 +243,34 @@ const PAGES = {
       </div>
       ${GROUP('work', 'Travaillent', 'blue', 2)}
       <div class="group" data-group="work">
-        <div class="agent" data-state="working" data-open="detail">
-          <div class="row">${st()}<div class="row-main">
-            <div class="row-top"><span class="row-title">Corrige les tests du moteur</span><span class="who">Claude</span></div>
-            <div class="row-sub live" data-ticker>Modifie island_machine.dart</div>
-          </div></div>
-        </div>
-        <div class="agent" data-state="thinking" data-open="detail">
-          <div class="row">${st()}<div class="row-main">
-            <div class="row-top"><span class="row-title">Prépare le plan de l'API</span><span class="who">Claude</span></div>
-            <div class="row-sub live">Réfléchit au plan</div>
-          </div></div>
-        </div>
+        ${CARD('working', 'Corrige les tests du moteur', 'Claude', 'Modifie island_machine.dart', 'live')}
+        ${CARD('thinking', 'Prépare le plan de l’API', 'Claude', 'Réfléchit au plan', 'live')}
       </div>
       ${GROUP('done', 'Terminés', 'green', 1)}
       <div class="group" data-group="done">
-        <div class="agent done" data-state="finished" data-open="detail">
-          <div class="row">${st('finished')}<div class="row-main">
-            <div class="row-top"><span class="row-title">Résume la spec</span><span class="who">Claude</span></div>
-            <div class="row-sub">Il y a 2 min</div>
-          </div></div>
-        </div>
+        ${CARD('finished', 'Résume la spec', 'Claude', 'Il y a 2 min', 'done', 'done')}
+      </div>
+      ${GROUP('old', 'Historique', 'grey', 12, true)}
+      <div class="group" data-group="old" style="display:none;gap:0">
+        ${CARD('finished', 'Ajoute la position à droite', 'Claude', '', 'done', 'old')}
+        ${CARD('finished', 'Traduis le README', 'Codex', '', 'done', 'old')}
+        ${CARD('finished', 'Corrige le hook souris', 'Claude', '', 'done', 'old')}
       </div>
     </div>
-    <button class="round ink fab" aria-label="Nouvel agent" data-new>${svg('up')}</button>`,
+    <button class="round ink fab" aria-label="Nouvel agent" data-new>${svg('go')}</button>`,
 
   newchat: () => `
     <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvel agent</div></div>
-    <div class="body"><div class="msgs"><div class="empty"><img class="mini-mikky" alt="" data-mikky><span>Qu'est-ce qu'on lance ?</span></div></div></div>
+    <div class="body"><div class="empty"><img class="mini-mikky" alt="" data-mikky><span>Qu'est-ce qu'on lance ?</span></div></div>
     ${COMPOSER('Que doit faire l’agent ?', true)}`,
 
-  chat: (text = 'Corrige les tests de mikky_engine et relance-les jusqu’à ce qu’ils passent') => `
-    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvelle tâche</div></div>
-    <div class="body"><div class="msgs">
-      <div class="msg me">${esc(text)}</div>
-      <div class="msg-meta me">mikky · Claude</div>
-      <div class="msg it">C'est parti. Je lance Claude sur mikky ; tu peux suivre ici ou dans Agents.</div>
-      <div class="act" data-state="working" data-open="detail">${st()}<div><b>Corrige les tests</b> <span data-ticker>· Lit island_test.dart</span></div>${svg('right')}</div>
-    </div></div>
-    ${COMPOSER('Répondre…', true)}`,
-
-  detail: () => `
-    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Corrige les tests du moteur</div><button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button></div>
-    <div class="body">
-      <div class="now"><div class="now-top"><b data-ticker>Modifie island_machine.dart</b><span>3 sur 5</span></div></div>
-      <div class="metro">
-        <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>Lire la spec et les tests</div>
-        <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>Lancer les tests · <span class="x">2 échecs</span></div>
-        <div class="stop" data-s="now"><span class="dot"></span><span class="flow"></span>Corriger la fermeture auto
-          <div class="codecard">
-            <div class="code-tab"><i></i>island_machine.dart</div>
-            <div class="code-lines"><div class="ln del"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m">60</span>;</span></div><div class="ln add"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m" data-typing></span><span class="caret"></span></span></div><div class="ln"><span class="n">13</span><span class="c"></span></div><div class="ln"><span class="n">14</span><span class="c"><span class="k">bool</span> <span class="f">closes</span>(<span class="k">int</span> idle) =&gt;</span></div></div>
-          </div></div>
-        <div class="stop" data-s="todo"><span class="dot"></span>Relancer les tests</div>
-        <div class="stop" data-s="todo"><span class="dot"></span>Terminé</div>
-      </div>
-    </div>
-    ${COMPOSER('Écris à cet agent…', false)}`,
+  agent: arg => {
+    const t = typeof arg === 'string' && THREADS[arg] ? THREADS[arg] : THREADS.fresh(arg && arg.text || 'Nouvelle tâche');
+    return `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">${esc(t.title)}</div>${t.html.includes('data-s="now"') ? `<button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button>` : ''}</div>
+    <div class="body"><div class="thread">${t.html}</div></div>
+    ${COMPOSER(t.html.includes('data-s="now"') ? 'Écris à cet agent…' : 'Continuer avec cet agent…', false)}`;
+  },
 };
 
 // ---------- Navigation ----------
@@ -264,9 +282,10 @@ function makePage(side, name, arg) {
   bind(side, p);
   return p;
 }
+function mount(side, p) { side.append(p); fit(p); typeCode(); const b = p.querySelector('.body'); if (p.dataset.name === 'agent') b.scrollTop = b.scrollHeight; }
 function push(side, name, arg) {
   const prev = side.lastElementChild, p = makePage(side, name, arg);
-  side.append(p); typeCode();
+  mount(side, p);
   p.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], PUSH);
   prev.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateX(-28%)', opacity: .5 }], { ...PUSH, fill: 'forwards' });
   return p;
@@ -310,14 +329,15 @@ function listen(p, on) {
 }
 
 function bind(side, p) {
-  p.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', e => { if (e.target.closest('button')) return; push(side, el.dataset.open); }));
+  p.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', e => { if (e.target.closest('button')) return; push(side, el.dataset.open, el.dataset.arg); }));
   p.querySelectorAll('[data-back]').forEach(el => el.onclick = () => back(side));
+  p.querySelectorAll('[data-new]').forEach(b => b.onclick = () => { const n = push(side, 'newchat'); n.querySelector('textarea').focus({ preventScroll: true }); });
   p.querySelectorAll('[data-toggle]').forEach(h => h.onclick = () => {
     const g = p.querySelector(`[data-group=${h.dataset.toggle}]`), closed = h.classList.toggle('closed');
+    if (!closed) g.style.display = '';
     const full = g.scrollHeight;
     g.animate(closed ? [{ height: full + 'px', opacity: 1 }, { height: '0px', opacity: 0 }] : [{ height: '0px', opacity: 0 }, { height: full + 'px', opacity: 1 }],
-      { duration: CALME ? 1 : 280, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = () => { g.style.display = closed ? 'none' : ''; };
-    if (!closed) g.style.display = '';
+      { duration: CALME ? 1 : 280, easing: 'cubic-bezier(.2,.8,.2,1)' }).onfinish = () => { if (closed) g.style.display = 'none'; };
   });
   p.querySelectorAll('[data-yes],[data-no]').forEach(b => b.onclick = () => {
     const card = b.closest('.agent'), yes = b.hasAttribute('data-yes');
@@ -327,7 +347,6 @@ function bind(side, p) {
     acts.animate([{ height: h + 'px', opacity: 1, marginTop: '10px' }, { height: '0px', opacity: 0, marginTop: '0px' }], { duration: 240, easing: 'cubic-bezier(.4,0,.2,1)' })
       .onfinish = () => acts.remove();
   });
-  p.querySelectorAll('[data-new]').forEach(b => b.onclick = () => { const n = push(side, 'newchat'); fit(n); n.querySelector('textarea').focus({ preventScroll: true }); });
   const ta = p.querySelector('textarea'), mic = p.querySelector('[data-mic]'), send = p.querySelector('[data-send]');
   if (!ta) return;
   ta.addEventListener('input', () => fit(p));
@@ -338,14 +357,16 @@ function bind(side, p) {
     const text = ta.value.trim(); ta.value = ''; fit(p);
     if (!text) return;
     if (p.dataset.name === 'newchat') {
-      const fresh = makePage(side, 'chat', text); side.append(fresh); fit(fresh); p.remove(); typeCode();
+      const fresh = makePage(side, 'agent', { text }); mount(side, fresh); p.remove();
       fresh.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CALME ? 1 : 200 });
-    } else if (p.dataset.name === 'chat') {
-      const msgs = p.querySelector('.msgs');
-      msgs.insertAdjacentHTML('beforeend', `<div class="msg me">${esc(text)}</div><div class="typing"><i></i><i></i><i></i></div>`);
-      const b = p.querySelector('.body'); b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' });
-      setTimeout(() => { const t = msgs.querySelector('.typing'); if (!t) return; t.outerHTML = `<div class="msg it">Noté, je le dis à l'agent.</div>`; b.scrollTo({ top: b.scrollHeight, behavior: 'smooth' }); }, 1200);
-    } else push(side, 'chat', text);
+      return;
+    }
+    // Dans un fil : le message se place au point où en est l'agent.
+    const thread = p.querySelector('.thread'), now = thread.querySelector('[data-s=now]');
+    const html = ME(esc(text), 'à l’instant', !!now) + (now ? `<div class="ti msg-it past" data-typing-reply><span class="dot"></span><div class="typing"><i></i><i></i><i></i></div></div>` : '');
+    if (now) now.insertAdjacentHTML('beforebegin', html); else thread.insertAdjacentHTML('beforeend', html);
+    const b = p.querySelector('.body'); b.scrollTo({ top: now ? now.offsetTop - 120 : b.scrollHeight, behavior: 'smooth' });
+    setTimeout(() => { const r = p.querySelector('[data-typing-reply] .typing'); if (r) r.outerHTML = `<div class="bub">Noté, je m'y mets.</div>`; }, 1200);
   };
 }
 
@@ -354,8 +375,8 @@ const TICKS = ['Modifie island_machine.dart', 'Relit island_test.dart', 'Modifie
 let tick = 0;
 if (!CALME) setInterval(() => {
   tick = (tick + 1) % TICKS.length;
-  document.querySelectorAll('[data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
-    el.textContent = (el.closest('.act') ? '· ' : '') + TICKS[tick];
+  document.querySelectorAll('.agent [data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
+    el.textContent = TICKS[tick];
     el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
   });
 }, 2800);
@@ -376,11 +397,10 @@ if (location.hash.includes('grand')) document.body.classList.add('grand');
 
 document.fonts.ready.then(() => {
   document.querySelectorAll('[data-frame]').forEach(side => {
-    const p = makePage(side, side.dataset.frame);
-    side.append(p); fit(p);
+    const p = makePage(side, side.dataset.frame, side.dataset.arg);
+    mount(side, p);
     if (side.hasAttribute('data-listen')) listen(p, true);
   });
-  typeCode();
 });
 </script>
 </body></html>
