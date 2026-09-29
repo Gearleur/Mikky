@@ -20,6 +20,15 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 - **Voir qui travaille : tout le monde**, pas seulement les agents lancés par Mikky (sessions Claude de VS Code et du terminal, sessions Codex). Claude écrit ses sessions dans `~/.claude/projects/`, Codex dans `~/.codex/sessions/AAAA/MM/JJ/` : les surveiller suffit, sans boucle.
 - Pistes d'UX : `design/prototypes/ux-activite.html` (A le fil, B les agents en grand, C Mikky au centre, plus la page « Nouvelle tâche » et le détail d'un agent).
 
+### Piste A retenue (2026-09-29)
+
+Maquette : `design/prototypes/ux-a.html`.
+
+- **Accueil = le fil** : ce qui t'attend (Oui / Non), puis les agents en direct (ce qu'ils font à l'instant), puis ce qui vient de se passer (agent terminé, mail important, fichier reçu). Un « + » pour une nouvelle tâche.
+- **Détail d'un agent** (on touche un agent) : temps écoulé, où il travaille (dossier, branche), ses modifs (+/−), et ses **étapes en ligne de métro** : faites (avec des « poinçons » pour chaque action : lecture, commande…), en cours (avec le **code en direct**, façon diff), à venir (écrire le code, bash, tests…). Terminal et conversation en bas, au second plan. Les étapes viennent de la liste de tâches de l'agent (todo de Claude, plan de Codex), écrite dans ses fichiers de session.
+- **Nouvelle tâche** : une page qui commence par un choix **Parler / Écrire**, la préférence en premier ; puis dictée ou clavier (on bascule de l'un à l'autre), agent et dossier, « Lancer ». Tâches récentes pour relancer.
+- **Premier lancement** : Mikky demande une fois si on préfère parler ou écrire (modifiable dans les réglages).
+
 ### Référence visuelle
 
 `design/references/boutons-lanceur.png` : on garde **les couleurs** (gris, blanc, noir) et **la forme des boutons** (capsules, boutons ronds, sélecteur à capsule blanche, ombres douces). On ne garde **pas** la mise en page « lecteur » avec un bouton Play.
@@ -88,6 +97,11 @@ Couleurs relevées sur l'image :
 
 **Mails (ajouté le 2026-09-29)**
 37. Classer les mails en local avec un petit modèle (MVP, voir §1). Plus tard : résumés, brouillons de réponse, règles, étiquettes appliquées dans la boîte.
+
+**Mikky, un mini-téléphone (ajouté le 2026-09-29)**
+38. **Mikky comme un petit téléphone** : de base, on suit les agents ; mais on peut ouvrir des **mini-apps** : une app Messages pour répondre aux mails et aux messages, une app pour orchestrer des agents (les boucles), une app Partage (LocalSend), etc.
+39. **Communauté et plugins** : chacun peut créer et partager une mini-app, et on installe ce qu'on veut (comme les plugins de Paperclip, mais sous forme d'apps).
+40. **Demander à Mikky d'ouvrir une app** (« ouvre mes mails », « lance l'orchestrateur ») : plus tard, pour que Mikky soit un peu agentique, en restant simple.
 
 ## 4. Les boucles agentiques (« modes de travail »)
 

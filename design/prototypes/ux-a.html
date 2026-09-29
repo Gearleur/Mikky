@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mikky — piste A</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="mikky-ui.css">
+<style>
+body{background:var(--board);color:var(--text);transition:background .3s}
+.page-head{padding:28px 40px 8px}
+.page-head p{color:var(--text-2)}
+.frames{display:flex;flex-wrap:wrap;gap:40px 34px;padding:24px 40px 64px;align-items:flex-start}
+.opt{margin:0;width:320px}
+.opt figcaption{height:76px;margin-bottom:14px}
+.opt figcaption b{display:block;font-size:15px;font-weight:600;margin-bottom:4px}
+.opt figcaption span{display:block;font-size:12.5px;color:var(--text-2);line-height:1.45}
+
+/* Pages empilées dans la petite fenêtre */
+.page{position:absolute;inset:0;background:var(--island);will-change:transform}
+.page .body{position:absolute;top:68px;left:0;right:0;bottom:0;overflow-y:auto;padding:2px 16px 100px;scrollbar-width:none}
+.page .body::-webkit-scrollbar{display:none}
+.side-head .round:first-child{margin-left:4px}
+.side-head .side-title.sm{margin-left:6px}
+
+/* Accueil (A) */
+.sum{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 4px}
+.pill{display:inline-flex;align-items:center;gap:2px;height:26px;padding:0 10px 0 2px;border-radius:999px;background:var(--well);font-size:12px;font-weight:600}
+.pill .status{width:20px;height:20px}.pill .status i{width:7px;height:7px}
+.pill[data-state=finished] .status i{width:12px;height:12px}.pill[data-state=finished] .status i svg{width:8px;height:8px}
+.wait{background:var(--well);border-radius:20px;padding:12px 12px 12px 8px;box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--amber) 55%,transparent)}
+.wait .row{padding:0 0 10px;background:none}
+.wait-actions{display:flex;align-items:center;gap:6px;padding-left:38px}
+.live{color:var(--text);font-weight:500}
+.meta{font-size:11.5px;color:var(--text-3);margin-top:2px;display:flex;gap:5px;align-items:center;white-space:nowrap}
+.meta .tag{font-size:10.5px;padding:0 6px}
+.row .time{align-self:flex-start;margin-top:3px}
+.item[data-open]{cursor:pointer}
+.feed .ev{display:flex;align-items:center;gap:10px;padding:7px 6px}
+.feed .ev .lead-ic{width:28px;height:28px;border-radius:50%}
+.feed .ev .lead-ic svg{width:15px;height:15px}
+.feed .ev div{flex:1;min-width:0;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.feed .ev div b{font-weight:600}.feed .ev div span{color:var(--text-2)}
+.fab{position:absolute;right:16px;bottom:16px;--s:56px;z-index:5}
+.fab svg{width:24px;height:24px}
+
+/* Détail : tuiles */
+.task-title{font-size:16px;font-weight:600;letter-spacing:-.01em;padding:0 4px}
+.detail-meta{padding:0 4px}
+.tiles{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:6px;margin-top:12px}
+.tile{background:var(--well);border-radius:14px;padding:8px 10px;min-width:0}
+.tile small{display:block;font-size:10.5px;color:var(--text-2);font-weight:500}
+.tile b{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+.tile b .ok{color:var(--green)}.tile b .ko{color:var(--red)}
+.where{margin-top:6px;display:flex;align-items:center;gap:6px;font:400 11px "Geist Mono",monospace;color:var(--text-2);padding:0 4px;white-space:nowrap;overflow:hidden}
+.where svg{width:13px;height:13px;flex:none}
+
+/* Détail : la ligne de métro */
+.metro{margin-top:2px}
+.stop{position:relative;padding:5px 0 12px 38px}
+.stop::before{content:"";position:absolute;left:12.5px;top:14px;bottom:-14px;width:3px;border-radius:2px;background:var(--track)}
+.stop:last-child::before{display:none}
+.stop[data-s=done]::before{background:var(--ink)}
+.stop .dot{position:absolute;left:14px;top:14px;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;z-index:1}
+.stop[data-s=done] .dot{width:18px;height:18px;background:var(--ink);color:var(--on-ink)}
+.stop[data-s=done] .dot svg{width:11px;height:11px;stroke-width:3}
+.stop[data-s=now] .dot{width:22px;height:22px;background:var(--island);box-shadow:inset 0 0 0 3.5px var(--blue)}
+.stop[data-s=now] .dot::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 3px var(--blue);animation:ring 1.6s cubic-bezier(.2,.6,.3,1) infinite}
+@keyframes ring{from{transform:scale(1);opacity:.5}to{transform:scale(1.6);opacity:0}}
+.stop[data-s=todo] .dot{width:14px;height:14px;background:var(--island);box-shadow:inset 0 0 0 3px var(--track)}
+.s-title{font-size:13.5px;font-weight:600;line-height:18px}
+.stop[data-s=todo] .s-title{color:var(--text-2);font-weight:500}
+.s-meta{font-size:11.5px;color:var(--text-2);display:flex;gap:6px;align-items:center;margin-top:3px;white-space:nowrap}
+.kind{font-size:10.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:var(--track);color:var(--text)}
+.stop[data-s=now] .kind{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.punches{display:inline-flex;gap:3px;margin-left:auto}
+.punch{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--well);color:var(--text-2);box-shadow:inset 0 0 0 1px var(--line)}
+.punch svg{width:11px;height:11px}
+.punch.ko{color:var(--red)}
+
+/* Détail : le code en direct */
+.codecard{margin-top:9px;background:var(--well);border-radius:14px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--line)}
+.code-tab{display:flex;align-items:center;gap:6px;padding:7px 10px;font:500 11px "Geist Mono",monospace;border-bottom:1px solid var(--line)}
+.code-tab i{display:block;flex:none;width:6px;height:6px;border-radius:50%;background:var(--amber)}
+.code-tab span:last-child{margin-left:auto;color:var(--text-3);font-weight:400}
+.code-lines{padding:6px 0;font:400 10.5px/18px "Geist Mono",monospace;overflow:hidden}
+.ln .c{white-space:pre}
+.ln{display:flex;padding-right:8px}
+.ln .n{width:26px;text-align:right;color:var(--text-3);padding-right:9px;flex:none}
+.ln.del{background:color-mix(in srgb,var(--red) 10%,transparent);box-shadow:inset 2px 0 var(--red)}
+.ln.del .c{text-decoration:line-through;color:var(--text-2)}
+.ln.add{background:color-mix(in srgb,var(--green) 12%,transparent);box-shadow:inset 2px 0 var(--green)}
+.k{color:var(--purple)}.s{color:var(--green)}.m{color:var(--amber)}.f{color:var(--blue)}
+.caret{display:inline-block;width:1.5px;height:13px;background:var(--text);vertical-align:-2px;margin-left:1px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.bottom-bar{position:absolute;left:14px;right:14px;bottom:14px;display:flex;gap:8px;z-index:5}
+.bottom-bar .btn{flex:1}
+.end-actions{display:flex;gap:8px;margin-top:6px}.end-actions .btn{flex:1;--h:40px;font-size:14px}
+body.grand .side{height:980px}
+
+/* Nouvelle tâche */
+.ask{font-size:22px;font-weight:600;letter-spacing:-.02em;margin:6px 4px 16px;line-height:1.2}
+.choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice{border:0;border-radius:24px;padding:18px 10px 14px;display:flex;flex-direction:column;align-items:center;gap:6px;background:var(--well);cursor:pointer;font-weight:600;font-size:14.5px;color:var(--text);transition:transform .34s cubic-bezier(.34,1.56,.64,1),box-shadow .2s}
+.choice:active{transform:scale(.96);transition:transform .08s ease-out}
+.choice .round{--s:60px;margin-bottom:6px;pointer-events:none}
+.choice .round svg{width:26px;height:26px}
+.choice small{font-size:11.5px;color:var(--text-2);font-weight:500}
+.choice.pref{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.form{background:var(--well);border-radius:20px;padding:4px 12px;margin-top:14px}
+.form .frow{display:flex;align-items:center;justify-content:space-between;padding:8px 0;font-size:13.5px;font-weight:600}
+.form .frow+.frow{border-top:1px solid var(--line)}
+.form .frow>span{color:var(--text-2);font-weight:500}
+.mic-zone{display:flex;flex-direction:column;align-items:center;padding:10px 0 4px}
+.mic-wrap{position:relative;isolation:isolate;display:grid;place-items:center;width:140px;height:124px}
+.mic{--s:88px;position:relative}
+.mic svg{width:32px;height:32px}
+.mic::before,.mic::after{content:"";position:absolute;inset:0;border-radius:50%;background:var(--ink);animation:micring 1.8s cubic-bezier(.2,.6,.3,1) infinite;z-index:-1}
+.mic::after{animation-delay:.9s}
+@keyframes micring{from{transform:scale(1);opacity:.16}to{transform:scale(1.55);opacity:0}}
+.wave{display:flex;gap:3px;align-items:center;height:18px}
+.wave i{width:3px;border-radius:2px;background:var(--text-2);animation:wave 1s ease-in-out infinite}
+@keyframes wave{0%,100%{height:4px}50%{height:16px}}
+.transcript{min-height:64px;margin:12px 4px 0;font-size:16.5px;font-weight:500;line-height:1.4;letter-spacing:-.01em;text-align:center}
+.transcript .caret{height:18px;width:2px;vertical-align:-3px}
+.bigtext{display:block;width:100%;height:150px;border:0;border-radius:22px;background:var(--well);padding:14px;font:inherit;font-size:15px;line-height:1.45;color:var(--text);resize:none;outline:0;transition:background .18s,box-shadow .18s}
+.bigtext:focus{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
+.bigtext::placeholder{color:var(--text-3)}
+
+/* Premier lancement */
+.scrim{position:absolute;inset:0;background:rgba(10,10,12,.28);z-index:20;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+.t-dark .scrim{background:rgba(0,0,0,.6)}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;background:var(--island);border-radius:32px;padding:14px 14px 14px;box-shadow:var(--sh-bar),inset 0 0 0 1px var(--line);z-index:21;text-align:center}
+.sheet .mini-mikky{width:64px;height:64px;margin:0 auto}
+.sheet h4{margin:2px 0 4px;font-size:17px;font-weight:600;letter-spacing:-.015em}
+.sheet p{margin:0 0 12px;font-size:12.5px;color:var(--text-2)}
+.pref-row{display:flex;align-items:center;gap:12px;width:100%;border:0;padding:10px 12px 10px 10px;border-radius:20px;background:var(--well);cursor:pointer;text-align:left;margin-bottom:8px;transition:box-shadow .2s}
+.pref-row .round{--s:40px;pointer-events:none}
+.pref-row div{flex:1}
+.pref-row b{display:block;font-size:14px}.pref-row small{display:block;font-size:12px;color:var(--text-2)}
+.pref-row .tick{width:22px;height:22px;border-radius:50%;box-shadow:inset 0 0 0 2px var(--track);display:grid;place-items:center;color:var(--on-ink);transition:background .2s,box-shadow .2s}
+.pref-row .tick svg{width:12px;height:12px;stroke-width:3;opacity:0;transition:opacity .2s}
+.pref-row.on{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.pref-row.on .tick{background:var(--ink);box-shadow:none}.pref-row.on .tick svg{opacity:1}
+.sheet .cap{margin:10px 0 0;text-align:center;max-width:none}
+</style>
+</head><body class="t-light">
+
+<header class="page-head">
+  <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
+    <div>
+      <h1>Mikky : piste A, le fil</h1>
+      <p>La première fenêtre est cliquable : touche un agent « en direct » pour voir son détail, ou le « + » pour lancer une tâche. Les autres montrent chaque page ouverte.</p>
+    </div>
+    <div style="display:flex;gap:8px"><button class="chip on" data-theme="light">Clair</button><button class="chip" data-theme="dark">Sombre</button></div>
+  </div>
+</header>
+
+<main class="frames">
+  <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>Ce qui t'attend, ce qui se passe en direct, ce qui vient de se passer. Le « + » pour une nouvelle tâche.</span></figcaption><div class="side" data-frame="home"></div></figure>
+  <figure class="opt"><figcaption><b>Détail d'un agent</b><span>Temps, où il travaille, ses modifs. Ses étapes en ligne de métro : faites, en cours (avec le code en direct), à venir.</span></figcaption><div class="side" data-frame="detail"></div></figure>
+  <figure class="opt"><figcaption><b>Nouvelle tâche : le début</b><span>On choisit parler ou écrire. Ta préférence est en premier et entourée. Tes tâches récentes, pour relancer d'un geste.</span></figcaption><div class="side" data-frame="start"></div></figure>
+  <figure class="opt"><figcaption><b>Nouvelle tâche : à la voix</b><span>Le texte s'écrit pendant que tu parles. Le bouton clavier bascule vers l'écrit.</span></figcaption><div class="side" data-frame="voice"></div></figure>
+  <figure class="opt"><figcaption><b>Nouvelle tâche : au clavier</b><span>Même page, en écrit. Le bouton micro bascule vers la voix.</span></figcaption><div class="side" data-frame="write"></div></figure>
+  <figure class="opt"><figcaption><b>Premier lancement</b><span>Mikky demande une seule fois si tu préfères parler ou écrire. On pourra changer dans les réglages.</span></figcaption><div class="side" data-frame="home" data-sheet></div></figure>
+</main>
+
+<script>
+const I = {
+  folder:'<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
+  check:'<path d="m6 12.5 4 4 8-9"/>',
+  left:'<path d="m14.5 6-6 6 6 6"/>',
+  right:'<path d="m9.5 6 6 6-6 6"/>',
+  down:'<path d="m6 9.5 6 6 6-6"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  mail:'<rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="m4 7.5 8 5.5 8-5.5"/>',
+  terminal:'<rect x="3.5" y="5" width="17" height="14" rx="3.5"/><path d="m7.5 10 2.5 2-2.5 2M12.5 14.5h4"/>',
+  file:'<path d="M13.5 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8.5z"/><path d="M13.5 3.5v5h5"/>',
+  more:'<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
+  mic:'<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
+  keyboard:'<rect x="3" y="6.5" width="18" height="11" rx="2.5"/><path d="M7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8"/>',
+  edit:'<path d="M14.5 5.5l4 4L9 19H5v-4z"/>',
+  eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/>',
+  bash:'<path d="m5 8 4 4-4 4M11 16h8"/>',
+  stop:'<rect x="7" y="7" width="10" height="10" rx="2"/>',
+  chat:'<path d="M5 17.5V7a2.5 2.5 0 0 1 2.5-2.5h9A2.5 2.5 0 0 1 19 7v6.5a2.5 2.5 0 0 1-2.5 2.5H9z"/>',
+  clock:'<circle cx="12" cy="12" r="8"/><path d="M12 8v4.5l3 2"/>',
+  branch:'<circle cx="7" cy="6" r="2"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="8" r="2"/><path d="M7 8v8M17 10c0 4-6 3-9.5 6.5"/>',
+};
+const svg = n => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${I[n]}</svg>`;
+const CALME = location.hash.includes('calme');
+let theme = 'light';
+const mikkySrc = () => `../references/mikky-idle-${theme}.png`;
+const st = s => `<span class="status"><i>${s === 'finished' ? svg('check') : ''}</i></span>`;
+
+// ---------- Les pages ----------
+const PAGES = {
+  home: () => `
+    <div class="side-head"><img class="mini-mikky" alt="" data-mikky><div class="side-title">Activité</div><button class="round sm" aria-label="Plus">${svg('more')}</button></div>
+    <div class="body">
+      <div class="sum">
+        <span class="pill" data-state="working">${st()}2 travaillent</span>
+        <span class="pill" data-state="approval">${st()}1 t'attend</span>
+        <span class="pill" data-state="finished">${st('finished')}1 fini</span>
+      </div>
+      <div class="section-label"><span>T'attend</span></div>
+      <div class="wait" data-wait>
+        <div class="row" data-state="approval">${st()}
+          <div class="row-main"><div class="row-title">Met à jour le site</div><div class="meta"><span class="tag">Codex</span>site · Terminal</div></div><span class="time">1 min</span></div>
+        <div class="wait-actions"><code class="code">npm run build</code><span class="grow"></span><button class="btn sm" data-no>Non</button><button class="btn sm primary" data-yes>Oui</button></div>
+      </div>
+      <div class="section-label"><span>En direct</span></div>
+      <div class="list">
+        <div class="item" data-state="working" data-open="detail"><div class="row">${st()}<div class="row-main"><div class="row-title">Corrige les tests du moteur</div><div class="row-sub live" data-ticker>Modifie island_machine.dart</div><div class="meta"><span class="tag">Claude</span>mikky · VS Code</div></div><span class="time" data-timer="252" data-short></span></div></div>
+        <div class="item" data-state="thinking" data-open="detail"><div class="row">${st()}<div class="row-main"><div class="row-title">Prépare le plan de l'API</div><div class="row-sub live">Réfléchit au plan</div><div class="meta"><span class="tag">Claude</span>api · lancé par Mikky</div></div><span class="time">1 min</span></div></div>
+      </div>
+      <div class="section-label"><span>Tout à l'heure</span></div>
+      <div class="feed">
+        <div class="ev"><span class="lead-ic" style="background:var(--green);color:#fff">${svg('check')}</span><div><b>Résume la spec</b> <span>· terminé, 3 fichiers</span></div><span class="time">2 min</span></div>
+        <div class="ev"><span class="lead-ic">${svg('mail')}</span><div><b>GitHub</b> <span>· mail important</span></div><span class="time">9:12</span></div>
+        <div class="ev"><span class="lead-ic">${svg('file')}</span><div><b>IMG_2041.jpg</b> <span>· reçue du téléphone</span></div><span class="time">9:05</span></div>
+      </div>
+    </div>
+    <button class="round ink fab" aria-label="Nouvelle tâche" data-open="start">${svg('plus')}</button>`,
+
+  detail: () => `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">mikky</div><button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button></div>
+    <div class="body">
+      <div class="task-title">Corrige les tests du moteur</div>
+      <div class="meta detail-meta" style="margin-top:4px"><span class="tag">Claude</span>lancé depuis VS Code</div>
+      <div class="tiles">
+        <div class="tile"><small>Temps</small><b data-timer="252"></b></div>
+        <div class="tile"><small>Où</small><b>mikky · main</b></div>
+        <div class="tile"><small>Modifs</small><b><span class="ok">+16</span> <span class="ko">−3</span></b></div>
+      </div>
+      <div class="where">${svg('folder')}C:\\Users\\alexa\\projet\\mikky</div>
+      <div class="section-label"><span>Étapes</span><span class="count">3 sur 5</span></div>
+      <div class="metro">
+        <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>
+          <div class="s-title">Lire la spec et les tests</div>
+          <div class="s-meta"><span class="kind">Lecture</span>3 fichiers · 40 s<span class="punches"><span class="punch" title="Lu la spec">${svg('eye')}</span><span class="punch" title="Lu island_test.dart">${svg('eye')}</span><span class="punch" title="Lu island_machine.dart">${svg('eye')}</span></span></div></div>
+        <div class="stop" data-s="done"><span class="dot">${svg('check')}</span>
+          <div class="s-title">Lancer les tests</div>
+          <div class="s-meta"><span class="kind">Bash</span>dart test · 2 échecs<span class="punches"><span class="punch ko" title="dart test">${svg('bash')}</span></span></div></div>
+        <div class="stop" data-s="now"><span class="dot"></span>
+          <div class="s-title">Corriger la fermeture auto</div>
+          <div class="s-meta"><span class="kind">Code</span><span data-timer="80"></span></div>
+          <div class="codecard">
+            <div class="code-tab"><i></i><span>island_machine.dart</span><span>lib/src/island</span></div>
+            <div class="code-lines">
+<div class="ln"><span class="n">10</span><span class="c"><span class="k">import</span> <span class="s">'rules.dart'</span>;</span></div><div class="ln"><span class="n">11</span><span class="c"></span></div><div class="ln del"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m">60</span>;</span></div><div class="ln add"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m" data-typing></span><span class="caret"></span></span></div><div class="ln"><span class="n">13</span><span class="c"></span></div><div class="ln"><span class="n">14</span><span class="c"><span class="k">bool</span> <span class="f">closes</span>(<span class="k">int</span> idle) =&gt;</span></div><div class="ln"><span class="n">15</span><span class="c">    idle &gt; autoCloseSec;</span></div>
+            </div>
+          </div></div>
+        <div class="stop" data-s="todo"><span class="dot"></span>
+          <div class="s-title">Relancer les tests</div>
+          <div class="s-meta"><span class="kind">Test</span>à venir</div></div>
+        <div class="stop" data-s="todo"><span class="dot"></span>
+          <div class="s-title">Terminé</div>
+          <div class="s-meta">résumé et fichiers modifiés</div></div>
+      </div>
+      <div class="end-actions"><button class="btn">${svg('terminal')}Terminal</button><button class="btn">${svg('chat')}Conversation</button></div>
+    </div>`,
+
+  start: () => `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvelle tâche</div></div>
+    <div class="body">
+      <div class="ask">Qu'est-ce qu'on lance ?</div>
+      <div class="choices">
+        <button class="choice pref" data-open="voice"><span class="round ink">${svg('mic')}</span>Parler<small>Tu dictes</small></button>
+        <button class="choice" data-open="write"><span class="round">${svg('keyboard')}</span>Écrire<small>Au clavier</small></button>
+      </div>
+      <div class="section-label"><span>Relancer</span></div>
+      <div class="feed">
+        <div class="ev" style="cursor:pointer"><span class="lead-ic">${svg('clock')}</span><div><b>Corrige les tests du moteur</b></div><span class="row-end">${svg('right')}</span></div>
+        <div class="ev" style="cursor:pointer"><span class="lead-ic">${svg('clock')}</span><div><b>Mets à jour le site</b></div><span class="row-end">${svg('right')}</span></div>
+        <div class="ev" style="cursor:pointer"><span class="lead-ic">${svg('clock')}</span><div><b>Résume la spec</b></div><span class="row-end">${svg('right')}</span></div>
+      </div>
+    </div>`,
+
+  voice: () => `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvelle tâche</div></div>
+    <div class="body">
+      <div class="mic-zone">
+        <div class="mic-wrap"><button class="round ink mic" aria-label="Arrêter la dictée">${svg('mic')}</button></div>
+        <div class="wave">${[0,.12,.24,.36,.18,.3,.06].map(d => `<i style="animation-delay:${d}s"></i>`).join('')}</div>
+      </div>
+      <div class="transcript"><span data-dictee></span><span class="caret"></span></div>
+      ${FORM}
+    </div>
+    <div class="bottom-bar"><button class="round" aria-label="Écrire" data-swap="write">${svg('keyboard')}</button><button class="btn primary" data-launch>Lancer</button></div>`,
+
+  write: () => `
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">Nouvelle tâche</div></div>
+    <div class="body">
+      <textarea class="bigtext" placeholder="Que doit faire l'agent ?"></textarea>
+      ${FORM}
+    </div>
+    <div class="bottom-bar"><button class="round" aria-label="Parler" data-swap="voice">${svg('mic')}</button><button class="btn primary" data-launch>Lancer</button></div>`,
+};
+const FORM = `
+  <div class="form">
+    <div class="frow"><span>Agent</span><div class="seg xs" data-seg><span class="thumb"></span><button class="on">Claude</button><button>Codex</button></div></div>
+    <div class="frow"><span>Dossier</span><button class="chip soft">${svg('folder')}mikky${svg('down')}</button></div>
+  </div>`;
+
+const SHEET = () => `
+  <div class="scrim"></div>
+  <div class="sheet">
+    <img class="mini-mikky" alt="" data-mikky>
+    <h4>Comment tu préfères lancer une tâche ?</h4>
+    <p>Mikky te proposera ce choix en premier.</p>
+    <button class="pref-row on" data-pref><span class="round ink">${svg('mic')}</span><div><b>Parler</b><small>Tu dictes, Mikky écrit</small></div><span class="tick">${svg('check')}</span></button>
+    <button class="pref-row" data-pref><span class="round">${svg('keyboard')}</span><div><b>Écrire</b><small>Au clavier</small></div><span class="tick">${svg('check')}</span></button>
+    <button class="btn primary block" data-close-sheet style="margin-top:4px">Continuer</button>
+    <p class="cap">Tu pourras changer dans les réglages.</p>
+  </div>`;
+
+// ---------- Navigation : une pile de pages par fenêtre ----------
+const PUSH = { duration: CALME ? 1 : 380, easing: 'cubic-bezier(.2,.9,.25,1)' };
+function makePage(side, name) {
+  const p = document.createElement('div');
+  p.className = 'page'; p.innerHTML = PAGES[name]();
+  p.querySelectorAll('[data-mikky]').forEach(m => m.src = mikkySrc());
+  bind(side, p);
+  return p;
+}
+function push(side, name) {
+  const prev = side.lastElementChild, p = makePage(side, name);
+  side.append(p); afterMount(p);
+  p.animate([{ transform: 'translateX(100%)' }, { transform: 'none' }], PUSH);
+  prev.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateX(-28%)', opacity: .5 }], { ...PUSH, fill: 'forwards' });
+}
+function back(side) {
+  const pages = side.querySelectorAll(':scope>.page');
+  if (pages.length < 2) return;
+  const top = pages[pages.length - 1], prev = pages[pages.length - 2];
+  prev.getAnimations().forEach(a => a.cancel());
+  prev.animate([{ transform: 'translateX(-28%)', opacity: .5 }, { transform: 'none', opacity: 1 }], PUSH);
+  top.animate([{ transform: 'none' }, { transform: 'translateX(100%)' }], PUSH).onfinish = () => top.remove();
+}
+function swap(side, name) {
+  const top = side.lastElementChild, p = makePage(side, name);
+  side.append(p); afterMount(p);
+  p.animate([{ opacity: 0, filter: 'blur(4px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: CALME ? 1 : 240, easing: 'ease-out' });
+  top.remove();
+}
+function bind(side, p) {
+  p.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', e => { if (e.target.closest('button:not([data-open])')) return; push(side, el.dataset.open); }));
+  p.querySelectorAll('[data-back]').forEach(el => el.onclick = () => back(side));
+  p.querySelectorAll('[data-swap]').forEach(el => el.onclick = () => swap(side, el.dataset.swap));
+  p.querySelectorAll('[data-launch]').forEach(el => el.onclick = () => { while (side.querySelectorAll(':scope>.page').length > 1) side.lastElementChild.remove(); });
+  p.querySelectorAll('[data-wait]').forEach(w => w.querySelectorAll('[data-yes],[data-no]').forEach(b => b.onclick = () => {
+    const h = w.offsetHeight;
+    w.animate([{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0, paddingTop: '0px', paddingBottom: '0px' }], { duration: 260, easing: 'cubic-bezier(.4,0,.2,1)' })
+      .onfinish = () => { w.style.display = 'none'; w.previousElementSibling.style.display = 'none'; };
+  }));
+  p.querySelectorAll('[data-seg]').forEach(seg => {
+    const th = seg.querySelector('.thumb');
+    seg.querySelectorAll('button').forEach(b => b.onclick = () => {
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      th.style.transition = 'transform .38s cubic-bezier(.34,1.3,.64,1), width .38s cubic-bezier(.34,1.3,.64,1)';
+      th.style.transform = `translateX(${b.offsetLeft}px)`; th.style.width = b.offsetWidth + 'px';
+    });
+  });
+  const out = p.querySelector('[data-dictee]');
+  if (out) dictate(out);
+}
+function afterMount(p) {
+  p.querySelectorAll('[data-seg]').forEach(seg => {
+    const on = seg.querySelector('.on'), th = seg.querySelector('.thumb');
+    th.style.transform = `translateX(${on.offsetLeft}px)`; th.style.width = on.offsetWidth + 'px';
+  });
+  tickTimers();
+}
+
+// ---------- Le vivant : temps, action en cours, code, dictée ----------
+const t0 = performance.now();
+function fmt(s, short) { const m = Math.floor(s / 60), r = Math.floor(s % 60); return short ? `${m} min` : `${m}:${String(r).padStart(2, '0')}`; }
+function tickTimers() {
+  const e = CALME ? 0 : (performance.now() - t0) / 1000;
+  document.querySelectorAll('[data-timer]').forEach(el => el.textContent = fmt(+el.dataset.timer + e, el.hasAttribute('data-short')));
+}
+if (!CALME) setInterval(tickTimers, 1000);
+
+const TICKS = ['Modifie island_machine.dart', 'Relit island_test.dart', 'Modifie island_machine.dart'];
+let tick = 0;
+if (!CALME) setInterval(() => {
+  tick = (tick + 1) % TICKS.length;
+  document.querySelectorAll('[data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
+    el.textContent = TICKS[tick]; el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+  });
+}, 2800);
+
+const CODE = '45;';
+let typed = 0, hold = 0;
+function typeCode() { document.querySelectorAll('[data-typing]').forEach(el => el.textContent = CODE.slice(0, typed)); }
+if (CALME) { typed = 2; } else setInterval(() => {
+  if (typed < CODE.length) typed++; else if (++hold > 8) { typed = 0; hold = 0; }
+  typeCode();
+}, 260);
+
+const PHRASE = 'Corrige les tests de mikky_engine et relance-les jusqu\u2019à ce qu\u2019ils passent';
+function dictate(out) {
+  if (CALME) { out.textContent = PHRASE; return; }
+  const words = PHRASE.split(' '); let n = 0;
+  const t = setInterval(() => {
+    if (!out.isConnected) return clearInterval(t);
+    out.textContent = words.slice(0, ++n).join(' ');
+    if (n >= words.length) { clearInterval(t); setTimeout(() => out.isConnected && dictate(out), 3200); }
+  }, 190);
+}
+
+// ---------- Mise en place ----------
+function setTheme(t) {
+  theme = t; document.body.classList.remove('t-light', 't-dark'); document.body.classList.add('t-' + t);
+  document.querySelectorAll('[data-theme]').forEach(c => c.classList.toggle('on', c.dataset.theme === t));
+  document.querySelectorAll('[data-mikky]').forEach(m => m.src = mikkySrc());
+}
+document.querySelectorAll('[data-theme]').forEach(c => c.onclick = () => setTheme(c.dataset.theme));
+setTheme(location.hash.includes('sombre') ? 'dark' : 'light');
+if (location.hash.includes('grand')) document.body.classList.add('grand');
+
+document.fonts.ready.then(() => {
+  document.querySelectorAll('[data-frame]').forEach(side => {
+    const p = makePage(side, side.dataset.frame);
+    side.append(p); afterMount(p);
+    if (side.hasAttribute('data-sheet')) {
+      side.insertAdjacentHTML('beforeend', SHEET());
+      side.querySelectorAll('[data-mikky]').forEach(m => m.src = mikkySrc());
+      side.querySelectorAll('[data-pref]').forEach(r => r.onclick = () => side.querySelectorAll('[data-pref]').forEach(x => x.classList.toggle('on', x === r)));
+      side.querySelector('[data-close-sheet]').onclick = () => {
+        const s = side.querySelector('.sheet'), sc = side.querySelector('.scrim');
+        s.animate([{ transform: 'none' }, { transform: 'translateY(110%)' }], { duration: 300, easing: 'cubic-bezier(.4,0,.2,1)' }).onfinish = () => s.remove();
+        sc.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300 }).onfinish = () => sc.remove();
+      };
+    }
+  });
+  typeCode();
+});
+</script>
+</body></html>
