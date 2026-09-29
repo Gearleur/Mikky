@@ -7,6 +7,7 @@ environment:
   sdk: ^3.13.4
 
 dependencies:
+  ffi: ^2.1.4
   mikky_engine:
     path: ../mikky_engine
 

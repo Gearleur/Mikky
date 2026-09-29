@@ -48,6 +48,7 @@ class AgentRun {
     Map<String, String> env = const {},
   }) async {
     final process = await target.start(executable, args, cwd: cwd, env: env);
+    target.contain(process);
     // Adapters log on stderr: drained so the pipe never fills.
     process.stderr.drain<void>();
     return AgentRun._(AcpConnection(process.stdout, process.stdin), process, target);
@@ -160,8 +161,10 @@ class AgentRun {
     await _connection.close();
     final process = _process;
     if (process != null) {
-      final exited = await process.exitCode.timeout(const Duration(seconds: 3), onTimeout: () => -1);
-      if (exited == -1) await (_target ?? WindowsTarget()).kill(process);
+      // Closing stdin ends the adapter; then the job ends what is left
+      // (commands the agent ran in the background…).
+      await process.exitCode.timeout(const Duration(seconds: 3), onTimeout: () => -1);
+      await (_target ?? WindowsTarget()).kill(process);
     }
     _onClosed();
   }

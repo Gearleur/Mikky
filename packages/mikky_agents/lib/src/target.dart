@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
+import 'job.dart';
+
 /// Where commands run: Windows itself, or a WSL distribution (MVP spec
 /// §3.4). Paths given to a target are in its own form (`C:\…` or `/home/…`).
 abstract class Target {
@@ -28,6 +30,27 @@ abstract class Target {
   /// Stops [process] and everything it started.
   Future<void> kill(Process process);
 
+  /// Puts [process] in its own Windows job (see [ProcessJob]), so [kill]
+  /// ends its whole tree and Mikky's end ends it too. Right after start.
+  void contain(Process process) {
+    final job = ProcessJob.forProcess(process.pid);
+    if (job == null) return;
+    _jobs[process.pid] = job;
+    // Once it ends by itself, the job goes too, and with it whatever the
+    // agent left running in the background.
+    process.exitCode.then((_) => _jobs.remove(process.pid)?.close());
+  }
+
+  final Map<int, ProcessJob> _jobs = {};
+
+  /// Ends [process]'s job if it has one. True if it did.
+  bool _endJob(Process process) {
+    final job = _jobs.remove(process.pid);
+    if (job == null) return false;
+    job.terminate();
+    return true;
+  }
+
   /// Where a file of this target is seen from Windows (to read it).
   String windowsPath(String path);
 }
@@ -42,7 +65,8 @@ class WindowsTarget extends Target {
 
   @override
   Future<void> kill(Process process) async {
-    // /T: the whole tree (adapter, agent, and the commands it runs).
+    if (_endJob(process)) return;
+    // No job (Windows refused it): /T ends the tree as far as it is known.
     await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
   }
 
@@ -74,8 +98,8 @@ class WslTarget extends Target {
   /// Ending `wsl.exe` ends what it runs (checked in the A0 probe).
   @override
   Future<void> kill(Process process) async {
+    if (_endJob(process)) return;
     process.kill();
-    await Process.run('taskkill', ['/PID', '${process.pid}', '/T', '/F']);
   }
 
   @override
