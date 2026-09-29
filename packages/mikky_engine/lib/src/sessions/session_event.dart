@@ -10,12 +10,36 @@ sealed class SessionEvent {
 
 /// The session exists: its id, folder and the modes the agent offers.
 class SessionStarted extends SessionEvent {
-  const SessionStarted(this.sessionId, {this.cwd, this.modes = const [], this.modeId, super.at});
+  const SessionStarted(
+    this.sessionId, {
+    this.cwd,
+    this.modes = const [],
+    this.modeId,
+    this.models = const [],
+    this.modelId,
+    this.modelOption,
+    super.at,
+  });
 
   final String sessionId;
   final String? cwd;
   final List<SessionMode> modes;
   final String? modeId;
+  final List<SessionModel> models;
+  final String? modelId;
+
+  /// Claude lists its models as a config option (`configOptions`, id
+  /// `model`) instead of `models`: then the model changes through it.
+  final String? modelOption;
+}
+
+/// A model the agent offers (Opus, Sonnet, GPT…).
+class SessionModel {
+  const SessionModel(this.id, this.name, [this.description = '']);
+
+  final String id;
+  final String name;
+  final String description;
 }
 
 /// A permission mode offered by the agent (Manual, Auto, Read-only…).
@@ -32,6 +56,13 @@ class ModeChanged extends SessionEvent {
   const ModeChanged(this.modeId, {super.at});
 
   final String modeId;
+}
+
+/// The model changed (Mikky asked for another one).
+class ModelChanged extends SessionEvent {
+  const ModelChanged(this.modelId, {super.at});
+
+  final String modelId;
 }
 
 /// The agent (or Mikky) named the session.

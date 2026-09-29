@@ -149,6 +149,7 @@ C'est l'île ouverte en position « à droite » (320 × 560, rayon 38), avec le
 ### 5.3 Nouvel agent
 
 - Le chat vide « Qu'est-ce qu'on lance ? », le champ, et à moitié dans le champ : **dossier** (récents + parcourir) et **modèle**.
+- **Pas de Haiku** dans les modèles proposés (décision du 2026-09-29 : il se comporte à part, par exemple il refuse le mode Auto).
 - Le menu du modèle contient aussi, en dessous : **Où** (Windows / WSL, déduit du dossier) et **Permissions** (Demander par défaut / Auto). Mikky retient les derniers choix par dossier.
 - En envoyant, on arrive sur la page de l'agent, en Suivi.
 

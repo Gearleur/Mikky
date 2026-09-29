@@ -68,6 +68,13 @@ void main() {
       expect(log.modeId, 'acceptEdits');
     });
 
+    test('Claude lists its models as a config option', () {
+      final log = replayAcp('claude_wsl_plan.jsonl');
+      expect(log.modelOption, 'model');
+      expect(log.models.map((m) => m.id), containsAll(['default', 'opus', 'sonnet']));
+      expect(log.models.firstWhere((m) => m.id == 'opus').name, 'Opus 5.5');
+    });
+
     test('a loaded session replays its thread, and is done', () {
       final log = replayAcp('claude_windows_list_load.jsonl');
       expect(log.sessionId, '5f6e39b6-4370-47a2-bfac-95a2c859bb8a');
@@ -82,6 +89,7 @@ void main() {
     test('a no stops the whole turn', () {
       final asked = replayAcp('codex_windows_deny.jsonl', until: (log, _) => log.pending.isNotEmpty);
       expect(asked.modeId, 'read-only');
+      expect(asked.models, isNotEmpty);
       expect(asked.statusAt(_now), AgentStatus.approval);
       expect(asked.detail, contains('d.txt'));
 

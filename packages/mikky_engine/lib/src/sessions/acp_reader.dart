@@ -10,6 +10,7 @@ import 'session_event.dart';
 class AcpReader {
   final Map<Object, String> _methods = {};
   final Map<Object, String> _requestedModes = {};
+  final Map<Object, String> _requestedModels = {};
   final Map<Object, List<PermissionOption>> _permissionOptions = {};
   final List<Object> _prompts = [];
   Object? _loading;
@@ -50,6 +51,10 @@ class AcpReader {
       case 'session/set_mode':
         _requestedModes[id!] = params['modeId'] as String;
         _modeReported = false;
+      case 'session/set_model':
+        _requestedModels[id!] = params['modelId'] as String;
+      case 'session/set_config_option':
+        if (params['configId'] == 'model') _requestedModels[id!] = params['value'] as String;
       case 'session/load':
         _loading = id;
     }
@@ -70,6 +75,10 @@ class AcpReader {
         if (id == _loading) _loading = null;
         if (result != null) {
           final modes = (result['modes'] as Map?)?.cast<String, dynamic>();
+          final modelConfig = ((result['configOptions'] as List?) ?? const [])
+              .whereType<Map>()
+              .where((o) => o['category'] == 'model' && o['type'] == 'select')
+              .firstOrNull;
           events.add(SessionStarted(
             result['sessionId'] as String? ?? '',
             modes: [
@@ -77,10 +86,22 @@ class AcpReader {
                 SessionMode(m['id'] as String, m['name'] as String? ?? m['id'] as String, m['description'] as String? ?? ''),
             ],
             modeId: modes?['currentModeId'] as String?,
+            models: [
+              for (final m in ((result['models'] as Map?)?['availableModels'] as List?) ?? const [])
+                SessionModel(m['modelId'] as String, m['name'] as String? ?? m['modelId'] as String, m['description'] as String? ?? ''),
+              if (result['models'] == null)
+                for (final o in (modelConfig?['options'] as List?) ?? const [])
+                  SessionModel(o['value'] as String, o['name'] as String? ?? o['value'] as String, o['description'] as String? ?? ''),
+            ],
+            modelId: (result['models'] as Map?)?['currentModelId'] as String? ?? modelConfig?['currentValue'] as String?,
+            modelOption: result['models'] == null ? (modelConfig?['id'] as String?) : null,
             at: at,
           ));
         }
         return events;
+      case 'session/set_model' || 'session/set_config_option':
+        final model = _requestedModels.remove(id);
+        return [if (error == null && model != null) ModelChanged(model, at: at)];
       case 'session/set_mode':
         // The agent may fall back to another mode (Claude: « Auto mode
         // unavailable » with some models) and say so before answering.

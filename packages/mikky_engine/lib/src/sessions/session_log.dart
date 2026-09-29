@@ -100,6 +100,11 @@ class SessionLog {
   String? title;
   String? modeId;
   List<SessionMode> modes = const [];
+  String? modelId;
+  List<SessionModel> models = const [];
+
+  /// See [SessionStarted.modelOption].
+  String? modelOption;
 
   /// Time of the first and of the latest event that had one.
   DateTime? startedAt;
@@ -140,6 +145,11 @@ class SessionLog {
         cwd = e.cwd ?? cwd;
         if (e.modes.isNotEmpty) modes = e.modes;
         modeId = e.modeId ?? modeId;
+        if (e.models.isNotEmpty) models = e.models;
+        modelId = e.modelId ?? modelId;
+        modelOption = e.modelOption ?? modelOption;
+      case ModelChanged():
+        modelId = e.modelId;
       case ModeChanged():
         modeId = e.modeId;
       case TitleChanged():
