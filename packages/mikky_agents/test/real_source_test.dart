@@ -87,6 +87,16 @@ void main() {
     expect(source.entry(id)!.live, isFalse);
   });
 
+  test('after a restart: kept agents keep their title; those without a session are forgotten', () async {
+    store.agents
+      ..add(StoredAgent(id: 'a', provider: AgentProvider.codex, host: AgentHost.wsl, cwd: '/p', permissions: PermissionMode.ask, createdAt: DateTime(2026), sessionId: 's1', title: 'Créer le fichier ok.txt'))
+      ..add(StoredAgent(id: 'b', provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', permissions: PermissionMode.ask, createdAt: DateTime(2026), title: 'Jamais parti'));
+    final again = RealAgentSource(clock: () => clock, store: store, spawn: (p, h, c) async => throw StateError('no'));
+    expect(again.entries.map((e) => e.id), ['a']);
+    expect(store.agents.map((a) => a.id), ['a']);
+    expect(again.entry('a')!.name, 'Créer le fichier ok.txt');
+  });
+
   test('an agent that cannot start is in error, with the reason', () async {
     final failing = RealAgentSource(clock: () => clock, spawn: (p, h, c) async => throw const ProcessException('node', [], 'introuvable'));
     final id = await failing.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'));

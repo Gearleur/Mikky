@@ -26,7 +26,7 @@ List<SessionModel> offeredModels(List<SessionModel> models) =>
 /// answer its permission requests, cancel or stop it. Everything it does
 /// lands in [log] (MVP spec §3.1).
 class AgentRun {
-  AgentRun._(this._connection, [this._process, this._target]) {
+  AgentRun._(this._connection, [this._process, this._target, this.workingDirectory]) {
     _connection.onRequest = _onRequest;
     _traffic = _connection.traffic.listen((t) {
       log.applyAll(_reader.read(t.message, outgoing: t.outgoing, at: t.at));
@@ -51,12 +51,17 @@ class AgentRun {
     target.contain(process);
     // Adapters log on stderr: drained so the pipe never fills.
     process.stderr.drain<void>();
-    return AgentRun._(AcpConnection(process.stdout, process.stdin), process, target);
+    return AgentRun._(AcpConnection(process.stdout, process.stdin), process, target, cwd);
   }
 
   final AcpConnection _connection;
   final Process? _process;
   final Target? _target;
+
+  /// The folder the adapter was started in, in its target's own form
+  /// (`/tmp/x` in WSL even if the user picked `\\wsl.localhost\…\tmp\x`).
+  /// The session must use this one: the agent runs its commands there.
+  final String? workingDirectory;
   final AcpReader _reader = AcpReader();
   final SessionLog log = SessionLog();
   final _changes = StreamController<void>.broadcast();
