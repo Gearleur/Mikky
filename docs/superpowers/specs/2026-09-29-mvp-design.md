@@ -1,6 +1,6 @@
 # Mikky — le MVP : suivre et lancer Claude Code et Codex
 
-Date : 2026-09-29 · Statut : **proposition, à valider avec l'utilisateur**
+Date : 2026-09-29 · Statut : **réponses de l'utilisateur intégrées (§11) ; à relire, surtout §3 (ACP)**
 
 ## 1. Contexte et intention
 
@@ -10,7 +10,7 @@ Le MVP complet, dans l'ordre voulu par l'utilisateur :
 
 | Partie | Quoi | Dans cette spec |
 |---|---|---|
-| **A** | Brancher Claude et Codex, et la petite fenêtre (accueil, page d'un agent, nouvel agent) | **en détail** (§3 à §9) |
+| **A** | Brancher Claude et Codex (lancement, connexion, permissions), et la petite fenêtre (accueil, page d'un agent, nouvel agent) | **en détail** (§3 à §9) |
 | B | Gérer Claude et Codex, planifier des tâches (tâches qui se relancent seules) | grandes lignes (§10) |
 | C | LocalSend | grandes lignes (§10) |
 | D | Classer les mails Gmail avec Laya | grandes lignes (§10) |
@@ -19,7 +19,8 @@ Le MVP complet, dans l'ordre voulu par l'utilisateur :
 B à E auront chacune leur petite spec quand on y arrivera. Cette spec sert à valider **A** et l'ordre de la suite.
 
 **La partie A est réussie quand** :
-- depuis la petite fenêtre, on lance un Claude ou un Codex, sous Windows ou dans WSL, avec « Demander » ou « Auto », sur un dossier choisi ;
+- depuis la petite fenêtre, on lance un Claude ou un Codex, **sous Windows ou dans WSL**, avec « Demander » ou « Auto », sur un dossier choisi ;
+- si un outil n'est pas connecté, Mikky propose la connexion, comme Paperclip, sans jamais toucher aux jetons ;
 - on voit en direct ce qu'il fait (Suivi et Chat), on lui glisse un message, on l'arrête ;
 - une demande de permission arrive dans Mikky (fenêtre **et** île) et on répond Oui / Non ; sans réponse, l'agent attend (jamais d'accord sans clic) ;
 - les sessions lancées ailleurs (VS Code, terminal) apparaissent aussi dans l'accueil, sous Windows comme dans WSL ;
@@ -29,56 +30,73 @@ B à E auront chacune leur petite spec quand on y arrivera. Cette spec sert à v
 
 ## 2. Hors périmètre de la partie A
 
-`mikkyd` et le VPS, le téléphone, l'app sous Linux (on la prépare seulement, §8), worktrees, tableau de tâches, fichiers et modifs, boucles agentiques, agents qui se parlent, limites d'abonnement détaillées (on affiche juste l'état « limité » quand l'agent le dit), dictée (partie E), Mac.
+`mikkyd` et le VPS, le téléphone, l'app sous Linux (on la prépare seulement, §8), la position « en haut » pour la fenêtre des agents, worktrees, tableau de tâches, fichiers et modifs, boucles agentiques, agents qui se parlent, répondre aux sessions extérieures (§4.2, plus tard), limites d'abonnement détaillées (on affiche juste l'état « limité » quand l'agent le dit), dictée (partie E), Mac.
 
-## 3. Ce qu'on reprend de Paperclip
+## 3. Brancher Claude et Codex comme Paperclip
 
-Paperclip (MIT, https://github.com/paperclipai/paperclip) lance les CLI officiels, déjà connectés par l'utilisateur. Mikky fait pareil et **ne touche jamais aux jetons**. Là où on recopie du code de Paperclip, on garde sa mention de licence.
+Paperclip (MIT, https://github.com/paperclipai/paperclip, adaptateurs `packages/adapters/claude-local` et `codex-local`) lance les outils officiels, déjà connectés par l'utilisateur. Mikky fait pareil et **ne touche jamais aux jetons**. Là où on recopie du code de Paperclip, on garde sa mention de licence.
 
-### 3.1 Claude Code
+### 3.1 Par défaut : ACP, le même protocole pour les deux
 
-Mikky se comporte comme un « hôte SDK » : il lance
+Aujourd'hui, Paperclip fait passer **Claude et Codex par ACP** (Agent Client Protocol, le protocole de Zed) par défaut, et garde la ligne de commande en secours. Mikky fait pareil :
 
-```
-claude --print --input-format stream-json --output-format stream-json --verbose
-       --permission-mode <manual | auto> --permission-prompts host
-       [--resume <id>] [--model <modèle>]
-```
+- deux petits adaptateurs officiels, `claude-agent-acp` (`@agentclientprotocol/claude-agent-acp`) et `codex-acp` (`@agentclientprotocol/codex-acp`), lancent le vrai Claude Code et le vrai Codex, avec le compte de l'utilisateur ;
+- Mikky leur parle en JSON sur l'entrée / sortie (JSON-RPC) : **un seul code pour les deux agents** ;
+- ce que le protocole donne, et dont Mikky a besoin :
 
-- **Lecture en direct** : chaque ligne de sortie est un événement JSON (début de session avec son id, message de l'assistant, appel d'outil, résultat, fin avec `result`). Référence : `claude-local/src/server/parse.ts` de Paperclip.
-- **Messages glissés** : on écrit le message de l'utilisateur sur l'entrée du processus pendant qu'il travaille ; Claude le prend au tour suivant. Le processus reste ouvert : la conversation continue sans relancer.
-- **Permissions** : avec `--permission-prompts host`, chaque demande arrive à Mikky (`can_use_tool`) ; Mikky répond oui ou non quand l'utilisateur a cliqué. **Demander** = `--permission-mode manual` ; **Auto** = `--permission-mode auto` (le mode automatique de Claude, choisi par l'utilisateur pour ce lancement).
-- **Questions** : l'outil de question de Claude (`AskUserQuestion`) passe aussi par l'hôte ; Mikky l'affiche avec ses choix.
-- **Abonnement** : si `ANTHROPIC_API_KEY` n'est pas défini, `claude` utilise le compte sur lequel l'utilisateur est connecté. Mikky ne définit jamais cette variable.
+| Besoin de Mikky | ACP |
+|---|---|
+| Lancer, continuer | `session/new`, `session/prompt` ; `session/load` pour reprendre une session |
+| Lire en direct | `session/update` : texte, appels d'outils avec leur état, **modifications de fichier (diff)** |
+| La ligne de métro | `session/update` de type `plan` : la liste de tâches de l'agent |
+| Permissions | `session/request_permission` → Oui / Non dans Mikky |
+| Messages glissés | un nouveau `session/prompt` pendant le travail (à vérifier : file d'attente ou arrêt du tour) |
+| Arrêter | `session/cancel`, puis arrêt du processus |
+| Demander ou Auto | `session/set_mode` (modes proposés par l'agent) |
 
-### 3.2 Codex
+Paperclip, lui, répond « oui à tout » aux permissions. Mikky, non : **Demander** (par défaut) envoie chaque demande à l'utilisateur ; **Auto** met l'agent dans son mode automatique (Claude : le mode `auto` ; Codex : la revue automatique, sandbox `workspace-write`), seulement si l'utilisateur l'a choisi pour ce lancement. Jamais `bypassPermissions` ni `--dangerously-bypass-approvals-and-sandbox`.
 
-Deux façons de le lancer ; à trancher par un essai au tout début du plan (§11, question 2) :
+Les adaptateurs demandent Node (Paperclip exige Node 24). Sur ce PC : Windows a Node 24, **WSL a Node 18** (à mettre à jour si besoin). Mikky installe les deux adaptateurs avec npm dans son propre dossier, par cible, la première fois, en le disant à l'utilisateur.
 
-- **`codex app-server`** (celle qu'utilise l'extension VS Code) : dialogue JSON sur l'entrée / sortie, avec de vraies demandes d'approbation et plusieurs tours dans le même processus. C'est ce qu'il faut pour **Demander** et pour les messages glissés. Marqué « expérimental » par Codex.
-- **`codex exec --json`** (celle de Paperclip, éprouvée) : un tour par processus, `codex exec resume <id>` pour continuer. Pas de demande d'approbation possible : seulement **Auto**.
+### 3.2 En secours : la ligne de commande, comme Paperclip
 
-Permissions : **Demander** = sandbox `workspace-write` + approbations envoyées à Mikky ; **Auto** = `--approve-for-me` (revue automatique de Codex, sandbox `workspace-write`). Jamais `--dangerously-bypass-approvals-and-sandbox`.
+Si un adaptateur ACP manque ou casse, Mikky lance l'outil directement, comme le mode `cli` de Paperclip :
 
-### 3.3 Où tourne l'agent : Windows ou WSL
+- **Claude** : `claude --print --input-format stream-json --output-format stream-json --verbose --permission-mode <manual | auto> --permission-prompts host [--resume <id>]`. Les permissions arrivent quand même à Mikky (`can_use_tool`), et les messages glissés passent par l'entrée.
+- **Codex** : `codex exec --json -c sandbox_mode="workspace-write"`, `codex exec resume <id>` pour continuer. Pas de demande de permission possible : **Auto seulement**, et Mikky le dit.
+
+### 3.3 La connexion, comme Paperclip
+
+- Au démarrage, puis au besoin, Mikky vérifie **pour chaque cible** si l'outil est installé et connecté : `claude auth status` (JSON : connecté, type d'abonnement) et `codex login status` (comme `auth-check.ts` de Paperclip).
+- **Codex pas connecté** : Mikky lance `codex login --device-auth` (dans un pseudo-terminal, comme `device-login-runner.ts` de Paperclip), affiche le lien et le code dans la fenêtre, et attend. Codex garde son identifiant lui-même (`~/.codex/auth.json`) ; Mikky ne lit ni n'écrit jamais ce fichier, et n'écrit jamais le code dans un journal.
+- **Claude pas connecté** : Mikky lance `claude auth login`, qui ouvre le navigateur ; Claude garde son identifiant lui-même. Mikky ne définit jamais `ANTHROPIC_API_KEY` : c'est l'abonnement qui sert.
+- On ne reprend **pas** le cache d'identifiants de Paperclip (`CODEX-AUTH-CACHE.md`) : il sert à ses bacs à sable distants, pas à nous.
+- État sur ce PC le 2026-09-29 :
+
+| | Windows | WSL (Ubuntu) |
+|---|---|---|
+| Claude | 2.1.284, installé ce jour (`C:\Users\alexa\.local\bin\claude.exe`), connecté (Pro) | 2.1.284, connecté |
+| Codex | 0.153.4, connecté (ChatGPT) | 0.153.4, **pas connecté** |
+
+### 3.4 Où tourne l'agent : Windows ou WSL
 
 Une **cible par lancement** :
 
 | Cible | Lancement | Sessions surveillées |
 |---|---|---|
-| Windows | `claude.exe` / `codex` du PATH Windows | `%USERPROFILE%\.claude\projects`, `%USERPROFILE%\.codex\sessions` |
-| WSL | `wsl.exe -d Ubuntu --cd <dossier> -- claude …` | `~/.claude/projects`, `~/.codex/sessions` dans Ubuntu |
+| Windows | l'adaptateur (ou l'outil) du PATH Windows | `%USERPROFILE%\.claude\projects`, `%USERPROFILE%\.codex\sessions` |
+| WSL | `wsl.exe -d Ubuntu --cd <dossier> -- …` | `~/.claude/projects`, `~/.codex/sessions` dans Ubuntu |
 | Linux (plus tard) | direct | comme WSL |
 
-- Par défaut, la cible se déduit du dossier : `\\wsl.localhost\Ubuntu\…` ou `/home/…` → WSL, `C:\…` → Windows. On peut la changer dans le menu du modèle (§5.3).
-- Au démarrage, Mikky vérifie pour chaque cible si `claude` et `codex` sont là et connectés (comme `auth-check.ts` de Paperclip). S'il en manque un, le choix est grisé avec une phrase simple (« Claude n'est pas installé sous Windows »).
-- Sur ce PC aujourd'hui : WSL a `claude` et `codex` ; Windows a `codex` mais pas `claude` (§11, question 1).
+Par défaut, la cible se déduit du dossier : `\\wsl.localhost\Ubuntu\…` ou `/home/…` → WSL, `C:\…` → Windows. On peut la changer dans le menu du modèle (§5.3). Si l'outil n'est pas là ou pas connecté sur une cible, le choix affiche une phrase simple et le bouton de connexion (§3.3).
 
-### 3.4 Arrêter un agent
+### 3.5 Arrêter un agent
 
-Le bouton ■ de la page d'un agent arrête l'agent et tout ce qu'il a lancé. Sous Windows : un « job object » qui englobe le processus et ses enfants. Dans WSL : arrêter `wsl.exe` ne suffit pas toujours ; on lance l'agent dans son propre groupe de processus et on arrête ce groupe dans WSL.
+Le bouton ■ de la page d'un agent arrête l'agent et tout ce qu'il a lancé : d'abord `session/cancel`, puis le processus. Sous Windows : un « job object » qui englobe le processus et ses enfants. Dans WSL : arrêter `wsl.exe` ne suffit pas toujours ; on lance l'agent dans son propre groupe de processus et on arrête ce groupe dans WSL.
 
 ## 4. Voir aussi les sessions lancées ailleurs
+
+### 4.1 Pour le MVP : les voir
 
 Claude écrit chaque session dans `~/.claude/projects/<dossier>/<id>.jsonl`, Codex dans `~/.codex/sessions/AAAA/MM/JJ/rollout-….jsonl`. Mikky **surveille ces dossiers** (événements du système de fichiers, sans boucle) et lit la fin des fichiers qui changent.
 
@@ -89,10 +107,17 @@ Claude écrit chaque session dans `~/.claude/projects/<dossier>/<id>.jsonl`, Cod
 | Terminé | dernier message fini par `end_turn` | `task_complete` |
 | Historique | rien de nouveau depuis 1 jour (à régler) | pareil |
 
-- Ces sessions sont **en lecture seule** : on voit leur Suivi et leur Chat, mais on ne leur répond pas (elles appartiennent à VS Code ou au terminal). Une demande de permission dans une session extérieure ne se voit pas dans ces fichiers : Mikky affiche « Travaille ». Plus tard, un hook Claude Code optionnel pourra prévenir Mikky.
-- Une session extérieure **terminée** peut être **continuée dans Mikky** (bouton dans son chat) : Mikky la reprend avec `--resume <id>` (ou `resume <id>` pour Codex), sur la même cible.
+- Ces sessions sont **en lecture seule** pour le MVP : on voit leur Suivi et leur Chat, sans leur répondre. Une demande de permission dans une session extérieure ne se voit pas dans ces fichiers : Mikky affiche « Travaille ».
+- Une session extérieure **terminée** peut être **continuée dans Mikky** (bouton dans son chat) : Mikky la reprend (`session/load`, ou `--resume <id>` / `resume <id>`) sur la même cible.
 - Les sessions lancées par Mikky écrivent aussi ces fichiers : Mikky les reconnaît par leur id et ne les montre qu'une fois.
 - **Point à vérifier en premier** : Windows ne reçoit pas toujours les événements de fichiers d'un dossier WSL (`\\wsl.localhost\…`). Si c'est le cas, Mikky lance dans WSL une petite sonde qui surveille ces dossiers (inotify) et lui envoie les changements. Elle ne tourne que pendant que Mikky tourne.
+
+### 4.2 Plus tard : travailler dessus (souhaité par l'utilisateur, même si c'est compliqué)
+
+Pistes, à étudier après le MVP :
+- **Oui / Non depuis Mikky pour une session de VS Code ou du terminal** : un hook Claude Code (`PermissionRequest`), installé avec l'accord de l'utilisateur dans ses réglages, demande à Mikky et attend sa réponse. La session reste dans VS Code, Mikky ne fait que répondre.
+- **Être prévenu** quand une session extérieure attend ou a fini : hook `Notification` / `Stop` de Claude, `notify` de Codex.
+- **Lui écrire pendant qu'elle travaille** : pas possible depuis l'extérieur aujourd'hui sans que VS Code ou le terminal le permette ; à surveiller (canaux de Claude Code, `codex app-server` partagé que liste `codex agents`).
 
 ## 5. La petite fenêtre (position « à droite »)
 
@@ -108,7 +133,7 @@ C'est l'île ouverte en position « à droite » (320 × 560, rayon 38), avec le
 ### 5.2 Page d'un agent
 
 - **Au travail** : deux vues, **Suivi | Chat**, le choix à moitié dans le champ.
-  - **Suivi** : la ligne de métro de ses tâches. Les tâches viennent de la liste de tâches de l'agent (outil de todo de Claude, `update_plan` de Codex) ; s'il n'en a pas, une étape par action notable (lit, modifie, lance). Trait bleu qui avance, halo léger et lent, code en direct sous l'étape en cours (tiré des modifications de fichier de l'agent), messages glissés entre les tâches.
+  - **Suivi** : la ligne de métro de ses tâches. Les tâches viennent du plan de l'agent (`plan` d'ACP, qui reprend l'outil de todo de Claude et `update_plan` de Codex) ; s'il n'en a pas, une étape par action notable (lit, modifie, lance). Trait bleu qui avance, halo léger et lent, code en direct sous l'étape en cours (les diffs de l'agent), messages glissés entre les tâches.
   - **Chat** : l'historique complet en chat normal ; la tâche en cours est une carte qui ramène au Suivi.
 - **Tâche finie** : retour au chat normal ; la tâche devient une carte « Tâche terminée » qui se déplie ; la conversation continue (nouveau message = nouveau tour, même session).
 - **En attente** : la demande (commande, fichier, question avec ses choix) s'affiche en bas du fil, avec Oui / Non.
@@ -130,16 +155,16 @@ L'île affiche les vrais agents à la place des faux : même `AgentSource`, mêm
 
 ## 6. Correspondance des états
 
-| État dans Mikky | Claude | Codex |
-|---|---|---|
-| réfléchit | début de tour, texte de l'assistant en cours | tour commencé, raisonnement |
-| cherche | outils de recherche (Grep, Glob, WebSearch, WebFetch, lecture) | commande de recherche (`rg`, `grep`…) |
-| travaille | autres outils (Edit, Write, Bash…) | commande, modification de fichier |
-| feu vert | `can_use_tool` reçu | demande d'approbation reçue |
-| question | `AskUserQuestion` | — |
-| erreur | `result` en erreur, processus arrêté anormalement | erreur de tour |
-| limité | message de limite d'abonnement | erreur de limite |
-| terminé | `result` réussi | tour terminé |
+| État dans Mikky | Ce qui le déclenche |
+|---|---|
+| réfléchit | début de tour, texte ou raisonnement de l'agent en cours |
+| cherche | outil de recherche ou de lecture (ACP : genre `search`, `read`, `fetch`) |
+| travaille | autre outil (ACP : `edit`, `execute`, `delete`, `move`…) |
+| feu vert | demande de permission reçue |
+| question | question de l'agent avec des choix (outil de question de Claude) |
+| erreur | tour en erreur, processus arrêté anormalement |
+| limité | message de limite d'abonnement |
+| terminé | fin de tour réussie |
 
 Le détail affiché (en mono) : la commande, le fichier, la question ou le résultat.
 
@@ -148,20 +173,21 @@ Le détail affiché (en mono) : la commande, le fichier, la question ou le résu
 ```
 packages/
 ├── mikky_engine/        # Dart pur, sans Flutter (existe)
-│   └── agents/          #   + modèle de session, événements, lecteurs des formats Claude et Codex
+│   └── agents/          #   + modèle de session, événements, lecteurs (ACP, fichiers de session, secours CLI)
 └── mikky_agents/        # nouveau : Dart + dart:io, sans Flutter
-    ├── runner/          #   lancer Claude / Codex, Windows ou WSL, arrêter, écrire et lire les JSON
+    ├── acp/             #   client ACP (JSON-RPC sur l'entrée / sortie)
+    ├── runner/          #   lancer, Windows ou WSL, secours CLI, arrêter
+    ├── auth/            #   installé ? connecté ? connexion (device auth, auth login)
     ├── watch/           #   surveiller les sessions extérieures (+ la sonde WSL si besoin)
-    ├── check/           #   CLI installés et connectés, par cible
     └── real_source.dart #   RealAgentSource : implémente AgentSource
 app/lib/
 ├── ui/                  # jetons et composants de composants.html (boutons, sélecteurs, champ, cartes…)
-└── side/                # accueil, page d'un agent (Suivi, Chat), nouvel agent
+└── side/                # accueil, page d'un agent (Suivi, Chat), nouvel agent, connexion
 ```
 
-- **Un seul format d'événements** dans le moteur (`SessionEvent` : message de l'utilisateur, texte de l'assistant, appel d'outil, résultat, liste de tâches, demande de permission, question, fin, erreur). Quatre lecteurs le produisent : sortie en direct de Claude, fichier de session de Claude, sortie de Codex, fichier de session de Codex. Ils sont testés avec de vrais fichiers enregistrés (nettoyés de tout contenu privé).
+- **Un seul format d'événements** dans le moteur (`SessionEvent` : message de l'utilisateur, texte de l'agent, appel d'outil, résultat, diff, plan, demande de permission, question, fin, erreur). Les lecteurs le produisent depuis ACP, depuis les fichiers de session de Claude et de Codex, et depuis la sortie des deux secours CLI. Ils sont testés avec de vrais enregistrements (nettoyés de tout contenu privé).
 - `Agent` gagne : fournisseur (Claude / Codex), cible (Windows / WSL), origine (Mikky / extérieure), dossier, id de session, permissions.
-- **Ce que Mikky garde sur le disque** : la liste de ses agents (id de session, cible, dossier, titre, permissions), les dossiers récents et les derniers choix, dans `%APPDATA%\Mikky\agents.json`. Pas les conversations : elles restent dans les fichiers de Claude et Codex, relus au besoin.
+- **Ce que Mikky garde sur le disque** : la liste de ses agents (id de session, cible, dossier, titre, permissions), les dossiers récents et les derniers choix, dans `%APPDATA%\Mikky\agents.json`. Pas les conversations : elles restent dans les fichiers de Claude et Codex, relus au besoin. Aucun identifiant.
 - **Quand on quitte Mikky** : s'il y a des agents au travail, Mikky demande confirmation ; ils s'arrêtent avec lui (pas de `mikkyd` pour le MVP). Fermer la fenêtre ou l'île ne les arrête pas. Au prochain lancement, ils sont dans Historique et on peut les continuer.
 
 ## 8. Préparer Linux sans le faire
@@ -170,23 +196,23 @@ app/lib/
 
 ## 9. Tests et vérifications
 
-- Moteur : lecteurs des quatre formats, correspondance des états, règles de l'accueil (quel agent dans quel groupe), avec des fichiers enregistrés.
-- `mikky_agents` : un faux `claude` / `codex` (petit script qui rejoue un fichier enregistré) pour tester lancement, permissions, messages glissés, arrêt, sans dépenser d'abonnement.
+- Moteur : lecteurs, correspondance des états, règles de l'accueil (quel agent dans quel groupe), avec des enregistrements.
+- `mikky_agents` : un faux agent ACP et un faux `claude` / `codex` (petits scripts qui rejouent un enregistrement) pour tester lancement, permissions, messages glissés, arrêt et connexion, sans dépenser d'abonnement.
 - UI : goldens de chaque écran en clair et en sombre, comparés aux captures des maquettes (`#calme`).
-- À la main, sur ce PC : un vrai Claude dans WSL, un vrai Codex sous Windows et dans WSL, une session VS Code visible dans l'accueil.
+- À la main, sur ce PC : un vrai Claude et un vrai Codex, sous Windows et dans WSL ; la connexion de Codex dans WSL ; une session VS Code visible dans l'accueil.
 - CPU mesuré île cachée, agents arrêtés.
 
 ## 10. La suite du MVP (grandes lignes)
 
-- **B. Gérer Claude et Codex, planifier des tâches** : voir l'état de connexion et les limites, renommer, archiver ; **tâches planifiées** (« chaque matin à 9 h, trie les issues ») qui lancent un agent avec une consigne, un dossier et des permissions. Elles tournent tant que Mikky est ouvert (réveil à l'heure prévue, sans boucle) ; une tâche manquée pendant que le PC était éteint se lance au démarrage, ou pas (à choisir).
+- **B. Gérer Claude et Codex, planifier des tâches** : voir l'état de connexion et les limites, renommer, archiver ; **tâches planifiées** (« chaque matin à 9 h, trie les issues ») qui lancent un agent avec une consigne, un dossier et des permissions. Elles tournent tant que Mikky est ouvert (réveil à l'heure prévue, sans boucle) ; une tâche manquée pendant que le PC était éteint se lance au démarrage, ou pas (à choisir). Et travailler sur les sessions extérieures (§4.2).
 - **C. LocalSend** : Mikky parle le protocole LocalSend (port 53317, ou un autre si l'app LocalSend tourne aussi) ; recevoir un fichier et le donner à un agent ou le ranger dans un projet ; envoyer un fichier au téléphone.
 - **D. Mails** : lecture seule par IMAP (mot de passe d'application Gmail dans le coffre de Windows), classement en local avec Laya (Python), modèle chargé seulement pendant le tri.
 - **E. Parler** : Ctrl + Win maintenus ou le micro du champ ; le texte s'écrit dans le champ ; Whisper en local.
 
-## 11. Questions pour l'utilisateur
+## 11. Réponses de l'utilisateur (2026-09-29)
 
-1. **Claude sous Windows** : il n'est pas installé en ligne de commande. On l'installe (`npm i -g @anthropic-ai/claude-code` ou l'installeur officiel), ou on commence avec Claude seulement dans WSL ?
-2. **Codex et « Demander »** : on essaie d'abord `codex app-server` (expérimental, mais seul moyen d'avoir Oui / Non et les messages glissés avec Codex). Si l'essai échoue : Codex seulement en Auto pour le MVP. D'accord ?
-3. **Sessions extérieures en lecture seule**, avec « Continuer dans Mikky » une fois terminées : ça te va ?
-4. **Où et Permissions dans le menu du modèle** (§5.3), plutôt que deux options de plus à moitié dans le champ : ça te va ?
-5. **La fenêtre des agents seulement en position « à droite »** pour le MVP : ça te va ?
+1. **Claude sous Windows** : on l'installe (fait le 2026-09-29, installeur officiel) ; on fait **Windows et WSL**.
+2. **Codex** : faire comme Paperclip pour la connexion (§3.3). Paperclip passant maintenant par ACP pour Claude et Codex, Mikky fait pareil (§3.1), avec la ligne de commande en secours (§3.2). *À confirmer par l'utilisateur.*
+3. **Sessions extérieures** : lecture seule pour l'instant, mais l'utilisateur veut pouvoir travailler dessus plus tard, même si c'est compliqué (§4.2).
+4. **Où et Permissions dans le menu du modèle** : validé.
+5. **Fenêtre des agents seulement en position « à droite »** pour le MVP : validé.
