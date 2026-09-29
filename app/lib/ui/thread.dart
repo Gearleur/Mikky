@@ -52,39 +52,63 @@ class MetroStep extends StatelessWidget {
       _ => ui.text,
     };
     final weight = kind == StepKind.end || kind == StepKind.now ? FontWeight.w600 : FontWeight.w400;
-    Widget content = DefaultTextStyle(style: uiText(13, weight: weight, color: textColor, height: 18 / 13), child: child);
+    Widget content = DefaultTextStyle(
+      style: uiText(13, weight: weight, color: textColor, height: 18 / 13),
+      child: child,
+    );
     if (kind == StepKind.me || kind == StepKind.it) {
       final me = kind == StepKind.me;
-      content = Column(crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
-        FractionallySizedBox(
-          widthFactor: .88,
-          alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-          child: Align(alignment: me ? Alignment.centerRight : Alignment.centerLeft, child: Bubble(me: me, thread: true, child: child)),
-        ),
-        if (meta != null) Padding(padding: const EdgeInsets.only(top: 4), child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3))),
-      ]);
+      content = Column(
+        crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          FractionallySizedBox(
+            widthFactor: .88,
+            alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+            child: Align(
+              alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+              child: Bubble(me: me, thread: true, child: child),
+            ),
+          ),
+          if (meta != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
+            ),
+        ],
+      );
     }
     final bottom = kind == StepKind.me || kind == StepKind.it ? 12.0 : 10.0;
-    return Stack(clipBehavior: Clip.none, children: [
-      Positioned.fill(child: CustomPaint(painter: _LinePainter(ui: ui, past: past, now: kind == StepKind.now, first: first, last: last))),
-      if (kind == StepKind.now) const Positioned.fill(child: _Flow()),
-      Positioned(left: _lineX + _lineW / 2, top: _dotY, child: FractionalTranslation(translation: const Offset(-.5, -.5), child: _dot(ui))),
-      Padding(padding: EdgeInsets.fromLTRB(30, 3, 0, bottom), child: content),
-    ]);
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: _LinePainter(ui: ui, past: past, now: kind == StepKind.now, first: first, last: last),
+          ),
+        ),
+        if (kind == StepKind.now) const Positioned.fill(child: _Flow()),
+        Positioned(
+          left: _lineX + _lineW / 2,
+          top: _dotY,
+          child: FractionalTranslation(translation: const Offset(-.5, -.5), child: _dot(ui)),
+        ),
+        Padding(padding: EdgeInsets.fromLTRB(30, 3, 0, bottom), child: content),
+      ],
+    );
   }
 
   Widget _dot(MikkyUi ui) {
     Widget circle(double size, Color fill, {Color? ring, double ringW = 0, Widget? child}) => Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(
-            color: fill,
-            shape: BoxShape.circle,
-            border: ring == null ? null : Border.all(color: ring, width: ringW, strokeAlign: BorderSide.strokeAlignInside),
-          ),
-          alignment: Alignment.center,
-          child: child,
-        );
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: fill,
+        shape: BoxShape.circle,
+        border: ring == null ? null : Border.all(color: ring, width: ringW, strokeAlign: BorderSide.strokeAlignInside),
+      ),
+      alignment: Alignment.center,
+      child: child,
+    );
     return switch (kind) {
       StepKind.done => circle(14, ui.ink, child: MikkyIcon('check', size: 9, color: ui.onInk, stroke: 3.2)),
       StepKind.end => circle(16, ui.green, child: const MikkyIcon('check', size: 10, color: Color(0xFFFFFFFF), stroke: 3.2)),
@@ -92,19 +116,26 @@ class MetroStep extends StatelessWidget {
       StepKind.it => circle(8, ui.island, ring: ui.text3, ringW: 2),
       StepKind.me => const SizedBox.shrink(),
       StepKind.now => Looping(
-          period: const Duration(milliseconds: 2400),
-          frozenAt: 1,
-          builder: (context, t) {
-            final e = const Cubic(.2, .6, .3, 1).transform(t);
-            return Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
+        period: const Duration(milliseconds: 2400),
+        frozenAt: 1,
+        builder: (context, t) {
+          final e = const Cubic(.2, .6, .3, 1).transform(t);
+          return Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
               Transform.scale(
                 scale: 1 + .6 * e,
-                child: Opacity(opacity: .45 * (1 - e), child: circle(18, const Color(0x00000000), ring: ui.blue, ringW: 2.5)),
+                child: Opacity(
+                  opacity: .45 * (1 - e),
+                  child: circle(18, const Color(0x00000000), ring: ui.blue, ringW: 2.5),
+                ),
               ),
               circle(18, ui.island, ring: ui.blue, ringW: 3),
-            ]);
-          },
-        ),
+            ],
+          );
+        },
+      ),
     };
   }
 }
@@ -140,40 +171,45 @@ class _Flow extends StatefulWidget {
   State<_Flow> createState() => _FlowState();
 }
 
-class _FlowState extends State<_Flow> with TickerProviderStateMixin {
-  late final AnimationController _creep = AnimationController(vsync: this, duration: const Duration(seconds: 40));
-  late final AnimationController _halo = AnimationController(vsync: this, duration: const Duration(milliseconds: 4200));
+class _FlowState extends State<_Flow> {
+  // On the DecorClock (30 fps): it moves slowly.
+  bool _onClock = false;
+  Duration? _start;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (Motion.reduced(context)) {
-      _creep.value = 1;
-      _halo.value = 0;
-    } else {
-      if (_creep.value == 0) _creep.forward();
-      if (!_halo.isAnimating) _halo.repeat();
+    final reduced = Motion.reduced(context);
+    if (reduced && _onClock) {
+      DecorClock.unlisten(_tick);
+      _onClock = false;
+    } else if (!reduced && !_onClock) {
+      DecorClock.listen(_tick);
+      _onClock = true;
     }
   }
 
+  void _tick() => setState(() {});
+
   @override
   void dispose() {
-    _creep.dispose();
-    _halo.dispose();
+    if (_onClock) DecorClock.unlisten(_tick);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return AnimatedBuilder(
-      animation: Listenable.merge([_creep, _halo]),
-      builder: (context, _) => CustomPaint(
-        painter: _FlowPainter(
-          color: ui.blue,
-          reach: .2 + .42 * const Cubic(.2, .6, .3, 1).transform(_creep.value),
-          halo: (1 - math.cos(_halo.value * 2 * math.pi)) / 2,
-        ),
+    var creep = 1.0, halo = 0.0;
+    if (_onClock) {
+      final now = DecorClock.now.value;
+      final s = (now - (_start ??= now)).inMicroseconds / 1e6;
+      creep = (s / 40).clamp(0.0, 1.0);
+      halo = (1 - math.cos(s / 4.2 * 2 * math.pi)) / 2;
+    }
+    return RepaintBoundary(
+      child: CustomPaint(
+        painter: _FlowPainter(color: ui.blue, reach: .2 + .42 * const Cubic(.2, .6, .3, 1).transform(creep), halo: halo),
       ),
     );
   }
@@ -190,9 +226,12 @@ class _FlowPainter extends CustomPainter {
     const x = MetroStep._lineX, w = MetroStep._lineW, top = MetroStep._dotY;
     final bottom = top + size.height * reach;
     final line = RRect.fromLTRBR(x, top, x + w, bottom, const Radius.circular(2));
-    canvas.drawRRect(line, Paint()
-      ..color = color.withValues(alpha: .3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3));
+    canvas.drawRRect(
+      line,
+      Paint()
+        ..color = color.withValues(alpha: .3)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
+    );
     canvas.drawRRect(line, Paint()..color = color);
     // The halo: 16 px centered on the tip (`bottom: -8px`), 40 % blue
     // fading to nothing at 65 %; it breathes between 25 and 70 % opacity,
@@ -203,8 +242,13 @@ class _FlowPainter extends CustomPainter {
       center,
       r,
       Paint()
-        ..shader = RadialGradient(colors: [color.withValues(alpha: .4 * (.25 + .45 * halo)), color.withValues(alpha: 0)], stops: const [0, .65])
-            .createShader(Rect.fromCircle(center: center, radius: r)),
+        ..shader = RadialGradient(
+          colors: [
+            color.withValues(alpha: .4 * (.25 + .45 * halo)),
+            color.withValues(alpha: 0),
+          ],
+          stops: const [0, .65],
+        ).createShader(Rect.fromCircle(center: center, radius: r)),
     );
   }
 
@@ -230,12 +274,15 @@ class Bubble extends StatelessWidget {
     final radius = me
         ? const BorderRadius.only(topLeft: big, topRight: big, bottomLeft: big, bottomRight: small)
         : (thread
-            ? const BorderRadius.only(topLeft: small, topRight: big, bottomLeft: big, bottomRight: big)
-            : const BorderRadius.only(topLeft: big, topRight: big, bottomLeft: small, bottomRight: big));
+              ? const BorderRadius.only(topLeft: small, topRight: big, bottomLeft: big, bottomRight: big)
+              : const BorderRadius.only(topLeft: big, topRight: big, bottomLeft: small, bottomRight: big));
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
       decoration: BoxDecoration(color: me ? ui.ink : ui.well, borderRadius: radius),
-      child: DefaultTextStyle(style: uiText(14, color: me ? ui.onInk : ui.text, height: 1.4), child: child),
+      child: DefaultTextStyle(
+        style: uiText(14, color: me ? ui.onInk : ui.text, height: 1.4),
+        child: child,
+      ),
     );
   }
 }
@@ -252,14 +299,24 @@ class ChatMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Column(crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start, children: [
-      FractionallySizedBox(
-        widthFactor: .84,
-        alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-        child: Align(alignment: me ? Alignment.centerRight : Alignment.centerLeft, child: Bubble(me: me, child: Text(text))),
-      ),
-      if (meta != null) Padding(padding: const EdgeInsets.fromLTRB(4, 4, 4, 2), child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3))),
-    ]);
+    return Column(
+      crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        FractionallySizedBox(
+          widthFactor: .84,
+          alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+          child: Align(
+            alignment: me ? Alignment.centerRight : Alignment.centerLeft,
+            child: Bubble(me: me, child: Text(text)),
+          ),
+        ),
+        if (meta != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
+            child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
+          ),
+      ],
+    );
   }
 }
 
@@ -286,45 +343,76 @@ class CodeCard extends StatelessWidget {
     final ui = MikkyUi.of(context);
     final mono = uiText(10.5, mono: true, color: ui.text, height: 18 / 10.5);
     return Container(
-      decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(14), border: Border.all(color: ui.line, strokeAlign: BorderSide.strokeAlignInside)),
+      decoration: BoxDecoration(
+        color: ui.well,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: ui.line, strokeAlign: BorderSide.strokeAlignInside),
+      ),
       clipBehavior: Clip.antiAlias,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-          decoration: BoxDecoration(border: Border(bottom: BorderSide(color: ui.line))),
-          child: Row(children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: ui.amber, shape: BoxShape.circle)),
-            const SizedBox(width: 6),
-            Text(file, style: uiText(10.5, mono: true, weight: FontWeight.w500, color: ui.text2, height: 1.2)),
-          ]),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 5),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            for (final l in lines)
-              Container(
-                decoration: BoxDecoration(
-                  color: l.removed ? ui.red.withValues(alpha: .1) : (l.added ? ui.green.withValues(alpha: .12) : null),
-                  border: l.removed || l.added ? Border(left: BorderSide(color: l.removed ? ui.red : ui.green, width: 2)) : null,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: ui.line)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(color: ui.amber, shape: BoxShape.circle),
                 ),
-                padding: EdgeInsets.only(right: 8, left: l.removed || l.added ? 0 : 2),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  SizedBox(width: 22, child: Text('${l.number}', textAlign: TextAlign.right, style: mono.copyWith(color: ui.text3))),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(children: l.spans),
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.clip,
-                      style: l.removed ? mono.copyWith(color: ui.text2, decoration: TextDecoration.lineThrough) : mono,
+                const SizedBox(width: 6),
+                Text(
+                  file,
+                  style: uiText(10.5, mono: true, weight: FontWeight.w500, color: ui.text2, height: 1.2),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (final l in lines)
+                  Container(
+                    decoration: BoxDecoration(
+                      color: l.removed ? ui.red.withValues(alpha: .1) : (l.added ? ui.green.withValues(alpha: .12) : null),
+                      border: l.removed || l.added ? Border(left: BorderSide(color: l.removed ? ui.red : ui.green, width: 2)) : null,
+                    ),
+                    padding: EdgeInsets.only(right: 8, left: l.removed || l.added ? 0 : 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 22,
+                          child: Text(
+                            '${l.number}',
+                            textAlign: TextAlign.right,
+                            style: mono.copyWith(color: ui.text3),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text.rich(
+                            TextSpan(children: l.spans),
+                            maxLines: 1,
+                            softWrap: false,
+                            overflow: TextOverflow.clip,
+                            style: l.removed ? mono.copyWith(color: ui.text2, decoration: TextDecoration.lineThrough) : mono,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ]),
-              ),
-          ]),
-        ),
-      ]),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

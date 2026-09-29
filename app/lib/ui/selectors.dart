@@ -35,13 +35,7 @@ class Segmented extends StatelessWidget {
       SegmentSize.xs => (3.0, 28.0, 11.0, 12.5, 0.0),
       SegmentSize.field => (2.0, 22.0, 11.0, 11.5, 0.0),
     };
-    final scale = MediaQuery.textScalerOf(context);
-    var col = 0.0;
-    for (final o in options) {
-      final tp = TextPainter(text: TextSpan(text: o, style: uiText(font, weight: FontWeight.w600, height: 1)), textDirection: TextDirection.ltr, textScaler: scale)..layout();
-      col = col > tp.width ? col : tp.width;
-    }
-    col += padX * 2;
+    var col = _widest(options, font, MediaQuery.textScalerOf(context)) + padX * 2;
     if (col * options.length < minWidth - pad * 2) col = (minWidth - pad * 2) / options.length;
     final shadows = size == SegmentSize.field ? [CssShadow(0, 0, 0, ui.island, spread: 3)] : ui.inset;
     return Surface(
@@ -51,46 +45,84 @@ class Segmented extends StatelessWidget {
       child: SizedBox(
         width: col * options.length,
         height: h,
-        child: Stack(children: [
-          SpringValue(
-            target: selected * col,
-            spring: Motion.thumb,
-            builder: (context, x, v) {
-              final stretch = (v.abs() * .012).clamp(0.0, 10.0);
-              return Positioned(
-                left: x - (v > 0 ? stretch : 0),
-                top: 0,
-                bottom: 0,
-                width: col + stretch,
-                child: Surface(color: ui.thumb, shadows: ui.shThumb),
-              );
-            },
-          ),
-          Row(children: [
-            for (var i = 0; i < options.length; i++)
-              SizedBox(
-                width: col,
-                height: h,
-                child: MouseRegion(
-                  cursor: onChanged == null ? MouseCursor.defer : SystemMouseCursors.click,
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onChanged == null ? null : () => onChanged!(i),
-                    child: Center(
-                      child: AnimatedDefaultTextStyle(
-                        duration: const Duration(milliseconds: 180),
-                        style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected ? ui.text : ui.text2),
-                        child: Text(options[i], maxLines: 1),
+        // Not clipped: the thumb's shadow falls below the track, as in CSS
+        // (clipping it left a light line at the bottom).
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: SpringValue(
+                  target: selected * col,
+                  spring: Motion.thumb,
+                  builder: (context, x, v) {
+                    final stretch = (v.abs() * Motion.thumbStretch).clamp(0.0, Motion.thumbStretchMax);
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: x - (v > 0 ? stretch : 0),
+                          top: 0,
+                          bottom: 0,
+                          width: col + stretch,
+                          child: Surface(color: ui.thumb, shadows: ui.shThumb),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                for (var i = 0; i < options.length; i++)
+                  SizedBox(
+                    width: col,
+                    height: h,
+                    child: PressDown(
+                      // On press, not on release: the thumb leaves at once.
+                      onDown: onChanged == null || i == selected ? null : () => onChanged!(i),
+                      child: Center(
+                        child: AnimatedDefaultTextStyle(
+                          duration: const Duration(milliseconds: 180),
+                          style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected ? ui.text : ui.text2),
+                          child: Text(options[i], maxLines: 1),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ),
-          ]),
-        ]),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
+}
+
+final Map<(String, double, double), double> _widths = {};
+
+/// Width of the widest option, measured once per text and size.
+double _widest(List<String> options, double font, TextScaler scale) {
+  var w = 0.0;
+  for (final o in options) {
+    final key = (o, font, scale.scale(1));
+    final ow = _widths[key] ??= () {
+      final tp = TextPainter(
+        text: TextSpan(
+          text: o,
+          style: uiText(font, weight: FontWeight.w600, height: 1),
+        ),
+        textDirection: TextDirection.ltr,
+        textScaler: scale,
+      )..layout();
+      final width = tp.width;
+      tp.dispose();
+      return width;
+    }();
+    if (ow > w) w = ow;
+  }
+  return w;
 }
 
 /// `.switch`: 50 × 30; the knob slides with a bounce (380 ms) and grows
@@ -117,34 +149,39 @@ class _MSwitchState extends State<MSwitch> {
     final left = on ? (_pressed ? 17.0 : 23.0) : 3.0;
     return MouseRegion(
       cursor: widget.onChanged == null ? MouseCursor.defer : SystemMouseCursors.click,
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _pressed = true),
-        onTapCancel: () => setState(() => _pressed = false),
-        onTapUp: (_) => setState(() => _pressed = false),
-        onTap: widget.onChanged == null ? null : () => widget.onChanged!(!on),
-        child: TweenAnimationBuilder<Color?>(
-          tween: ColorTween(end: on ? ui.ink : ui.track),
-          duration: Duration(milliseconds: reduced ? 1 : 250),
-          builder: (context, track, _) => Surface(
-            width: 50,
-            height: 30,
-            color: track,
-            shadows: ui.inset,
-            child: Stack(children: [
-              AnimatedPositioned(
-                duration: Duration(milliseconds: reduced ? 1 : 380),
-                curve: const Cubic(.34, 1.5, .64, 1),
-                left: left,
-                top: 3,
-                width: knobW,
-                height: 24,
-                child: TweenAnimationBuilder<Color?>(
-                  tween: ColorTween(end: on ? ui.onInk : ui.knob),
-                  duration: Duration(milliseconds: reduced ? 1 : 250),
-                  builder: (context, knob, _) => Surface(color: knob, shadows: ui.shThumb),
-                ),
+      child: Listener(
+        onPointerDown: (_) => setState(() => _pressed = true),
+        onPointerCancel: (_) => setState(() => _pressed = false),
+        onPointerUp: (_) => setState(() => _pressed = false),
+        child: GestureDetector(
+          onTap: widget.onChanged == null ? null : () => widget.onChanged!(!on),
+          child: TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: on ? ui.ink : ui.track),
+            duration: Duration(milliseconds: reduced ? 1 : 250),
+            builder: (context, track, _) => Surface(
+              width: 50,
+              height: 30,
+              color: track,
+              shadows: ui.inset,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AnimatedPositioned(
+                    duration: Duration(milliseconds: reduced ? 1 : 380),
+                    curve: const Cubic(.34, 1.5, .64, 1),
+                    left: left,
+                    top: 3,
+                    width: knobW,
+                    height: 24,
+                    child: TweenAnimationBuilder<Color?>(
+                      tween: ColorTween(end: on ? ui.onInk : ui.knob),
+                      duration: Duration(milliseconds: reduced ? 1 : 250),
+                      builder: (context, knob, _) => Surface(color: knob, shadows: ui.shThumb),
+                    ),
+                  ),
+                ],
               ),
-            ]),
+            ),
           ),
         ),
       ),
@@ -179,15 +216,21 @@ class MChip extends StatelessWidget {
         gradient: on || soft ? null : ui.control,
         shadows: on ? ui.shInk : (soft ? ui.inset : [ui.highlight, ...ui.shCtl]),
         padding: EdgeInsets.symmetric(horizontal: soft ? 10 : 13),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[MikkyIcon(icon!, size: 15, color: fg), const SizedBox(width: 6)],
-          Text(label, style: style),
-          if (count != null) ...[
-            const SizedBox(width: 6),
-            Text('$count', style: uiText(13, weight: FontWeight.w600, height: 1, tabular: true, color: on ? fg.withValues(alpha: .6) : ui.text2)),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[MikkyIcon(icon!, size: 15, color: fg), const SizedBox(width: 6)],
+            Text(label, style: style),
+            if (count != null) ...[
+              const SizedBox(width: 6),
+              Text(
+                '$count',
+                style: uiText(13, weight: FontWeight.w600, height: 1, tabular: true, color: on ? fg.withValues(alpha: .6) : ui.text2),
+              ),
+            ],
+            if (trailingIcon != null) ...[const SizedBox(width: 4), MikkyIcon(trailingIcon!, size: 13, color: ui.text2)],
           ],
-          if (trailingIcon != null) ...[const SizedBox(width: 4), MikkyIcon(trailingIcon!, size: 13, color: ui.text2)],
-        ]),
+        ),
       ),
     );
   }

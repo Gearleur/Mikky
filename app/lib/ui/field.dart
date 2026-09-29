@@ -9,13 +9,7 @@ import 'tokens.dart';
 
 /// The text itself, for both fields: widgets-level, Geist, the ink caret.
 class _Input extends StatelessWidget {
-  const _Input({
-    required this.controller,
-    required this.focusNode,
-    required this.style,
-    required this.placeholder,
-    this.maxLines = 1,
-  });
+  const _Input({required this.controller, required this.focusNode, required this.style, required this.placeholder, this.maxLines = 1});
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -26,27 +20,36 @@ class _Input extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Stack(children: [
-      ListenableBuilder(
-        listenable: controller,
-        builder: (context, _) => controller.text.isEmpty
-            ? IgnorePointer(child: Text(placeholder, maxLines: 1, overflow: TextOverflow.clip, style: style.copyWith(color: ui.text3)))
-            : const SizedBox.shrink(),
-      ),
-      EditableText(
-        controller: controller,
-        focusNode: focusNode,
-        style: style.copyWith(color: ui.text),
-        cursorColor: ui.text,
-        backgroundCursorColor: ui.text3,
-        selectionColor: ui.blue.withValues(alpha: .25),
-        cursorWidth: 1.5,
-        maxLines: maxLines,
-        minLines: 1,
-        keyboardType: maxLines > 1 ? TextInputType.multiline : TextInputType.text,
-        textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.done,
-      ),
-    ]);
+    return Stack(
+      children: [
+        ListenableBuilder(
+          listenable: controller,
+          builder: (context, _) => controller.text.isEmpty
+              ? IgnorePointer(
+                  child: Text(
+                    placeholder,
+                    maxLines: 1,
+                    overflow: TextOverflow.clip,
+                    style: style.copyWith(color: ui.text3),
+                  ),
+                )
+              : const SizedBox.shrink(),
+        ),
+        EditableText(
+          controller: controller,
+          focusNode: focusNode,
+          style: style.copyWith(color: ui.text),
+          cursorColor: ui.text,
+          backgroundCursorColor: ui.text3,
+          selectionColor: ui.blue.withValues(alpha: .25),
+          cursorWidth: 1.5,
+          maxLines: maxLines,
+          minLines: 1,
+          keyboardType: maxLines > 1 ? TextInputType.multiline : TextInputType.text,
+          textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.done,
+        ),
+      ],
+    );
   }
 }
 
@@ -96,12 +99,14 @@ class _SearchFieldState extends State<SearchField> {
             color: focused ? ui.thumb : ui.track,
             shadows: focused ? ui.focusRing : ui.inset,
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(children: [
-              if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: 18, color: ui.text2), const SizedBox(width: 8)],
-              Expanded(
-                child: _Input(controller: _controller, focusNode: _focus, style: uiText(14.5, height: 1.2), placeholder: widget.placeholder),
-              ),
-            ]),
+            child: Row(
+              children: [
+                if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: 18, color: ui.text2), const SizedBox(width: 8)],
+                Expanded(
+                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(14.5, height: 1.2), placeholder: widget.placeholder),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -186,13 +191,15 @@ class _ComposerState extends State<Composer> {
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
         child: Surface(
-            radius: 26,
-            color: focused ? ui.thumb : ui.track,
-            shadows: focused ? ui.focusRing : ui.inset,
-            padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(minHeight: 32),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+          radius: 26,
+          color: focused ? ui.thumb : ui.track,
+          shadows: focused ? ui.focusRing : ui.inset,
+          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 32),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.only(bottom: 6),
@@ -209,19 +216,23 @@ class _ComposerState extends State<Composer> {
                 RoundButton('mic', size: 32, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
                 const SizedBox(width: 6),
                 RoundButton('up', size: 32, ink: true, onPressed: _send, tooltip: 'Envoyer'),
-              ]),
+              ],
             ),
           ),
+        ),
       ),
     );
     final options = widget.options;
     if (options == null) return field;
     return Padding(
       padding: const EdgeInsets.only(bottom: Composer.optionsOverhang),
-      child: Stack(clipBehavior: Clip.none, children: [
-        field,
-        Positioned(left: 14, bottom: -Composer.optionsOverhang, child: options),
-      ]),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          field,
+          Positioned(left: 14, bottom: -Composer.optionsOverhang, child: options),
+        ],
+      ),
     );
   }
 }
@@ -245,12 +256,18 @@ class ComposerChip extends StatelessWidget {
         color: ui.thumb,
         shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
         padding: const EdgeInsets.symmetric(horizontal: 9),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
-          Text(label, style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1)),
-          const SizedBox(width: 4),
-          MikkyIcon('down', size: 11, color: ui.text2),
-        ]),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
+            Text(
+              label,
+              style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
+            ),
+            const SizedBox(width: 4),
+            MikkyIcon('down', size: 11, color: ui.text2),
+          ],
+        ),
       ),
     );
   }

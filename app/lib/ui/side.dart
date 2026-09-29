@@ -1,6 +1,5 @@
 import 'dart:math' as math;
 
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -51,19 +50,21 @@ class SideHead extends StatelessWidget {
       height: 68,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(10, 12, 16, 6),
-        child: Row(children: [
-          if (leading case final l?) small ? Padding(padding: const EdgeInsets.only(left: 4), child: l) : l,
-          SizedBox(width: small ? 14 : 8),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
+        child: Row(
+          children: [
+            if (leading case final l?) small ? Padding(padding: const EdgeInsets.only(left: 4), child: l) : l,
+            SizedBox(width: small ? 14 : 8),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
+              ),
             ),
-          ),
-          for (final a in actions) ...[const SizedBox(width: 8), a],
-        ]),
+            for (final a in actions) ...[const SizedBox(width: 8), a],
+          ],
+        ),
       ),
     );
   }
@@ -78,10 +79,13 @@ class HeadMikky extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 42,
-        height: 40,
-        child: Stack(clipBehavior: Clip.none, children: [Positioned(left: -6, top: -6, child: MiniMikky(animate: animate))]),
-      );
+    width: 42,
+    height: 40,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [Positioned(left: -6, top: -6, child: MiniMikky(animate: animate))],
+    ),
+  );
 }
 
 /// Mikky in small (52 px), top left of the home: the real painter, idle,
@@ -97,10 +101,10 @@ class MiniMikky extends StatefulWidget {
   State<MiniMikky> createState() => _MiniMikkyState();
 }
 
-class _MiniMikkyState extends State<MiniMikky> with SingleTickerProviderStateMixin {
+class _MiniMikkyState extends State<MiniMikky> {
   final Mikky _mikky = Mikky(random: math.Random(7));
-  Ticker? _ticker;
-  Duration _last = Duration.zero;
+  bool _onClock = false;
+  Duration? _last;
 
   @override
   void initState() {
@@ -113,22 +117,27 @@ class _MiniMikkyState extends State<MiniMikky> with SingleTickerProviderStateMix
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // On the DecorClock (30 fps), like every loop of the window.
     final run = widget.animate && !Motion.reduced(context);
-    if (run && _ticker == null) {
-      _ticker = createTicker((t) {
-        final dt = ((t - _last).inMicroseconds / 1e6).clamp(0.0, 1 / 30);
-        _last = t;
-        setState(() => _mikky.update(dt));
-      })..start();
-    } else if (!run) {
-      _ticker?.dispose();
-      _ticker = null;
+    if (run && !_onClock) {
+      DecorClock.listen(_tick);
+      _onClock = true;
+    } else if (!run && _onClock) {
+      DecorClock.unlisten(_tick);
+      _onClock = false;
     }
+  }
+
+  void _tick() {
+    final now = DecorClock.now.value;
+    final dt = _last == null ? 0.0 : ((now - _last!).inMicroseconds / 1e6).clamp(0.0, .1);
+    _last = now;
+    setState(() => _mikky.update(dt));
   }
 
   @override
   void dispose() {
-    _ticker?.dispose();
+    if (_onClock) DecorClock.unlisten(_tick);
     super.dispose();
   }
 
@@ -136,15 +145,17 @@ class _MiniMikkyState extends State<MiniMikky> with SingleTickerProviderStateMix
   Widget build(BuildContext context) {
     final theme = MikkyUi.of(context).isLight ? MikkyTheme.light : MikkyTheme.dark;
     final s = widget.size;
-    return SizedBox.square(
-      dimension: s,
-      child: CustomPaint(
-        painter: MikkyPainter(
-          geometry: MikkyGeometry.of(_mikky, s * .29),
-          center: Offset(s / 2, s * .54),
-          rim: theme.mikkyRim,
-          statusColor: theme.status,
-          foreground: theme.foreground,
+    return RepaintBoundary(
+      child: SizedBox.square(
+        dimension: s,
+        child: CustomPaint(
+          painter: MikkyPainter(
+            geometry: MikkyGeometry.of(_mikky, s * .29),
+            center: Offset(s / 2, s * .54),
+            rim: theme.mikkyRim,
+            statusColor: theme.status,
+            foreground: theme.foreground,
+          ),
         ),
       ),
     );

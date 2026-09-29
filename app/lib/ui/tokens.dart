@@ -12,6 +12,19 @@ class CssShadow {
 
   /// CSS blur radius is twice the Gaussian sigma.
   double get sigma => blur / 2;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CssShadow &&
+      other.dx == dx &&
+      other.dy == dy &&
+      other.blur == blur &&
+      other.spread == spread &&
+      other.color == color &&
+      other.inset == inset;
+
+  @override
+  int get hashCode => Object.hash(dx, dy, blur, spread, color, inset);
 }
 
 /// The UI tokens of the small window (`mikky-ui.css`, `.t-light` and
@@ -115,11 +128,7 @@ class MikkyUi {
     hlEdge: Color(0x12FFFFFF),
     knob: Color(0xFFF7F7F7),
     shCtl: [CssShadow(0, 1, 2, Color(0x99000000)), CssShadow(0, 3, 8, Color(0x4D000000))],
-    shThumb: [
-      CssShadow(0, 1, 2, Color(0x80000000)),
-      CssShadow(0, 3, 10, Color(0x66000000)),
-      CssShadow(0, 1, 0, Color(0x0DFFFFFF), inset: true),
-    ],
+    shThumb: [CssShadow(0, 1, 2, Color(0x80000000)), CssShadow(0, 3, 10, Color(0x66000000)), CssShadow(0, 1, 0, Color(0x0DFFFFFF), inset: true)],
     shBar: [CssShadow(0, 10, 30, Color(0x80000000)), CssShadow(0, 2, 6, Color(0x66000000))],
     shInk: [CssShadow(0, 6, 18, Color(0x80000000)), CssShadow(0, 1, 2, Color(0x80000000))],
     inset: [CssShadow(0, 1, 2, Color(0x80000000), inset: true)],
@@ -163,14 +172,21 @@ class MikkyUiTheme extends InheritedWidget {
 
 /// Text in the window's font (Geist), as the CSS sets it: [size] in px,
 /// [tracking] in em.
-TextStyle uiText(double size, {FontWeight weight = FontWeight.w400, Color? color, double height = 1.45, double tracking = 0, bool mono = false, bool tabular = false}) =>
-    TextStyle(
-      fontFamily: mono ? 'Geist Mono' : 'Geist',
-      fontSize: size,
-      fontWeight: weight,
-      color: color,
-      height: height,
-      letterSpacing: tracking * size,
-      fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
-      decoration: TextDecoration.none,
-    );
+TextStyle uiText(
+  double size, {
+  FontWeight weight = FontWeight.w400,
+  Color? color,
+  double height = 1.45,
+  double tracking = 0,
+  bool mono = false,
+  bool tabular = false,
+}) => TextStyle(
+  fontFamily: mono ? 'Geist Mono' : 'Geist',
+  fontSize: size,
+  fontWeight: weight,
+  color: color,
+  height: height,
+  letterSpacing: tracking * size,
+  fontFeatures: tabular ? const [FontFeature.tabularFigures()] : null,
+  decoration: TextDecoration.none,
+);

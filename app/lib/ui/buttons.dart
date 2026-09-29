@@ -58,7 +58,10 @@ class MButton extends StatelessWidget {
       children: [
         if (loading) ...[Spinner(color: fg), const SizedBox(width: 8)],
         if (icon != null && !loading) ...[
-          Transform.translate(offset: const Offset(-3, 0), child: MikkyIcon(icon!, size: 18, color: fg)),
+          Transform.translate(
+            offset: const Offset(-3, 0),
+            child: MikkyIcon(icon!, size: 18, color: fg),
+          ),
           const SizedBox(width: 5),
         ],
         Text(label, style: text, maxLines: 1),
@@ -97,12 +100,12 @@ class RoundButton extends StatelessWidget {
   final String? tooltip;
 
   static double iconFor(double size) => switch (size) {
-        >= 46 => 21,
-        >= 40 => 20,
-        >= 34 => 18,
-        >= 32 => 17,
-        _ => 14,
-      };
+    >= 46 => 21,
+    >= 40 => 20,
+    >= 34 => 18,
+    >= 32 => 17,
+    _ => 14,
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -120,7 +123,9 @@ class RoundButton extends StatelessWidget {
           color: ink ? ui.ink : null,
           gradient: ink || ghost ? null : ui.control,
           shadows: ink ? ui.shInk : (ghost ? const [] : [ui.highlight, ...ui.shCtl]),
-          child: Center(child: MikkyIcon(icon, size: iconSize ?? iconFor(size), color: fg)),
+          child: Center(
+            child: MikkyIcon(icon, size: iconSize ?? iconFor(size), color: fg),
+          ),
         ),
       ),
     );
@@ -140,9 +145,12 @@ class ActionBar extends StatelessWidget {
       color: ui.raise,
       shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
       padding: const EdgeInsets.all(8),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        for (var i = 0; i < children.length; i++) ...[if (i > 0) const SizedBox(width: 10), children[i]],
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < children.length; i++) ...[if (i > 0) const SizedBox(width: 10), children[i]],
+        ],
+      ),
     );
   }
 }

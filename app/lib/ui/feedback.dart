@@ -27,27 +27,53 @@ class Looping extends StatefulWidget {
 }
 
 class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
+  // One-shot (pop, shake): short, at 60 fps. Loops: on the DecorClock.
   late final AnimationController _c = AnimationController(vsync: this, duration: widget.period);
+  bool _onClock = false;
+  Duration? _start;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (Motion.reduced(context)) {
-      _c.stop();
-      _c.value = widget.repeat ? widget.frozenAt : 1;
-    } else if (!_c.isAnimating && (widget.repeat || _c.value == 0)) {
-      widget.repeat ? _c.repeat() : _c.forward();
+    final reduced = Motion.reduced(context);
+    if (!widget.repeat) {
+      if (reduced) {
+        _c.value = 1;
+      } else if (_c.value == 0 && !_c.isAnimating) {
+        _c.forward();
+      }
+      return;
     }
+    if (reduced && _onClock) {
+      DecorClock.unlisten(_tick);
+      _onClock = false;
+    } else if (!reduced && !_onClock) {
+      DecorClock.listen(_tick);
+      _onClock = true;
+    }
+  }
+
+  void _tick() => setState(() {});
+
+  double get _t {
+    if (!_onClock) return widget.frozenAt;
+    final now = DecorClock.now.value;
+    final start = _start ??= now;
+    final period = widget.period.inMicroseconds;
+    return ((now - start).inMicroseconds % period) / period;
   }
 
   @override
   void dispose() {
+    if (_onClock) DecorClock.unlisten(_tick);
     _c.dispose();
     super.dispose();
   }
 
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value));
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: widget.repeat ? widget.builder(context, _t) : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
+  );
 }
 
 /// `.spin`: 16 px ring open on the right, one turn in 0.7 s.
@@ -103,22 +129,31 @@ class ProgressBar extends StatelessWidget {
       child: Container(
         height: 4,
         color: ui.track,
-        child: LayoutBuilder(builder: (context, box) {
-          final bar = DecoratedBox(decoration: BoxDecoration(color: ui.ink, borderRadius: BorderRadius.circular(2)));
-          final v = value;
-          if (v != null) {
-            return Align(alignment: Alignment.centerLeft, child: SizedBox(width: box.maxWidth * v.clamp(0, 1), child: bar));
-          }
-          final w = box.maxWidth * .35;
-          return Looping(
-            period: const Duration(milliseconds: 1300),
-            frozenAt: .4,
-            builder: (context, t) {
-              final e = const Cubic(.6, 0, .4, 1).transform(t);
-              return Stack(children: [Positioned(left: -w + e * w * 4, top: 0, bottom: 0, width: w, child: bar)]);
-            },
-          );
-        }),
+        child: LayoutBuilder(
+          builder: (context, box) {
+            final bar = DecoratedBox(
+              decoration: BoxDecoration(color: ui.ink, borderRadius: BorderRadius.circular(2)),
+            );
+            final v = value;
+            if (v != null) {
+              return Align(
+                alignment: Alignment.centerLeft,
+                child: SizedBox(width: box.maxWidth * v.clamp(0, 1), child: bar),
+              );
+            }
+            final w = box.maxWidth * .35;
+            return Looping(
+              period: const Duration(milliseconds: 1300),
+              frozenAt: .4,
+              builder: (context, t) {
+                final e = const Cubic(.6, 0, .4, 1).transform(t);
+                return Stack(
+                  children: [Positioned(left: -w + e * w * 4, top: 0, bottom: 0, width: w, child: bar)],
+                );
+              },
+            );
+          },
+        ),
       ),
     );
   }
@@ -145,8 +180,15 @@ class CountBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(9),
         boxShadow: [BoxShadow(color: ring ?? ui.island, spreadRadius: 2)],
       ),
-      alignment: Alignment.center,
-      child: Text('$count', style: uiText(10, weight: FontWeight.w600, color: ui.onInk, height: 1)),
+      // Shrink-wrapped: a Container with an alignment would fill the width
+      // it is given (a long black bar in the tab bar).
+      child: Center(
+        widthFactor: 1,
+        child: Text(
+          '$count',
+          style: uiText(10, weight: FontWeight.w600, color: ui.onInk, height: 1),
+        ),
+      ),
     );
   }
 }
@@ -167,7 +209,11 @@ class DotBadge extends StatelessWidget {
       child: Container(
         width: 9,
         height: 9,
-        decoration: BoxDecoration(color: ui.amber, shape: BoxShape.circle, boxShadow: [BoxShadow(color: ring ?? ui.island, spreadRadius: 2)]),
+        decoration: BoxDecoration(
+          color: ui.amber,
+          shape: BoxShape.circle,
+          boxShadow: [BoxShadow(color: ring ?? ui.island, spreadRadius: 2)],
+        ),
       ),
     );
   }
@@ -185,14 +231,14 @@ enum UiStatus {
   sleeping;
 
   static UiStatus of(AgentStatus s) => switch (s) {
-        AgentStatus.working || AgentStatus.searching => working,
-        AgentStatus.thinking => thinking,
-        AgentStatus.approval || AgentStatus.question => approval,
-        AgentStatus.finished => finished,
-        AgentStatus.error => error,
-        AgentStatus.rateLimited => limited,
-        AgentStatus.idle => sleeping,
-      };
+    AgentStatus.working || AgentStatus.searching => working,
+    AgentStatus.thinking => thinking,
+    AgentStatus.approval || AgentStatus.question => approval,
+    AgentStatus.finished => finished,
+    AgentStatus.error => error,
+    AgentStatus.rateLimited => limited,
+    AgentStatus.idle => sleeping,
+  };
 }
 
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =
@@ -218,57 +264,70 @@ class StatusDot extends StatelessWidget {
       UiStatus.sleeping => ui.grey,
     };
     Widget dot(double size, {Widget? child}) => Container(
-          width: size,
-          height: size,
-          decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: child,
-        );
+      width: size,
+      height: size,
+      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+      alignment: Alignment.center,
+      child: child,
+    );
     final Widget inner = switch (status) {
       UiStatus.working => Looping(
-          key: const ValueKey('working'),
-          period: const Duration(milliseconds: 1600),
-          frozenAt: 1,
-          builder: (context, t) {
-            final e = const Cubic(.2, .6, .3, 1).transform(t);
-            return Stack(alignment: Alignment.center, clipBehavior: Clip.none, children: [
-              Transform.scale(scale: 1 + 1.8 * e, child: Opacity(opacity: .5 * (1 - e), child: dot(10))),
+        key: const ValueKey('working'),
+        period: const Duration(milliseconds: 1600),
+        frozenAt: 1,
+        builder: (context, t) {
+          final e = const Cubic(.2, .6, .3, 1).transform(t);
+          return Stack(
+            alignment: Alignment.center,
+            clipBehavior: Clip.none,
+            children: [
+              Transform.scale(
+                scale: 1 + 1.8 * e,
+                child: Opacity(opacity: .5 * (1 - e), child: dot(10)),
+              ),
               dot(10),
-            ]);
-          },
-        ),
+            ],
+          );
+        },
+      ),
       UiStatus.thinking || UiStatus.limited || UiStatus.sleeping => Looping(
-          key: ValueKey(status),
-          period: Duration(milliseconds: switch (status) { UiStatus.thinking => 2400, UiStatus.limited => 3200, _ => 4000 }),
-          builder: (context, t) {
-            final b = (1 - math.cos(t * 2 * math.pi)) / 2;
-            final e = Curves.easeInOut.transform(b);
-            return Opacity(
-              opacity: (1 - .45 * e) * (status == UiStatus.sleeping ? .7 : 1),
-              child: Transform.scale(scale: 1 - .28 * e, child: dot(10)),
-            );
+        key: ValueKey(status),
+        period: Duration(
+          milliseconds: switch (status) {
+            UiStatus.thinking => 2400,
+            UiStatus.limited => 3200,
+            _ => 4000,
           },
         ),
+        builder: (context, t) {
+          final b = (1 - math.cos(t * 2 * math.pi)) / 2;
+          final e = Curves.easeInOut.transform(b);
+          return Opacity(
+            opacity: (1 - .45 * e) * (status == UiStatus.sleeping ? .7 : 1),
+            child: Transform.scale(scale: 1 - .28 * e, child: dot(10)),
+          );
+        },
+      ),
       UiStatus.approval => Looping(
-          key: const ValueKey('approval'),
-          period: const Duration(milliseconds: 1800),
-          builder: (context, t) => Transform.translate(offset: Offset(0, -5 * _hop(t)), child: dot(10)),
-        ),
+        key: const ValueKey('approval'),
+        period: const Duration(milliseconds: 1800),
+        builder: (context, t) => Transform.translate(offset: Offset(0, -5 * _hop(t)), child: dot(10)),
+      ),
       UiStatus.finished => Looping(
-          key: const ValueKey('finished'),
-          period: const Duration(milliseconds: 550),
-          repeat: false,
-          builder: (context, t) => Transform.scale(
-            scale: .3 + .7 * const Cubic(.34, 1.8, .64, 1).transform(t),
-            child: dot(18, child: const MikkyIcon('check', size: 11, color: Color(0xFFFFFFFF), stroke: 3)),
-          ),
+        key: const ValueKey('finished'),
+        period: const Duration(milliseconds: 550),
+        repeat: false,
+        builder: (context, t) => Transform.scale(
+          scale: .3 + .7 * const Cubic(.34, 1.8, .64, 1).transform(t),
+          child: dot(18, child: const MikkyIcon('check', size: 11, color: Color(0xFFFFFFFF), stroke: 3)),
         ),
+      ),
       UiStatus.error => Looping(
-          key: const ValueKey('error'),
-          period: const Duration(milliseconds: 450),
-          repeat: false,
-          builder: (context, t) => Transform.translate(offset: Offset(_shake(t), 0), child: dot(10)),
-        ),
+        key: const ValueKey('error'),
+        period: const Duration(milliseconds: 450),
+        repeat: false,
+        builder: (context, t) => Transform.translate(offset: Offset(_shake(t), 0), child: dot(10)),
+      ),
     };
     return SizedBox.square(dimension: 28, child: Center(child: inner));
   }
@@ -311,23 +370,39 @@ class Toast extends StatelessWidget {
       color: ui.raise,
       shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
       padding: const EdgeInsets.fromLTRB(10, 9, 9, 9),
-      child: Row(children: [
-        Container(
-          width: 34,
-          height: 34,
-          decoration: BoxDecoration(color: ui.ink, shape: BoxShape.circle),
-          alignment: Alignment.center,
-          child: MikkyIcon(icon, size: 18, color: ui.onInk),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-            Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(13, weight: FontWeight.w600, color: ui.text, height: 1.35)),
-            Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(12, color: ui.text2, height: 1.35)),
-          ]),
-        ),
-        if (action != null) ...[const SizedBox(width: 10), action!],
-      ]),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            decoration: BoxDecoration(color: ui.ink, shape: BoxShape.circle),
+            alignment: Alignment.center,
+            child: MikkyIcon(icon, size: 18, color: ui.onInk),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: uiText(13, weight: FontWeight.w600, color: ui.text, height: 1.35),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: uiText(12, color: ui.text2, height: 1.35),
+                ),
+              ],
+            ),
+          ),
+          if (action != null) ...[const SizedBox(width: 10), action!],
+        ],
+      ),
     );
   }
 }
@@ -345,20 +420,32 @@ class TypingDots extends StatelessWidget {
     return Looping(
       period: const Duration(milliseconds: 1200),
       frozenAt: .9,
-      builder: (context, t) => Row(mainAxisSize: MainAxisSize.min, children: [
-        for (var i = 0; i < 3; i++) ...[
-          if (i > 0) SizedBox(width: gap),
-          Builder(builder: (context) {
-            final p = ((t - i * .125) % 1 + 1) % 1;
-            // 0 → 30 % up and bright, 60 % back down, then still.
-            final k = p < .3 ? p / .3 : (p < .6 ? 1 - (p - .3) / .3 : 0.0);
-            return Transform.translate(
-              offset: Offset(0, -3 * k),
-              child: Opacity(opacity: .45 + .55 * k, child: Container(width: size, height: size, decoration: BoxDecoration(color: c, shape: BoxShape.circle))),
-            );
-          }),
+      builder: (context, t) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < 3; i++) ...[
+            if (i > 0) SizedBox(width: gap),
+            Builder(
+              builder: (context) {
+                final p = ((t - i * .125) % 1 + 1) % 1;
+                // 0 → 30 % up and bright, 60 % back down, then still.
+                final k = p < .3 ? p / .3 : (p < .6 ? 1 - (p - .3) / .3 : 0.0);
+                return Transform.translate(
+                  offset: Offset(0, -3 * k),
+                  child: Opacity(
+                    opacity: .45 + .55 * k,
+                    child: Container(
+                      width: size,
+                      height: size,
+                      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ],
         ],
-      ]),
+      ),
     );
   }
 }

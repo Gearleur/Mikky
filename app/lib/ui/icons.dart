@@ -50,9 +50,9 @@ class MikkyIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => CustomPaint(
-        size: Size.square(size),
-        painter: _IconPainter(iconPath(name), color ?? DefaultTextStyle.of(context).style.color ?? const Color(0xFF000000), stroke),
-      );
+    size: Size.square(size),
+    painter: _IconPainter(iconPath(name), color ?? DefaultTextStyle.of(context).style.color ?? const Color(0xFF000000), stroke),
+  );
 }
 
 class _IconPainter extends CustomPainter {

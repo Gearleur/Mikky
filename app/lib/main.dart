@@ -13,7 +13,7 @@ Future<void> main(List<String> args) async {
 
   // The UI components board (A3): a normal window, in its own process.
   if (args.contains('--kit')) {
-    runApp(const KitApp());
+    runApp(KitApp(performance: args.contains('--perf')));
     return;
   }
 
