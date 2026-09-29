@@ -79,7 +79,8 @@ void main() {
       run(m, 2);
       expect((m.currentWidth, m.currentHeight), (320, 560));
       expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
-      expect(m.mikkyX, 160);
+      // Mikky in small, top left of the small window's head (ux-a.html).
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (30, 39, 15));
       expect(m.cornerRadius, 38);
     });
 

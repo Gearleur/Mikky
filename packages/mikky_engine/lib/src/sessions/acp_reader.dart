@@ -210,7 +210,11 @@ class AcpReader {
       name: u['name'] as String? ?? ((u['_meta'] as Map?)?['claudeCode'] as Map?)?['toolName'] as String?,
       kind: switch (u['kind']) { final String k => _kind(k), _ => null },
       // "Preparing file…" and "Terminal" are placeholders until the real title.
-      title: title == null || title.endsWith('…') || title == 'Terminal' ? null : title,
+      title: switch (raw['description']) {
+        // Claude's few words about a command read better than the command.
+        final String d when d.isNotEmpty => d,
+        _ => title == null || title.endsWith('…') || title == 'Terminal' ? null : title,
+      },
       status: _toolStatus(u['status'] as String?),
       command: _command(raw),
       path: raw['file_path'] as String? ?? (locations.isEmpty ? null : locations.first['path'] as String?),

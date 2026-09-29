@@ -44,7 +44,8 @@ class IslandMetrics {
     mikkyOpen: (x: 54, y: 88, radius: 28),
   );
 
-  /// A small tab when closed, a phone-shaped card when open.
+  /// A small tab when closed, a phone-shaped card when open: the small
+  /// window of `ux-a.html`, Mikky in small at the top left of its head.
   static const right = IslandMetrics._(
     compact: (width: 64, height: 92),
     focus: (width: 320, height: 560),
@@ -53,7 +54,7 @@ class IslandMetrics {
     compactRadius: 22,
     openRadius: 38,
     mikkyCompact: (x: 32, y: 36, radius: 13),
-    mikkyOpen: (x: 160, y: 80, radius: 34),
+    mikkyOpen: (x: 30, y: 39, radius: 15),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
