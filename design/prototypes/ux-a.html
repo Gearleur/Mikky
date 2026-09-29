@@ -128,6 +128,31 @@ body.grand .side{height:900px}
 .ln.del .c{text-decoration:line-through;color:var(--text-2)}
 .ln.add{background:color-mix(in srgb,var(--green) 12%,transparent);box-shadow:inset 2px 0 var(--green)}
 .k{color:var(--purple)}.s{color:var(--green)}.m{color:var(--amber)}.f{color:var(--blue)}
+
+/* Page d'un agent : Suivi (la ligne) et Chat (l'historique) */
+.views{position:absolute;top:64px;left:0;right:0;display:flex;justify-content:center;z-index:4}
+.views .seg{min-width:170px}
+.page .body.has-views{top:106px}
+.now{padding:2px 4px 0}
+.now-top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.now-top b{font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.now-top span{font-size:12px;color:var(--text-2);flex:none;font-variant-numeric:tabular-nums}
+.pane .now{margin-bottom:12px}
+.msgs{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.msg{max-width:84%;padding:9px 13px;border-radius:20px;font-size:14px;line-height:1.4}
+.msg.me{align-self:flex-end;background:var(--ink);color:var(--on-ink);border-bottom-right-radius:8px}
+.msg.it{align-self:flex-start;background:var(--well);border-bottom-left-radius:8px}
+.msg .typing,.bub .typing{padding:3px 0;background:none}
+.mmeta{font-size:11px;color:var(--text-3);margin:-4px 4px 2px}
+.mmeta.me{align-self:flex-end}
+.taskcard{align-self:stretch;display:block;width:100%;border:0;text-align:left;border-radius:16px;background:none;box-shadow:inset 0 0 0 1px var(--line);padding:0;color:var(--text);cursor:pointer;font:inherit}
+.taskcard.live{display:flex;align-items:center;gap:8px;padding:10px 12px 10px 8px;background:var(--well);box-shadow:none}
+.taskcard.live>svg{width:15px;height:15px;color:var(--text-3);flex:none}
+.tc-head{display:flex;align-items:center;gap:8px;width:100%;border:0;background:none;padding:10px 12px 10px 8px;text-align:left;cursor:pointer;color:var(--text);font:inherit}
+.tc-head>svg{width:15px;height:15px;color:var(--text-3);flex:none;transition:transform .3s cubic-bezier(.34,1.4,.64,1)}
+.taskcard.open .tc-head>svg{transform:rotate(180deg)}
+.tc-steps{overflow:hidden;padding:0 12px 4px 10px}
+.taskcard .row-title{font-size:13.5px}
 </style>
 </head><body class="t-light">
 
@@ -135,7 +160,7 @@ body.grand .side{height:900px}
   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap">
     <div>
       <h1>Mikky : piste A, en simple</h1>
-      <p>Chaque agent a un seul fil : tes messages et ses étapes sur la même ligne verticale. Les terminés et l'historique gardent leur fil. Le bouton rond de l'accueil ouvre un nouvel agent.</p>
+      <p>Quand un agent travaille : Suivi (la ligne de ses tâches, avec tes messages entre les tâches) et Chat (l'historique complet). Quand c'est fini : un chat normal. Le bouton rond de l'accueil ouvre un nouvel agent.</p>
     </div>
     <div style="display:flex;gap:8px"><button class="chip on" data-theme="light">Clair</button><button class="chip" data-theme="dark">Sombre</button></div>
   </div>
@@ -144,8 +169,9 @@ body.grand .side{height:900px}
 <main class="frames">
   <figure class="opt"><figcaption><b>Accueil (cliquable)</b><span>En attente, travaillent, terminés, historique : chaque groupe se replie. Touche un agent pour ouvrir son fil.</span></figcaption><div class="side" data-frame="home"></div></figure>
   <figure class="opt"><figcaption><b>Nouvel agent</b><span>Ouvert par le bouton rond. Dossier et modèle sous la bulle. En envoyant, tu arrives sur son fil.</span></figcaption><div class="side" data-frame="newchat"></div></figure>
-  <figure class="opt"><figcaption><b>Fil d'un agent au travail</b><span>Tes messages, ses réponses et ses étapes sur la ligne ; le bleu avance vers l'étape suivante. Écris pour l'orienter.</span></figcaption><div class="side" data-frame="agent" data-arg="live"></div></figure>
-  <figure class="opt"><figcaption><b>Fil d'un agent terminé</b><span>L'historique : tout le trajet, et la fin en vert. On peut lui écrire pour continuer.</span></figcaption><div class="side" data-frame="agent" data-arg="done"></div></figure>
+  <figure class="opt"><figcaption><b>Agent au travail : Suivi</b><span>La ligne de ses tâches, propre. Tes messages glissés pendant le travail apparaissent entre les tâches.</span></figcaption><div class="side" data-frame="agent" data-arg="live"></div></figure>
+  <figure class="opt"><figcaption><b>Agent au travail : Chat</b><span>L'historique complet, en chat normal. La tâche en cours est une carte en bas ; elle ramène au suivi.</span></figcaption><div class="side" data-frame="agent" data-arg="live" data-view-start="chat"></div></figure>
+  <figure class="opt"><figcaption><b>Agent, tâche finie</b><span>Retour au chat normal. La tâche devient une carte qui se déplie ; la conversation continue.</span></figcaption><div class="side" data-frame="agent" data-arg="done"></div></figure>
   <figure class="opt"><figcaption><b>En train de parler</b><span>Micro cliqué ou raccourci maintenu : le texte s'écrit dans la bulle, qui grandit.</span></figcaption><div class="side" data-frame="agent" data-arg="live" data-listen></div></figure>
 </main>
 
@@ -198,31 +224,47 @@ const CODE_NOW = `<span class="flow"></span>
     <div class="code-lines"><div class="ln del"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m">60</span>;</span></div><div class="ln add"><span class="n">12</span><span class="c"><span class="k">const</span> autoCloseSec = <span class="m" data-typing></span><span class="caret"></span></span></div><div class="ln"><span class="n">13</span><span class="c"></span></div><div class="ln"><span class="n">14</span><span class="c"><span class="k">bool</span> <span class="f">closes</span>(<span class="k">int</span> idle) =&gt;</span></div></div>
   </div>`;
 
+// Chat normal : des bulles, sans ligne.
+const CM = (text, meta) => `<div class="msg me">${text}</div>${meta ? `<div class="mmeta me">${meta}</div>` : ''}`;
+const CI = text => `<div class="msg it">${text}</div>`;
+const TASKCARD = (title, sub, steps) => `
+  <div class="taskcard" data-state="finished">
+    <button class="tc-head" data-expand>${st('finished')}<div class="row-main"><div class="row-title">${title}</div><div class="row-sub">${sub}</div></div>${svg('down')}</button>
+    <div class="tc-steps" style="display:none"><div class="thread">${steps}</div></div>
+  </div>`;
+const LIVECARD = title => `
+  <button class="taskcard live" data-state="working" data-view-go="suivi">${st()}<div class="row-main"><div class="row-title">${title}</div><div class="row-sub" data-ticker>Modifie island_machine.dart</div></div>${svg('right')}</button>`;
+
 const THREADS = {
   live: {
-    title: 'Corrige les tests du moteur', stop: true,
-    html: ME('Corrige les tests du moteur et relance-les jusqu’à ce qu’ils passent', '9:37 · mikky · Claude', true)
-      + S('done', 'Lire la spec et les tests', true)
+    title: 'Corrige les tests du moteur', live: true, count: '3 sur 5',
+    chat: CM('Tu peux regarder pourquoi les tests du moteur cassent ?', '9:30 · mikky · Claude')
+      + CI('Deux tests échouent sur la fermeture auto : le délai attendu est 45 s, le code dit 60 s.')
+      + CM('Corrige et relance-les jusqu’à ce qu’ils passent')
+      + CM('Garde 45 s, pas 30', '9:40')
+      + CI('Ok, 45 s.')
+      + LIVECARD('Corrige la fermeture auto'),
+    suivi: S('done', 'Lire la spec et les tests', true)
       + S('done', 'Lancer les tests · <span class="x">2 échecs</span>', true)
-      + IT('Deux tests échouent sur la fermeture auto. Je corrige island_machine.dart.', true)
       + ME('Garde 45 s, pas 30', '9:40', true)
+      + IT('Ok, 45 s.', true)
       + S('now', 'Corriger la fermeture auto' + CODE_NOW)
       + S('todo', 'Relancer les tests')
       + S('todo', 'Terminé'),
   },
   done: {
     title: 'Résume la spec',
-    html: ME('Résume la spec de l’étape 1 en une page', '9:12 · mikky · Claude', true)
-      + S('done', 'Lire la spec', true)
-      + S('done', 'Écrire le résumé', true)
-      + IT('C’est fait : docs/resume-etape-1.md, une page, 6 sections.', true)
-      + S('end', 'Terminé · <span class="ok">1 fichier</span>', true),
+    chat: CM('Résume la spec de l’étape 1 en une page', '9:12 · mikky · Claude')
+      + TASKCARD('Tâche terminée', '3 étapes · 1 fichier · 2 min',
+          S('done', 'Lire la spec', true) + S('done', 'Écrire le résumé', true) + S('end', 'Terminé · <span class="ok">1 fichier</span>', true))
+      + CI('C’est fait : docs/resume-etape-1.md, une page, 6 sections.')
+      + CM('Merci ! Tu peux ajouter un schéma de l’île ?', '9:20')
+      + CI('Oui : un schéma des états de l’île (cachée, compacte, ouverte). Je le fais ?'),
   },
   fresh: text => ({
-    title: text,
-    html: ME(esc(text), 'à l’instant · mikky · Claude', true)
-      + IT('C’est parti, je lance Claude sur mikky.', true)
-      + `<div class="ti" data-s="now"><span class="dot"></span><span class="flow"></span><span data-ticker>Lit le projet</span></div>`
+    title: text, live: true, count: '1 sur ?',
+    chat: CM(esc(text), 'à l’instant · mikky · Claude') + CI('C’est parti, je lance Claude sur mikky.') + LIVECARD(esc(text)),
+    suivi: `<div class="ti" data-s="now"><span class="dot"></span><span class="flow"></span>Lit le projet</div>`
       + S('todo', 'La suite arrive quand Claude aura fait son plan'),
   }),
 };
@@ -267,9 +309,13 @@ const PAGES = {
   agent: arg => {
     const t = typeof arg === 'string' && THREADS[arg] ? THREADS[arg] : THREADS.fresh(arg && arg.text || 'Nouvelle tâche');
     return `
-    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">${esc(t.title)}</div>${t.html.includes('data-s="now"') ? `<button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button>` : ''}</div>
-    <div class="body"><div class="thread">${t.html}</div></div>
-    ${COMPOSER(t.html.includes('data-s="now"') ? 'Écris à cet agent…' : 'Continuer avec cet agent…', false)}`;
+    <div class="side-head"><button class="round sm" aria-label="Retour" data-back>${svg('left')}</button><div class="side-title sm">${esc(t.title)}</div>${t.live ? `<button class="round sm" aria-label="Arrêter l'agent">${svg('stop')}</button>` : ''}</div>
+    ${t.live ? `<div class="views"><div class="seg xs" data-seg data-view><span class="thumb"></span><button class="on" data-v="suivi">Suivi</button><button data-v="chat">Chat</button></div></div>` : ''}
+    <div class="body${t.live ? ' has-views' : ''}">
+      ${t.live ? `<div class="pane" data-pane="suivi"><div class="now"><div class="now-top"><b data-ticker>Modifie island_machine.dart</b><span>${t.count}</span></div></div><div class="thread">${t.suivi}</div></div>` : ''}
+      <div class="pane" data-pane="chat"${t.live ? ' style="display:none"' : ''}><div class="msgs">${t.chat}</div></div>
+    </div>
+    ${COMPOSER(t.live ? 'Écris à cet agent…' : 'Continuer avec cet agent…', false)}`;
   },
 };
 
@@ -282,7 +328,11 @@ function makePage(side, name, arg) {
   bind(side, p);
   return p;
 }
-function mount(side, p) { side.append(p); fit(p); typeCode(); const b = p.querySelector('.body'); if (p.dataset.name === 'agent') b.scrollTop = b.scrollHeight; }
+function mount(side, p) {
+  side.append(p); fit(p); typeCode();
+  p.querySelectorAll('[data-seg]').forEach(seg => { const on = seg.querySelector('.on'), th = seg.querySelector('.thumb'); th.style.transform = `translateX(${on.offsetLeft}px)`; th.style.width = on.offsetWidth + 'px'; });
+  const b = p.querySelector('.body'); if (p.dataset.name === 'agent' && !p.querySelector('[data-view]')) b.scrollTop = b.scrollHeight;
+}
 function push(side, name, arg) {
   const prev = side.lastElementChild, p = makePage(side, name, arg);
   mount(side, p);
@@ -332,6 +382,28 @@ function bind(side, p) {
   p.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', e => { if (e.target.closest('button')) return; push(side, el.dataset.open, el.dataset.arg); }));
   p.querySelectorAll('[data-back]').forEach(el => el.onclick = () => back(side));
   p.querySelectorAll('[data-new]').forEach(b => b.onclick = () => { const n = push(side, 'newchat'); n.querySelector('textarea').focus({ preventScroll: true }); });
+  const setView = v => {
+    p.querySelectorAll('[data-pane]').forEach(x => {
+      const on = x.dataset.pane === v;
+      if (on && x.style.display === 'none') x.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: CALME ? 1 : 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
+      x.style.display = on ? '' : 'none';
+    });
+    const seg = p.querySelector('[data-view]'); if (!seg) return;
+    seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.v === v));
+    const on = seg.querySelector('.on'), th = seg.querySelector('.thumb');
+    th.style.transition = 'transform .38s cubic-bezier(.34,1.3,.64,1), width .38s cubic-bezier(.34,1.3,.64,1)';
+    th.style.transform = `translateX(${on.offsetLeft}px)`; th.style.width = on.offsetWidth + 'px';
+    const b = p.querySelector('.body'); b.scrollTop = v === 'chat' ? b.scrollHeight : 0;
+  };
+  p.querySelectorAll('[data-view] button').forEach(x => x.onclick = () => setView(x.dataset.v));
+  p.querySelectorAll('[data-view-go]').forEach(x => x.onclick = () => setView(x.dataset.viewGo));
+  p.querySelectorAll('[data-expand]').forEach(x => x.onclick = () => {
+    const card = x.closest('.taskcard'), steps = card.querySelector('.tc-steps'), open = card.classList.toggle('open');
+    steps.style.display = '';
+    const h = steps.scrollHeight;
+    steps.animate(open ? [{ height: '0px', opacity: 0 }, { height: h + 'px', opacity: 1 }] : [{ height: h + 'px', opacity: 1 }, { height: '0px', opacity: 0 }], { duration: CALME ? 1 : 260, easing: 'cubic-bezier(.2,.8,.2,1)' })
+      .onfinish = () => { if (!open) steps.style.display = 'none'; };
+  });
   p.querySelectorAll('[data-toggle]').forEach(h => h.onclick = () => {
     const g = p.querySelector(`[data-group=${h.dataset.toggle}]`), closed = h.classList.toggle('closed');
     if (!closed) g.style.display = '';
@@ -361,12 +433,16 @@ function bind(side, p) {
       fresh.animate([{ opacity: 0 }, { opacity: 1 }], { duration: CALME ? 1 : 200 });
       return;
     }
-    // Dans un fil : le message se place au point où en est l'agent.
-    const thread = p.querySelector('.thread'), now = thread.querySelector('[data-s=now]');
-    const html = ME(esc(text), 'à l’instant', !!now) + (now ? `<div class="ti msg-it past" data-typing-reply><span class="dot"></span><div class="typing"><i></i><i></i><i></i></div></div>` : '');
-    if (now) now.insertAdjacentHTML('beforebegin', html); else thread.insertAdjacentHTML('beforeend', html);
-    const b = p.querySelector('.body'); b.scrollTo({ top: now ? now.offsetTop - 120 : b.scrollHeight, behavior: 'smooth' });
-    setTimeout(() => { const r = p.querySelector('[data-typing-reply] .typing'); if (r) r.outerHTML = `<div class="bub">Noté, je m'y mets.</div>`; }, 1200);
+    // Dans le chat : toujours ; dans le suivi : au point où en est l'agent.
+    const chat = p.querySelector('[data-pane=chat] .msgs'), live = chat.querySelector('.taskcard.live');
+    const now = p.querySelector('[data-pane=suivi] [data-s=now]');
+    const dots = '<span class="typing"><i></i><i></i><i></i></span>';
+    const html = CM(esc(text), 'à l’instant') + `<div class="msg it" data-reply>${dots}</div>`;
+    if (live) live.insertAdjacentHTML('beforebegin', html); else chat.insertAdjacentHTML('beforeend', html);
+    if (now) now.insertAdjacentHTML('beforebegin', ME(esc(text), 'à l’instant', true) + `<div class="ti msg-it past"><span class="dot"></span><div class="bub" data-reply>${dots}</div></div>`);
+    const b = p.querySelector('.body'), inSuivi = now && now.closest('.pane').style.display !== 'none';
+    b.scrollTo({ top: inSuivi ? now.offsetTop - 140 : b.scrollHeight, behavior: 'smooth' });
+    setTimeout(() => p.querySelectorAll('[data-reply] .typing').forEach(r => r.outerHTML = now ? 'Noté, je m’y mets.' : 'Oui, je m’en occupe.'), 1200);
   };
 }
 
@@ -375,7 +451,7 @@ const TICKS = ['Modifie island_machine.dart', 'Relit island_test.dart', 'Modifie
 let tick = 0;
 if (!CALME) setInterval(() => {
   tick = (tick + 1) % TICKS.length;
-  document.querySelectorAll('.agent [data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
+  document.querySelectorAll('[data-ticker]').forEach(el => el.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-5px)' }], { duration: 120 }).onfinish = () => {
     el.textContent = TICKS[tick];
     el.animate([{ opacity: 0, transform: 'translateY(5px)' }, { opacity: 1, transform: 'none' }], { duration: 220, easing: 'cubic-bezier(.2,.8,.2,1)' });
   });
@@ -400,6 +476,7 @@ document.fonts.ready.then(() => {
     const p = makePage(side, side.dataset.frame, side.dataset.arg);
     mount(side, p);
     if (side.hasAttribute('data-listen')) listen(p, true);
+    if (side.dataset.viewStart) p.querySelector(`[data-view] [data-v=${side.dataset.viewStart}]`).click();
   });
 });
 </script>
