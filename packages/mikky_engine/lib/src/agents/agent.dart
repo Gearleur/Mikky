@@ -32,6 +32,19 @@ enum AgentAnswer {
   dismiss,
 }
 
+/// Which agent tool runs the session.
+enum AgentProvider { claude, codex }
+
+/// Where the agent runs (MVP spec §3.4). Linux comes later.
+enum AgentHost { windows, wsl }
+
+/// Launched by Mikky, or elsewhere (VS Code, a terminal) and only watched.
+enum AgentOrigin { mikky, external }
+
+/// Chosen at each launch: every request goes to the user, or the agent's
+/// own automatic mode (never a mode that skips every check).
+enum PermissionMode { ask, auto }
+
 /// One agent, as seen at one instant. Immutable: a change is a new value.
 class Agent {
   const Agent({
@@ -43,6 +56,12 @@ class Agent {
     this.detail = '',
     this.progress,
     this.progressRate = 0,
+    this.provider,
+    this.host,
+    this.origin = AgentOrigin.mikky,
+    this.cwd,
+    this.sessionId,
+    this.permissions,
   });
 
   final String id;
@@ -60,6 +79,14 @@ class Agent {
   final double? progress;
   final double progressRate;
 
+  /// Real agents only (null in the demo).
+  final AgentProvider? provider;
+  final AgentHost? host;
+  final AgentOrigin origin;
+  final String? cwd;
+  final String? sessionId;
+  final PermissionMode? permissions;
+
   /// Progress at [now]; never reaches 1 before the agent is done.
   double? progressAt(double now) {
     final p = progress;
@@ -76,16 +103,24 @@ class Agent {
     double? progress,
     double? progressRate,
     bool clearProgress = false,
+    String? name,
+    String? sessionId,
   }) =>
       Agent(
         id: id,
-        name: name,
+        name: name ?? this.name,
         status: status ?? this.status,
         startedAt: startedAt,
         statusSince: statusSince ?? this.statusSince,
         detail: detail ?? this.detail,
         progress: clearProgress ? null : (progress ?? this.progress),
         progressRate: clearProgress ? 0 : (progressRate ?? this.progressRate),
+        provider: provider,
+        host: host,
+        origin: origin,
+        cwd: cwd,
+        sessionId: sessionId ?? this.sessionId,
+        permissions: permissions,
       );
 
   @override

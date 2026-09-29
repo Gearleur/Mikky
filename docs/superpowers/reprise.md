@@ -10,6 +10,7 @@ Dernière mise à jour : 2026-09-29 (fin de session) · Dépôt : https://github
 - **Le 2026-09-29, le projet a grandi** : Mikky devient un compagnon qui suit et pilote nos agents Claude Code et Codex, un « Paperclip plus simple », à terme un mini-téléphone avec des mini-apps. Tout est noté et numéroté dans `idees.md`.
 - **L'UI et l'UX de la petite fenêtre (position « à droite ») sont validées** sur maquettes HTML (§3). L'utilisateur a dit : « tout est pas mal, on peut avancer ».
 - **Prochaine étape : commencer l'app** (§4), en commençant par brancher Claude (abonnement) et Codex comme le fait Paperclip (§5).
+- **Fait le 2026-09-29 (après-midi)** : spec du MVP validée (`specs/2026-09-29-mvp-design.md` : Claude et Codex par ACP comme Paperclip, pas d'API, pas un harnais), plan de la partie A (`plans/2026-09-29-mvp-plan.md`), **A0** (essai ACP réussi sous Windows et dans WSL, résultats dans le plan) et **A1** (moteur des sessions, 100 tests). Claude installé sous Windows ; Codex connecté dans WSL ; Node privé de Mikky dans WSL. **Suite : A2** (`packages/mikky_agents`).
 
 ## 1. Ce qui marche (étape 1, sous Windows)
 
@@ -98,6 +99,11 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 - La fenêtre de réglage lancée depuis un terminal s'ouvre derrière les autres fenêtres (normal).
 - L'utilisateur utilise le PC pendant les tests : ses mouvements de souris peuvent fausser les tests automatiques.
 - **Maquettes HTML** : les captures Chrome headless ne laissent pas finir les animations Web (WAAPI) ; utiliser `#calme`. Une apostrophe droite dans une chaîne JS entre guillemets simples casse toute la page : vérifier avec `node --check` sur le script extrait. Pour les gros remplacements, écrire un script Python dans un fichier plutôt qu'un heredoc dans le shell.
+- **Git Bash convertit les chemins** passés à un programme Windows (`/tmp/x` devient `C:/Program Files/Git/tmp/x`) : préfixer `MSYS_NO_PATHCONV=1` quand on passe des chemins Linux à `dart.bat` ou `wsl.exe`.
+- **`wsl.exe` écrit ses erreurs en UTF-16** : décoder la sortie avec `Utf8Decoder(allowMalformed: true)`, sinon Dart plante.
+- **Dans WSL, lancer avec `bash -l`** : sans shell de connexion, `codex` et `claude` peuvent être ceux de Windows (le PATH de Windows est ajouté à la fin).
+- `pkill -f "codex login"` tue aussi le shell qui le lance (son texte contient le motif) : passer par un script.
+- Chaînes Dart : `$HOME` dans une chaîne est une interpolation, écrire `\$HOME`.
 - **Exporter Mikky en PNG transparent** : un test Flutter temporaire avec `matchesGoldenFile('../../design/references/…')` et `--update-goldens`, puis supprimer le test.
 
 ## 9. Mesures (release, 1920 × 1080 à 100 %, 12 cœurs)

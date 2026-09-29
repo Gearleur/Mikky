@@ -60,7 +60,9 @@ Aujourd'hui, Paperclip fait passer **Claude et Codex par ACP** (Agent Client Pro
 
 Paperclip, lui, répond « oui à tout » aux permissions. Mikky, non : **Demander** (par défaut) envoie chaque demande à l'utilisateur ; **Auto** met l'agent dans son mode automatique (Claude : le mode `auto` ; Codex : la revue automatique, sandbox `workspace-write`), seulement si l'utilisateur l'a choisi pour ce lancement. Jamais `bypassPermissions` ni `--dangerously-bypass-approvals-and-sandbox`.
 
-Les adaptateurs demandent Node (Paperclip exige Node 24). Sur ce PC : Windows a Node 24, **WSL a Node 18** (à mettre à jour si besoin). Mikky installe les deux adaptateurs avec npm dans son propre dossier, par cible, la première fois, en le disant à l'utilisateur.
+Les adaptateurs demandent Node (`claude-agent-acp` : Node ≥ 22). Mikky utilise **son propre Node** là où celui du système est trop vieux (choix de l'utilisateur du 2026-09-29 : dans WSL, Node 24 dans `~/.local/share/mikky/node`, le Node 18 d'Ubuntu n'est pas touché), et installe les deux adaptateurs avec npm dans son propre dossier, par cible, la première fois, en le disant à l'utilisateur.
+
+Modes vérifiés pendant l'essai A0 (plan, « Résultat ») : **Demander** = Claude `default` (Manual), Codex `read-only` ; **Auto** = Claude `auto`, Codex `agent` (Auto review). Claude peut refuser Auto selon le modèle et passer en `acceptEdits` : Mikky affiche toujours le mode réel. Avec Codex, **« Non » arrête le tour** ; l'utilisateur écrit ensuite ce qu'il veut à la place.
 
 ### 3.2 En secours : la ligne de commande, comme Paperclip
 
@@ -114,7 +116,8 @@ Claude écrit chaque session dans `~/.claude/projects/<dossier>/<id>.jsonl`, Cod
 - Ces sessions sont **en lecture seule** pour le MVP : on voit leur Suivi et leur Chat, sans leur répondre. Une demande de permission dans une session extérieure ne se voit pas dans ces fichiers : Mikky affiche « Travaille ».
 - Une session extérieure **terminée** peut être **continuée dans Mikky** (bouton dans son chat) : Mikky la reprend (`session/load`, ou `--resume <id>` / `resume <id>`) sur la même cible.
 - Les sessions lancées par Mikky écrivent aussi ces fichiers : Mikky les reconnaît par leur id et ne les montre qu'une fois.
-- **Point à vérifier en premier** : Windows ne reçoit pas toujours les événements de fichiers d'un dossier WSL (`\\wsl.localhost\…`). Si c'est le cas, Mikky lance dans WSL une petite sonde qui surveille ces dossiers (inotify) et lui envoie les changements. Elle ne tourne que pendant que Mikky tourne.
+- **Vérifié pendant l'essai A0** : Windows ne reçoit **aucun** événement de fichiers d'un dossier WSL (`\\wsl.localhost\…`). Mikky lance donc dans WSL une petite sonde (un script avec son Node privé, `fs.watch`, inotify) qui surveille ces dossiers et lui envoie une ligne par changement. Elle ne tourne que pendant que Mikky tourne.
+- `session/list` d'ACP liste aussi les sessions de Claude lancées ailleurs (avec titre et date), et `session/load` rejoue leur fil : utile pour afficher le Chat d'une session extérieure.
 
 ### 4.2 Plus tard : travailler dessus (souhaité par l'utilisateur, même si c'est compliqué)
 
