@@ -12,6 +12,7 @@ import '../ui/side.dart';
 import '../ui/tokens.dart';
 import 'agent_page.dart';
 import 'new_agent_page.dart';
+import 'session_menu.dart';
 import 'session_views.dart';
 
 /// What the small window needs from the island around it.
@@ -67,7 +68,8 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   _Page? _leaving;
 
   /// Which home groups are unfolded; kept while the window is closed.
-  final Map<HomeGroup, bool> _groups = {HomeGroup.waiting: true, HomeGroup.working: true, HomeGroup.done: true, HomeGroup.history: false};
+  /// (by [HomeGroup] name, and `archives`).
+  final Map<String, bool> _groups = {'history': false, 'archives': false};
 
   SideHost get host => widget.host;
 
@@ -81,10 +83,11 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   void _open(String what) => switch (what) {
         'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
-        _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back))),
+        final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
+        _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
       };
 
-  void _launched(String id) => _replaceTop(_Page('agent:$id', () => AgentPage(host: host, id: id, back: back)));
+  void _launched(String id) => _replaceTop(_Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'))));
 
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;
@@ -139,15 +142,15 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     );
   }
 
-  void _toggle(HomeGroup g) => setState(() => _groups[g] = !(_groups[g] ?? true));
+  void _toggle(String g) => setState(() => _groups[g] = !(_groups[g] ?? true));
 }
 
 /// Gives the home its folded groups (kept by [SideAppState]).
 class _GroupsScope extends InheritedWidget {
   const _GroupsScope({required this.groups, required this.onToggle, required super.child});
 
-  final Map<HomeGroup, bool> groups;
-  final ValueChanged<HomeGroup> onToggle;
+  final Map<String, bool> groups;
+  final ValueChanged<String> onToggle;
 
   static _GroupsScope of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_GroupsScope>()!;
 
@@ -156,7 +159,9 @@ class _GroupsScope extends InheritedWidget {
 }
 
 /// The home: agents in groups — En attente, Travaillent, Terminés,
-/// Historique (folded) — and the round arrow for a new agent.
+/// Historique and Archives (folded) — and the round arrow for a new agent.
+/// Pinned sessions come first in their group; a right click on a card
+/// gives what to do with it (see [showSessionMenu]).
 class HomePage extends StatelessWidget {
   const HomePage({super.key, required this.host, required this.open});
 
@@ -171,7 +176,16 @@ class HomePage extends StatelessWidget {
     final ui = MikkyUi.of(context);
     final scope = _GroupsScope.of(context);
     final now = DateTime.now();
-    final groups = groupHome(host.service.source.entries, status: (e) => e.status, lastActivity: (e) => e.lastActivity, now: now);
+    final all = host.service.source.homeEntries;
+    final archived = [for (final e in all) if (e.mark.archived) e]..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
+    final groups = groupHome([for (final e in all) if (!e.mark.archived) e], status: (e) => e.homeStatus, lastActivity: (e) => e.lastActivity, now: now);
+    for (final list in groups.values) {
+      // Pinned first, each part still the most recent first.
+      final pinned = [for (final e in list) if (e.mark.pinned) e];
+      list
+        ..removeWhere((e) => e.mark.pinned)
+        ..insertAll(0, pinned);
+    }
     final done = groups[HomeGroup.done]!;
     if (done.length > maxDone) {
       groups[HomeGroup.history]!.insertAll(0, done.sublist(maxDone));
@@ -184,24 +198,27 @@ class HomePage extends StatelessWidget {
       HomeGroup.history: ('Historique', ui.grey),
     };
     final body = <Widget>[];
-    for (final g in HomeGroup.values) {
-      final list = groups[g]!;
-      if (list.isEmpty) continue;
-      final (label, color) = labels[g]!;
-      final isOpen = scope.groups[g] ?? true;
-      body.add(GroupHeader(label: label, color: color, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(g)));
+    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false}) {
+      if (list.isEmpty) return;
+      final isOpen = scope.groups[key] ?? true;
+      body.add(GroupHeader(label: label, color: color, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
       body.add(AnimatedSize(
         duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
         curve: Motion.enter,
         alignment: Alignment.topCenter,
         child: isOpen
             ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                for (var i = 0; i < list.length; i++)
-                  Padding(padding: EdgeInsets.only(top: i == 0 || g == HomeGroup.history ? 0 : 8), child: _card(context, list[i], g, now)),
+                for (var i = 0; i < list.length; i++) Padding(padding: EdgeInsets.only(top: i == 0 || tight ? 0 : 8), child: card(list[i])),
               ])
             : const SizedBox(width: double.infinity),
       ));
     }
+
+    for (final g in HomeGroup.values) {
+      final (label, color) = labels[g]!;
+      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history);
+    }
+    group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     return Stack(children: [
       SideHead(
         title: 'Agents',
@@ -223,6 +240,14 @@ class HomePage extends StatelessWidget {
   }
 
   Widget _card(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
+    final card = _cardOf(context, e, g, now);
+    return GestureDetector(
+      onSecondaryTap: () => showSessionMenu(host, e, rename: () => open('rename:${e.id}')),
+      child: card,
+    );
+  }
+
+  Widget _cardOf(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
     final log = e.log;
     final external = e.origin == AgentOrigin.external;
     final where = external ? ' · hors de Mikky' : '';
@@ -231,6 +256,7 @@ class HomePage extends StatelessWidget {
           status: UiStatus.approval,
           title: e.name,
           who: whoOf(e),
+          pinned: e.mark.pinned,
           subtitle: askLabel(log),
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
@@ -242,6 +268,7 @@ class HomePage extends StatelessWidget {
           status: UiStatus.of(e.status),
           title: e.name,
           who: whoOf(e),
+          pinned: e.mark.pinned,
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
           onTap: () => open(e.id),
         ),
@@ -249,6 +276,7 @@ class HomePage extends StatelessWidget {
           status: UiStatus.of(e.status),
           title: e.name,
           who: whoOf(e),
+          pinned: e.mark.pinned,
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
           onTap: () => open(e.id),
         ),
@@ -256,6 +284,7 @@ class HomePage extends StatelessWidget {
           status: UiStatus.of(e.status),
           title: e.name,
           who: whoOf(e),
+          pinned: e.mark.pinned,
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
           style: AgentCardStyle.done,
           onTap: () => open(e.id),
@@ -264,6 +293,7 @@ class HomePage extends StatelessWidget {
           status: UiStatus.of(e.status),
           title: e.name,
           who: whoOf(e),
+          pinned: e.mark.pinned,
           style: AgentCardStyle.old,
           onTap: () => open(e.id),
         ),

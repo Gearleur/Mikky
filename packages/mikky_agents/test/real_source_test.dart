@@ -97,6 +97,17 @@ void main() {
     expect(again.entry('a')!.name, 'Créer le fichier ok.txt');
   });
 
+  test('a settled error counts as done, and leaves the island', () async {
+    final failing = RealAgentSource(clock: () => clock, store: store, spawn: (p, h, c) async => throw StateError('non'));
+    final id = await failing.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'));
+    final e = failing.entry(id)!;
+    expect(e.homeStatus, AgentStatus.error);
+    expect(failing.agents, isNotEmpty);
+    failing.settle(id);
+    expect(e.homeStatus, AgentStatus.finished);
+    expect(failing.agents, isEmpty);
+  });
+
   test('an agent that cannot start is in error, with the reason', () async {
     final failing = RealAgentSource(clock: () => clock, spawn: (p, h, c) async => throw const ProcessException('node', [], 'introuvable'));
     final id = await failing.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'));
@@ -137,6 +148,42 @@ void main() {
       expect(e.status, AgentStatus.finished);
       expect(source.agents, isEmpty);
       expect(e.live, isFalse);
+    });
+
+    test('a resumed session (« fork ») stands for its original, whose error no longer waits', () async {
+      final lines = File('../mikky_engine/test/fixtures/claude/wsl_plan.jsonl').readAsLinesSync();
+      File('${home.path}/projects/C--p/orig.jsonl').writeAsStringSync('${lines.join('\n')}\n');
+      // The fork: the same history (same message ids) under a new session.
+      final fork = lines.map((l) => l.replaceAll('1735f552-326a-4423-82d2-138c1e35ba31', 'f0f0f0f0-0000-0000-0000-000000000000'));
+      File('${home.path}/projects/C--p/fork.jsonl').writeAsStringSync('${fork.join('\n')}\n{"type":"ai-title","aiTitle":"La suite","sessionId":"f0f0f0f0-0000-0000-0000-000000000000"}\n');
+      await Future<void>.delayed(const Duration(milliseconds: 20));
+      File('${home.path}/projects/C--p/fork.jsonl').setLastModifiedSync(DateTime.now());
+      await watcher.start();
+      source.follow(watcher);
+      expect(source.entries, hasLength(2));
+      expect(source.homeEntries.map((e) => e.name), ['La suite']);
+    });
+
+    test('marks: rename, pin, archive, settle, forget (and the file with it)', () async {
+      final lines = File('../mikky_engine/test/fixtures/claude/wsl_plan.jsonl').readAsLinesSync();
+      final file = File('${home.path}/projects/C--p/a.jsonl')..writeAsStringSync('${lines.join('\n')}\n');
+      await watcher.start();
+      source.follow(watcher);
+      final e = source.entries.single;
+      source.rename(e.id, 'Mon essai');
+      expect(e.name, 'Mon essai');
+      source.setPinned(e.id, true);
+      source.setArchived(e.id, true);
+      expect((e.mark.pinned, e.mark.archived), (true, true));
+      source.rename(e.id, '');
+      expect(e.name, 'Tâches avec outils de gestion');
+      await source.forget(e.id, deleteFile: true);
+      expect(file.existsSync(), isFalse);
+      expect(source.homeEntries, isEmpty);
+      await store.saved;
+      final again = AgentStore(store.file);
+      await again.load();
+      expect(again.marks.values.single.forgotten, isTrue);
     });
 
     test('a session Mikky launched is shown once', () async {

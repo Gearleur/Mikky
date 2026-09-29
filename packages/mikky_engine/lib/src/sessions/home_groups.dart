@@ -21,10 +21,14 @@ HomeGroup homeGroupOf(
   DateTime lastActivity,
   DateTime now, {
   Duration historyAfter = const Duration(days: 1),
+  Duration errorWaitsFor = const Duration(minutes: 30),
 }) {
-  final old = now.difference(lastActivity) > historyAfter;
+  final idle = now.difference(lastActivity);
+  final old = idle > historyAfter;
   if (status == AgentStatus.approval || status == AgentStatus.question) return HomeGroup.waiting;
-  if (status == AgentStatus.error) return old ? HomeGroup.history : HomeGroup.waiting;
+  // An error waits for the user a while; left alone, it is just a session
+  // that ended badly (still shown red in « Terminés »).
+  if (status == AgentStatus.error) return old ? HomeGroup.history : (idle > errorWaitsFor ? HomeGroup.done : HomeGroup.waiting);
   if (status.isBusy || status == AgentStatus.rateLimited) return HomeGroup.working;
   return old ? HomeGroup.history : HomeGroup.done;
 }

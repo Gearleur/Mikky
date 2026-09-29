@@ -129,6 +129,7 @@ class Composer extends StatefulWidget {
     this.onSend,
     this.onMic,
     this.autofocus = false,
+    this.onEmptySend,
   });
 
   final TextEditingController? controller;
@@ -137,6 +138,9 @@ class Composer extends StatefulWidget {
   final Widget? options;
   final ValueChanged<String>? onSend;
   final VoidCallback? onMic;
+
+  /// Send with nothing written (null: nothing happens).
+  final VoidCallback? onEmptySend;
   final bool autofocus;
 
   /// How far the options hang below the field.
@@ -169,7 +173,7 @@ class _ComposerState extends State<Composer> {
 
   void _send() {
     final text = _controller.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty) return widget.onEmptySend?.call();
     widget.onSend?.call(text);
     _controller.clear();
   }

@@ -110,6 +110,8 @@ class AgentCard extends StatelessWidget {
     this.style = AgentCardStyle.normal,
     this.actions,
     this.onTap,
+    this.onMenu,
+    this.pinned = false,
   });
 
   final UiStatus status;
@@ -121,6 +123,12 @@ class AgentCard extends StatelessWidget {
   final AgentCardStyle style;
   final Widget? actions;
   final VoidCallback? onTap;
+
+  /// A right click: what to do with this session.
+  final VoidCallback? onMenu;
+
+  /// Kept at the top of its group: a small pin before [who].
+  final bool pinned;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +157,7 @@ class AgentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
                     Text(
                       who,
                       style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
@@ -183,7 +192,8 @@ class AgentCard extends StatelessWidget {
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
     );
-    return Pressable(onTap: onTap, pressedScale: .98, child: card);
+    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: card);
+    return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
   }
 }
 

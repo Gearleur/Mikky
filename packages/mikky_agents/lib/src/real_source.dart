@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -66,6 +67,24 @@ class AgentEntry {
   /// Why it could not start (adapter missing, not signed in…).
   SessionLog? failure;
 
+  /// What the user did with it (see [SessionMark]), kept by the store.
+  SessionMark mark = const SessionMark();
+
+  /// Continued in another session (a « fork »): that one stands for both.
+  String? supersededBy;
+
+  /// The key of its [SessionMark]: the session, or the agent while it has
+  /// none yet.
+  String get key => sessionId == null ? id : '${provider.name}:$sessionId';
+
+  /// The state the home sorts it by: an error settled by the user, with
+  /// nothing new since, counts as done.
+  AgentStatus get homeStatus {
+    final settled = mark.settledAt;
+    if (status == AgentStatus.error && settled != null && !lastActivity.isAfter(settled)) return AgentStatus.finished;
+    return status;
+  }
+
   SessionLog get log => run?.log ?? watched?.log ?? failure ?? _empty;
   static final _empty = SessionLog();
 
@@ -77,6 +96,8 @@ class AgentEntry {
   DateTime get lastActivity => log.lastEventAt ?? watched?.modified ?? createdAt;
 
   String get name {
+    final own = mark.name;
+    if (own != null && own.isNotEmpty) return own;
     // A resumed run replays no title: the file's, or the one kept, then.
     final title = log.title ?? watched?.log.title ?? storedTitle;
     if (title != null && title.isNotEmpty) return title;
@@ -136,8 +157,16 @@ class RealAgentSource implements AgentSource {
   /// Fires when agents changed by themselves: redraw, and read [agents].
   Stream<void> get changes => _changes.stream;
 
-  /// Every agent, for the home (group them with `groupHome`).
+  /// Every agent, forgotten ones included.
   List<AgentEntry> get entries => List.unmodifiable(_entries);
+
+  /// The agents of the home (group them with `groupHome` on
+  /// [AgentEntry.homeStatus]): not forgotten, not continued elsewhere.
+  /// Archived ones are in, for the « Archives » group.
+  List<AgentEntry> get homeEntries => [
+        for (final e in _entries)
+          if (!e.mark.forgotten && e.supersededBy == null) e,
+      ];
 
   AgentEntry? entry(String id) => _entries.where((e) => e.id == id).firstOrNull;
 
@@ -163,7 +192,8 @@ class RealAgentSource implements AgentSource {
   String _islandKey = '';
 
   bool _onIsland(AgentEntry e, double now) {
-    if (e.dismissed) return false;
+    if (e.dismissed || e.mark.forgotten || e.mark.archived || e.supersededBy != null) return false;
+    if (e.homeStatus != e.status) return false;
     final s = e.status;
     if (s.isBusy || s == AgentStatus.rateLimited) return true;
     if (s.needsYou) return e.changedLive || e.origin == AgentOrigin.mikky;
@@ -281,6 +311,7 @@ class RealAgentSource implements AgentSource {
 
   void _onWatched(WatchedSession s, {required bool live}) {
     final sessionId = s.sessionId;
+    if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
     AgentEntry? e;
     for (final x in _entries) {
       if (x.watched == s || (sessionId != null && x.sessionId == sessionId)) e = x;
@@ -339,13 +370,78 @@ class RealAgentSource implements AgentSource {
   /// Recomputes every state; a change starts [Agent.statusSince] again.
   void _refresh() {
     final now = _now();
+    _linkForks();
     for (final e in _entries) {
+      e.mark = store?.mark(e.key) ?? const SessionMark();
       final watchedOnly = e.run == null && e.failure == null;
       // Just launched: thinking until the agent says something.
       if (e.run != null && e.log.turns.isEmpty && e.status == AgentStatus.thinking) continue;
       final s = e.log.statusAt(now, staleAfter: watchedOnly ? staleAfter : null);
       if (s != e.status) _setStatus(e, s);
     }
+  }
+
+  /// Sessions sharing their first message are one conversation continued
+  /// (Claude's « fork »): the latest stands for all.
+  void _linkForks() {
+    final families = <String, List<AgentEntry>>{};
+    for (final e in _entries) {
+      e.supersededBy = null;
+      final first = e.watched?.firstMessage;
+      if (first != null) (families[first] ??= []).add(e);
+    }
+    for (final family in families.values) {
+      if (family.length < 2) continue;
+      family.sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
+      for (final e in family.skip(1)) {
+        e.supersededBy = family.first.id;
+      }
+    }
+  }
+
+  // ------------------------------------------------------ user's marks
+
+  void _mark(String id, SessionMark Function(SessionMark) change) {
+    final e = entry(id);
+    final s = store;
+    if (e == null || s == null) return;
+    s.setMark(e.key, change(s.mark(e.key)));
+    unawaited(s.save());
+    _changed();
+  }
+
+  /// Its own name; empty: back to the agent's title.
+  void rename(String id, String name) =>
+      _mark(id, (m) => name.trim().isEmpty ? m.copyWith(clearName: true) : m.copyWith(name: name.trim()));
+
+  void setPinned(String id, bool pinned) => _mark(id, (m) => m.copyWith(pinned: pinned));
+
+  void setArchived(String id, bool archived) => _mark(id, (m) => m.copyWith(archived: archived));
+
+  /// The error was seen: the session counts as done until it moves again.
+  void settle(String id) {
+    entry(id)?.dismissed = true;
+    _mark(id, (m) => m.copyWith(settledAt: _now()));
+  }
+
+  /// Deletes the session from Mikky; with [deleteFile], also Claude's or
+  /// Codex's own file of it (its history is then gone for good).
+  Future<void> forget(String id, {bool deleteFile = false}) async {
+    final e = entry(id);
+    if (e == null) return;
+    await e.run?.stop();
+    if (deleteFile) {
+      final path = e.watched?.path;
+      if (path != null) {
+        try {
+          await File(path).delete();
+        } on FileSystemException {
+          // Already gone.
+        }
+      }
+    }
+    store?.agents.removeWhere((a) => a.id == e.id);
+    _mark(id, (m) => m.copyWith(forgotten: true, archived: false, pinned: false));
   }
 
   void _setStatus(AgentEntry e, AgentStatus s) {

@@ -18,6 +18,8 @@ void main() {
     const old = Duration(days: 2);
     expect(g(AgentStatus.finished, old), HomeGroup.history);
     expect(g(AgentStatus.error, old), HomeGroup.history);
+    // An error left alone for more than 30 min stops waiting.
+    expect(g(AgentStatus.error, const Duration(hours: 1)), HomeGroup.done);
     // A request for a yes never goes to the history.
     expect(g(AgentStatus.approval, old), HomeGroup.waiting);
   });
