@@ -28,7 +28,7 @@ Reste de l'étape 1, pas urgent : valider les expressions sans transformation (q
 1. Lancer **Claude Code et Codex** depuis la petite fenêtre à droite, et **voir qui travaille** — tout le monde, y compris les sessions lancées dans VS Code ou le terminal (Claude écrit ses sessions dans `~/.claude/projects/`, Codex dans `~/.codex/sessions/AAAA/MM/JJ/` : il suffit de surveiller ces fichiers, sans boucle).
 2. **LocalSend** dans Mikky.
 3. **Classer les mails Gmail en local** avec **Laya** (https://huggingface.co/convaiinnovations/laya, version multilingue ~322 M, Apache 2.0, Python `pip install laya`). Proposé : lecture seule par IMAP avec un mot de passe d'application gardé dans le coffre de Windows.
-4. **Parler au lieu d'écrire** : micro dans le champ ou raccourci maintenu. Proposé : **Ctrl + Win**, comme Wispr Flow, et **Whisper en local** (rien ne sort du PC). **Pas encore confirmé** par l'utilisateur.
+4. **Parler au lieu d'écrire** : micro dans le champ ou raccourci **Ctrl + Win maintenus** (validé). La dictée par **Whisper en local** est validée mais **pour plus tard**.
 
 Ensuite, dans l'ordre voulu par l'utilisateur : gérer Claude et Codex, **planifier des tâches**, puis les apps tierces (mini-apps, communauté, plugins).
 
@@ -59,8 +59,12 @@ Paperclip est sous licence **MIT** : on peut reprendre ses idées et du code (en
 
 - **Claude** (`claude-local/src/server/execute.ts`) : lance le `claude` officiel avec `--print --output-format stream-json --verbose`, et `--resume <id>` pour reprendre une session. Mode **abonnement** si `ANTHROPIC_API_KEY` n'est pas défini (l'utilisateur est connecté lui-même dans `claude`) ; sinon mode API. Autres fichiers utiles : `parse.ts` (lecture du flux), `auth-check.ts`, `quota.ts` / `quota-probe.ts` (limites), `permissions.ts`, `setup-token-runner.ts`.
 - **Codex** (`codex-local/src/server/codex-args.ts`, `execute.ts`) : `codex exec --json`, sandbox `workspace-write` par défaut (`-c sandbox_mode="workspace-write"`), `resume <id> -` pour reprendre. Connexion par le compte ChatGPT : voir `codex-home.ts`, `auth-check.ts`, `device-login-runner.ts`, `CODEX-AUTH-CACHE.md`.
-- **Attention** : Paperclip active par défaut `--dangerously-skip-permissions` (Claude) et peut contourner les approbations (Codex). **Mikky ne doit pas** : règle du projet, jamais d'approbation sans clic de l'utilisateur. Il faudra router les demandes de permission vers l'île (hooks de Claude Code, ou `--permission-prompt-tool`).
-- Sur ce PC (2026-09-29) : `codex` 0.153.4 est installé (npm) ; `claude` n'est **pas** dans le PATH (seulement celui de l'extension VS Code) : installer Claude Code en ligne de commande.
+- **Permissions (décision du 2026-09-29)** : Paperclip saute les permissions par défaut ; Mikky, lui, propose **un choix par lancement** : **Demander** (par défaut : chaque demande arrive dans Mikky, Oui / Non, via les hooks de Claude Code ou `--permission-prompt-tool`) ou **Auto** (le mode de permission automatique de Claude, et l'équivalent Codex : `approval_policy` / sandbox), que l'utilisateur choisit lui-même.
+- **Où tournent les agents (décision du 2026-09-29)** : l'utilisateur veut pouvoir lancer Claude et Codex **sous Windows ou dans WSL**, au choix, et que **l'app marche aussi sous Linux**. Donc une cible par lancement : Windows natif, WSL (`wsl.exe -d Ubuntu -- claude …`), plus tard Linux natif. Sur ce PC :
+  - **WSL (Ubuntu)** : `claude` 2.1.284 (`/home/gearleur/.local/bin/claude`) et `codex` installés ; sessions dans `/home/gearleur/.claude/projects` et `/home/gearleur/.codex/sessions` (vues de Windows par `\\wsl.localhost\Ubuntu\home\gearleur\…`).
+  - **Windows** : `codex` 0.153.4 (npm) ; `claude` pas dans le PATH (seulement celui de l'extension VS Code), à installer si on veut Claude côté Windows.
+  - Pour « voir qui travaille », surveiller les sessions des deux côtés.
+  - App sous Linux : Flutter le permet, mais l'overlay natif (`app/windows/runner/`) est à refaire pour Linux (X11 / Wayland : fenêtre toujours au premier plan et clics traversants plus difficiles sous Wayland).
 - Mikky ne touche jamais aux jetons : il lance les CLI officiels sur lesquels l'utilisateur s'est connecté.
 
 ## 6. Direction artistique de Mikky (validée, ne pas revenir dessus)

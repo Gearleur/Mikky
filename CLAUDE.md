@@ -14,7 +14,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - `design/prototypes/` — validated HTML prototypes, the visual source of truth. `ile-noir-et-blanc.html` = the validated island (dark "A" + "blanc pur"); `mascotte-variantes.html` = mascot (card "S", without the tail); `ile-trois-noirs.html` = exploration only. `composants.html` = validated UI (buttons, fields, navigation, animations); `ux-a.html` = validated UX of the right-side window (agents home, agent page with Suivi / Chat, input field); shared tokens in `mikky-ui.css`; `design/references/boutons-lanceur.png` = colour and button-shape reference only.
 
 ## Decisions (do not re-litigate)
-- Flutter everywhere (desktop now, mobile later). Rust only for `mikkyd` later. Windows only for step 1.
+- Flutter everywhere (desktop now, mobile later). Rust only for `mikkyd` later. Windows only for step 1; the app must also run on Linux later, and agents can run on Windows or in WSL, chosen per launch.
 - Island = SDF fragment shader (squircle, smooth-min drop and split bubble). Values are in the spec §3.
 - Mikky: no mouth, no feet, no pupils; tail only in some states later. Ears carry emotion.
 - Dots grid: dark theme only, only while an agent works. Light theme: Apple system colors, no glow, no dots.
@@ -27,6 +27,6 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 ## Rules
 - Talk to the user in French.
 - No telemetry. Secrets in the OS credential store, never on disk or in git.
-- Never block Claude Code; never approve a permission without an explicit click (from step 2).
+- Never block Claude Code. Permissions: by default every request goes to the user (Oui / Non in Mikky); an auto-permission mode is allowed only when the user picked it for that launch.
 - 0 % CPU when the island is hidden.
 - Visual changes must match `design/prototypes/`.

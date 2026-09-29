@@ -126,6 +126,8 @@ Garde-fous communs : nombre de tours et temps maximum, arrêt près de la limite
 
 ## 6. Notes techniques à garder
 
+- **Décisions du 2026-09-29 (fin de session)** : raccourci **Ctrl + Win maintenus** pour parler (validé) ; **Whisper en local plus tard** ; les agents se lancent **sous Windows ou dans WSL**, au choix ; l'app doit aussi **marcher sous Linux** ; permissions **Demander** (par défaut) ou **Auto**, au choix à chaque lancement.
+
 - Sur le PC (2026-09-29) : `codex` 0.153.4 est installé (npm) ; `claude` n'est pas dans le PATH (seulement celui de l'extension VS Code). Il faudra installer Claude Code en ligne de commande pour que Mikky le lance.
 - LocalSend utilise le port 53317 (découverte en multicast `224.0.0.167`, transfert en HTTPS). Si l'app LocalSend tourne aussi sur le même PC, conflit de port : Mikky devra en prendre un autre (le port est annoncé à la découverte).
 - Mails : tout reste sur le PC (règle « pas de télémétrie »). Identifiants dans le coffre de Windows.
