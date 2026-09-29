@@ -133,7 +133,7 @@ Garde-fous communs : nombre de tours et temps maximum, arrêt près de la limite
 - Mails : tout reste sur le PC (règle « pas de télémétrie »). Identifiants dans le coffre de Windows.
 - Garder le 0 % de CPU île cachée : LocalSend et les mails doivent attendre des événements, sans boucle d'interrogation ; le modèle n'est chargé que pendant qu'il classe.
 
-## 8. Ce qu'on avait oublié (2026-09-29, retours de l'utilisateur et comparaison avec Paperclip)
+## 7. Ce qu’on avait oublié (2026-09-29, retours de l'utilisateur et comparaison avec Paperclip)
 
 Après le premier essai de la petite fenêtre. ✔ = fait. Rien d'autre n'est décidé : on choisit dans cette liste.
 
@@ -172,7 +172,7 @@ Après le premier essai de la petite fenêtre. ✔ = fait. Rien d'autre n'est d�
 66. Premier lancement guidé : quels outils sont là, lesquels sont connectés, WSL ou pas.
 67. Écran de réglages (thème, position, permissions par défaut, outils), au lieu du seul menu du clic droit.
 
-## 7. Inspirations
+## 8. Inspirations
 
 - Paperclip : https://github.com/paperclipai/paperclip (agents, tickets, heartbeats, budgets, approbations, routines).
 - VelaTerm : https://velaterm.com/docs/session-commands (sessions, worktrees, `vsearch` / `vrefer` / `vtell`, planifier / exécuter).
