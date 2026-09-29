@@ -50,27 +50,33 @@ body.grand .side{height:900px}
 .page[data-name=home] .body{padding-bottom:72px}
 
 /* Le chat : bulle qui grandit (jusqu'à 5 lignes), petit micro, flèche ; dossier et modèle à moitié dans la bulle */
-.composer2{position:absolute;left:12px;right:12px;bottom:12px;z-index:5}
-.composer{background:var(--well);border-radius:22px;padding:12px 8px 8px 14px;box-shadow:inset 0 0 0 1px var(--line);transition:background .18s,box-shadow .18s}
-.composer:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
-.composer textarea{display:block;width:100%;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;line-height:20px;height:20px;max-height:100px;padding:0 6px 0 0;color:var(--text);overflow-y:auto;scrollbar-width:none}
-.composer textarea::-webkit-scrollbar{display:none}
-.composer textarea::placeholder{color:var(--text-3)}
-.composer-bar{display:flex;align-items:center;gap:6px;margin:8px 0 0 -6px}
-.composer .round.ghost{--s:32px;background:none;box-shadow:none;color:var(--text-2)}
-.composer .round.ghost:hover{color:var(--text);background:var(--hover)}
-.composer .round svg{width:17px;height:17px}
-.composer .seg.xs{min-width:0}
-.composer .seg.xs>button{height:26px;padding:0 10px;font-size:12px}
-.composer .chip.soft{height:32px}
-.composer.listening{background:var(--thumb);box-shadow:0 0 0 1.5px var(--blue),0 0 18px color-mix(in srgb,var(--blue) 18%,transparent)}
-.said{font-size:14px;line-height:20px;min-height:20px;padding-right:6px}
+.composer2{position:absolute;left:12px;right:12px;bottom:26px;z-index:5}
+.composer2.noopts{bottom:14px}
+.cbox{display:flex;align-items:flex-end;gap:6px;min-height:52px;padding:10px 8px 10px 16px;border-radius:26px;background:var(--track);box-shadow:var(--inset);transition:background .18s,box-shadow .18s}
+.cbox:focus-within{background:var(--thumb);box-shadow:0 0 0 1.5px var(--ink),var(--sh-thumb)}
+.cbox textarea{flex:1;border:0;background:none;resize:none;outline:0;font:inherit;font-size:14px;line-height:20px;height:20px;max-height:100px;margin:0 0 6px;padding:0;color:var(--text);min-width:0;overflow-y:auto;scrollbar-width:none}
+.cbox textarea::-webkit-scrollbar{display:none}
+.cbox textarea::placeholder{color:var(--text-3)}
+.cbox .round.ghost{background:none;box-shadow:none;color:var(--text-2)}
+.cbox .round.ghost:hover{color:var(--text);background:var(--hover)}
+.cbox .round{--s:32px}.cbox .round svg{width:17px;height:17px}
+.cchips{position:absolute;left:14px;bottom:-12px;display:flex;gap:6px}
+.cchip{height:24px;padding:0 9px;border:0;border-radius:999px;display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;cursor:pointer;
+  background:var(--thumb);color:var(--text);box-shadow:var(--sh-thumb),0 0 0 3px var(--island);transition:transform .3s cubic-bezier(.34,1.56,.64,1)}
+.cchip:active{transform:scale(.95);transition:transform .08s ease-out}
+.cchip svg{width:13px;height:13px}.cchip svg:last-child{width:11px;height:11px;color:var(--text-2)}
+.cseg{position:relative;display:inline-grid;grid-auto-flow:column;grid-auto-columns:1fr;padding:2px;border-radius:999px;background:var(--track);box-shadow:0 0 0 3px var(--island)}
+.cseg>button{position:relative;z-index:1;height:22px;padding:0 11px;border:0;background:none;border-radius:999px;font-size:11.5px;font-weight:600;color:var(--text-2);cursor:pointer;transition:color .18s}
+.cseg>button.on{color:var(--text)}
+.cseg>.thumb{top:2px;bottom:2px}
+.cbox.listening{background:var(--thumb);box-shadow:0 0 0 1.5px var(--blue),0 0 18px color-mix(in srgb,var(--blue) 18%,transparent)}
+.said{flex:1;font-size:14px;line-height:20px;margin:0 0 6px;min-height:20px}
 .caret{display:inline-block;width:1.5px;height:15px;background:var(--text);vertical-align:-2px;margin-left:1px;animation:blink 1s steps(1) infinite}
 .code-lines .caret{height:12px}
 @keyframes blink{50%{opacity:0}}
 .mic-on{position:relative;background:var(--blue)!important;color:#fff!important;box-shadow:none!important}
 .mic-on::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 3px var(--blue);animation:ring 1.8s cubic-bezier(.2,.6,.3,1) infinite}
-.wave{display:flex;gap:2px;align-items:center;height:16px;margin:0 4px 0 0}
+.wave{display:flex;gap:2px;align-items:center;height:16px;margin:0 4px 8px 0;align-self:flex-end}
 .wave i{width:2.5px;border-radius:2px;background:var(--blue);animation:wave 1s ease-in-out infinite}
 @keyframes wave{0%,100%{height:3px}50%{height:14px}}
 .empty{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:120px;color:var(--text-2);font-size:14px;font-weight:500}
@@ -189,24 +195,21 @@ const mikkySrc = () => `../references/mikky-idle-${theme}.png`;
 const st = s => `<span class="status"><i>${s === 'finished' ? svg('check') : ''}</i></span>`;
 const esc = t => t.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
 
-// Le champ de composants.html : le texte en haut, une barre dessous.
-// À gauche de la barre : dossier + modèle (nouvel agent), Suivi | Chat (agent au travail), ou rien.
+// Le champ : le style « Champ » des composants (gris en creux, plus contrasté).
+// Les options sont à moitié dans le champ : dossier + modèle (nouvel agent) ou Suivi | Chat (agent au travail).
 const OPTS = {
-  launch: `<button class="chip soft">${svg('folder')}mikky${svg('down')}</button><div class="seg xs" data-seg><span class="thumb"></span><button class="on">Claude</button><button>Codex</button></div>`,
-  views: `<div class="seg xs" data-seg data-view><span class="thumb"></span><button class="on" data-v="suivi">Suivi</button><button data-v="chat">Chat</button></div>`,
+  launch: `<button class="cchip">${svg('folder')}mikky${svg('down')}</button><button class="cchip">Claude${svg('down')}</button>`,
+  views: `<div class="cseg" data-seg data-view><span class="thumb"></span><button class="on" data-v="suivi">Suivi</button><button data-v="chat">Chat</button></div>`,
   none: '',
 };
 const COMPOSER = (placeholder, opts = 'none') => `
-  <div class="composer2">
-    <div class="composer">
+  <div class="composer2${opts === 'none' ? ' noopts' : ''}">
+    <div class="cbox">
       <textarea rows="1" placeholder="${placeholder}"></textarea>
-      <div class="composer-bar">
-        ${OPTS[opts]}
-        <span class="grow"></span>
-        <button class="round ghost" aria-label="Parler (Ctrl + Win maintenus)" data-mic>${svg('mic')}</button>
-        <button class="round sm ink" aria-label="Envoyer" data-send>${svg('up')}</button>
-      </div>
+      <button class="round ghost" aria-label="Parler (Ctrl + Win maintenus)" data-mic>${svg('mic')}</button>
+      <button class="round ink" aria-label="Envoyer" data-send>${svg('up')}</button>
     </div>
+    ${opts === 'none' ? '' : `<div class="cchips">${OPTS[opts]}</div>`}
   </div>`;
 
 const GROUP = (id, label, color, n, closed) =>
@@ -364,7 +367,7 @@ function fit(p) {
 // ---------- Parler : le texte s'écrit dans la bulle ----------
 const PHRASE = 'Et quand c’est vert, lance aussi les tests de l’app et dis-moi si un golden a changé';
 function listen(p, on) {
-  const box = p.querySelector('.composer'), mic = p.querySelector('[data-mic]');
+  const box = p.querySelector('.cbox'), mic = p.querySelector('[data-mic]');
   clearInterval(box._t);
   if (!on) {
     box.classList.remove('listening'); mic.classList.remove('mic-on');
