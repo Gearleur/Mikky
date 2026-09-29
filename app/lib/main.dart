@@ -37,10 +37,19 @@ Future<void> main(List<String> args) async {
   final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
   // Before the first frame: the window only shows up once it is in place.
   await overlay.setPlacement(settings.edge, windowSizeFor(settings.edge));
-  // No app shell and no background: everything outside the island must stay
-  // fully transparent.
-  runApp(Directionality(
-    textDirection: TextDirection.ltr,
-    child: IslandView(overlay: overlay, settings: settings, program: program, tuning: tuning, clock: clock, agents: agents),
+  // A bare WidgetsApp: no background (everything outside the island must
+  // stay fully transparent), but the text shortcuts (Ctrl+C, Ctrl+V…) and an
+  // Overlay for the « Copier » menu of the small window.
+  runApp(WidgetsApp(
+    title: 'Mikky',
+    color: const Color(0x00000000),
+    debugShowCheckedModeBanner: false,
+    builder: (context, _) => Overlay(
+      initialEntries: [
+        OverlayEntry(
+          builder: (context) => IslandView(overlay: overlay, settings: settings, program: program, tuning: tuning, clock: clock, agents: agents),
+        ),
+      ],
+    ),
   ));
 }

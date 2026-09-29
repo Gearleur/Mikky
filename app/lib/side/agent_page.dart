@@ -6,6 +6,7 @@ import '../ui/buttons.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
 import '../ui/motion.dart';
+import '../ui/selection.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
@@ -52,11 +53,13 @@ class _AgentPageState extends State<AgentPage> {
   /// user scrolled up to read).
   void _follow(SessionLog log) {
     if (log.version == _lastVersion) return;
+    // Opening the page: straight to the end of the conversation.
+    final first = _lastVersion == -1;
     _lastVersion = log.version;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       final p = _scroll.position;
-      if (p.maxScrollExtent - p.pixels < 160) _scroll.jumpTo(p.maxScrollExtent);
+      if (first || p.maxScrollExtent - p.pixels < 160) _scroll.jumpTo(p.maxScrollExtent);
     });
   }
 
@@ -65,7 +68,15 @@ class _AgentPageState extends State<AgentPage> {
     final ui = MikkyUi.of(context);
     final e = _source.entry(widget.id);
     if (e == null) {
-      return Stack(children: [SideHead(title: 'Agent', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'))]);
+      return Stack(
+        children: [
+          SideHead(
+            title: 'Agent',
+            small: true,
+            leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+          ),
+        ],
+      );
     }
     final log = e.log;
     final working = log.working;
@@ -89,63 +100,78 @@ class _AgentPageState extends State<AgentPage> {
             placeholder: working
                 ? 'Écris à cet agent…'
                 : external
-                    ? 'Continuer dans Mikky…'
-                    : 'Continuer avec cet agent…',
+                ? 'Continuer dans Mikky…'
+                : 'Continuer avec cet agent…',
             options: working
                 ? Segmented(options: const ['Suivi', 'Chat'], selected: _view, size: SegmentSize.field, onChanged: (i) => setState(() => _view = i))
                 : null,
             onSend: _send,
           );
 
-    return Stack(children: [
-      SideHead(
-        title: e.name,
-        small: true,
-        leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
-        actions: [
-          if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
-        ],
-      ),
-      Positioned.fill(
-        top: 68,
-        // Room for the field, or for the read-only note of outside sessions.
-        bottom: composer == null ? 44 : (working ? 90 : 78),
-        child: SingleChildScrollView(
-          controller: _scroll,
-          padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-          child: AnimatedSwitcher(
-            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
-            switchInCurve: Motion.enter,
-            transitionBuilder: (child, a) => FadeTransition(
-              opacity: a,
-              child: SlideTransition(position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a), child: child),
-            ),
-            child: Column(
-              key: ValueKey(suivi),
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (content.isEmpty) Padding(padding: const EdgeInsets.only(top: 60), child: Center(child: Text('Rien à montrer', style: uiText(13, color: ui.text3)))),
-                ...content,
-              ],
+    return Stack(
+      children: [
+        SideHead(
+          title: e.name,
+          small: true,
+          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+          actions: [if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent')],
+        ),
+        Positioned.fill(
+          top: 68,
+          // Room for the field, or for the read-only note of outside sessions.
+          bottom: composer == null ? 44 : (working ? 90 : 78),
+          child: SingleChildScrollView(
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+            child: SelectableArea(
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
+                switchInCurve: Motion.enter,
+                transitionBuilder: (child, a) => FadeTransition(
+                  opacity: a,
+                  child: SlideTransition(
+                    position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
+                    child: child,
+                  ),
+                ),
+                child: Column(
+                  key: ValueKey(suivi),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (content.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: Center(
+                          child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
+                        ),
+                      ),
+                    ...content,
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
-      if (composer != null) Positioned(left: 12, right: 12, bottom: working ? 14 : 14, child: composer),
-      if (composer == null)
-        Positioned(
-          left: 16,
-          right: 16,
-          bottom: 14,
-          child: Row(children: [
-            MikkyIcon('lock', size: 13, color: ui.text3),
-            const SizedBox(width: 6),
-            Expanded(
-              child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.',
-                  style: uiText(11.5, color: ui.text3, height: 1.35)),
+        if (composer != null) Positioned(left: 12, right: 12, bottom: working ? 14 : 14, child: composer),
+        if (composer == null)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 14,
+            child: Row(
+              children: [
+                MikkyIcon('lock', size: 13, color: ui.text3),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.',
+                    style: uiText(11.5, color: ui.text3, height: 1.35),
+                  ),
+                ),
+              ],
             ),
-          ]),
-        ),
-    ]);
+          ),
+      ],
+    );
   }
 }
