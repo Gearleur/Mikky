@@ -1,6 +1,6 @@
 # Mikky — le MVP : suivre et lancer Claude Code et Codex
 
-Date : 2026-09-29 · Statut : **réponses de l'utilisateur intégrées (§11) ; à relire, surtout §3 (ACP)**
+Date : 2026-09-29 · Statut : **validée par l'utilisateur le 2026-09-29**
 
 ## 1. Contexte et intention
 
@@ -34,7 +34,11 @@ B à E auront chacune leur petite spec quand on y arrivera. Cette spec sert à v
 
 ## 3. Brancher Claude et Codex comme Paperclip
 
-Paperclip (MIT, https://github.com/paperclipai/paperclip, adaptateurs `packages/adapters/claude-local` et `codex-local`) lance les outils officiels, déjà connectés par l'utilisateur. Mikky fait pareil et **ne touche jamais aux jetons**. Là où on recopie du code de Paperclip, on garde sa mention de licence.
+Paperclip (MIT, https://github.com/paperclipai/paperclip, adaptateurs `packages/adapters/claude-local` et `codex-local`) lance les outils officiels, déjà connectés par l'utilisateur. Mikky fait pareil et **ne touche jamais aux jetons**.
+
+**Deux principes (validés le 2026-09-29)** :
+- **Pas d'API** : seulement les abonnements de l'utilisateur, à travers les outils officiels connectés (comme Paperclip sans clé d'API). Mikky ne gère aucune clé d'API.
+- **Mikky n'est pas un harnais d'agents** (comme Hermes ou OpenClaw) : il ne fait tourner ni modèle ni boucle d'agent lui-même. Il lance Claude Code et Codex, les suit, et passe leurs demandes à l'utilisateur. Là où on recopie du code de Paperclip, on garde sa mention de licence.
 
 ### 3.1 Par défaut : ACP, le même protocole pour les deux
 
@@ -212,7 +216,8 @@ app/lib/
 ## 11. Réponses de l'utilisateur (2026-09-29)
 
 1. **Claude sous Windows** : on l'installe (fait le 2026-09-29, installeur officiel) ; on fait **Windows et WSL**.
-2. **Codex** : faire comme Paperclip pour la connexion (§3.3). Paperclip passant maintenant par ACP pour Claude et Codex, Mikky fait pareil (§3.1), avec la ligne de commande en secours (§3.2). *À confirmer par l'utilisateur.*
+2. **Codex** : faire comme Paperclip pour la connexion (§3.3). Paperclip passant maintenant par ACP pour Claude et Codex, Mikky fait pareil (§3.1), avec la ligne de commande en secours (§3.2). **Validé** : « le choix ACP est le mieux ».
+6. **Pas d'API, pas un harnais** : on ne gère pas les clés d'API pour l'instant, et Mikky n'est pas un logiciel de harnais comme Hermes ou OpenClaw (§3).
 3. **Sessions extérieures** : lecture seule pour l'instant, mais l'utilisateur veut pouvoir travailler dessus plus tard, même si c'est compliqué (§4.2).
 4. **Où et Permissions dans le menu du modèle** : validé.
 5. **Fenêtre des agents seulement en position « à droite »** pour le MVP : validé.

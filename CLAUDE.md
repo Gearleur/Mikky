@@ -19,6 +19,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - Mikky: no mouth, no feet, no pupils; tail only in some states later. Ears carry emotion.
 - Dots grid: dark theme only, only while an agent works. Light theme: Apple system colors, no glow, no dots.
 - Mikky's transformations are Mikky himself, organic and imperfect, keeping his base shape as much as possible (details in `docs/superpowers/reprise.md` §3).
+- Agents (MVP spec `docs/superpowers/specs/2026-09-29-mvp-design.md`): Claude Code and Codex through ACP like Paperclip (`claude-agent-acp`, `codex-acp`), CLI as fallback; subscriptions only, no API keys; Mikky is not an agent harness (no model or agent loop of its own, unlike Hermes or OpenClaw), it launches and follows the official tools.
 - Two placements, chosen in the menu: "en haut" (wide island, top center) and "à droite" (right edge, tall like a phone in portrait, text laid out like a phone app, never rotated). Sizes in `IslandMetrics` (engine).
 
 ## Environment
