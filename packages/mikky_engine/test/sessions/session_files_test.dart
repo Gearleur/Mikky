@@ -23,11 +23,12 @@ void main() {
       final log = SessionLog();
       for (final line in fixture('claude/wsl_plan.jsonl')) {
         log.applyAll(reader.read(line));
-        if (log.items.whereType<ToolItem>().any((t) => t.title.startsWith('rm ') && t.active)) break;
+        if (log.items.whereType<ToolItem>().any((t) => (t.command ?? '').startsWith('rm ') && t.active)) break;
       }
       final last = log.lastEventAt!;
       expect(log.statusAt(last), AgentStatus.working);
-      expect(log.detail, startsWith('rm /tmp/essai-wsl/hello.txt'));
+      // Claude's own words for the command, not the command.
+      expect(log.detail, 'Supprimer hello.txt avec rm');
       const stale = Duration(minutes: 15);
       expect(log.statusAt(last.add(const Duration(minutes: 5)), staleAfter: stale), AgentStatus.working);
       expect(log.statusAt(last.add(const Duration(hours: 1)), staleAfter: stale), AgentStatus.idle);

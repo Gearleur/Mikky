@@ -1,4 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
+import 'package:mikky_engine/mikky_engine.dart';
+
+import 'agents/agents_service.dart';
 
 import 'island/island_painter.dart';
 import 'island/island_view.dart';
@@ -24,6 +29,11 @@ Future<void> main(List<String> args) async {
   }
 
   final overlay = OverlayChannel();
+  final clock = SystemClock();
+  // Claude and Codex: found and followed in the background, never blocking
+  // the island's first frame.
+  final agents = AgentsService(clock: () => clock.now);
+  unawaited(agents.start());
   final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
   // Before the first frame: the window only shows up once it is in place.
   await overlay.setPlacement(settings.edge, windowSizeFor(settings.edge));
@@ -31,6 +41,6 @@ Future<void> main(List<String> args) async {
   // fully transparent.
   runApp(Directionality(
     textDirection: TextDirection.ltr,
-    child: IslandView(overlay: overlay, settings: settings, program: program, tuning: tuning),
+    child: IslandView(overlay: overlay, settings: settings, program: program, tuning: tuning, clock: clock, agents: agents),
   ));
 }

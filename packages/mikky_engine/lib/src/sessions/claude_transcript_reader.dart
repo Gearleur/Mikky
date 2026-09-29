@@ -174,7 +174,9 @@ ToolCallEvent claudeToolCall(String id, String name, Map<String, dynamic> input,
     _ => ToolKind.other,
   };
   final title = switch (name) {
-    'Bash' || 'PowerShell' => command,
+    // Claude says in a few words what each command is for: that reads
+    // better than the command (still in [ToolCallEvent.command]).
+    'Bash' || 'PowerShell' => input['description'] as String? ?? command,
     'Grep' => 'grep ${input['pattern'] ?? ''}',
     'Glob' => input['pattern'] as String?,
     'WebFetch' => input['url'] as String?,

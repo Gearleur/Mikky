@@ -44,10 +44,11 @@ class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
       }
       return;
     }
-    if (reduced && _onClock) {
+    final run = Motion.loops(context);
+    if (!run && _onClock) {
       DecorClock.unlisten(_tick);
       _onClock = false;
-    } else if (!reduced && !_onClock) {
+    } else if (run && !_onClock) {
       DecorClock.listen(_tick);
       _onClock = true;
     }

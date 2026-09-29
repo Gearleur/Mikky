@@ -248,8 +248,11 @@ class SessionLog {
     if (asked != null) {
       // The tool's title is the clean command; the request's may be wrapped
       // in a shell (`/usr/bin/zsh -lc "…"` with Codex).
-      final tool = _toolFor(asked)?.title ?? '';
-      return _line(tool.isNotEmpty ? tool : asked.command ?? asked.title);
+      // The command itself: that is what the user says yes to.
+      final tool = _toolFor(asked);
+      final command = tool?.command ?? '';
+      final title = tool?.title ?? '';
+      return _line(command.isNotEmpty ? command : (title.isNotEmpty ? title : asked.command ?? asked.title));
     }
     if (_turns.isEmpty) return '';
     final turn = _turns.last;

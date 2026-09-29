@@ -54,6 +54,10 @@ class OverlayChannel {
   /// right after the user clicked the island.
   void activate() => _channel.invokeMethod<void>('activate');
 
+  /// Windows' folder picker, on top of the island. Null if cancelled.
+  /// WSL folders are reachable through `\\wsl.localhost\…`.
+  Future<String?> pickFolder(String title) => _channel.invokeMethod<String>('pickFolder', title);
+
   void quit() => _channel.invokeMethod<void>('quit');
 }
 

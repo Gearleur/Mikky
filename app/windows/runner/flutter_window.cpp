@@ -2,6 +2,8 @@
 
 #include <flutter/standard_method_codec.h>
 
+#include <shobjidl.h>
+
 #include <iostream>
 #include <string>
 #include <optional>
@@ -17,6 +19,20 @@ constexpr UINT kCursorTimerMs = 16;
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
 
+std::string Utf8FromUtf16(const std::wstring& utf16) {
+  if (utf16.empty()) {
+    return std::string();
+  }
+  const int length = WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
+                                         static_cast<int>(utf16.size()),
+                                         nullptr, 0, nullptr, nullptr);
+  std::string utf8(length, '\0');
+  WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
+                      static_cast<int>(utf16.size()), utf8.data(), length,
+                      nullptr, nullptr);
+  return utf8;
+}
+
 std::wstring Utf16FromUtf8(const std::string& utf8) {
   if (utf8.empty()) {
     return std::wstring();
@@ -27,6 +43,35 @@ std::wstring Utf16FromUtf8(const std::string& utf8) {
   MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
                       utf16.data(), length);
   return utf16;
+}
+
+// Windows' folder picker, owned by |owner|. Empty if cancelled.
+std::string PickFolder(HWND owner, const std::string& title) {
+  std::string chosen;
+  IFileOpenDialog* dialog = nullptr;
+  if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
+                              IID_PPV_ARGS(&dialog)))) {
+    return chosen;
+  }
+  DWORD options = 0;
+  dialog->GetOptions(&options);
+  dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
+  if (!title.empty()) {
+    dialog->SetTitle(Utf16FromUtf8(title).c_str());
+  }
+  if (SUCCEEDED(dialog->Show(owner))) {
+    IShellItem* item = nullptr;
+    if (SUCCEEDED(dialog->GetResult(&item))) {
+      PWSTR path = nullptr;
+      if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
+        chosen = Utf8FromUtf16(path);
+        CoTaskMemFree(path);
+      }
+      item->Release();
+    }
+  }
+  dialog->Release();
+  return chosen;
 }
 
 }  // namespace
@@ -260,6 +305,18 @@ void FlutterWindow::HandleMethodCall(
       SetFocus(flutter_controller_->view()->GetNativeWindow());
     }
     result->Success();
+  } else if (call.method_name() == "pickFolder") {
+    // The new agent's folder. Modal: the dialog comes on top of the island.
+    std::string title;
+    if (const auto* s = std::get_if<std::string>(call.arguments())) {
+      title = *s;
+    }
+    const std::string chosen = PickFolder(GetHandle(), title);
+    if (chosen.empty()) {
+      result->Success();
+    } else {
+      result->Success(flutter::EncodableValue(chosen));
+    }
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);

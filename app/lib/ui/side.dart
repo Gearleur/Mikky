@@ -118,7 +118,7 @@ class _MiniMikkyState extends State<MiniMikky> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     // On the DecorClock (30 fps), like every loop of the window.
-    final run = widget.animate && !Motion.reduced(context);
+    final run = widget.animate && Motion.loops(context);
     if (run && !_onClock) {
       DecorClock.listen(_tick);
       _onClock = true;

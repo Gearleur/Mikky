@@ -8,10 +8,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/agents_service.dart';
 import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
+import '../side/side_app.dart';
 import '../theme.dart';
+import '../ui/tokens.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
 import 'content/parts.dart';
@@ -38,9 +41,23 @@ const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9,
 /// cursor, clicks and agents, wakes it up at its deadlines, and draws its
 /// snapshot. Nothing runs while nothing happens.
 class IslandView extends StatefulWidget {
-  const IslandView({super.key, required this.overlay, required this.settings, required this.program, required this.tuning});
+  const IslandView({
+    super.key,
+    required this.overlay,
+    required this.settings,
+    required this.program,
+    required this.tuning,
+    required this.clock,
+    required this.agents,
+  });
 
   final OverlayChannel overlay;
+
+  /// The island's time; the real agents use the same one.
+  final SystemClock clock;
+
+  /// Claude and Codex: the real agents, shown unless the demo plays.
+  final AgentsService agents;
   final Settings settings;
   final ui.FragmentProgram? program;
 
@@ -52,8 +69,29 @@ class IslandView extends StatefulWidget {
 }
 
 class _IslandViewState extends State<IslandView> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  final _clock = SystemClock();
-  final _source = DemoAgentSource();
+  late final SystemClock _clock = widget.clock;
+  final _demoSource = DemoAgentSource();
+
+  /// The demo plays (menu « Démo »): the island shows fake agents.
+  bool _demo = false;
+  AgentSource get _source => _demo ? _demoSource : widget.agents.source;
+  StreamSubscription<void>? _agentsSub;
+
+  /// The small window at the right edge. Kept while the island is closed
+  /// (not drawn, not ticking), so its page and drafts stay.
+  final _sideKey = GlobalKey<SideAppState>();
+  late final SideApp _side = SideApp(
+    key: _sideKey,
+    host: SideHost(
+      service: widget.agents,
+      answer: (id, allow) => _answerId(id, allow ? AgentAnswer.allow : AgentAnswer.deny),
+      pickFolder: _overlay.pickFolder,
+      showMenu: _overlay.showMenu,
+      islandMenu: _showMenu,
+    ),
+    onHome: (home) => setState(() => _sideHome = home),
+  );
+  bool _sideHome = true;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
   Timer? _deadlineTimer;
@@ -66,6 +104,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   final _mikky = Mikky();
   final _keys = FocusNode(debugLabel: 'island');
   Duration _lastTick = Duration.zero;
+
+  /// Mikky in the small window's head: only on the home (the other pages
+  /// have a back button there).
+  double _mikkyOpacity = 1;
   Offset _cursor = const Offset(-10000, -10000);
 
   Widget? _openContent;
@@ -81,8 +123,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _overlay.onCursor = _onCursor;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
-    // Demo mode: the scenario plays once at launch; replay it from the menu.
-    _source.startScenario(_clock.now);
+    // Real agents move on their own: the island follows them.
+    _agentsSub = widget.agents.source.changes.listen((_) {
+      if (!_demo && mounted) _sync();
+    });
     _sync();
   }
 
@@ -90,6 +134,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _overlay.onCursor = null;
+    _agentsSub?.cancel();
     _deadlineTimer?.cancel();
     _ticker.dispose();
     _keys.dispose();
@@ -244,13 +289,29 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _apply();
   }
 
+  /// The small window is open: it is an app, clicks in it do not close it.
+  bool get _sideOpen => _edge == IslandEdge.right && _snap.shape == IslandShape.open;
+
+  /// Any press on the open small window: activity (it stays open), and the
+  /// keyboard for its field.
+  void _onPointerDown(PointerDownEvent e) {
+    if (!_sideOpen || !_hitRect.contains(e.localPosition)) return;
+    _machine.click(_clock.now);
+    _overlay.activate();
+    _apply();
+  }
+
   void _onTapUp(TapUpDetails details) {
     final now = _clock.now;
+    final onMikky = (details.localPosition - _mikkyCenter).distance < _motion.mikkyRadius * 1.3 && _mikkyOpacity > .5;
     if (_snap.shape != IslandShape.open) {
       _machine.click(now);
-    } else if ((details.localPosition - _mikkyCenter).distance < _motion.mikkyRadius * 1.3) {
+    } else if (onMikky) {
       _mikky.boop();
       _machine.click(now);
+    } else if (_sideOpen) {
+      // A click in the small window: its widgets answer it.
+      return;
     } else {
       _machine.close(now);
     }
@@ -286,16 +347,34 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _apply();
   }
 
+  /// Oui / Non from the small window.
+  void _answerId(String id, AgentAnswer answer) {
+    final agent = _source.agents.where((a) => a.id == id).firstOrNull;
+    if (agent != null) return _answer(agent, answer);
+    _source.answer(id, answer, _clock.now);
+    _sync();
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent || _snap.shape != IslandShape.open) return KeyEventResult.ignored;
+    // Typing in the small window counts as activity: it stays open.
+    _machine.click(_clock.now);
     final key = event.logicalKey;
+    final typing = FocusManager.instance.primaryFocus != _keys;
     if (key == LogicalKeyboardKey.escape) {
-      _machine.close(_clock.now);
+      if (typing) {
+        // First Escape leaves the field, the second closes.
+        _keys.requestFocus();
+      } else {
+        _machine.close(_clock.now);
+      }
       _apply();
       return KeyEventResult.handled;
     }
+    // N / Y answer only when no field has the keyboard (typing « y » in a
+    // message must never say yes).
     final focus = _snap.focus;
-    if (focus != null && focus.status == AgentStatus.approval) {
+    if (!typing && focus != null && focus.status == AgentStatus.approval) {
       if (key == LogicalKeyboardKey.keyY) {
         _answer(focus, AgentAnswer.allow);
         return KeyEventResult.handled;
@@ -318,9 +397,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       MenuEntry(_menuEdgeTop, 'Position : en haut', checked: s.edge == IslandEdge.top),
       MenuEntry(_menuEdgeRight, 'Position : à droite', checked: s.edge == IslandEdge.right),
       const MenuEntry.separator(),
-      const MenuEntry(_menuDemoScenario, 'Démo : relancer le scénario'),
+      MenuEntry(_menuDemoScenario, _demo ? 'Démo : relancer le scénario' : 'Démo : lancer le scénario'),
       const MenuEntry(_menuDemoAdd, 'Démo : ajouter un agent'),
-      const MenuEntry(_menuDemoStop, 'Démo : tout arrêter'),
+      if (_demo) const MenuEntry(_menuDemoStop, 'Démo : arrêter (retour aux vrais agents)'),
       const MenuEntry(_menuTuning, 'Réglage de Mikky…'),
       const MenuEntry.separator(),
       const MenuEntry(_menuQuit, 'Quitter'),
@@ -328,7 +407,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final now = _clock.now;
     switch (chosen) {
       case _menuQuit:
-        _overlay.quit();
+        await _quit();
       case _menuThemeAuto || _menuThemeDark || _menuThemeLight:
         s.theme = const {
           _menuThemeAuto: ThemeChoice.auto,
@@ -344,20 +423,43 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         unawaited(s.save());
         await _moveTo(edge);
       case _menuDemoScenario:
-        _source.startScenario(now);
+        _demo = true;
+        _demoSource.startScenario(now);
+        _machine.setAgents(_source.agents, now);
         _sync();
       case _menuDemoAdd:
-        _source.addAgent(now);
+        if (!_demo) _demoSource.stop();
+        _demo = true;
+        _demoSource.addAgent(now);
         _machine.setAgents(_source.agents, now);
         _apply();
       case _menuDemoStop:
-        _source.stop();
+        _demoSource.stop();
+        _demo = false;
         _machine.setAgents(_source.agents, now);
         _apply();
       case _menuTuning:
         // A normal window, in its own process (see windows/runner/main.cpp).
         unawaited(Process.start(Platform.resolvedExecutable, const ['--tuning'], mode: ProcessStartMode.detached));
     }
+  }
+
+  static const _quitYes = 1;
+
+  /// Quitting stops the agents Mikky runs (no `mikkyd` yet): asks first
+  /// when some are at work.
+  Future<void> _quit() async {
+    final working = widget.agents.working;
+    if (working > 0) {
+      final sure = await _overlay.showMenu([
+        MenuEntry(_quitYes, working == 1 ? 'Quitter et arrêter l’agent au travail' : 'Quitter et arrêter les $working agents au travail'),
+        const MenuEntry.separator(),
+        const MenuEntry(2, 'Annuler'),
+      ]);
+      if (sure != _quitYes) return;
+    }
+    await widget.agents.shutdown();
+    _overlay.quit();
   }
 
   /// Moves the window to [edge]; the island takes its current shape there.
@@ -405,6 +507,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
     _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
+    final mikkyTarget = _edge == IslandEdge.right && _motion.openness > .3 && !_sideHome ? 0.0 : 1.0;
+    _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
+    if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
     // Hidden and still: no more frames until something happens.
     if (_motion.isGone && _bubble.isAtRest()) _ticker.stop();
@@ -531,13 +636,52 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     );
   }
 
+  /// The small window, cut to the island's current shape while it grows.
+  /// [shown]: drawn and ticking; otherwise kept, not drawn, not ticking
+  /// (0 % CPU when the island is hidden).
+  Widget _sideWindow(MikkyTheme theme, Rect rect, double opacity) {
+    final shown = opacity > 0;
+    final ui = theme.isLight ? MikkyUi.light : MikkyUi.dark;
+    final open = _motion.metrics.open(_motion.layout);
+    return Positioned.fromRect(
+      rect: shown ? rect : Rect.fromLTWH(rect.left, rect.top, open.width, open.height),
+      child: Offstage(
+        offstage: !shown,
+        child: TickerMode(
+          enabled: shown,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(_motion.cornerRadius),
+            child: OverflowBox(
+              minWidth: open.width,
+              maxWidth: open.width,
+              minHeight: open.height,
+              maxHeight: open.height,
+              child: Opacity(
+                opacity: opacity.clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, (1 - opacity) * 6),
+                  child: MikkyUiTheme(
+                    ui: ui,
+                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: _side),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_motion.isGone && _bubble.isAtRest() && _bubble.value == 0) return const SizedBox.expand();
+    if (_motion.isGone && _bubble.isAtRest() && _bubble.value == 0) {
+      // Nothing to draw; the small window stays alive, asleep.
+      return _edge == IslandEdge.right ? Stack(children: [_sideWindow(_theme, _islandRect, 0)]) : const SizedBox.expand();
+    }
     final theme = _theme;
     final rect = _islandRect;
     final openOpacity = _motion.openContentOpacity;
-    final open = _motion.metrics.open(_motion.layout);
     final side = _sideBubble;
     final bubbleColor = theme.status(_snap.focus?.status ?? AgentStatus.approval);
     final pulse = _snap.focus?.status == AgentStatus.approval ? .75 + .25 * math.sin(_clock.now * 4) : 1.0;
@@ -546,7 +690,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       focusNode: _keys,
       autofocus: true,
       onKeyEvent: _onKey,
-      child: GestureDetector(
+      child: Listener(
+        onPointerDown: _onPointerDown,
+        child: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onTapUp: _onTapUp,
         onSecondaryTapUp: (_) => _showMenu(),
@@ -579,31 +725,30 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                 ),
               ),
             ..._compactContent(theme, rect),
-            if (openOpacity > 0)
-              switch (_edge) {
-                IslandEdge.top => Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
-                IslandEdge.right => Positioned(
-                    left: rect.left + (rect.width - open.width) / 2,
-                    top: rect.top + (rect.height - open.height) / 2,
-                    child: _reveal(openOpacity, _openContentFor(theme)),
-                  ),
-              },
+            if (_edge == IslandEdge.right) _sideWindow(theme, rect, openOpacity),
+            if (openOpacity > 0 && _edge == IslandEdge.top)
+              Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
             ?countdown,
-            Positioned.fill(
-              child: IgnorePointer(
-                child: CustomPaint(
-                  painter: MikkyPainter(
-                    geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
-                    center: _mikkyCenter,
-                    rim: theme.mikkyRim,
-                    statusColor: theme.status,
-                    foreground: theme.foreground,
+            if (_mikkyOpacity > 0)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: Opacity(
+                    opacity: _mikkyOpacity,
+                    child: CustomPaint(
+                      painter: MikkyPainter(
+                        geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
+                        center: _mikkyCenter,
+                        rim: theme.mikkyRim,
+                        statusColor: theme.status,
+                        foreground: theme.foreground,
+                      ),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
+      ),
       ),
     );
   }

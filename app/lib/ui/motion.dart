@@ -39,6 +39,10 @@ abstract final class Motion {
 
   /// Windows asks for fewer animations: fades only, no bounce.
   static bool reduced(BuildContext context) => MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+
+  /// Decorative loops may run: animations allowed, and the widget is shown
+  /// (a hidden window is under `TickerMode(enabled: false)`: 0 % CPU).
+  static bool loops(BuildContext context) => !reduced(context) && TickerMode.valuesOf(context).enabled;
 }
 
 /// Shrinks a little while pressed (0.96, round buttons 0.90, in 80 ms),
