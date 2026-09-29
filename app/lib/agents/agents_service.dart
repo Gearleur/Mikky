@@ -94,7 +94,11 @@ class AgentsService extends ChangeNotifier {
   }
 
   /// The setup of [host], installed if needed (first launch there).
-  Future<AgentSetup> ready(AgentHost host) => _preparing[host] ??= _prepare(host).whenComplete(() => _preparing.remove(host));
+  Future<AgentSetup> ready(AgentHost host) => _preparing[host] ??= _prepare(host).whenComplete(() {
+        // A block, not `=> remove(…)`: that would return this very future,
+        // which whenComplete would then wait for, forever.
+        _preparing.remove(host);
+      });
 
   Future<AgentSetup> _prepare(AgentHost host) async {
     final setup = _setups[host];

@@ -171,7 +171,7 @@ List<Widget> suiviOf(BuildContext context, SessionLog log) {
   if (turn == null) return [const _Waiting()];
   final steps = _steps(log, turn);
   final done = steps.where((s) => s.kind == StepKind.done).length;
-  final count = turn.plan.isNotEmpty ? '${(done + 1).clamp(1, steps.length)} sur ${steps.length}' : '${steps.length} étapes';
+  final count = turn.plan.isNotEmpty ? '${(done + 1).clamp(1, steps.length)} sur ${steps.length}' : '${steps.length} étape${steps.length > 1 ? 's' : ''}';
   final slipped = [
     for (final u in _itemsOf(log, turn).whereType<UserItem>().where((u) => u.queued)) _Slipped(u.text, u.at == null ? null : clockTime(u.at!)),
   ];

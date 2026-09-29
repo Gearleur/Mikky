@@ -9,9 +9,10 @@ import 'tokens.dart';
 
 /// `.code`: a command in mono, in a small hollow.
 class CodePill extends StatelessWidget {
-  const CodePill(this.code, {super.key});
+  const CodePill(this.code, {super.key, this.maxLines = 1});
 
   final String code;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -21,9 +22,9 @@ class CodePill extends StatelessWidget {
       decoration: BoxDecoration(color: ui.track, borderRadius: BorderRadius.circular(9)),
       child: Text(
         code,
-        maxLines: 1,
+        maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: uiText(12, weight: FontWeight.w500, mono: true, height: 1, color: ui.text),
+        style: uiText(12, weight: FontWeight.w500, mono: true, height: maxLines > 1 ? 1.35 : 1, color: ui.text),
       ),
     );
   }
@@ -193,18 +194,35 @@ class WaitActions extends StatelessWidget {
   final String command;
   final VoidCallback? onYes, onNo;
 
+  /// Longer than this, the command gets a line of its own (up to three),
+  /// above the buttons: the user must read what they say yes to.
+  static const shortCommand = 14;
+
   @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Align(alignment: Alignment.centerLeft, child: CodePill(command)),
-      ),
-      const SizedBox(width: 6),
+  Widget build(BuildContext context) {
+    final buttons = [
       MButton('Non', small: true, onPressed: onNo),
       const SizedBox(width: 6),
       MButton('Oui', small: true, kind: ButtonKind.primary, onPressed: onYes),
-    ],
-  );
+    ];
+    if (command.length <= shortCommand) {
+      return Row(
+        children: [
+          Expanded(child: Align(alignment: Alignment.centerLeft, child: CodePill(command))),
+          const SizedBox(width: 6),
+          ...buttons,
+        ],
+      );
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        CodePill(command, maxLines: 3),
+        const SizedBox(height: 8),
+        Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
+      ],
+    );
+  }
 }
 
 /// `.taskcard`: a turn of work in the chat. [live]: the task at work (a

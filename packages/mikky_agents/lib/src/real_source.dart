@@ -219,7 +219,7 @@ class RealAgentSource implements AgentSource {
         _remember(e);
         _changed();
       }));
-      await run.open(cwd: cwd, resume: resume, mode: mode);
+      await run.open(cwd: run.workingDirectory ?? cwd, resume: resume, mode: mode);
       if (model != null && model != run.log.modelId) await run.setModel(model);
       _remember(e);
       unawaited(run.prompt(prompt));
