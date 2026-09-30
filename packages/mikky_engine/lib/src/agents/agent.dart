@@ -22,6 +22,9 @@ enum AgentAnswer {
   /// Approve the command.
   allow,
 
+  /// Approve it, and the same kind from now on (the agent's own option).
+  allowAlways,
+
   /// Refuse the command.
   deny,
 

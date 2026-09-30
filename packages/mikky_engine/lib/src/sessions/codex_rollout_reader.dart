@@ -42,6 +42,16 @@ class CodexRolloutReader {
       case 'error':
         final text = p['message'] as String? ?? 'Erreur';
         return _end(text.toLowerCase().contains('limit') ? StopReason.rateLimited : StopReason.error, at, text);
+      case 'token_count':
+        final info = (p['info'] as Map?)?.cast<String, dynamic>();
+        final last = (info?['last_token_usage'] as Map?)?.cast<String, dynamic>();
+        final limits = (p['rate_limits'] as Map?)?.cast<String, dynamic>();
+        return [
+          if (info?['model_context_window'] != null && last != null)
+            ContextUsed((last['total_tokens'] as num? ?? 0).toInt(), (info!['model_context_window'] as num).toInt(), at: at),
+          if (limits != null)
+            LimitsSeen(short: _window(limits['primary']), long: _window(limits['secondary']), plan: limits['plan_type'] as String?, at: at),
+        ];
       case 'plan_update':
         return [_planChanged(p['plan'], at)];
       case 'item_completed':
@@ -110,6 +120,18 @@ class CodexRolloutReader {
         ];
     }
     return const [];
+  }
+
+  static LimitWindow? _window(Object? w) {
+    if (w is! Map) return null;
+    final pct = (w['used_percent'] as num?)?.toDouble();
+    if (pct == null) return null;
+    final at = (w['resets_at'] as num?)?.toInt();
+    return LimitWindow(
+      pct,
+      minutes: (w['window_minutes'] as num?)?.toInt() ?? 0,
+      resetsAt: at == null ? null : DateTime.fromMillisecondsSinceEpoch(at * 1000),
+    );
   }
 
   static PlanChanged _planChanged(Object? plan, DateTime? at) => PlanChanged([
