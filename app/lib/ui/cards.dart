@@ -152,7 +152,16 @@ class AgentCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         live
-            ? SizedBox(width: 28, height: 20, child: Center(child: BrandLogo(brand!, size: 22)))
+            ? SizedBox(
+                width: 28,
+                height: 20,
+                child: Center(
+                  // Claude's own star turns while it works; the others keep still.
+                  child: brand == Brand.claude && (status == UiStatus.working || status == UiStatus.thinking)
+                      ? SpinningLogo(child: BrandLogo(brand!, size: 22))
+                      : BrandLogo(brand!, size: 22),
+                ),
+              )
             : Transform.translate(offset: const Offset(0, -4), child: StatusDot(status)),
         const SizedBox(width: 10),
         Expanded(
@@ -179,6 +188,7 @@ class AgentCard extends StatelessWidget {
                         who,
                         style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
                       ),
+                    if (live && actions != null) ...[const SizedBox(width: 10), DotSnake(status)],
 
                   ],
                 ),
@@ -197,6 +207,9 @@ class AgentCard extends StatelessWidget {
             ],
           ),
         ),
+        // The launcher: a snake of dots, level with the two lines (on the
+        // title's line when Oui / Non need the whole width).
+        if (live && actions == null) ...[const SizedBox(width: 12), Padding(padding: const EdgeInsets.only(top: 2), child: DotSnake(status))],
       ],
     );
     // At work: no card, the dots glow behind the row. Waiting: a raised

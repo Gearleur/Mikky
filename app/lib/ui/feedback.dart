@@ -341,6 +341,93 @@ class _GlowPainter extends CustomPainter {
   bool shouldRepaint(_GlowPainter old) => old.t != t || old.color != color;
 }
 
+/// A snake of lit dots running round a 4 × 4 grid of faint dots, in the
+/// state's color: a small launcher that says « at work » (user request,
+/// 2026-09-30, after Grok's loader).
+class DotSnake extends StatelessWidget {
+  const DotSnake(this.status, {super.key});
+
+  final UiStatus status;
+
+  static const pitch = 5.4, dot = 3.6;
+  static const size = 3 * pitch + dot;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = statusColor(MikkyUi.of(context), status);
+    return Looping(
+      key: ValueKey(status),
+      period: const Duration(milliseconds: 2400),
+      frozenAt: .3,
+      builder: (context, t) => CustomPaint(size: const Size.square(size), painter: _SnakePainter(t, color)),
+    );
+  }
+}
+
+class _SnakePainter extends CustomPainter {
+  _SnakePainter(this.t, this.color);
+
+  final double t;
+  final Color color;
+
+  /// A closed path through the 16 dots (column, row), each next to the last.
+  static const path = [
+    (0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (1, 1), (1, 2),
+    (2, 2), (3, 2), (3, 3), (2, 3), (1, 3), (0, 3), (0, 2), (0, 1),
+  ];
+
+  /// How many dots the snake lights, head included.
+  static const length = 6.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final head = t * path.length;
+    final paint = Paint();
+    for (var k = 0; k < path.length; k++) {
+      // How far behind the head this dot is, along the path.
+      final behind = (head - k) % path.length;
+      final lit = behind < 1 ? behind : (behind < length ? 1 - (behind - 1) / (length - 1) : 0.0);
+      final i = Curves.easeOut.transform(lit.clamp(0.0, 1.0));
+      final (c, r) = path[k];
+      paint.color = color.withValues(alpha: .14 + .86 * i);
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: Offset(c * DotSnake.pitch + DotSnake.dot / 2, r * DotSnake.pitch + DotSnake.dot / 2),
+            width: DotSnake.dot * (.8 + .2 * i),
+            height: DotSnake.dot * (.8 + .2 * i),
+          ),
+          const Radius.circular(1.1),
+        ),
+        paint,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SnakePainter old) => old.t != t || old.color != color;
+}
+
+/// A tool's logo that turns slowly and breathes while its agent works,
+/// like Claude Code's star (user request, 2026-09-30).
+class SpinningLogo extends StatelessWidget {
+  const SpinningLogo({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Looping(
+    period: const Duration(milliseconds: 3200),
+    builder: (context, t) {
+      final breath = (1 - math.cos(t * 4 * math.pi)) / 2;
+      return Transform.rotate(
+        angle: Curves.easeInOutCubic.transform(t) * math.pi,
+        child: Transform.scale(scale: .84 + .16 * breath, child: child),
+      );
+    },
+  );
+}
+
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =
 /// blue with a widening wave (1.6 s); thinking, limited, sleeping = it
 /// breathes (2.4 s, 3.2 s, 4 s); waiting for a yes = two hops then a
