@@ -253,70 +253,92 @@ Color statusColor(MikkyUi ui, UiStatus status) => switch (status) {
   UiStatus.sleeping => ui.grey,
 };
 
-/// A small matrix of dots, three high, lit column after column from left
-/// to right in the state's color, with a short trail; then a pause (user
-/// request, 2026-09-30). Slow and smooth: one pass in about 2 s.
-class DotSweep extends StatelessWidget {
-  const DotSweep(this.status, {super.key, this.columns = 7});
+/// Behind [child], a field of small dots, invisible until a soft patch of
+/// light in the state's color slides slowly over them from left to right,
+/// leaving a short trail; then a pause (user request, 2026-09-30, after a
+/// halftone glow they showed).
+class DotGlow extends StatelessWidget {
+  const DotGlow({super.key, required this.status, required this.child, this.radius = 18});
 
   final UiStatus status;
-  final int columns;
+  final Widget child;
 
-  static const dot = 3.0, pitch = 5.0;
+  /// The field is clipped to this rounded shape.
+  final double radius;
 
   @override
   Widget build(BuildContext context) {
     final color = statusColor(MikkyUi.of(context), status);
-    return Looping(
-      key: ValueKey(status),
-      period: const Duration(milliseconds: 2600),
-      frozenAt: .45,
-      builder: (context, t) => CustomPaint(
-        size: Size((columns - 1) * pitch + dot, 2 * pitch + dot),
-        painter: _SweepPainter(t, columns, color),
-      ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(radius),
+            child: Looping(
+              key: ValueKey(status),
+              period: const Duration(milliseconds: 6500),
+              frozenAt: .3,
+              builder: (context, t) => CustomPaint(painter: _GlowPainter(t, color)),
+            ),
+          ),
+        ),
+        child,
+      ],
     );
   }
 }
 
-class _SweepPainter extends CustomPainter {
-  _SweepPainter(this.t, this.columns, this.color);
+class _GlowPainter extends CustomPainter {
+  _GlowPainter(this.t, this.color);
 
   final double t;
-  final int columns;
   final Color color;
 
-  /// How many columns the light leaves behind it.
-  static const trail = 3.2;
+  /// Distance between two dots, and the biggest dot's radius.
+  static const pitch = 4.5, big = 1.35;
 
-  /// Part of the period the pass takes; the rest is a pause, all dim.
-  static const pass = .8;
+  /// Part of the period the pass takes; the rest is a pause, all dark.
+  static const pass = .82;
+
+  /// How far the light reaches ahead of its center, and behind (the trail).
+  static const ahead = 34.0, behind = 80.0;
 
   @override
   void paint(Canvas canvas, Size size) {
-    // The head goes from before the first column until its trail has left
-    // the last one.
-    final p = Curves.easeInOutSine.transform((t / pass).clamp(0, 1));
-    final head = -1.2 + p * (columns + trail + 1.2);
-    final paint = Paint();
-    for (var c = 0; c < columns; c++) {
-      final d = head - c;
-      // A soft front edge, then the trail fading out.
-      final lit = d < 0 ? (1 + d / 1.2).clamp(0.0, 1.0) : (1 - d / trail).clamp(0.0, 1.0);
-      final i = Curves.easeInOut.transform(lit);
-      for (var r = 0; r < 3; r++) {
-        paint.color = color.withValues(alpha: .16 + .84 * i);
-        canvas.drawCircle(
-          Offset(c * DotSweep.pitch + DotSweep.dot / 2, r * DotSweep.pitch + DotSweep.dot / 2),
-          DotSweep.dot / 2 + .25 * i,
-          paint,
-        );
+    if (t > pass) return;
+    final p = Curves.easeInOutSine.transform(t / pass);
+    final head = -ahead * 2 + p * (size.width + ahead * 2 + behind * 2);
+    final cy = size.height / 2;
+    final paint = Paint()..color = color;
+    final x0 = math.max(0, ((head - behind * 2.2) / pitch).floor());
+    final x1 = math.min((size.width / pitch).ceil(), ((head + ahead * 2.2) / pitch).ceil());
+    final rows = (size.height / pitch).ceil();
+    for (var c = x0; c <= x1; c++) {
+      final x = c * pitch + pitch / 2;
+      final d = x - head;
+      final along = d > 0 ? math.exp(-(d / ahead) * (d / ahead)) : math.exp(-(d / behind) * (d / behind));
+      for (var r = 0; r < rows; r++) {
+        final y = r * pitch + pitch / 2;
+        final v = (y - cy) / (size.height * .4);
+        // A little grain, always the same for a given dot.
+        final grain = .8 + .4 * _hash(c, r);
+        final i = along * math.exp(-v * v) * grain;
+        if (i < .1) continue;
+        // Halftone: the dots grow toward the center more than they darken.
+        paint.color = color.withValues(alpha: .1 + .32 * math.min(1, i));
+        canvas.drawCircle(Offset(x, y), big * (.3 + .7 * math.min(1, i)), paint);
       }
     }
   }
 
+  static double _hash(int a, int b) {
+    var h = a * 374761393 + b * 668265263;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
+  }
+
   @override
-  bool shouldRepaint(_SweepPainter old) => old.t != t || old.color != color || old.columns != columns;
+  bool shouldRepaint(_GlowPainter old) => old.t != t || old.color != color;
 }
 
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =

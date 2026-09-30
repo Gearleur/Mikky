@@ -179,7 +179,7 @@ class AgentCard extends StatelessWidget {
                         who,
                         style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
                       ),
-                    if (live) ...[if (who.isNotEmpty) const SizedBox(width: 8), DotSweep(status)],
+
                   ],
                 ),
               ),
@@ -199,17 +199,23 @@ class AgentCard extends StatelessWidget {
         ),
       ],
     );
-    // The grey cards stand out a little, like the buttons: they open.
-    final card = Surface(
-      radius: old ? 14 : 18,
-      gradient: plain ? null : ui.control,
-      shadows: switch (style) {
-        AgentCardStyle.waiting => [ui.highlight, ...ui.shCtl, CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
-        AgentCardStyle.normal => [ui.highlight, ...ui.shCtl],
-        _ => const [],
-      },
+    // At work: no card, the dots glow behind the row. Waiting: a raised
+    // card (it holds Oui / Non), the dots behind too. Without a logo (the
+    // Oui / Non of an agent's page): the grey card as before.
+    final padded = Padding(
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
+    );
+    final waiting = style == AgentCardStyle.waiting;
+    final card = Surface(
+      radius: old ? 14 : 18,
+      color: plain || live ? null : ui.well,
+      gradient: live && waiting ? ui.control : null,
+      shadows: [
+        if (live && waiting) ...[ui.highlight, ...ui.shCtl],
+        if (waiting) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
+      ],
+      child: live ? DotGlow(status: status, child: padded) : padded,
     );
     return _pressable(card);
   }
