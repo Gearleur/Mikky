@@ -157,7 +157,7 @@ class _KitHomeState extends State<KitHome> {
                       status: UiStatus.thinking,
                       title: 'Prépare le plan de l’API',
                       who: '',
-                      brand: Brand.claude,
+                      brand: Brand.codex,
                       subtitle: 'Réfléchit au plan',
                       onTap: () {},
                     ),
@@ -582,6 +582,10 @@ class _KitPartsState extends State<KitParts> {
               ],
             ),
             const TypingDots(),
+            sep,
+            // Set aside for now (user request, 2026-09-30).
+            const DotSnake(UiStatus.working),
+            Text('Lanceur (de côté)', style: uiText(13, color: ui.text2)),
           ]),
         ]),
         section('Logos des outils', [

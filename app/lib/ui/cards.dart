@@ -185,10 +185,18 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the two lines; at work, the launcher on the right.
+      // big, level with the two lines, turning while the agent works.
       final head = Row(
         children: [
-          SizedBox(width: 32, child: Center(child: BrandLogo(brand!, size: 28))),
+          SizedBox(
+            width: 32,
+            child: Center(
+              // The logo turns while the agent works (not while it waits).
+              child: status == UiStatus.working || status == UiStatus.thinking
+                  ? SpinningLogo(claude: brand == Brand.claude, child: BrandLogo(brand!, size: 28))
+                  : BrandLogo(brand!, size: 28),
+            ),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -196,8 +204,6 @@ class AgentCard extends StatelessWidget {
               children: [titleRow, ?subtitleText],
             ),
           ),
-          // Waiting is stuck: no launcher then.
-          if (style != AgentCardStyle.waiting) ...[const SizedBox(width: 12), DotSnake(status)],
         ],
       );
       body = actions == null

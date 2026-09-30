@@ -256,7 +256,7 @@ Color statusColor(MikkyUi ui, UiStatus status) => switch (status) {
 /// A classic launcher: three square pixels running round the edge of a
 /// 3 × 3 square, one step at a time, in the state's color; the tail fades
 /// and the empty cells are gone (user request, 2026-09-30, after Grok's
-/// loader).
+/// loader). Set aside for now: only in the kit.
 class DotSnake extends StatelessWidget {
   const DotSnake(this.status, {super.key});
 
@@ -270,7 +270,7 @@ class DotSnake extends StatelessWidget {
     final color = statusColor(MikkyUi.of(context), status);
     return Looping(
       key: ValueKey(status),
-      period: const Duration(milliseconds: 1200),
+      period: const Duration(milliseconds: 2000),
       frozenAt: .3,
       builder: (context, t) => CustomPaint(size: const Size.square(size), painter: _SnakePainter(t, color)),
     );
@@ -308,6 +308,30 @@ class _SnakePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SnakePainter old) => old.t != t || old.color != color;
+}
+
+/// A tool's logo that turns and breathes while its agent works (user
+/// request, 2026-09-30). Claude: half a turn that speeds up and slows
+/// down, like its own star, every 3.2 s. Others: slower, one even turn in
+/// 8 s, growing and shrinking a little twice meanwhile.
+class SpinningLogo extends StatelessWidget {
+  const SpinningLogo({super.key, required this.child, this.claude = false});
+
+  final Widget child;
+  final bool claude;
+
+  @override
+  Widget build(BuildContext context) => Looping(
+    period: Duration(milliseconds: claude ? 3200 : 8000),
+    builder: (context, t) {
+      final breath = (1 - math.cos(t * 4 * math.pi)) / 2;
+      final angle = claude ? Curves.easeInOutCubic.transform(t) * math.pi : t * 2 * math.pi;
+      return Transform.rotate(
+        angle: angle,
+        child: Transform.scale(scale: (claude ? .84 : .88) + (claude ? .16 : .12) * breath, child: child),
+      );
+    },
+  );
 }
 
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =
