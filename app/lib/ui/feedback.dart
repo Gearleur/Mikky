@@ -431,21 +431,19 @@ class _StarPainter extends CustomPainter {
   bool shouldRepaint(_StarPainter old) => old.t != t;
 }
 
-/// A small square of 3 × 3 pixels in shades of the state's color, that
-/// live like SmoothUI's agent avatar (MIT, © 2024 Eduardo Calvo): each
-/// pixel pulses on its own, the whole breathes, a wave crosses it on the
-/// diagonal and a pixel flashes now and then (user request, 2026-09-30).
-/// Every state has one; finished is just a green square, still.
-/// [seed] gives another pattern, same colors.
+/// A small square of 3 × 3 real pixels, a little apart, in shades of the
+/// state's color, that live like SmoothUI's agent avatar (MIT, © 2024
+/// Eduardo Calvo): each pixel pulses on its own, the whole breathes, a
+/// wave crosses it on the diagonal and a pixel flashes now and then (user
+/// requests, 2026-09-30). Working is magic instead: a soft light goes
+/// round, from indigo to cyan, and pixels twinkle. Finished: green
+/// pixels, still. [seed] gives another pattern, same colors.
 class PixelStatus extends StatelessWidget {
-  const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0, this.color});
+  const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0});
 
   final UiStatus status;
   final double size;
   final int seed;
-
-  /// Finished only: another green than the theme's (to compare two).
-  final Color? color;
 
   /// Base hue, saturation and lightness of each state, in HSL.
   static (double, double, double) _base(UiStatus s) => switch (s) {
@@ -464,19 +462,16 @@ class PixelStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (status == UiStatus.finished) {
-      return Container(
-        width: size,
-        height: size,
-        // The green of a done task's bubble in the thread: punchier.
-        decoration: BoxDecoration(color: color ?? MikkyUi.of(context).green, borderRadius: BorderRadius.circular(size * .24)),
-      );
+      // The green of a done task's bubble in the thread.
+      return CustomPaint(size: Size.square(size), painter: _PixelPainter.still(MikkyUi.of(context).green));
     }
-    final painter = _PixelPalette.of(_base(status), status.index * 7919 + seed);
+    final palette = _PixelPalette.of(_base(status), status.index * 7919 + seed);
+    final magic = status == UiStatus.working;
     return Looping(
       key: ValueKey(status),
       period: const Duration(milliseconds: 60000),
       frozenAt: .01,
-      builder: (context, t) => CustomPaint(size: Size.square(size), painter: _PixelPainter(painter, t * _periodMs)),
+      builder: (context, t) => CustomPaint(size: Size.square(size), painter: _PixelPainter(palette, t * _periodMs, magic: magic)),
     );
   }
 }
@@ -495,72 +490,103 @@ class _PixelPalette {
   static _PixelPalette of((double, double, double) base, int seed) => _cache[(base.$1, base.$2, base.$3, seed)] ??= () {
     final rng = math.Random(seed);
     final (h, s, l) = base;
-    // Neighbouring hues, as SmoothUI does, but closer (±20°): the state
-    // must still read blue, orange or green.
-    double hue() => (h - 20 + rng.nextDouble() * 40) % 360;
+    // Neighbouring hues, as SmoothUI does, but closer (±15°) and shades
+    // near each other: pixels, not the facets of a diamond.
+    double hue() => (h - 15 + rng.nextDouble() * 30) % 360;
     HSLColor c(double hue, double sat, double light) =>
         HSLColor.fromAHSL(1, hue, (sat / 100).clamp(0.0, 1.0), (light / 100).clamp(0.0, 1.0));
-    final colors = [c(h, s, l), c(hue(), s - 5 + rng.nextDouble() * 10, l - 12), c(hue(), s - 10, l + 10)];
+    final colors = [c(h, s, l), c(hue(), s, l - 6), c(hue(), s - 5, l + 6)];
     final cells = [
-      for (var i = 0; i < 9; i++) (rng.nextInt(3), .55 + rng.nextDouble() * .45, rng.nextDouble() * math.pi * 2, rng.nextDouble() * math.pi * 2),
+      for (var i = 0; i < 9; i++) (rng.nextInt(3), .85 + rng.nextDouble() * .15, rng.nextDouble() * math.pi * 2, rng.nextDouble() * math.pi * 2),
     ];
     return _PixelPalette(colors, cells);
   }();
 }
 
 class _PixelPainter extends CustomPainter {
-  _PixelPainter(this.palette, this.ms);
+  _PixelPainter(this.palette, this.ms, {this.magic = false}) : still = null;
+  _PixelPainter.still(Color this.still) : palette = null, ms = null, magic = false;
 
-  final _PixelPalette palette;
-
-  /// Milliseconds; null: still.
+  final _PixelPalette? palette;
   final double? ms;
+  final bool magic;
+
+  /// One color for every pixel, no motion (finished).
+  final Color? still;
+
+  /// Space between two pixels, and their corners, as parts of the side.
+  static const gap = .075, corner = .035;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final t = ms;
     final side = size.shortestSide;
+    final g = side * gap;
+    final cell = (side - 2 * g) / 3;
+    final paint = Paint();
+    void pixel(int x, int y, Color c) {
+      paint.color = c;
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(Rect.fromLTWH(x * (cell + g), y * (cell + g), cell, cell), Radius.circular(side * corner)),
+        paint,
+      );
+    }
+
+    final still = this.still;
+    if (still != null) {
+      for (var i = 0; i < 9; i++) {
+        pixel(i % 3, i ~/ 3, still);
+      }
+      return;
+    }
+    final palette = this.palette!;
+    final t = ms!;
     final half = side / 2;
     // The whole square breathes a little in size.
-    final scale = t == null ? 1.0 : 1 + math.sin(t * .0008) * .03;
     canvas.save();
     canvas.translate(half, half);
-    canvas.scale(scale);
+    canvas.scale(1 + math.sin(t * .0008) * .03);
     canvas.translate(-half, -half);
-    final shape = RRect.fromRectAndRadius(Offset.zero & Size.square(side), Radius.circular(side * .24));
-    // A soft glow of the main shade around it.
-    canvas.drawRRect(
-      shape,
+    // A faint glow of the main shade behind the pixels.
+    canvas.drawRect(
+      Offset.zero & Size.square(side),
       Paint()
-        ..color = palette.colors.first.toColor().withValues(alpha: .35)
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, side * .18),
+        ..color = palette.colors.first.toColor().withValues(alpha: .22)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, side * .16),
     );
-    canvas.clipRRect(shape);
-    final cell = side / 3;
-    final breathe = t == null ? 0.0 : math.sin(t * .001) * 6;
-    final paint = Paint();
+    final breathe = math.sin(t * .001) * 4;
+    // Magic: a soft light going round the square.
+    final orbit = t * .0011;
+    final lx = 1 + math.cos(orbit) * .9, ly = 1 + math.sin(orbit) * .9;
     for (var y = 0; y < 3; y++) {
       for (var x = 0; x < 3; x++) {
         final (shade, bright, phase, sparklePhase) = palette.cells[y * 3 + x];
         final base = palette.colors[shade];
+        var hue = base.hue;
         var light = base.lightness * 100;
-        if (t != null) {
-          final pulse = math.sin(t * .002 + phase) * 12;
-          final wave = math.sin(t * .0015 + (x + y) / 1.5) * 9;
-          final spark = math.sin(t * .004 + sparklePhase);
-          light += pulse + breathe + wave + (spark > .92 ? (spark - .92) / .08 * 20 : 0);
+        var sat = base.saturation;
+        final spark = math.sin(t * .004 + sparklePhase);
+        final flash = spark > .93 ? (spark - .93) / .07 : 0.0;
+        if (magic) {
+          final d2 = (x - lx) * (x - lx) + (y - ly) * (y - ly);
+          final glow = math.exp(-d2 / .9);
+          // Indigo in the shade, cyan where the light is.
+          hue = 232 - 40 * glow;
+          light = 44 + 26 * glow + breathe + math.sin(t * .0017 + phase) * 4 + flash * 26;
+          sat = math.max(0, .92 - .35 * flash);
+        } else {
+          final pulse = math.sin(t * .002 + phase) * 8;
+          final wave = math.sin(t * .0015 + (x + y) / 1.5) * 7;
+          light = (light + pulse + breathe + wave + flash * 18) * (.9 + .1 * bright);
+          sat = math.min(1, sat + .05);
         }
-        light = (light * (.75 + .25 * bright)).clamp(22.0, 88.0);
-        paint.color = base.withSaturation(math.min(1, base.saturation + .05)).withLightness(light / 100).toColor();
-        // A hair of overlap, so no seam shows between the pixels.
-        canvas.drawRect(Rect.fromLTWH(x * cell, y * cell, cell + .4, cell + .4), paint);
+        pixel(x, y, HSLColor.fromAHSL(1, hue % 360, sat.clamp(0.0, 1.0), (light / 100).clamp(.2, .92)).toColor());
       }
     }
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(_PixelPainter old) => old.ms != ms || old.palette != palette;
+  bool shouldRepaint(_PixelPainter old) => old.ms != ms || old.palette != palette || old.still != still || old.magic != magic;
 }
 
 /// `.status`: an agent's state in a 28 px box — a small square of pixels
