@@ -1,0 +1,14 @@
+[workspace]
+resolver = "3"
+members = ["mikky-acp"]
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+publish = false
+
+[workspace.dependencies]
+agent-client-protocol = "2.2"
+anyhow = "1"
+tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["compat"] }
