@@ -165,8 +165,8 @@ class TopBlur extends StatelessWidget {
 class TopBlurStyle {
   const TopBlurStyle({required this.height, required this.layers, required this.sigma, required this.veil, required this.ramp});
 
-  /// In use (user requests, 2026-09-30).
-  static const standard = TopBlurStyle(height: 52, layers: 10, sigma: .7, veil: .5, ramp: .5);
+  /// In use: the user's, set with the boards' sliders (2026-09-30).
+  static const standard = TopBlurStyle(height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
 
   final double height;
   final int layers;
