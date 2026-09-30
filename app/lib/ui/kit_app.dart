@@ -113,7 +113,7 @@ class _KitHomeState extends State<KitHome> {
         if (_open[id]!)
           for (var i = 0; i < cards.length; i++)
             Padding(
-              padding: EdgeInsets.only(top: i == 0 ? 0 : (id == 'old' ? 0 : 8)),
+              padding: EdgeInsets.zero,
               child: cards[i],
             ),
       ],

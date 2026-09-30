@@ -184,32 +184,39 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the middle of everything beside it, turning while
-      // the agent works.
-      body = Row(
+      // big, level with the two lines; it turns while the agent works and
+      // hops now and then while it waits. Oui / Non below, under the text.
+      final logo = BrandLogo(brand!, size: 32);
+      final head = Row(
         children: [
           SizedBox(
             width: 34,
             child: Center(
-              // The logo turns while the agent works (not while it waits).
-              child: status == UiStatus.working || status == UiStatus.thinking
-                  ? SpinningLogo(claude: brand == Brand.claude, child: BrandLogo(brand!, size: 32))
-                  : BrandLogo(brand!, size: 32),
+              child: switch (status) {
+                UiStatus.working || UiStatus.thinking => SpinningLogo(claude: brand == Brand.claude, child: logo),
+                UiStatus.approval => Looping(
+                  period: const Duration(milliseconds: 1800),
+                  builder: (context, t) => Transform.translate(offset: Offset(0, -4 * StatusDot.hop(t)), child: logo),
+                ),
+                _ => logo,
+              },
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                titleRow,
-                ?subtitleText,
-                if (actions != null) Padding(padding: const EdgeInsets.only(top: 8), child: actions!),
-              ],
+              children: [titleRow, ?subtitleText],
             ),
           ),
         ],
       );
+      body = actions == null
+          ? head
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [head, Padding(padding: const EdgeInsets.only(left: 44, top: 8), child: actions!)],
+            );
     } else {
       body = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -239,7 +246,11 @@ class AgentCard extends StatelessWidget {
       shadows: [
         if (waiting && !live) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
       ],
-      padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
+      padding: old
+          ? const EdgeInsets.fromLTRB(8, 8, 14, 8)
+          : live
+          ? const EdgeInsets.fromLTRB(6, 8, 14, 8)
+          : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
     );
     return _pressable(card);
@@ -323,9 +334,9 @@ class WaitActions extends StatelessWidget {
   }
 }
 
-/// A few answers side by side, flat, in nothing: the last one is the main
-/// one, on a light grey; the others plain text. A press squashes them like
-/// jelly (user request, 2026-09-30).
+/// A few answers side by side, in nothing: the last one is the main one,
+/// white with a soft shadow; the others plain text. A press sinks them,
+/// and they pop back (user request, 2026-09-30).
 class AnswerBar extends StatelessWidget {
   const AnswerBar({super.key, required this.answers});
 
@@ -374,8 +385,11 @@ class _AnswerState extends State<_Answer> {
             padding: const EdgeInsets.symmetric(horizontal: 13),
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: main ? (_hover ? ui.ctlB : ui.track) : (_hover ? ui.hover : ui.hover.withValues(alpha: 0)),
+              color: main ? ui.thumb : (_hover ? ui.hover : ui.hover.withValues(alpha: 0)),
               borderRadius: BorderRadius.circular(10),
+              // A hairline, so the white shows on the white window too.
+              border: main ? Border.all(color: ui.line, width: .8) : null,
+              boxShadow: main ? [for (final s in ui.shThumb) if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread)] : null,
             ),
             child: Text(
               widget.label,

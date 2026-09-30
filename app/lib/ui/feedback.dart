@@ -395,7 +395,7 @@ class StatusDot extends StatelessWidget {
       UiStatus.approval => Looping(
         key: const ValueKey('approval'),
         period: const Duration(milliseconds: 1800),
-        builder: (context, t) => Transform.translate(offset: Offset(0, -5 * _hop(t)), child: dot(10)),
+        builder: (context, t) => Transform.translate(offset: Offset(0, -5 * hop(t)), child: dot(10)),
       ),
       UiStatus.finished => Looping(
         key: const ValueKey('finished'),
@@ -417,7 +417,7 @@ class StatusDot extends StatelessWidget {
   }
 
   /// `@keyframes hop`: up 5 px at 10 % and 30 %, down at 20 % and 42 %.
-  static double _hop(double t) {
+  static double hop(double t) {
     double up(double a, double b) => Cubic(.3, 0, .5, 1).transform(((t - a) / (b - a)).clamp(0, 1));
     double down(double a, double b) => 1 - const Cubic(.5, 0, .7, 1).transform(((t - a) / (b - a)).clamp(0, 1));
     if (t < .1) return up(0, .1);

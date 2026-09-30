@@ -93,17 +93,17 @@ class _PressableState extends State<Pressable> with SingleTickerProviderStateMix
   );
 }
 
-/// Like [Pressable], but soft and a little sticky, like jelly: pressed,
-/// it spreads and flattens; let go, it springs back past its shape and
-/// wobbles a moment (user request, 2026-09-30).
+/// Like [Pressable], with a crisp, springy feel: pressed, it sinks and
+/// flattens a little at once; let go, it pops back just past its shape
+/// and settles (user request, 2026-09-30: not too sticky, satisfying).
 class JellyPress extends StatefulWidget {
   const JellyPress({super.key, required this.child, this.onTap});
 
   final Widget child;
   final VoidCallback? onTap;
 
-  /// Soft and bouncy: it overshoots and wobbles twice.
-  static final spring = Motion.spring(420, .32);
+  /// Quick, one small overshoot.
+  static final spring = Motion.spring(900, .55);
 
   @override
   State<JellyPress> createState() => _JellyPressState();
@@ -133,7 +133,7 @@ class _JellyPressState extends State<JellyPress> {
             spring: JellyPress.spring,
             builder: (context, x, _) => Transform(
               alignment: Alignment.center,
-              transform: Matrix4.diagonal3Values(1 + .1 * x, 1 - .16 * x, 1),
+              transform: Matrix4.diagonal3Values(1 - .04 * x, 1 - .1 * x, 1),
               child: widget.child,
             ),
           ),

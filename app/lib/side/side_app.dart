@@ -224,7 +224,8 @@ class HomePage extends StatelessWidget {
 
     for (final g in HomeGroup.values) {
       final (label, color) = labels[g]!;
-      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history || g == HomeGroup.done);
+      // No cards any more: the rows follow each other without a gap.
+      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: true);
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     // What is left of the subscriptions (Codex tells it; Claude does not,
