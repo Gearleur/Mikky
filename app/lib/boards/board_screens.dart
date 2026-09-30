@@ -8,6 +8,7 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
+import '../ui/pixel_fx.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/thread.dart';
@@ -424,9 +425,9 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
               onAction: () {},
               steps: [
                 const TaskStep(label: 'Lit 3 fichiers'),
-                TaskStep(label: 'Crée usage_test.dart', color: ui.green),
-                TaskStep(label: 'Modifie codex_reader.dart', color: ui.blue),
-                TaskStep(label: 'Va sur internet', color: ui.purple),
+                TaskStep(label: 'Crée usage_test.dart', tone: PixelFxPalette.green(ui)),
+                TaskStep(label: 'Modifie codex_reader.dart', tone: PixelFxPalette.blue),
+                TaskStep(label: 'Va sur internet', tone: PixelFxPalette.violet),
                 const TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec'),
                 const TaskStep(label: 'Relance les tests', state: TaskStepState.now),
               ],
@@ -445,7 +446,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
               steps: [
                 TaskStep(
                   label: 'Lance une commande',
-                  color: ui.amber,
+                  tone: PixelFxPalette.fire,
                   initiallyOpen: true,
                   detail: const ToolLine(
                     icon: 'agents',
@@ -455,7 +456,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                     body: OutputBox('00:02 +76: All tests passed!'),
                   ),
                 ),
-                TaskStep(label: 'Modifie island_machine.dart', color: ui.blue),
+                TaskStep(label: 'Modifie island_machine.dart', tone: PixelFxPalette.blue),
               ],
             ),
           ]),
@@ -470,7 +471,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
               meta: '2 étapes · 1 fichier',
               initiallyOpen: true,
               initiallyDetails: true,
-              steps: [const TaskStep(label: 'Lit la spec'), TaskStep(label: 'Crée resume.md', color: ui.green)],
+              steps: [const TaskStep(label: 'Lit la spec'), TaskStep(label: 'Crée resume.md', tone: PixelFxPalette.green(ui))],
               details: [
                 const NoteLine('Je lis la spec puis j’écris un résumé court.', thought: true),
                 const ToolLine(icon: 'file', title: 'Lire la spec', detail: 'docs/spec.md'),

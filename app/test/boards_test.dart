@@ -10,13 +10,19 @@ import 'package:mikky/ui/tokens.dart';
 /// and theme, animations frozen. Update with `flutter test
 /// --update-goldens test/boards_test.dart`, then look.
 Future<void> _loadFonts() async {
-  for (final (family, files) in [
-    ('Geist', ['Geist-Regular.ttf', 'Geist-Medium.ttf', 'Geist-SemiBold.ttf']),
-    ('Geist Mono', ['GeistMono-Regular.ttf', 'GeistMono-Medium.ttf']),
-  ]) {
+  // Every family of pubspec.yaml, the fonts on trial too.
+  final families = <String, List<String>>{};
+  String? family;
+  for (final line in File('pubspec.yaml').readAsLinesSync()) {
+    final f = RegExp(r'^\s*- family: (.+)$').firstMatch(line);
+    final a = RegExp(r'^\s*- asset: (assets/fonts/.+)$').firstMatch(line);
+    if (f != null) family = f[1]!.trim();
+    if (a != null && family != null) (families[family] ??= []).add(a[1]!.trim());
+  }
+  for (final MapEntry(key: family, value: files) in families.entries) {
     final loader = FontLoader(family);
     for (final f in files) {
-      loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
+      loader.addFont(Future.value(ByteData.sublistView(File(f).readAsBytesSync())));
     }
     await loader.load();
   }

@@ -429,7 +429,7 @@ class _TaskSectionState extends State<TaskSection> {
     final head = Row(
       children: [
         StatusFx(widget.status, size: 14),
-        const SizedBox(width: 8),
+        const SizedBox(width: 7),
         Expanded(
           child: Text.rich(
             TextSpan(children: [
@@ -519,14 +519,14 @@ enum TaskStepState { done, now, todo, failed }
 /// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
 /// tap unfolds [detail], what the agent did for it.
 class TaskStep extends StatefulWidget {
-  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.color, this.initiallyOpen = false});
+  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.tone, this.initiallyOpen = false});
 
   final String label;
   final TaskStepState state;
 
-  /// The dot's color for what the step does (green creates, blue changes,
-  /// orange runs a command…); grey when not given.
-  final Color? color;
+  /// The star's colors for what the step does (green creates, blue
+  /// changes, orange runs a command…); grey when not given.
+  final PixelFxPalette? tone;
 
   /// [detail] shown from the start (boards).
   final bool initiallyOpen;
@@ -545,21 +545,22 @@ class _TaskStepState extends State<TaskStep> {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final (dot, text) = switch (widget.state) {
-      TaskStepState.done => (widget.color ?? ui.text3, ui.text2),
-      TaskStepState.now => (ui.blue, ui.text),
-      TaskStepState.todo => (ui.track, ui.text3),
-      TaskStepState.failed => (ui.red, ui.text2),
+    final (star, text) = switch (widget.state) {
+      TaskStepState.done => (widget.tone ?? PixelFxPalette.grey, ui.text2),
+      TaskStepState.now => (PixelFxPalette.blue, ui.text),
+      TaskStepState.todo => (PixelFxPalette.grey, ui.text3),
+      TaskStepState.failed => (PixelFxPalette.red, ui.text2),
     };
     final row = Row(
       children: [
-        // A pixel of the action's color; the step at work fizzes.
+        // A small still star of the action's color (user request,
+        // 2026-09-30); the step at work fizzes; the ones to come are faint.
         SizedBox(
-          width: 10,
+          width: 11,
           child: Center(
             child: widget.state == TaskStepState.now
-                ? const StatusFx(UiStatus.working, size: 10)
-                : Container(width: 7, height: 7, decoration: BoxDecoration(color: dot, borderRadius: BorderRadius.circular(1.5))),
+                ? const StatusFx(UiStatus.working, size: 11)
+                : Opacity(opacity: widget.state == TaskStepState.todo ? .35 : 1, child: PixelStar(star, size: 11)),
           ),
         ),
         const SizedBox(width: 8),

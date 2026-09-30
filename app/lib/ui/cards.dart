@@ -73,11 +73,9 @@ class GroupHeader extends StatelessWidget {
                 child: Center(
                   child: status != null
                       ? StatusFx(status!, size: 18)
-                      : Container(
-                          width: 6,
-                          height: 6,
-                          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(1)),
-                        ),
+                      // Historique, Archives: the same star, grey and
+                      // still (user request, 2026-09-30).
+                      : PixelFx(kind: PixelFxKind.fireworkSoft, palette: PixelFxPalette.grey, size: 18, at: 1),
                 ),
               ),
               const SizedBox(width: 8),

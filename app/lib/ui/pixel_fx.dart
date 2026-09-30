@@ -35,6 +35,12 @@ class PixelFxPalette {
   final String name;
   final List<Color> levels;
 
+  /// On a light background a white heart would be a hole: a light tint of
+  /// the color instead.
+  PixelFxPalette on(MikkyUi ui) => ui.isLight && levels.first.computeLuminance() > .8
+      ? PixelFxPalette(name, [Color.lerp(levels[1], const Color(0xFFFFFFFF), .45)!, ...levels.skip(1)])
+      : this;
+
   static const violet = PixelFxPalette('Violet', [Color(0xFFFFFFFF), Color(0xFFFF6BF5), Color(0xFFB026D6), Color(0xFF3A1AB8)]);
   static const blue = PixelFxPalette('Bleu', [Color(0xFFFFFFFF), Color(0xFF3FD8FF), Color(0xFF1E78FF), Color(0xFF0A22A8)]);
   static const fire = PixelFxPalette('Orange', [Color(0xFFFFF4B8), Color(0xFFFFB020), Color(0xFFFF5A1F), Color(0xFFA3140F)]);
@@ -45,6 +51,19 @@ class PixelFxPalette {
 
   static const all = [violet, blue, fire, red];
 
+  /// The signature colors (user request, 2026-09-30): the orange of their
+  /// picture, and the same tints and steps in blue.
+  static const signatureOrange = PixelFxPalette('Orange signature', [Color(0xFFFF8204), Color(0xFFFA500F), Color(0xFFE51300), Color(0xFFC4001D)]);
+  static const signatureBlue = PixelFxPalette('Bleu signature', [Color(0xFF04BCFF), Color(0xFF0F84FA), Color(0xFF0045E5), Color(0xFF000DC4)]);
+
+  /// The theme's green (the one of a done task's bubble).
+  static PixelFxPalette green(MikkyUi ui) => PixelFxPalette('Vert', [
+    const Color(0xFFE3FCEA),
+    ui.green,
+    Color.lerp(ui.green, const Color(0xFF000000), .3)!,
+    Color.lerp(ui.green, const Color(0xFF000000), .55)!,
+  ]);
+
   /// The palette of an agent's state; finished takes the theme's green
   /// (the one of a done task's bubble).
   static PixelFxPalette of(UiStatus status, MikkyUi ui) => switch (status) {
@@ -54,12 +73,7 @@ class PixelFxPalette {
     UiStatus.error => red,
     UiStatus.limited => yellow,
     UiStatus.sleeping => grey,
-    UiStatus.finished => PixelFxPalette('Vert', [
-      const Color(0xFFE3FCEA),
-      ui.green,
-      Color.lerp(ui.green, const Color(0xFF000000), .3)!,
-      Color.lerp(ui.green, const Color(0xFF000000), .55)!,
-    ]),
+    UiStatus.finished => green(ui),
   };
 }
 
@@ -123,11 +137,7 @@ class PixelFx extends StatelessWidget {
   Widget build(BuildContext context) {
     // On a light background a white heart would be a hole: a light tint of
     // the color instead.
-    final levels = palette.levels;
-    final shown = MikkyUi.of(context).isLight && levels.first.computeLuminance() > .8
-        ? PixelFxPalette(palette.name, [Color.lerp(levels[1], const Color(0xFFFFFFFF), .45)!, ...levels.skip(1)])
-        : palette;
-    return _build(shown);
+    return _build(palette.on(MikkyUi.of(context)));
   }
 
   Widget _build(PixelFxPalette palette) => at != null
@@ -290,4 +300,173 @@ class _FxPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_FxPainter old) => old.t != t || old.kind != kind || old.palette != palette;
+}
+
+/// A small firework star that does not move: the heart, its ring, four
+/// short arms, on 5 × 5 pixels (user request, 2026-09-30: the steps of a
+/// task and the grey groups of the home, one star each, in its color).
+class PixelStar extends StatelessWidget {
+  const PixelStar(this.palette, {super.key, this.size = 10});
+
+  final PixelFxPalette palette;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: _StarPainter(palette.on(MikkyUi.of(context))));
+}
+
+class _StarPainter extends CustomPainter {
+  _StarPainter(this.palette);
+
+  final PixelFxPalette palette;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    const n = 5, c = 2;
+    final side = size.shortestSide;
+    final gap = side * .02;
+    final cell = (side - gap * (n - 1)) / n;
+    final paint = Paint();
+    for (var y = 0; y < n; y++) {
+      for (var x = 0; x < n; x++) {
+        final level = _FxPainter._level(_FxPainter.softFrame(0, x - c, y - c));
+        if (level == null) continue;
+        paint.color = palette.levels[level];
+        canvas.drawRect(Rect.fromLTWH(x * (cell + gap), y * (cell + gap), cell, cell), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_StarPainter old) => old.palette != palette;
+}
+
+/// Mikky's mark, drawn pixel by pixel: a blue star in the middle, orange
+/// at its tips (user request, 2026-09-30). Each proposal is a small map:
+/// a–d the signature blue, heart to edge; o–r the orange; « . » empty.
+class SignatureStar extends StatelessWidget {
+  const SignatureStar(this.rows, {super.key, this.size = 64});
+
+  final List<String> rows;
+  final double size;
+
+  /// Seven by seven: the blue heart and its diagonals, red then orange
+  /// further out.
+  static const small = [
+    '...o...',
+    '.p.q.p.',
+    '..cbc..',
+    'oqbabqo',
+    '..cbc..',
+    '.p.q.p.',
+    '...o...',
+  ];
+
+  /// Nine by nine: longer arms, the blue going deep before the orange.
+  static const big = [
+    '....o....',
+    '.o..q..o.',
+    '..r.d.r..',
+    '...cbc...',
+    'oqdbabdqo',
+    '...cbc...',
+    '..r.d.r..',
+    '.o..q..o.',
+    '....o....',
+  ];
+
+  /// A square heart, like the three by three of their picture, in blue;
+  /// orange arms.
+  static const block = [
+    '....o....',
+    '....p....',
+    '....q....',
+    '...cbc...',
+    'opqbabqpo',
+    '...cbc...',
+    '....q....',
+    '....p....',
+    '....o....',
+  ];
+
+  static Color? colorOf(String ch) => switch (ch) {
+    'a' => PixelFxPalette.signatureBlue.levels[0],
+    'b' => PixelFxPalette.signatureBlue.levels[1],
+    'c' => PixelFxPalette.signatureBlue.levels[2],
+    'd' => PixelFxPalette.signatureBlue.levels[3],
+    'o' => PixelFxPalette.signatureOrange.levels[0],
+    'p' => PixelFxPalette.signatureOrange.levels[1],
+    'q' => PixelFxPalette.signatureOrange.levels[2],
+    'r' => PixelFxPalette.signatureOrange.levels[3],
+    _ => null,
+  };
+
+  @override
+  Widget build(BuildContext context) => CustomPaint(size: Size.square(size), painter: _MapPainter(rows));
+}
+
+class _MapPainter extends CustomPainter {
+  _MapPainter(this.rows);
+
+  final List<String> rows;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final n = rows.length;
+    final side = size.shortestSide;
+    final gap = side * .018;
+    final cell = (side - gap * (n - 1)) / n;
+    final paint = Paint();
+    for (var y = 0; y < n; y++) {
+      for (var x = 0; x < rows[y].length; x++) {
+        final color = SignatureStar.colorOf(rows[y][x]);
+        if (color == null) continue;
+        paint.color = color;
+        canvas.drawRect(Rect.fromLTWH(x * (cell + gap), y * (cell + gap), cell, cell), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MapPainter old) => old.rows != rows;
+}
+
+/// The mark alive: the calm firework's frames (small, middle, big,
+/// middle), blue at the heart and orange at the tips.
+class SignatureFirework extends StatelessWidget {
+  const SignatureFirework({super.key, this.size = 64});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => Looping(
+    period: const Duration(milliseconds: 3600),
+    frozenAt: .3,
+    builder: (context, t) {
+      const frames = [0, 1, 2, 1];
+      final frame = frames[(t * frames.length).floor() % frames.length];
+      return CustomPaint(size: Size.square(size), painter: _MapPainter(_signatureFrame(frame)));
+    },
+  );
+
+  static final _frames = <int, List<String>>{};
+
+  static List<String> _signatureFrame(int frame) => _frames.putIfAbsent(frame, () {
+    const n = 7, c = 3;
+    return [
+      for (var y = 0; y < n; y++)
+        [
+          for (var x = 0; x < n; x++)
+            switch (_FxPainter._level(_FxPainter.softFrame(frame, x - c, y - c))) {
+              null => '.',
+              // The heart and the first ring in blue, then the orange.
+              _ when math.max((x - c).abs(), (y - c).abs()) == 0 => 'a',
+              _ when math.max((x - c).abs(), (y - c).abs()) == 1 => (x == c || y == c) ? 'b' : 'c',
+              _ when math.max((x - c).abs(), (y - c).abs()) == 2 => (x == c || y == c) ? 'q' : 'p',
+              _ => 'o',
+            },
+        ].join(),
+    ];
+  });
 }

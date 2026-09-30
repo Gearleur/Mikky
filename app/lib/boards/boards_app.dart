@@ -50,8 +50,14 @@ class _BoardsState extends State<Boards> {
   final _canvas = GlobalKey<BoardCanvasState>();
   double _scale = 1;
 
+  /// The fonts on trial (user request, 2026-09-30): every board in them.
+  String _sans = UiFonts.sans;
+  String _mono = UiFonts.mono;
+
   @override
   Widget build(BuildContext context) {
+    UiFonts.sans = _sans;
+    UiFonts.mono = _mono;
     const shell = MikkyUi.light;
     final spec = boards[_board];
     final bands = [if (_themes != 1) MikkyUi.light, if (_themes != 0) MikkyUi.dark];
@@ -74,6 +80,9 @@ class _BoardsState extends State<Boards> {
               },
               themes: _themes,
               onThemes: (i) => setState(() => _themes = i),
+              sans: _sans,
+              mono: _mono,
+              onFont: (f, mono) => setState(() => mono ? _mono = f : _sans = f),
             ),
             Container(width: 1, color: shell.line),
             Expanded(
@@ -83,7 +92,7 @@ class _BoardsState extends State<Boards> {
                     key: _canvas,
                     background: bands.first.board,
                     onScale: (s) => setState(() => _scale = s),
-                    child: KeyedSubtree(key: ValueKey((_board, _themes)), child: content),
+                    child: KeyedSubtree(key: ValueKey((_board, _themes, _sans, _mono)), child: content),
                   ),
                 ),
                 Positioned(right: 16, bottom: 16, child: ZoomPill(canvas: _canvas, scale: _scale)),
@@ -131,12 +140,23 @@ class BoardBand extends StatelessWidget {
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.selected, required this.onSelect, required this.themes, required this.onThemes});
+  const _Sidebar({
+    required this.selected,
+    required this.onSelect,
+    required this.themes,
+    required this.onThemes,
+    required this.sans,
+    required this.mono,
+    required this.onFont,
+  });
 
   final int selected;
   final ValueChanged<int> onSelect;
   final int themes;
   final ValueChanged<int> onThemes;
+  final String sans;
+  final String mono;
+  final void Function(String family, bool mono) onFont;
 
   @override
   Widget build(BuildContext context) {
@@ -175,12 +195,59 @@ class _Sidebar extends StatelessWidget {
                 ),
               ),
             ),
+          const SizedBox(height: 18),
+          Padding(
+            padding: const EdgeInsets.only(left: 10, bottom: 6),
+            child: Text('Police', style: uiText(12.5, weight: FontWeight.w600, color: ui.text2)),
+          ),
+          _FontChips(fonts: [...trialSans, ...trialPixel], selected: sans, onSelect: (f) => onFont(f, false)),
+          const SizedBox(height: 8),
+          _FontChips(fonts: trialMono, selected: mono, onSelect: (f) => onFont(f, true)),
           const Spacer(),
-          Text('Molette : défiler · Maj : de côté · Ctrl : zoom · glisser le fond : déplacer', style: uiText(11, color: ui.text3, height: 1.4)),
+          Text(
+            'Glisser : déplacer (partout, ou Espace, ou le bouton du milieu) · Molette : défiler · Maj : de côté · Ctrl : zoom',
+            style: uiText(11, color: ui.text3, height: 1.4),
+          ),
           const SizedBox(height: 12),
           Segmented(options: const ['Clair', 'Sombre', 'Les deux'], selected: themes, size: SegmentSize.xs, onChanged: onThemes),
         ],
       ),
     );
+  }
+}
+
+/// Font names to pick from, each in its own font.
+class _FontChips extends StatelessWidget {
+  const _FontChips({required this.fonts, required this.selected, required this.onSelect});
+
+  final List<String> fonts;
+  final String selected;
+  final ValueChanged<String> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Wrap(spacing: 4, runSpacing: 4, children: [
+      for (final f in fonts)
+        HoverBuilder(
+          builder: (context, hover) => MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              onTap: () => onSelect(f),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                decoration: BoxDecoration(
+                  color: f == selected ? ui.ink : (hover ? ui.hover : ui.well),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  f,
+                  style: uiText(12, weight: FontWeight.w500, color: f == selected ? ui.island : ui.text).copyWith(fontFamily: f),
+                ),
+              ),
+            ),
+          ),
+        ),
+    ]);
   }
 }

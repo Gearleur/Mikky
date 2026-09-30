@@ -170,8 +170,15 @@ class MikkyUiTheme extends InheritedWidget {
   bool updateShouldNotify(MikkyUiTheme old) => old.ui != ui;
 }
 
-/// Text in the window's font (Geist), as the CSS sets it: [size] in px,
-/// [tracking] in em.
+/// The fonts of the window. Geist and Geist Mono; the design boards
+/// switch them to try others (user request, 2026-09-30).
+abstract final class UiFonts {
+  static String sans = 'Geist';
+  static String mono = 'Geist Mono';
+}
+
+/// Text in the window's font ([UiFonts]), as the CSS sets it: [size] in
+/// px, [tracking] in em.
 TextStyle uiText(
   double size, {
   FontWeight weight = FontWeight.w400,
@@ -181,7 +188,7 @@ TextStyle uiText(
   bool mono = false,
   bool tabular = false,
 }) => TextStyle(
-  fontFamily: mono ? 'Geist Mono' : 'Geist',
+  fontFamily: mono ? UiFonts.mono : UiFonts.sans,
   fontSize: size,
   fontWeight: weight,
   color: color,

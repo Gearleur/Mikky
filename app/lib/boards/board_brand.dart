@@ -51,17 +51,16 @@ class _Missing extends StatelessWidget {
   const _Missing();
 
   static const _items = [
-    ('Nom et logo', 'Un logo « Mikky » : le chat en pixels ? Un mot-symbole (Geist, gras, espacé) ? Une icône d’app à la même grille de pixels que les feux d’artifice.'),
-    ('Couleur signature', 'Aujourd’hui : noir, blanc, gris et les couleurs d’état (celles d’Apple). Il manque une couleur à nous, pour les liens, le focus, la sélection : un violet « magie » ?'),
-    ('Palette pixel officielle', 'Les palettes violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer.'),
-    ('Typographie', 'Geist et Geist Mono partout. Il manque une échelle nommée (titre, corps, légende, code) et peut-être une police pixel pour les titres ou les chiffres.'),
-    ('Mikky en pixels', 'Mikky est dessiné en courbes ; la marque est en pixels. Une version pixel de Mikky (icône, zone de notification, favicon) ?'),
+    ('Nom et icône', 'Mikky : validé. L’icône : une des étoiles signature (A, B, C) en haut de cette planche, à choisir ; puis l’icône de l’app et de la zone de notification.'),
+    ('Couleur signature', 'Validée : l’orange de ta capture et le même en bleu. Reste à dire où elles servent dans l’interface (liens, focus, sélection, le bouton « go » ?).'),
+    ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
+    ('Typographie', 'En essai : choisis une police à gauche, toutes les planches passent dedans. Puis une échelle nommée (titre, corps, légende, code), et une police pixel pour les titres ou les chiffres ?'),
+    ('Mikky en pixels', 'Mikky est dessiné en courbes ; la marque est en pixels. Une version pixel de Mikky (icône, zone de notification) ? À voir.'),
     ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
     ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),
     ('Sons', 'Aucun son. Un petit « bip » pixel quand un agent attend ou finit ?'),
     ('Mouvement', 'Une règle écrite : ressorts (gelée 95 / 0,38, sélecteurs 380 / 0,70), vitesses par état, 30 i/s pour les boucles.'),
     ('Écran de connexion, réglages', 'Pas encore sur les planches : la connexion à Claude / Codex (lien, code) et un écran de réglages.'),
-    ('Maquettes HTML', 'design/prototypes/ n’a pas suivi : lignes sans cartes, pixels, Oui / Non à plat, chat sans bulles. Les planches deviennent la référence ?'),
   ];
 
   @override
@@ -88,9 +87,151 @@ class _Missing extends StatelessWidget {
   }
 }
 
+
+/// A square tile of a given color, the mark in the middle: how the icon
+/// looks on a dark or a light desktop.
+class _Tile extends StatelessWidget {
+  const _Tile({required this.child, required this.color, this.size = 120, this.radius = 28, this.line = false});
+
+  final Widget child;
+  final Color color;
+  final double size;
+  final double radius;
+  final bool line;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: size,
+    height: size,
+    alignment: Alignment.center,
+    decoration: BoxDecoration(
+      color: color,
+      borderRadius: BorderRadius.circular(radius),
+      border: line ? Border.all(color: MikkyUi.of(context).line) : null,
+    ),
+    child: child,
+  );
+}
+
+/// One proposal for the icon: big on black and on white, then at the
+/// sizes Windows shows (taskbar, notification area).
+class _IconProposal extends StatelessWidget {
+  const _IconProposal(this.rows);
+
+  final List<String> rows;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        _Tile(color: const Color(0xFF0B0B0C), child: SignatureStar(rows, size: 76)),
+        const SizedBox(width: 12),
+        _Tile(color: const Color(0xFFFFFFFF), line: true, child: SignatureStar(rows, size: 76)),
+      ]),
+      const SizedBox(height: 12),
+      Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
+        for (final px in [48.0, 32.0, 24.0, 16.0]) ...[
+          Column(mainAxisSize: MainAxisSize.min, children: [
+            _Tile(color: const Color(0xFF0B0B0C), size: px, radius: px * .22, child: SignatureStar(rows, size: px * .72)),
+            const SizedBox(height: 4),
+            Text('${px.round()}', style: uiText(10, color: ui.text3, tabular: true)),
+          ]),
+          const SizedBox(width: 10),
+        ],
+        // Alone, no background: the notification area.
+        Column(mainAxisSize: MainAxisSize.min, children: [
+          SignatureStar(rows, size: 16),
+          const SizedBox(height: 4),
+          Text('seule', style: uiText(10, color: ui.text3)),
+        ]),
+      ]),
+    ]);
+  }
+}
+
+/// The fonts on trial (all free, SIL Open Font License): close to the one
+/// of their picture (ALTMistral, Mistral's own, not free), and pixel ones.
+const trialSans = ['Geist', 'Inter', 'Host Grotesk', 'Hanken Grotesk', 'Schibsted Grotesk', 'Onest', 'Space Grotesk'];
+const trialPixel = ['Pixelify Sans', 'Silkscreen', 'Jersey 10', 'Tiny5', 'VT323'];
+const trialMono = ['Geist Mono', 'JetBrains Mono', 'Space Mono'];
+
+/// One font: the mark with the name, a sentence, the sizes the window
+/// uses.
+class _FontSample extends StatelessWidget {
+  const _FontSample(this.family, {this.pixel = false});
+
+  final String family;
+  final bool pixel;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    TextStyle t(double size, {FontWeight weight = FontWeight.w400, Color? color, double height = 1.3, double tracking = 0}) =>
+        uiText(size, weight: weight, color: color ?? ui.text, height: height, tracking: tracking).copyWith(fontFamily: family);
+    return SizedBox(
+      width: 380,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          const SignatureStar(SignatureStar.small, size: 30),
+          const SizedBox(width: 10),
+          Text('Mikky', style: t(36, weight: FontWeight.w600, height: 1.1, tracking: pixel ? 0 : -.02)),
+        ]),
+        const SizedBox(height: 10),
+        Text('Tes agents.\nSous l’œil de Mikky.', style: t(26, weight: FontWeight.w500, height: 1.12, tracking: pixel ? 0 : -.015)),
+        const SizedBox(height: 12),
+        if (!pixel) ...[
+          Text('Corrige les tests du moteur', style: t(14, weight: FontWeight.w600)),
+          Text('Modifie island_machine.dart · il y a 2 min', style: t(12.5, color: ui.text2)),
+          const SizedBox(height: 4),
+          Text('Codex · 5 h : 38 % · repart à 17 h 10', style: t(11.5, color: ui.text3)),
+        ] else
+          Text('38 %  ·  17:10  ·  3 étapes  ·  12 agents', style: t(18, color: ui.text2)),
+      ]),
+    );
+  }
+}
+
 final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
+    BoardSection(
+      title: 'Signature',
+      note: 'Les deux couleurs de Mikky : l’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). L’étoile : bleue au milieu, orange aux extrémités.',
+      frames: [
+        BoardFrame(
+          label: 'Orange et bleu',
+          note: 'Du cœur au bord, quatre niveaux chacun.',
+          width: 330,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  for (final c in pal.levels)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Container(width: 78, height: 56, color: c),
+                        const SizedBox(height: 4),
+                        Text(_hex(c), style: uiText(10.5, mono: true, color: ui.text3)),
+                      ]),
+                    ),
+                ]),
+              ),
+          ]),
+        ),
+        const BoardFrame(label: 'A · petite étoile', note: 'Sept pixels de côté : le cœur et ses diagonales en bleu, rouge puis orange au bout.', width: 252, child: _IconProposal(SignatureStar.small)),
+        const BoardFrame(label: 'B · grande étoile', note: 'Neuf pixels : des bras plus longs, le bleu va jusqu’au plus foncé avant l’orange.', width: 252, child: _IconProposal(SignatureStar.big)),
+        const BoardFrame(label: 'C · croix', note: 'Le cœur en bleu, les bras orange qui s’éclaircissent au bout.', width: 252, child: _IconProposal(SignatureStar.block)),
+        const BoardFrame(
+          label: 'Vivante',
+          note: 'Le feu d’artifice calme, aux deux couleurs : démarrage, « Nouvel agent ».',
+          width: 200,
+          child: _Tile(color: Color(0xFF0B0B0C), size: 150, radius: 34, child: SignatureFirework(size: 96)),
+        ),
+      ],
+    ),
     BoardSection(
       title: 'Couleurs de l’interface',
       note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
@@ -179,9 +320,20 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
     ),
     BoardSection(
       title: 'Lettres',
+      note: 'Ta capture est en ALTMistral, la police maison de Mistral (pas libre). Voici des polices libres proches. Choisis-en une à gauche : toutes les planches passent dedans.',
+      frames: [for (final f in trialSans) BoardFrame(label: f, width: 380, child: _FontSample(f))],
+    ),
+    BoardSection(
+      title: 'Lettres pixel',
+      note: 'Pour les titres ou les chiffres, avec la police du texte.',
+      frames: [for (final f in trialPixel) BoardFrame(label: f, width: 380, child: _FontSample(f, pixel: true))],
+    ),
+    BoardSection(
+      title: 'Échelle',
+      note: 'Les tailles de la fenêtre, dans la police choisie à gauche.',
       frames: [
         BoardFrame(
-          label: 'Geist et Geist Mono',
+          label: '${UiFonts.sans} et ${UiFonts.mono}',
           width: 560,
           child: SizedBox(
             width: 560,

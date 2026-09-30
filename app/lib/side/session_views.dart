@@ -296,14 +296,14 @@ String _stepLabel(List<ToolItem> tools) {
 
 /// The color of an important action (user request, 2026-09-30); reading
 /// and searching stay grey.
-Color? _stepColor(List<ToolItem> tools, MikkyUi ui) {
+PixelFxPalette? _stepTone(List<ToolItem> tools, MikkyUi ui) {
   final t = tools.first;
   return switch (t.kind) {
-    ToolKind.edit => t.diff != null && t.diff!.oldText == null ? ui.green : ui.blue,
-    ToolKind.delete => ui.red,
-    ToolKind.move => ui.yellow,
-    ToolKind.execute => ui.amber,
-    ToolKind.fetch => ui.purple,
+    ToolKind.edit => t.diff != null && t.diff!.oldText == null ? PixelFxPalette.green(ui) : PixelFxPalette.blue,
+    ToolKind.delete => PixelFxPalette.red,
+    ToolKind.move => PixelFxPalette.yellow,
+    ToolKind.execute => PixelFxPalette.fire,
+    ToolKind.fetch => PixelFxPalette.violet,
     _ => null,
   };
 }
@@ -321,7 +321,7 @@ List<Widget> _mainSteps(SessionLog log, TurnSpan turn, List<ToolItem> tools, Mik
       for (var i = 0; i < turn.plan.length; i++)
         TaskStep(
           label: turn.plan[i].content,
-          color: ui.green,
+          tone: PixelFxPalette.green(ui),
           state: switch (turn.plan[i].status) {
             PlanStatus.completed => TaskStepState.done,
             PlanStatus.inProgress => turn.running ? TaskStepState.now : TaskStepState.done,
@@ -344,7 +344,7 @@ List<Widget> _mainSteps(SessionLog log, TurnSpan turn, List<ToolItem> tools, Mik
     for (final (_, group) in groups)
       TaskStep(
         label: _stepLabel(group),
-        color: _stepColor(group, ui),
+        tone: _stepTone(group, ui),
         state: group.any((t) => t.active)
             ? TaskStepState.now
             : (group.any((t) => t.status == ToolStatus.failed) ? TaskStepState.failed : TaskStepState.done),

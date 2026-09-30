@@ -44,11 +44,30 @@ class BoardSection extends StatelessWidget {
               ),
             ),
           const SizedBox(height: 22),
-          Wrap(spacing: 48, runSpacing: 44, crossAxisAlignment: WrapCrossAlignment.start, children: frames),
+          // Every frame's head as tall as the tallest: the screens of a row
+          // start on one line (user request, 2026-09-30).
+          _HeadHeight(
+            height: [for (final f in frames.whereType<BoardFrame>()) f._headHeight(context)].fold(0.0, (a, b) => a > b ? a : b),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (var i = 0; i < frames.length; i++) ...[if (i > 0) const SizedBox(width: 48), frames[i]],
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+}
+
+class _HeadHeight extends InheritedWidget {
+  const _HeadHeight({required this.height, required super.child});
+
+  final double height;
+
+  @override
+  bool updateShouldNotify(_HeadHeight old) => old.height != height;
 }
 
 /// One frame on a board: its name, a line about it, then the thing itself,
@@ -63,19 +82,43 @@ class BoardFrame extends StatelessWidget {
   /// Width of the text above; the child keeps its own size.
   final double? width;
 
+  static TextStyle _labelStyle(MikkyUi ui) => uiText(13, weight: FontWeight.w600, color: ui.text2);
+  static TextStyle _noteStyle(MikkyUi ui) => uiText(11.5, color: ui.text3, height: 1.4);
+
+  /// The height of the label and the note, laid out.
+  double _headHeight(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    double measure(String text, TextStyle style, double width) {
+      final p = TextPainter(text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr)..layout(maxWidth: width);
+      final h = p.height;
+      p.dispose();
+      return h;
+    }
+
+    return measure(label, _labelStyle(ui), double.infinity) + (note == null ? 0 : 3 + measure(note!, _noteStyle(ui), width ?? 320));
+  }
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final head = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(label, style: _labelStyle(ui)),
+        if (note != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 3),
+            child: SizedBox(width: width ?? 320, child: Text(note!, style: _noteStyle(ui))),
+          ),
+      ],
+    );
+    final height = context.dependOnInheritedWidgetOfExactType<_HeadHeight>()?.height;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: uiText(13, weight: FontWeight.w600, color: ui.text2)),
-        if (note != null)
-          Padding(
-            padding: const EdgeInsets.only(top: 3),
-            child: SizedBox(width: width ?? 320, child: Text(note!, style: uiText(11.5, color: ui.text3, height: 1.4))),
-          ),
+        if (height == null) head else SizedBox(height: height, child: Align(alignment: Alignment.topLeft, child: head)),
         const SizedBox(height: 10),
         child,
       ],
@@ -84,8 +127,9 @@ class BoardFrame extends StatelessWidget {
 }
 
 /// A canvas as in Figma: the wheel scrolls it (Shift: sideways), Ctrl and
-/// the wheel zoom around the mouse, dragging the empty space moves it.
-/// Frames on it stay live.
+/// the wheel zoom around the mouse; dragging moves it — anywhere, even on
+/// a frame (a click stays a click), with Space held (the hand), or with
+/// the middle button (user request, 2026-09-30). Frames on it stay live.
 class BoardCanvas extends StatefulWidget {
   const BoardCanvas({super.key, required this.child, required this.background, this.onScale});
 
@@ -104,7 +148,30 @@ class BoardCanvasState extends State<BoardCanvas> {
   Offset _offset = _start;
   double _scale = 1;
 
+  /// Space held: the hand, every drag moves the canvas.
+  bool _hand = false;
+  bool _dragging = false;
+
   double get scale => _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    HardwareKeyboard.instance.addHandler(_key);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_key);
+    super.dispose();
+  }
+
+  bool _key(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.space || event is KeyRepeatEvent) return false;
+    final down = event is KeyDownEvent;
+    if (down != _hand) setState(() => _hand = down);
+    return false;
+  }
 
   void reset() {
     setState(() {
@@ -140,25 +207,47 @@ class BoardCanvasState extends State<BoardCanvas> {
     });
   }
 
+  void _pan(Offset delta) => setState(() => _offset += delta);
+
   @override
   Widget build(BuildContext context) => Listener(
     onPointerSignal: _signal,
-    child: ClipRect(
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onPanUpdate: (d) => setState(() => _offset += d.delta),
-              child: MouseRegion(cursor: SystemMouseCursors.grab, child: ColoredBox(color: widget.background)),
-            ),
+    // The middle button always moves the canvas.
+    onPointerDown: (e) {
+      if (e.buttons & kMiddleMouseButton != 0) setState(() => _dragging = true);
+    },
+    onPointerMove: (e) {
+      if (e.buttons & kMiddleMouseButton != 0) _pan(e.delta);
+    },
+    onPointerUp: (_) {
+      if (_dragging) setState(() => _dragging = false);
+    },
+    // A drag anywhere moves it too: past a few pixels the drag wins over
+    // the frames' taps; a plain click still reaches them.
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onPanStart: (_) => setState(() => _dragging = true),
+      onPanUpdate: (d) => _pan(d.delta),
+      onPanEnd: (_) => setState(() => _dragging = false),
+      onPanCancel: () => setState(() => _dragging = false),
+      child: MouseRegion(
+        cursor: _dragging ? SystemMouseCursors.grabbing : (_hand ? SystemMouseCursors.grab : MouseCursor.defer),
+        child: ClipRect(
+          child: Stack(
+            children: [
+              Positioned.fill(child: ColoredBox(color: widget.background)),
+              Positioned(
+                left: _offset.dx,
+                top: _offset.dy,
+                child: IgnorePointer(
+                  // The hand: the frames do not see the mouse.
+                  ignoring: _hand || _dragging,
+                  child: Transform.scale(scale: _scale, alignment: Alignment.topLeft, child: widget.child),
+                ),
+              ),
+            ],
           ),
-          Positioned(
-            left: _offset.dx,
-            top: _offset.dy,
-            child: Transform.scale(scale: _scale, alignment: Alignment.topLeft, child: widget.child),
-          ),
-        ],
+        ),
       ),
     ),
   );

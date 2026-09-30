@@ -47,7 +47,9 @@ Reste de l'étape 1, pas urgent : valider les expressions sans transformation (q
 
 Ensuite, dans l'ordre voulu par l'utilisateur : gérer Claude et Codex, **planifier des tâches**, puis les apps tierces (mini-apps, communauté, plugins).
 
-## 3. Design validé (maquettes HTML, la référence visuelle)
+## 3. Design validé
+
+**Depuis le 2026-09-30, la référence visuelle, ce sont les planches (`mikky.exe --kit`)** ; les maquettes HTML ci-dessous sont dépassées (l'utilisateur les a abandonnées), gardées pour l'historique.
 
 - **UI** : `design/prototypes/composants.html` — boutons, sélecteurs, interrupteurs, champs, navigation, états d'un agent, notifications, et le tableau des animations (valeurs à reprendre dans Flutter). Couleurs et formes tirées de `design/references/boutons-lanceur.png` (gris, blanc, noir ; capsules, boutons ronds ; **pas** la mise en page « lecteur »). Style commun : `design/prototypes/mikky-ui.css` (jetons clair / sombre). Quelques petits bugs à corriger plus tard.
 - **UX** : `design/prototypes/ux-a.html` (piste A, en simple) :
@@ -108,7 +110,9 @@ Les transformations : **c'est Mikky lui-même qui se transforme**, de façon org
 
 Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), toujours en repassant par le chat. Code : `packages/mikky_engine/lib/src/mikky/` (`mikky.dart`, `mikky_geometry.dart`).
 
-**Direction artistique retenue le 2026-09-30 : « Mikky, le chat magique, avec de l'informatique et des pixels ».** Les indicateurs de la petite fenêtre sont en pixel art (`app/lib/ui/pixel_fx.dart`) : chaque état est un petit feu d'artifice calme (7 × 7, `StatusFx`) qui s'ouvre et se referme sur place dans sa couleur (terminé : vert, figé ; dort : plus lent) ; étincelle, feu d'artifice complet et galaxie restent en essai dans le kit (les carrés d'état et le lanceur ont été abandonnés), palettes violet / blanc, bleu clair / foncé, orange / rouge, rouge / rouge foncé. Mikky « Travaille » saute (sans devenir la boule) ; « Réfléchit » : le chat qui regarde en l'air avec la bulle « ••• » (première version). Mis de côté dans le kit : l'étoile qui réfléchit.
+**Direction artistique retenue le 2026-09-30 : « Mikky, le chat magique, avec de l'informatique et des pixels ».** Les indicateurs de la petite fenêtre sont en pixel art (`app/lib/ui/pixel_fx.dart`) : chaque état est un petit feu d'artifice calme (7 × 7, `StatusFx`) qui s'ouvre et se referme sur place dans sa couleur (terminé : vert, figé ; dort : plus lent) ; étincelle, feu d'artifice complet et galaxie restent en essai dans le kit (les carrés d'état et le lanceur ont été abandonnés), palettes violet / blanc, bleu clair / foncé, orange / rouge, rouge / rouge foncé. Mikky « Travaille » saute (sans devenir la boule) ; « Réfléchit » : le chat qui regarde en l'air avec la bulle « ••• » (première version). Mis de côté dans le kit : l'étoile qui réfléchit. Dans le chat, chaque étape a une petite étoile fixe (5 × 5, `PixelStar`) de la couleur de son action ; les groupes gris de l'accueil (Historique, Archives) ont l'étoile grise, figée.
+
+**Marque (2026-09-30)** : le nom **Mikky** est validé. **Couleurs signature** validées : l'orange de la capture de l'utilisateur (`#FF8204`, `#FA500F`, `#E51300`, `#C4001D`) et le même en bleu (`#04BCFF`, `#0F84FA`, `#0045E5`, `#000DC4`), `PixelFxPalette.signatureOrange` / `signatureBlue`. L'icône sera une étoile pixel **bleue au milieu, orange aux extrémités** : trois propositions (A petite, B grande, C croix, `SignatureStar`) sur la planche Marque, à choisir, puis l'icône de l'app et de la zone de notification. **Police** : en essai (Geist actuelle ; Inter, Host Grotesk, Hanken Grotesk, Schibsted Grotesk, Onest, Space Grotesk proches de la capture — ALTMistral, police de Mistral, pas libre ; pixel : Pixelify Sans, Silkscreen, Jersey 10, Tiny5, VT323 ; mono : Geist Mono, JetBrains Mono, Space Mono), dans `app/assets/fonts/trial/`, choix à gauche des planches (`UiFonts`) ; garder la choisie, supprimer les autres. À voir plus tard : palettes pixel nommées, Mikky en pixels.
 
 ## 7. Lancer, tester, vérifier
 
@@ -116,7 +120,7 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 - Moteur : `C:\dev\flutter\bin\dart.bat test` dans `packages/mikky_engine`.
 - Goldens : `C:\dev\flutter\bin\flutter.bat test --update-goldens test/mikky_expressions_test.dart` dans `app/`, puis **regarder les images**.
 - Vérif à l'écran : captures GDI avec `CAPTUREBLT`, souris simulée avec `SendInput` (pas `SetCursorPos`), prototypes rendus avec Chrome headless (voir `CLAUDE.md`).
-- **Planches** (comme Figma, pour valider avec l'utilisateur avant l'app) : `mikky.exe --kit` (`--perf` pour les temps d'image) — `app/lib/boards/` : Marque, Composants, Accueil, Agent, Messages ; chaque état d'écran vient de fausses sessions (`fake_sessions.dart`) ; molette = défiler, Maj = de côté, Ctrl = zoom ; clair, sombre ou les deux. Images : `app/test/boards_test.dart`. Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
+- **Planches** (comme Figma, pour valider avec l'utilisateur avant l'app) : `mikky.exe --kit` (`--perf` pour les temps d'image) — `app/lib/boards/` : Marque, Composants, Accueil, Agent, Messages ; chaque état d'écran vient de fausses sessions (`fake_sessions.dart`) ; glisser = déplacer (partout, ou Espace + glisser, ou bouton du milieu), molette = défiler, Maj = de côté, Ctrl = zoom ; clair, sombre ou les deux ; police au choix. Les écrans d'une rangée commencent à la même hauteur. Images : `app/test/boards_test.dart`. Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
 - Essais à l'écran de la petite fenêtre : souris simulée par `SendInput` (structure `INPUT` de 40 octets en x64 !), clavier par `SendKeys`, capture avec `CAPTUREBLT`.
 
 ## 8. Pièges déjà rencontrés
