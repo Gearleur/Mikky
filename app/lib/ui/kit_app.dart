@@ -4,6 +4,7 @@ import 'brand_logo.dart';
 import 'buttons.dart';
 import 'cards.dart';
 import 'feedback.dart';
+import 'pixel_fx.dart';
 import 'field.dart';
 import 'icons.dart';
 import 'selectors.dart';
@@ -109,11 +110,24 @@ class _KitHomeState extends State<KitHome> {
     Widget group(String id, String label, Color color, int n, List<Widget> cards, {bool first = false}) => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GroupHeader(label: label, color: color, count: n, open: _open[id]!, first: first, onTap: () => setState(() => _open[id] = !_open[id]!)),
+        GroupHeader(
+          label: label,
+          color: color,
+          count: n,
+          open: _open[id]!,
+          first: first,
+          status: switch (id) {
+            'wait' => UiStatus.approval,
+            'work' => UiStatus.working,
+            'done' => UiStatus.finished,
+            _ => null,
+          },
+          onTap: () => setState(() => _open[id] = !_open[id]!),
+        ),
         if (_open[id]!)
           for (var i = 0; i < cards.length; i++)
             Padding(
-              padding: EdgeInsets.only(top: i == 0 ? 0 : (id == 'old' ? 0 : 8)),
+              padding: EdgeInsets.zero,
               child: cards[i],
             ),
       ],
@@ -137,7 +151,8 @@ class _KitHomeState extends State<KitHome> {
                     AgentCard(
                       status: UiStatus.approval,
                       title: 'Met à jour le site',
-                      who: 'Codex',
+                      who: 'WSL',
+                      brand: Brand.codex,
                       subtitle: 'Veut lancer une commande',
                       style: AgentCardStyle.waiting,
                       actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
@@ -147,27 +162,27 @@ class _KitHomeState extends State<KitHome> {
                     AgentCard(
                       status: UiStatus.working,
                       title: 'Corrige les tests du moteur',
-                      who: 'Claude',
+                      who: '',
+                      brand: Brand.claude,
                       subtitle: 'Modifie island_machine.dart',
                       onTap: () {},
                     ),
                     AgentCard(
                       status: UiStatus.thinking,
                       title: 'Prépare le plan de l’API',
-                      who: 'Claude',
+                      who: '',
+                      brand: Brand.codex,
                       subtitle: 'Réfléchit au plan',
                       onTap: () {},
                     ),
                   ]),
-                  group('done', 'Terminés', ui.green, 1, [
-                    AgentCard(
-                      status: UiStatus.finished,
-                      title: 'Résume la spec',
-                      who: 'Claude',
-                      subtitle: 'Il y a 2 min',
-                      style: AgentCardStyle.done,
-                      onTap: () {},
-                    ),
+                  group('done', 'Terminés', ui.green, 3, [
+                    for (final (t, b, ago, w) in [
+                      ('Résume la spec', Brand.claude, 'Il y a 2 min', ''),
+                      ('Ajoute les tests du lecteur Codex', Brand.codex, 'Il y a 14 min', 'WSL'),
+                      ('Corrige le clic en dehors', Brand.claude, 'Il y a 1 h', ''),
+                    ])
+                      AgentCard(status: UiStatus.finished, title: t, who: w, brand: b, subtitle: ago, style: AgentCardStyle.done, onTap: () {}),
                   ]),
                   group('old', 'Historique', ui.grey, 12, [
                     for (final (t, w) in [
@@ -388,7 +403,7 @@ class _KitPartsState extends State<KitParts> {
       children: [
         section(
           'Boutons',
-          caption: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Rond : une action en icône. Barre : un groupe d’actions posé sur une capsule.',
+          caption: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Rond : une action en icône. Barre : un groupe d’actions posé sur une capsule. Réponses : petits boutons à plat, le carré blanc glisse vers la réponse appuyée.',
           [
             line([
               MButton('Lancer', kind: ButtonKind.primary, onPressed: () {}),
@@ -401,6 +416,12 @@ class _KitPartsState extends State<KitParts> {
               sep,
               const MButton('Lancer', kind: ButtonKind.primary),
               MButton(_sending ? 'Envoi…' : 'Envoyer', kind: ButtonKind.primary, loading: _sending, onPressed: _send),
+            ]),
+            // Oui / Non of a waiting agent (validated 2026-09-30).
+            line([
+              AnswerBar(answers: [('Non', () {}), ('Oui', () {})]),
+              sep,
+              AnswerBar(answers: [('Toujours', () {}), ('Non', () {}), ('Oui', () {})]),
             ]),
             line([
               for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
@@ -517,13 +538,13 @@ class _KitPartsState extends State<KitParts> {
             runSpacing: 6,
             children: [
               for (final (s, b, small) in [
-                (UiStatus.working, 'Travaille', 'onde bleue'),
-                (UiStatus.thinking, 'Réfléchit', 'respire'),
-                (UiStatus.approval, 'Attend ton feu vert', 'deux sauts, une pause'),
-                (UiStatus.finished, 'Terminé', 'coche qui rebondit'),
-                (UiStatus.error, 'Erreur', 'tremble une fois'),
-                (UiStatus.limited, 'Limité', 'attend la fin de la limite'),
-                (UiStatus.sleeping, 'Dort', 'presque éteint'),
+                (UiStatus.working, 'Travaille', 'bleu, vif'),
+                (UiStatus.thinking, 'Réfléchit', 'feu d’artifice violet'),
+                (UiStatus.approval, 'Attend ton feu vert', 'orange, le plus vif'),
+                (UiStatus.finished, 'Terminé', 'feu d’artifice vert, figé'),
+                (UiStatus.error, 'Erreur', 'feu d’artifice rouge'),
+                (UiStatus.limited, 'Limité', 'feu d’artifice jaune'),
+                (UiStatus.sleeping, 'Dort', 'gris, le plus lent'),
               ])
                 SizedBox(
                   width: 200,
@@ -581,6 +602,26 @@ class _KitPartsState extends State<KitParts> {
               ],
             ),
             const TypingDots(),
+          ]),
+          // Every state in each pixel-art effect (2026-09-30); the calm
+          // firework is the one in use.
+          for (final kind in PixelFxKind.values)
+            line([
+              SizedBox(
+                width: 76,
+                child: Text(switch (kind) {
+                  PixelFxKind.sparkle => 'Étincelle',
+                  PixelFxKind.firework => 'Feu d’artifice',
+                  PixelFxKind.fireworkSoft => 'Plus simple',
+                  PixelFxKind.galaxy => 'Galaxie',
+                }, style: uiText(13, color: ui.text2)),
+              ),
+              for (final st in UiStatus.values) StatusFx(st, kind: kind, size: 34),
+            ]),
+          // Set aside (2026-09-30): the star tried on Mikky thinking.
+          line([
+            const ThinkingStar(size: 30),
+            Text('Étoile qui réfléchit', style: uiText(13, color: ui.text2)),
           ]),
         ]),
         section('Logos des outils', [

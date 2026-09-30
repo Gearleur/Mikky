@@ -206,10 +206,10 @@ class HomePage extends StatelessWidget {
       HomeGroup.history: ('Historique', ui.grey),
     };
     final body = <Widget>[];
-    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false}) {
+    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false, UiStatus? status}) {
       if (list.isEmpty) return;
       final isOpen = scope.groups[key] ?? true;
-      body.add(GroupHeader(label: label, color: color, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
+      body.add(GroupHeader(label: label, color: color, status: status, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
       body.add(AnimatedSize(
         duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
         curve: Motion.enter,
@@ -224,7 +224,13 @@ class HomePage extends StatelessWidget {
 
     for (final g in HomeGroup.values) {
       final (label, color) = labels[g]!;
-      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history);
+      // No cards any more: the rows follow each other without a gap.
+      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: true, status: switch (g) {
+        HomeGroup.waiting => UiStatus.approval,
+        HomeGroup.working => UiStatus.working,
+        HomeGroup.done => UiStatus.finished,
+        HomeGroup.history => null,
+      });
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     // What is left of the subscriptions (Codex tells it; Claude does not,
@@ -285,7 +291,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting when e.log.question != null => AgentCard(
           status: UiStatus.approval,
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: 'Pose une question : ${log.detail}',
@@ -295,7 +301,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
           status: UiStatus.approval,
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: askLabel(log),
@@ -313,7 +319,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
@@ -322,7 +328,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.working => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
@@ -331,7 +337,8 @@ class HomePage extends StatelessWidget {
       HomeGroup.done => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          // The logo says Claude or Codex; only where it ran is left.
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
