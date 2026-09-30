@@ -254,6 +254,19 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           ),
         ),
         BoardFrame(
+          label: 'Claude au travail : deux essais',
+          note: 'À gauche, son logo qui tourne et respire (dans l’app). À droite, l’étoile de Claude Code, comme dans son terminal : point, croix, astérisque, étoile, fleur, et retour.',
+          child: _Tray([
+            Row(children: [
+              const SizedBox(width: 34, child: Center(child: SpinningLogo(claude: true, child: BrandLogo(Brand.claude, size: 32)))),
+              const SizedBox(width: 40),
+              const SizedBox(width: 34, child: Center(child: ClaudeSpinner(size: 30))),
+              const SizedBox(width: 12),
+              Text('Pondering…', style: uiText(13, color: const Color(0xFFD97757), weight: FontWeight.w500)),
+            ]),
+          ], width: 300),
+        ),
+        BoardFrame(
           label: 'Agents',
           child: _Tray([
             SlidingHover(

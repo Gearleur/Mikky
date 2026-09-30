@@ -214,6 +214,12 @@ void main() {
         ups.add(MikkyGeometry.of(m, 100).translateY);
       }
       expect(ups.reduce(math.min), lessThan(-12));
+      // Slowly (user request, 2026-09-30): about one hop every 2 s.
+      var hops = 0;
+      for (var i = 1; i < ups.length; i++) {
+        if (ups[i - 1] > -4 && ups[i] <= -4) hops++;
+      }
+      expect(hops, inInclusiveRange(5, 7));
     });
 
     test('thinking: himself, looking up, with the « ••• » bubble; no hop', () {

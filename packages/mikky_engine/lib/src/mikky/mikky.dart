@@ -325,27 +325,29 @@ class Mikky {
     }
   }
 
-  /// Crouch, jump, land. [small] for a little hop.
-  void hop({bool small = false, double? height}) {
+  /// Crouch, jump, land. [small] for a little hop; [pace] above 1 plays
+  /// it slower.
+  void hop({bool small = false, double? height, double pace = 1}) {
     final h = height ?? (small ? .12 : .3);
-    animate(MikkyProp.scaleY, const [
-      Keyframe(.88, 90, Easings.out),
-      Keyframe(1.14, 120, Easings.out),
-      Keyframe(1, 180, Easings.inOut),
-      Keyframe(.86, 70, Easings.out),
-      Keyframe(1, 200, Easings.back),
+    double ms(double v) => v * pace;
+    animate(MikkyProp.scaleY, [
+      Keyframe(.88, ms(90), Easings.out),
+      Keyframe(1.14, ms(120), Easings.out),
+      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(.86, ms(70), Easings.out),
+      Keyframe(1, ms(200), Easings.back),
     ]);
-    animate(MikkyProp.scaleX, const [
-      Keyframe(1.1, 90, Easings.out),
-      Keyframe(.92, 120, Easings.out),
-      Keyframe(1, 180, Easings.inOut),
-      Keyframe(1.12, 70, Easings.out),
-      Keyframe(1, 200, Easings.back),
+    animate(MikkyProp.scaleX, [
+      Keyframe(1.1, ms(90), Easings.out),
+      Keyframe(.92, ms(120), Easings.out),
+      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(1.12, ms(70), Easings.out),
+      Keyframe(1, ms(200), Easings.back),
     ]);
     animate(MikkyProp.offsetY, [
-      const Keyframe(.04, 90, Easings.out),
-      Keyframe(-h, 200, Easings.out),
-      const Keyframe(0, 200, Easings.inOut),
+      Keyframe(.04, ms(90), Easings.out),
+      Keyframe(-h, ms(200), Easings.out),
+      Keyframe(0, ms(200), Easings.inOut),
     ]);
   }
 
@@ -479,7 +481,10 @@ class Mikky {
   /// Where the state makes Mikky look, instead of the cursor.
   (double, double)? _stateGaze() => switch (state) {
         MikkyState.thinking => (.55, -.8),
-        MikkyState.searching => (math.sin(_time * 2.4) * .9, .15),
+        // Searching (the agent reads, looks things up) no longer sweeps his
+        // gaze: he keeps looking at the cursor, like at work (user
+        // request, 2026-09-30: « en mode travail il regarde pas du bon
+        // côté »).
         MikkyState.sleeping => (0, .35),
         MikkyState.dizzy => (math.cos(_time * 6) * .5, math.sin(_time * 6) * .5),
         _ => null,
@@ -630,9 +635,11 @@ class Mikky {
     // Working: the mascot hops (his own hop, squash and stretch; user
     // request, 2026-09-30). Thinking is his usual self, looking up, with
     // the « ••• » bubble, as in the first version (same day).
+    // Much slower since (same day: « trop rapide, vraiment plus
+    // lentement »): a softer hop, then a rest.
     if (st == MikkyState.working && _emote == null && _time > _nextBeat) {
-      hop(height: .2);
-      _nextBeat = _time + .66;
+      hop(height: .16, pace: 1.5);
+      _nextBeat = _time + 1.9;
     }
 
     if (_hovered && !_lovedThisHover && _time - _lastMove >= 1.9) {

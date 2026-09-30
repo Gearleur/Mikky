@@ -60,7 +60,7 @@ Mêmes noms en clair et en sombre (`app/lib/ui/tokens.dart`, planche Marque) :
 
 | Quoi | Validé |
 |---|---|
-| Travaille | **le chat qui saute** (plus la boule de poils), sans badge |
+| Travaille | **le chat qui saute**, lentement (un saut doux toutes les ~2 s, 1,5 × plus lent qu'avant ; « vraiment plus lentement »), sans badge ; il regarde la souris, même quand l'agent lit ou cherche (plus de balayage du regard) |
 | Réfléchit | le chat qui regarde en l'air, avec la bulle « ••• » au-dessus de la tête ; pas de saut |
 | Attend ton feu vert | en boucle : 2 sauts en chat → « ! » sans yeux (barre large en haut, fine en bas, point bien séparé) pour 3-4 sauts → chat ; pas de badge |
 | Amour | la mascotte **à peine** déformée en cœur, yeux contents, petits cœurs au-dessus des oreilles |
@@ -80,8 +80,15 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
   - survol : le carré blanc qui glisse (voir Mouvement).
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.
 - Mikky en petit en haut à gauche ; bouton rond noir → en bas à droite pour un nouvel agent.
+- Claude au travail : son logo tourne et respire ; **en essai** sur la planche Composants, l'étoile de Claude Code (point, croix, astérisque, étoile, fleur, et retour, en orange), à choisir.
 - **Petite étoile grise à droite de chaque ligne** (demande de l'utilisateur, 2026-09-30) : l'étoile en pixels (`MenuStar`, 10 px, un peu pâle, plus nette au survol) ouvre le menu de l'agent (pause, reprendre, arrêter, VS Code, renommer, ranger…) sans ouvrir sa page ; le clic droit sur la ligne fait pareil.
 - **Agent en pause** (2026-09-30, proposé sur les planches) : dans « Travaillent », même s'il est en pause depuis longtemps ; étoile grise, « En pause », **Reprendre** à plat sous la ligne (même barre que Oui / Non).
+
+### L'île fermée, à droite
+Sous Mikky, le **feu d'artifice de l'état le plus pressant** parmi les agents (attend, erreur, limite, travaille, réfléchit, terminé, dort) ; son nom « Mikky » quand il n'y a pas d'agent.
+
+### Limite de l'abonnement
+Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 10 » (l'heure lue dans le message de Claude ou de Codex) ; dans le chat, la tâche « Limite atteinte » et une carte jaune « Limite de l'abonnement atteinte · Reprend à 17 h 10 ».
 
 ### Page d'un agent
 - **Pas de titre ni de bandeau** : le fil remplit la page. Les boutons **flottent** dessus : retour à gauche ; à droite **pause** (deux traits, seulement pendant qu'il travaille ; remplace le carré « arrêter » le 2026-09-30, qui n'arrêtait que le tour) et **« ··· »** (menu : mettre en pause ou reprendre, **arrêter l'agent** (fin de son processus et de tout ce qu'il a lancé ; la session reste), ouvrir dans VS Code, ouvrir le dossier, renommer, épingler, archiver, marquer l'erreur comme réglée, supprimer). Le clic droit sur une ligne de l'accueil ouvre le même menu.

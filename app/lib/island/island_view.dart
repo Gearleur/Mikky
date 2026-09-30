@@ -14,6 +14,8 @@ import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
+import '../ui/feedback.dart';
+import '../ui/pixel_fx.dart';
 import '../ui/tokens.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
@@ -656,6 +658,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     return count;
   }
 
+  /// The state that matters most among [agents]: waiting for you, then an
+  /// error, a limit, work, done; null when there are none.
+  static UiStatus? _mostPressing(List<Agent> agents) {
+    const order = [UiStatus.approval, UiStatus.error, UiStatus.limited, UiStatus.working, UiStatus.thinking, UiStatus.finished, UiStatus.sleeping];
+    UiStatus? best;
+    for (final a in agents) {
+      final st = UiStatus.of(a.status);
+      if (best == null || order.indexOf(st) < order.indexOf(best)) best = st;
+    }
+    return best;
+  }
+
   List<Widget> _compactContent(MikkyTheme theme, Rect rect) {
     final opacity = _motion.compactContentOpacity;
     if (opacity <= 0) return const [];
@@ -676,13 +690,23 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             ),
         ];
       case IslandEdge.right:
+        // Under Mikky, the firework of the most pressing state among the
+        // agents (user request, 2026-09-30); his name when there are none.
+        final top = _mostPressing(_snap.agents);
         return [
           Positioned(
             left: rect.left,
             top: rect.top + 62,
             width: _motion.metrics.compact.width,
             height: 18,
-            child: Opacity(opacity: opacity, child: Center(child: name)),
+            child: Opacity(
+              opacity: opacity,
+              child: Center(
+                child: top == null
+                    ? name
+                    : MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(top, size: 18)),
+              ),
+            ),
           ),
         ];
     }

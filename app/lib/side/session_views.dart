@@ -400,14 +400,16 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
             ? UiStatus.working
             : switch (turn.reason) {
                 StopReason.cancelled => UiStatus.sleeping,
-                StopReason.error || StopReason.rateLimited => UiStatus.error,
+                StopReason.rateLimited => UiStatus.limited,
+                StopReason.error => UiStatus.error,
                 _ => UiStatus.finished,
               },
         title: turn.running
             ? (log.detail.isEmpty ? 'Au travail' : log.detail)
             : switch (turn.reason) {
                 StopReason.cancelled => 'Tâche arrêtée',
-                StopReason.error || StopReason.rateLimited => 'Tâche en erreur',
+                StopReason.rateLimited => 'Limite atteinte',
+                StopReason.error => 'Tâche en erreur',
                 _ => 'Tâche terminée',
               },
         meta: meta,
@@ -420,7 +422,16 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
       gap(6);
     }
     if (turn.running) continue;
-    if (answer != null) {
+    if (turn.reason == StopReason.rateLimited && identical(turn, log.turns.last)) {
+      // The subscription's limit: when it lifts, not the raw message (user
+      // request, 2026-09-30).
+      if (answer != null) {
+        out.add(ChatMessage(me: false, text: answer.text.trim()));
+        gap(10);
+      }
+      out.add(LimitCard(resetsAt: log.limitResetsAt, message: turn.message));
+      gap(14);
+    } else if (answer != null) {
       out.add(ChatMessage(me: false, text: answer.text.trim()));
       gap(14);
     } else if (turn.message != null) {
@@ -429,6 +440,25 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
     }
   }
   return out;
+}
+
+/// A subscription's limit reached: the yellow state, when it lifts, and
+/// what the agent said, small (user request, 2026-09-30).
+class LimitCard extends StatelessWidget {
+  const LimitCard({super.key, this.resetsAt, this.message});
+
+  final DateTime? resetsAt;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) => AgentCard(
+        status: UiStatus.limited,
+        title: 'Limite de l’abonnement atteinte',
+        who: '',
+        subtitle: resetsAt == null
+            ? (message ?? 'Réessaie plus tard')
+            : 'Reprend à ${limitLine(resetsAt).split('reprend à ').last}',
+      );
 }
 
 /// The permission request at the bottom of the thread: what it asks, the

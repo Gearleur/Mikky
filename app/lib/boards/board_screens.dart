@@ -146,6 +146,7 @@ const _waiting = ('Met à jour le site', Brand.codex, 'Veut lancer une commande'
 const _working = [
   (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working),
   (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.thinking),
+  (('Traduis la documentation', Brand.claude, 'Limite atteinte · reprend à 17 h 10', ''), UiStatus.limited),
 ];
 const _workingOne = (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working);
 const _paused = ('Prépare le plan de l’API', Brand.codex, '', '');
@@ -381,7 +382,12 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
         note: 'Le fil passe sous les boutons et sous le champ, flouté.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), scrolled: true),
       ),
-      BoardFrame(label: 'Erreur (limite)', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
+      BoardFrame(
+        label: 'Limite atteinte',
+        note: 'L’abonnement est au bout : état jaune, et quand ça reprend, lu dans le message de l’agent.',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
+      ),
+      BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
       BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
       BoardFrame(
         label: 'En pause',

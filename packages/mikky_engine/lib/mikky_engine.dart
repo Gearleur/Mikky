@@ -18,5 +18,6 @@ export 'src/sessions/acp_reader.dart';
 export 'src/sessions/claude_transcript_reader.dart';
 export 'src/sessions/codex_rollout_reader.dart';
 export 'src/sessions/home_groups.dart';
+export 'src/sessions/rate_limit.dart';
 export 'src/sessions/session_event.dart';
 export 'src/sessions/session_log.dart';
