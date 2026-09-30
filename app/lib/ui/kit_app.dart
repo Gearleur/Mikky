@@ -4,6 +4,7 @@ import 'brand_logo.dart';
 import 'buttons.dart';
 import 'cards.dart';
 import 'feedback.dart';
+import 'pixel_fx.dart';
 import 'field.dart';
 import 'icons.dart';
 import 'selectors.dart';
@@ -609,6 +610,20 @@ class _KitPartsState extends State<KitParts> {
             for (final st in UiStatus.values) PixelStatus(st, size: 28),
             Text('Carrés d’état', style: uiText(13, color: ui.text2)),
           ]),
+          // Pixel-art effects to try (2026-09-30): sparkle, firework, galaxy,
+          // in four palettes.
+          for (final kind in PixelFxKind.values)
+            line([
+              SizedBox(
+                width: 76,
+                child: Text(switch (kind) {
+                  PixelFxKind.sparkle => 'Étincelle',
+                  PixelFxKind.firework => 'Feu d’artifice',
+                  PixelFxKind.galaxy => 'Galaxie',
+                }, style: uiText(13, color: ui.text2)),
+              ),
+              for (final p in PixelFxPalette.all) PixelFx(kind: kind, palette: p),
+            ]),
           line([
             const DotSnake(UiStatus.working),
             Text('Lanceur', style: uiText(13, color: ui.text2)),

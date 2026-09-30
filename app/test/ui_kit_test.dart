@@ -28,7 +28,7 @@ void main() {
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
     testWidgets('kit, $name', (tester) async {
-      const size = Size(1320, 2400);
+      const size = Size(1320, 2560);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
