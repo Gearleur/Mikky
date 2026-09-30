@@ -10,6 +10,7 @@ import '../ui/selection.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import 'session_menu.dart';
 import 'session_views.dart';
 import 'side_app.dart';
 
@@ -19,11 +20,14 @@ import 'side_app.dart';
 /// cards, and the conversation goes on. Sessions started elsewhere are
 /// followed without touching them; once done they can go on in Mikky.
 class AgentPage extends StatefulWidget {
-  const AgentPage({super.key, required this.host, required this.id, required this.back});
+  const AgentPage({super.key, required this.host, required this.id, required this.back, this.rename});
 
   final SideHost host;
   final String id;
   final VoidCallback back;
+
+  /// Opens the rename page for this session.
+  final VoidCallback? rename;
 
   @override
   State<AgentPage> createState() => _AgentPageState();
@@ -84,12 +88,20 @@ class _AgentPageState extends State<AgentPage> {
     final suivi = working && _view == 0;
     if (!suivi) _follow(log);
 
+    final usage = usageLine(log);
     final content = <Widget>[
+      if (usage.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+          child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
+        ),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
-      if (log.pending.isNotEmpty && e.live)
+      if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: AskCard(log: log, onAnswer: (allow) => widget.host.answer(e.id, allow)),
+          child: log.question != null
+              ? QuestionCard(question: log.question!, onAnswer: (answers) => _source.answerQuestion(e.id, answers))
+              : AskCard(log: log, onAnswer: (a) => widget.host.answer(e.id, a)),
         ),
     ];
 
@@ -105,6 +117,7 @@ class _AgentPageState extends State<AgentPage> {
             options: working
                 ? Segmented(options: const ['Suivi', 'Chat'], selected: _view, size: SegmentSize.field, onChanged: (i) => setState(() => _view = i))
                 : null,
+            commands: e.live ? log.commands : const [],
             onSend: _send,
           );
 
@@ -114,7 +127,15 @@ class _AgentPageState extends State<AgentPage> {
           title: e.name,
           small: true,
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
-          actions: [if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent')],
+          actions: [
+            if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
+            RoundButton(
+              'more',
+              size: 34,
+              tooltip: 'Plus',
+              onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
+            ),
+          ],
         ),
         Positioned.fill(
           top: 68,

@@ -3,7 +3,10 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/cards.dart';
+import '../ui/buttons.dart';
 import '../ui/feedback.dart';
+import '../ui/selectors.dart';
+import '../ui/surface.dart';
 import '../ui/thread.dart';
 import '../ui/tokens.dart';
 
@@ -264,7 +267,7 @@ class AskCard extends StatelessWidget {
   const AskCard({super.key, required this.log, required this.onAnswer});
 
   final SessionLog log;
-  final ValueChanged<bool> onAnswer;
+  final ValueChanged<AgentAnswer> onAnswer;
 
   @override
   Widget build(BuildContext context) => AgentCard(
@@ -272,6 +275,122 @@ class AskCard extends StatelessWidget {
         title: askLabel(log),
         who: '',
         style: AgentCardStyle.waiting,
-        actions: WaitActions(command: log.detail, onYes: () => onAnswer(true), onNo: () => onAnswer(false)),
+        actions: WaitActions(
+          command: log.detail,
+          onYes: () => onAnswer(AgentAnswer.allow),
+          onNo: () => onAnswer(AgentAnswer.deny),
+          onAlways: canAlways(log) ? () => onAnswer(AgentAnswer.allowAlways) : null,
+        ),
       );
+}
+
+/// The agent offers « always allow » for its pending request.
+bool canAlways(SessionLog log) => log.pending.firstOrNull?.options.any((o) => o.kind == 'allow_always') ?? false;
+
+/// A question with choices (Claude's question tool): the question, its
+/// choices as chips (one, or several), then Envoyer — or Passer, to let
+/// the agent go on without an answer.
+class QuestionCard extends StatefulWidget {
+  const QuestionCard({super.key, required this.question, required this.onAnswer});
+
+  final QuestionAsked question;
+
+  /// The answers by question key; null: skipped.
+  final ValueChanged<Map<String, Object>?> onAnswer;
+
+  @override
+  State<QuestionCard> createState() => _QuestionCardState();
+}
+
+class _QuestionCardState extends State<QuestionCard> {
+  final Map<String, Set<String>> _picked = {};
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final q = widget.question;
+    final complete = q.questions.every((x) => (_picked[x.key] ?? const {}).isNotEmpty);
+    return Surface(
+      radius: 18,
+      color: ui.well,
+      shadows: [CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        if (q.questions.length > 1 || q.questions.first.text.isEmpty)
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(q.message, style: uiText(14, weight: FontWeight.w600, color: ui.text))),
+        for (final x in q.questions) ...[
+          if (x.text.isNotEmpty) Text(x.text, style: uiText(q.questions.length > 1 ? 13 : 14, weight: FontWeight.w600, color: ui.text)),
+          const SizedBox(height: 8),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            for (final c in x.choices)
+              MChip(
+                c.label,
+                on: _picked[x.key]?.contains(c.label) ?? false,
+                onTap: () => setState(() {
+                  final set = _picked[x.key] ??= {};
+                  if (x.multiple) {
+                    set.contains(c.label) ? set.remove(c.label) : set.add(c.label);
+                  } else {
+                    set
+                      ..clear()
+                      ..add(c.label);
+                  }
+                }),
+              ),
+          ]),
+          const SizedBox(height: 10),
+        ],
+        Row(children: [
+          MButton('Passer', small: true, kind: ButtonKind.ghost, onPressed: () => widget.onAnswer(null)),
+          const Spacer(),
+          MButton(
+            'Envoyer',
+            small: true,
+            kind: ButtonKind.primary,
+            onPressed: complete
+                ? () => widget.onAnswer({
+                      for (final x in q.questions)
+                        x.key: x.multiple ? _picked[x.key]!.toList() : _picked[x.key]!.first,
+                    })
+                : null,
+          ),
+        ]),
+      ]),
+    );
+  }
+}
+
+/// 950, « 12,3 k », « 1,2 M ».
+String formatTokens(int n) {
+  String one(double v) => v.toStringAsFixed(v < 10 ? 1 : 0).replaceAll('.', ',').replaceAll(',0', '');
+  if (n < 1000) return '$n';
+  if (n < 1000000) return '${one(n / 1000)} k';
+  return '${one(n / 1000000)} M';
+}
+
+/// « Contexte 34 % · 12,3 k jetons » for an agent's page; empty if unknown.
+String usageLine(SessionLog log) {
+  final parts = <String>[
+    if (log.contextSize != null && log.contextUsed != null) 'Contexte ${(100 * log.contextUsed! / log.contextSize!).round()} %',
+    if (log.tokens > 0) '${formatTokens(log.tokens)} jetons',
+  ];
+  return parts.join(' · ');
+}
+
+/// « 6 % des 5 h, repart à 18:58 · 10 % de la semaine ».
+String limitsLine(LimitsSeen l) {
+  String window(LimitWindow w) {
+    final span = switch (w.minutes) {
+      300 => 'des 5 h',
+      10080 => 'de la semaine',
+      final m when m % 1440 == 0 => 'des ${m ~/ 1440} j',
+      final m when m % 60 == 0 => 'des ${m ~/ 60} h',
+      final m => 'des $m min',
+    };
+    final reset = w.resetsAt;
+    final back = reset == null || w.minutes > 1440 ? '' : ', repart à ${clockTime(reset)}';
+    return '${w.usedPercent.round()} % $span$back';
+  }
+
+  return [if (l.short != null) window(l.short!), if (l.long != null) window(l.long!)].join(' · ');
 }

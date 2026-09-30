@@ -27,6 +27,7 @@ const _icons = <String, String>{
   'more': '<circle cx="6" cy="12" r="1.1"/><circle cx="12" cy="12" r="1.1"/><circle cx="18" cy="12" r="1.1"/>',
   'mic': '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
   'stop': '<rect x="7" y="7" width="10" height="10" rx="2"/>',
+  'pin': '<path d="M12 16.5V21M8.5 3.5h7M9.5 3.5v5.2l-2.8 3.3a1 1 0 0 0 .8 1.5h9a1 1 0 0 0 .8-1.5l-2.8-3.3V3.5"/>',
 };
 
 /// Names of every icon, for the kit.

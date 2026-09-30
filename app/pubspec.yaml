@@ -13,6 +13,7 @@ dependencies:
     path: ../packages/mikky_engine
   mikky_agents:
     path: ../packages/mikky_agents
+  flutter_svg: ^2.0.10
 
 dev_dependencies:
   flutter_test:
@@ -20,6 +21,8 @@ dev_dependencies:
   flutter_lints: ^6.0.0
 
 flutter:
+  assets:
+    - assets/brands/
   shaders:
     - shaders/island.frag
   # Geist and Geist Mono, SIL Open Font License (assets/fonts/OFL.txt).

@@ -7,6 +7,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../overlay/overlay_channel.dart';
+import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/feedback.dart';
@@ -240,7 +241,7 @@ class _NewAgentPageState extends State<NewAgentPage> {
           options: Row(mainAxisSize: MainAxisSize.min, children: [
             ComposerChip(_folder == null ? 'Dossier' : folderName(_folder), icon: 'folder', onTap: _folderMenu),
             const SizedBox(width: 6),
-            ComposerChip(_modelLabel, onTap: _modelMenu),
+            ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
           ]),
         ),
       ),

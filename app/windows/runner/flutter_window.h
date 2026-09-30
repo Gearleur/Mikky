@@ -7,6 +7,9 @@
 #include <flutter/method_channel.h>
 
 #include <climits>
+#include <windows.h>
+#include <shellapi.h>
+
 #include <memory>
 
 #include "win32_window.h"
@@ -54,6 +57,12 @@ class FlutterWindow : public Win32Window {
   // Dart hears "outsideClick" (the island may close, like a popover).
   void OnGlobalButton(POINT screen_point);
 
+  // The icon in the notification area (Mikky), and its balloons, which
+  // Windows 10 / 11 show as notifications.
+  void AddTrayIcon();
+  void RemoveTrayIcon();
+  void ShowNotification(const std::wstring& title, const std::wstring& body);
+
   // Sends the latest cursor position to Dart, at most once per timer tick.
   void FlushCursor();
 
@@ -73,6 +82,9 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 
   HHOOK mouse_hook_ = nullptr;
+
+  NOTIFYICONDATAW tray_ = {};
+  bool tray_added_ = false;
 
   // Island hit area, logical px, window-relative. Empty: fully click-through.
   double hit_x_ = 0, hit_y_ = 0, hit_w_ = 0, hit_h_ = 0;

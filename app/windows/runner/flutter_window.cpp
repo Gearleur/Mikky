@@ -9,6 +9,7 @@
 #include <optional>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "resource.h"
 
 namespace {
 
@@ -18,6 +19,10 @@ constexpr UINT kCursorTimerMs = 16;
 // Posted by the hook, handled in the window procedure: the hook itself must
 // not call into Flutter.
 constexpr UINT kOutsideClickMessage = WM_APP + 1;
+// From the icon in the notification area.
+constexpr UINT kTrayMessage = WM_APP + 2;
+// Sent to every window when Explorer restarts: the icon must be added again.
+const UINT kTaskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
@@ -114,6 +119,7 @@ bool FlutterWindow::OnCreate() {
   // gaze stops following the cursor outside the window.
   // The tuning screen is an ordinary window: no hook.
   if (is_overlay()) {
+    AddTrayIcon();
     g_hook_window = this;
     mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc,
                                    GetModuleHandle(nullptr), 0);
@@ -136,7 +142,57 @@ bool FlutterWindow::OnCreate() {
   return true;
 }
 
+void FlutterWindow::AddTrayIcon() {
+  tray_.cbSize = sizeof(tray_);
+  tray_.hWnd = GetHandle();
+  tray_.uID = 1;
+  tray_.uFlags = NIF_ICON | NIF_TIP | NIF_MESSAGE | NIF_SHOWTIP;
+  tray_.uCallbackMessage = kTrayMessage;
+  tray_.hIcon = static_cast<HICON>(LoadImageW(
+      GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
+      GetSystemMetrics(SM_CXSMICON), GetSystemMetrics(SM_CYSMICON), 0));
+  wcscpy_s(tray_.szTip, L"Mikky");
+  tray_added_ = Shell_NotifyIconW(NIM_ADD, &tray_) != FALSE;
+  if (tray_added_) {
+    // Version 4: a left click comes as NIN_SELECT, a right one as
+    // WM_CONTEXTMENU, a click on a balloon as NIN_BALLOONUSERCLICK.
+    tray_.uVersion = NOTIFYICON_VERSION_4;
+    Shell_NotifyIconW(NIM_SETVERSION, &tray_);
+  }
+}
+
+void FlutterWindow::RemoveTrayIcon() {
+  if (tray_added_) {
+    Shell_NotifyIconW(NIM_DELETE, &tray_);
+    tray_added_ = false;
+  }
+  if (tray_.hIcon) {
+    DestroyIcon(tray_.hIcon);
+    tray_.hIcon = nullptr;
+  }
+}
+
+void FlutterWindow::ShowNotification(const std::wstring& title,
+                                     const std::wstring& body) {
+  if (!tray_added_) {
+    return;
+  }
+  NOTIFYICONDATAW info = tray_;
+  info.uFlags = NIF_INFO;
+  wcsncpy_s(info.szInfoTitle, title.c_str(), _TRUNCATE);
+  wcsncpy_s(info.szInfo, body.c_str(), _TRUNCATE);
+  info.dwInfoFlags = NIIF_USER | NIIF_LARGE_ICON;
+  info.hBalloonIcon = static_cast<HICON>(LoadImageW(
+      GetModuleHandle(nullptr), MAKEINTRESOURCEW(IDI_APP_ICON), IMAGE_ICON,
+      GetSystemMetrics(SM_CXICON), GetSystemMetrics(SM_CYICON), 0));
+  Shell_NotifyIconW(NIM_MODIFY, &info);
+  if (info.hBalloonIcon) {
+    DestroyIcon(info.hBalloonIcon);
+  }
+}
+
 void FlutterWindow::OnDestroy() {
+  RemoveTrayIcon();
   if (mouse_hook_) {
     UnhookWindowsHookEx(mouse_hook_);
     mouse_hook_ = nullptr;
@@ -340,6 +396,17 @@ void FlutterWindow::HandleMethodCall(
     } else {
       result->Success(flutter::EncodableValue(chosen));
     }
+  } else if (call.method_name() == "notify") {
+    // [title, body]: a notification, from the icon in the notification area.
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    if (args && args->size() == 2) {
+      const auto* title = std::get_if<std::string>(&(*args)[0]);
+      const auto* body = std::get_if<std::string>(&(*args)[1]);
+      if (title && body) {
+        ShowNotification(Utf16FromUtf8(*title), Utf16FromUtf8(*body));
+      }
+    }
+    result->Success();
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);
@@ -362,6 +429,12 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
   }
 
+  if (message == kTaskbarCreated && is_overlay()) {
+    RemoveTrayIcon();
+    AddTrayIcon();
+    return 0;
+  }
+
   switch (message) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
@@ -372,6 +445,22 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         return 0;
       }
       break;
+    case kTrayMessage:
+      if (channel_) {
+        switch (LOWORD(lparam)) {
+          case NIN_SELECT:
+          case NIN_KEYSELECT:
+            channel_->InvokeMethod("trayClick", nullptr);
+            break;
+          case WM_CONTEXTMENU:
+            channel_->InvokeMethod("trayMenu", nullptr);
+            break;
+          case NIN_BALLOONUSERCLICK:
+            channel_->InvokeMethod("notificationClick", nullptr);
+            break;
+        }
+      }
+      return 0;
     case kOutsideClickMessage:
       if (channel_) {
         channel_->InvokeMethod("outsideClick", nullptr);

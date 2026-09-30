@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'brand_logo.dart';
 import 'buttons.dart';
 import 'feedback.dart';
 import 'icons.dart';
@@ -110,6 +111,9 @@ class AgentCard extends StatelessWidget {
     this.style = AgentCardStyle.normal,
     this.actions,
     this.onTap,
+    this.onMenu,
+    this.pinned = false,
+    this.brand,
   });
 
   final UiStatus status;
@@ -121,6 +125,15 @@ class AgentCard extends StatelessWidget {
   final AgentCardStyle style;
   final Widget? actions;
   final VoidCallback? onTap;
+
+  /// A right click: what to do with this session.
+  final VoidCallback? onMenu;
+
+  /// Kept at the top of its group: a small pin before [who].
+  final bool pinned;
+
+  /// The tool's logo, before [who].
+  final Brand? brand;
 
   @override
   Widget build(BuildContext context) {
@@ -149,6 +162,8 @@ class AgentCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+                    if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
+                    if (brand != null) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
                     Text(
                       who,
                       style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
@@ -183,16 +198,19 @@ class AgentCard extends StatelessWidget {
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
     );
-    return Pressable(onTap: onTap, pressedScale: .98, child: card);
+    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: card);
+    return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
   }
 }
 
-/// The Oui / Non of a waiting agent: the command, then the two buttons.
+/// The Oui / Non of a waiting agent: the command, then the buttons.
+/// [onAlways]: « Toujours », when the agent offers to allow this kind of
+/// action from now on.
 class WaitActions extends StatelessWidget {
-  const WaitActions({super.key, required this.command, this.onYes, this.onNo});
+  const WaitActions({super.key, required this.command, this.onYes, this.onNo, this.onAlways});
 
   final String command;
-  final VoidCallback? onYes, onNo;
+  final VoidCallback? onYes, onNo, onAlways;
 
   /// Longer than this, the command gets a line of its own (up to three),
   /// above the buttons: the user must read what they say yes to.
@@ -205,7 +223,7 @@ class WaitActions extends StatelessWidget {
       const SizedBox(width: 6),
       MButton('Oui', small: true, kind: ButtonKind.primary, onPressed: onYes),
     ];
-    if (command.length <= shortCommand) {
+    if (command.length <= shortCommand && onAlways == null) {
       return Row(
         children: [
           Expanded(child: Align(alignment: Alignment.centerLeft, child: CodePill(command))),
@@ -219,7 +237,11 @@ class WaitActions extends StatelessWidget {
       children: [
         CodePill(command, maxLines: 3),
         const SizedBox(height: 8),
-        Row(mainAxisAlignment: MainAxisAlignment.end, children: buttons),
+        Row(children: [
+          if (onAlways != null) MButton('Toujours', small: true, kind: ButtonKind.ghost, onPressed: onAlways),
+          const Spacer(),
+          ...buttons,
+        ]),
       ],
     );
   }
