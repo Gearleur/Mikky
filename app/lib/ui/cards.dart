@@ -40,7 +40,22 @@ class CodePill extends StatelessWidget {
 /// folds or unfolds the group. With a [status] that has one, a small
 /// square of pixels instead of the dot.
 class GroupHeader extends StatelessWidget {
-  const GroupHeader({super.key, required this.label, required this.color, required this.count, this.open = true, this.onTap, this.first = false, this.status});
+  const GroupHeader({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.count,
+    this.open = true,
+    this.onTap,
+    this.first = false,
+    this.status,
+    this.quiet = false,
+  });
+
+  /// Pared down (trial, user request 2026-09-30: « trop d'information »):
+  /// no firework, the name and the count in grey, the chevron only under
+  /// the mouse.
+  final bool quiet;
 
   final String label;
   final Color color;
@@ -55,6 +70,7 @@ class GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    if (quiet) return _quiet(ui);
     final style = uiText(12.5, weight: FontWeight.w600, color: ui.text2, height: 1.2);
     return MouseRegion(
       cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
@@ -99,6 +115,37 @@ class GroupHeader extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on GroupHeader {
+  Widget _quiet(MikkyUi ui) => HoverBuilder(
+    builder: (context, hover) => MouseRegion(
+      cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(7, first ? 6 : 16, 6, 6),
+          child: Row(children: [
+            Text(label, style: uiText(12, weight: FontWeight.w600, color: ui.text3, height: 1.2)),
+            const SizedBox(width: 5),
+            Text('$count', style: uiText(12, weight: FontWeight.w500, color: ui.text3, height: 1.2, tabular: true)),
+            const Spacer(),
+            AnimatedOpacity(
+              opacity: hover || !open ? 1 : 0,
+              duration: const Duration(milliseconds: 140),
+              child: AnimatedRotation(
+                turns: open ? 0 : -.25,
+                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+                curve: const Cubic(.34, 1.4, .64, 1),
+                child: MikkyIcon('down', size: 13, color: ui.text3),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ),
+  );
 }
 
 enum AgentCardStyle {

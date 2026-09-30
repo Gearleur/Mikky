@@ -37,7 +37,11 @@ class HomeMock extends StatefulWidget {
     this.historyOpen = false,
     this.limited = const [],
     this.autoRelaunch = false,
+    this.calm = false,
   });
+
+  /// Pared down (trial): quiet group titles, no « WSL », short times.
+  final bool calm;
 
   /// « Relance automatique » on (the home's ··· menu): the violet star
   /// after « Agents ».
@@ -84,6 +88,12 @@ class _HomeMockState extends State<HomeMock> {
     super.dispose();
   }
 
+  /// Where it runs, unless pared down.
+  String _who(String w) => widget.calm ? '' : w;
+
+  /// « Il y a 14 min » → « 14 min » when pared down.
+  String _when(String s) => widget.calm ? s.replaceFirst('Il y a ', '') : s;
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
@@ -91,6 +101,7 @@ class _HomeMockState extends State<HomeMock> {
     void group(String id, String label, Color color, UiStatus? status, int n, List<Widget> rows) {
       if (n == 0) return;
       body.add(GroupHeader(
+        quiet: widget.calm,
         label: label,
         color: color,
         status: status,
@@ -107,7 +118,7 @@ class _HomeMockState extends State<HomeMock> {
         AgentCard(
           status: UiStatus.approval,
           title: t,
-          who: w,
+          who: _who(w),
           brand: b,
           subtitle: s,
           style: AgentCardStyle.waiting,
@@ -117,7 +128,7 @@ class _HomeMockState extends State<HomeMock> {
         ),
     ]);
     group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length + widget.limited.length, [
-      for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: w, brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
+      for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: _who(w), brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
       for (final (i, ((t, b, _, w), _)) in widget.limited.indexed)
         LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}),
       for (final (t, b, _, w) in widget.paused)
@@ -134,7 +145,7 @@ class _HomeMockState extends State<HomeMock> {
     ]);
     group('done', 'Terminés', ui.green, UiStatus.finished, widget.done.length, [
       for (final (t, b, s, w) in widget.done)
-        AgentCard(status: UiStatus.finished, title: t, who: w, brand: b, subtitle: s, style: AgentCardStyle.done, onTap: () {}, onMenu: () {}),
+        AgentCard(status: UiStatus.finished, title: t, who: _who(w), brand: b, subtitle: _when(s), style: AgentCardStyle.done, onTap: () {}, onMenu: () {}),
     ]);
     group('old', 'Historique', ui.grey, null, widget.history, [
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
@@ -223,6 +234,14 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
         label: 'Historique ouvert, limites Codex',
         child: HomeMock(done: _done, history: 12, historyOpen: true, limits: 'Codex · 5 h : 38 % · semaine : 12 % · repart à 17 h 10'),
       ),
+    ],
+  ),
+  const BoardSection(
+    title: 'Accueil épuré (essai)',
+    note: 'Un peu moins d’information : les titres de groupes sans feu d’artifice, en gris, le chevron au survol ; l’état se lit aux logos (il tourne quand l’agent travaille, sautille quand il attend). Plus de « WSL », des heures courtes.',
+    frames: [
+      BoardFrame(label: 'Tout à la fois, actuel', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
+      BoardFrame(label: 'Tout à la fois, épuré', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12, calm: true)),
     ],
   ),
 ]);
