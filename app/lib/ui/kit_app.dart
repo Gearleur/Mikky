@@ -538,13 +538,13 @@ class _KitPartsState extends State<KitParts> {
             runSpacing: 6,
             children: [
               for (final (s, b, small) in [
-                (UiStatus.working, 'Travaille', 'carré bleu qui vit'),
-                (UiStatus.thinking, 'Réfléchit', 'carré violet qui vit'),
-                (UiStatus.approval, 'Attend ton feu vert', 'carré orange qui vit'),
-                (UiStatus.finished, 'Terminé', 'carré vert clair, figé'),
-                (UiStatus.error, 'Erreur', 'carré rouge qui vit'),
-                (UiStatus.limited, 'Limité', 'carré jaune qui vit'),
-                (UiStatus.sleeping, 'Dort', 'carré gris qui vit'),
+                (UiStatus.working, 'Travaille', 'feu d’artifice bleu'),
+                (UiStatus.thinking, 'Réfléchit', 'feu d’artifice violet'),
+                (UiStatus.approval, 'Attend ton feu vert', 'feu d’artifice orange'),
+                (UiStatus.finished, 'Terminé', 'feu d’artifice vert, figé'),
+                (UiStatus.error, 'Erreur', 'feu d’artifice rouge'),
+                (UiStatus.limited, 'Limité', 'feu d’artifice jaune'),
+                (UiStatus.sleeping, 'Dort', 'feu d’artifice gris, lent'),
               ])
                 SizedBox(
                   width: 200,
@@ -603,12 +603,10 @@ class _KitPartsState extends State<KitParts> {
             ),
             const TypingDots(),
           ]),
-          // Set aside for now (user requests, 2026-09-30): the launcher, and
-          // the star tried on Mikky thinking.
-          // The pixel squares, bigger (after SmoothUI's agent avatar).
+          // Every state as the calm pixel firework, bigger.
           line([
-            for (final st in UiStatus.values) PixelStatus(st, size: 28),
-            Text('Carrés d’état', style: uiText(13, color: ui.text2)),
+            for (final st in UiStatus.values) StatusFx(st, size: 30),
+            Text('États en feu d’artifice', style: uiText(13, color: ui.text2)),
           ]),
           // Pixel-art effects to try (2026-09-30): sparkle, firework, galaxy,
           // in four palettes.
@@ -625,10 +623,8 @@ class _KitPartsState extends State<KitParts> {
               ),
               for (final p in PixelFxPalette.all) PixelFx(kind: kind, palette: p),
             ]),
+          // Set aside (2026-09-30): the star tried on Mikky thinking.
           line([
-            const DotSnake(UiStatus.working),
-            Text('Lanceur', style: uiText(13, color: ui.text2)),
-            sep,
             const ThinkingStar(size: 30),
             Text('Étoile qui réfléchit', style: uiText(13, color: ui.text2)),
           ]),

@@ -5,6 +5,7 @@ import 'brand_logo.dart';
 import 'feedback.dart';
 import 'icons.dart';
 import 'motion.dart';
+import 'pixel_fx.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -64,7 +65,7 @@ class GroupHeader extends StatelessWidget {
           child: Row(
             children: [
               if (status != null)
-                PixelStatus(status!, size: 10)
+                StatusFx(status!, size: 12)
               else
                 Container(
                   width: 7,

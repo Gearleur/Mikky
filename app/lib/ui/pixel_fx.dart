@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 import 'feedback.dart';
+import 'tokens.dart';
 
 /// Pixel-art effects to try as agent indicators (user request,
 /// 2026-09-30, after pictures of pixel sparkles, fireworks and galaxies):
@@ -38,11 +39,50 @@ class PixelFxPalette {
   static const fire = PixelFxPalette('Orange', [Color(0xFFFFF4B8), Color(0xFFFFB020), Color(0xFFFF5A1F), Color(0xFFA3140F)]);
   static const red = PixelFxPalette('Rouge', [Color(0xFFFFD6D2), Color(0xFFFF3B30), Color(0xFFC20A1E), Color(0xFF5E0610)]);
 
+  static const yellow = PixelFxPalette('Jaune', [Color(0xFFFFF8D2), Color(0xFFFFD60A), Color(0xFFF2A900), Color(0xFF8A5A00)]);
+  static const grey = PixelFxPalette('Gris', [Color(0xFFFFFFFF), Color(0xFFC7C7CC), Color(0xFF8E8E93), Color(0xFF48484A)]);
+
   static const all = [violet, blue, fire, red];
+
+  /// The palette of an agent's state; finished takes the theme's green
+  /// (the one of a done task's bubble).
+  static PixelFxPalette of(UiStatus status, MikkyUi ui) => switch (status) {
+    UiStatus.working => blue,
+    UiStatus.thinking => violet,
+    UiStatus.approval => fire,
+    UiStatus.error => red,
+    UiStatus.limited => yellow,
+    UiStatus.sleeping => grey,
+    UiStatus.finished => PixelFxPalette('Vert', [
+      const Color(0xFFE3FCEA),
+      ui.green,
+      Color.lerp(ui.green, const Color(0xFF000000), .3)!,
+      Color.lerp(ui.green, const Color(0xFF000000), .55)!,
+    ]),
+  };
+}
+
+/// An agent's state as a small pixel firework in its color, the calm one
+/// (user request, 2026-09-30): it opens and closes slowly; asleep, more
+/// slowly still; finished, it stays still, open halfway.
+class StatusFx extends StatelessWidget {
+  const StatusFx(this.status, {super.key, this.size = 16});
+
+  final UiStatus status;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => PixelFx(
+    kind: PixelFxKind.fireworkSoft,
+    palette: PixelFxPalette.of(status, MikkyUi.of(context)),
+    size: size,
+    at: status == UiStatus.finished ? 1.8 : null,
+    slow: status == UiStatus.sleeping ? 2 : 1,
+  );
 }
 
 class PixelFx extends StatelessWidget {
-  const PixelFx({super.key, required this.kind, required this.palette, this.size = 36, this.at});
+  const PixelFx({super.key, required this.kind, required this.palette, this.size = 36, this.at, this.slow = 1});
 
   final PixelFxKind kind;
   final PixelFxPalette palette;
@@ -51,16 +91,30 @@ class PixelFx extends StatelessWidget {
   /// Seconds: shows that moment, still (to look at frames).
   final double? at;
 
-  static const grid = 9;
+  /// Plays this many times slower.
+  final double slow;
+
+  /// The calm firework needs only 7 × 7: bigger pixels when small.
+  static int gridOf(PixelFxKind kind) => kind == PixelFxKind.fireworkSoft ? 7 : 9;
 
   @override
-  Widget build(BuildContext context) => at != null
+  Widget build(BuildContext context) {
+    // On a light background a white heart would be a hole: a light tint of
+    // the color instead.
+    final levels = palette.levels;
+    final shown = MikkyUi.of(context).isLight && levels.first.computeLuminance() > .8
+        ? PixelFxPalette(palette.name, [Color.lerp(levels[1], const Color(0xFFFFFFFF), .45)!, ...levels.skip(1)])
+        : palette;
+    return _build(shown);
+  }
+
+  Widget _build(PixelFxPalette palette) => at != null
       ? CustomPaint(size: Size.square(size), painter: _FxPainter(kind, palette, at!))
       : Looping(
     key: ValueKey((kind, palette.name)),
     period: const Duration(seconds: 24),
     frozenAt: .03,
-    builder: (context, t) => CustomPaint(size: Size.square(size), painter: _FxPainter(kind, palette, t * 24)),
+    builder: (context, t) => CustomPaint(size: Size.square(size), painter: _FxPainter(kind, palette, t * 24 / slow)),
   );
 }
 
@@ -73,10 +127,9 @@ class _FxPainter extends CustomPainter {
   /// Seconds.
   final double t;
 
-  static const n = PixelFx.grid, c = n ~/ 2;
-
   @override
   void paint(Canvas canvas, Size size) {
+    final n = PixelFx.gridOf(kind), c = n ~/ 2;
     final side = size.shortestSide;
     final gap = side * .018;
     final cell = (side - gap * (n - 1)) / n;
