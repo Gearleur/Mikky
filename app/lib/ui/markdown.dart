@@ -161,7 +161,7 @@ class _AgentTextState extends State<AgentText> {
         if (m[1] != null) {
           spans.add(TextSpan(text: m[1], style: const TextStyle(fontWeight: FontWeight.w600)));
         } else if (m[2] != null) {
-          spans.add(TextSpan(text: m[2], style: TextStyle(fontFamily: UiFonts.mono, fontSize: 12.5, backgroundColor: ui.track)));
+          spans.add(TextSpan(text: m[2], style: TextStyle(fontFamily: 'Geist Mono', fontSize: 12.5, backgroundColor: ui.track)));
         } else {
           final url = m[4] ?? m[5]!;
           final tap = TapGestureRecognizer()..onTap = () => openUrl(url);

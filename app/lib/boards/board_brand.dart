@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -51,11 +53,11 @@ class _Missing extends StatelessWidget {
   const _Missing();
 
   static const _items = [
-    ('Nom et logo', 'Mikky : validé. Le logo, c’est Mikky lui-même : quatre propositions en haut de cette planche, à choisir ; puis l’icône de l’app et de la zone de notification.'),
+    ('Logo', 'C, Mikky qui dépasse, est retenue ; ses variantes en haut de cette planche. Puis l’icône de l’app et de la zone de notification.'),
     ('Couleurs signature', 'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).'),
     ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
-    ('Typographie', 'En essai : choisis une police à gauche, toutes les planches passent dedans. Puis une échelle nommée (titre, corps, légende, code), et une police pixel pour les titres ou les chiffres ?'),
-    ('Mikky en pixels', 'Une première tête en pixels est dans les propositions de logo (D). À voir.'),
+    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Tiny5, Jersey ou Silkscreen, et d’autres pistes à voir. Puis une échelle nommée (titre, corps, légende, code).'),
+    ('Mikky en pixels', 'Une première tête en pixels (C7, et le feu d’artifice « Mikky »). À voir.'),
     ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
     ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),
     ('Sons', 'Aucun son. Un petit « bip » pixel quand un agent attend ou finit ?'),
@@ -113,157 +115,249 @@ class _Tile extends StatelessWidget {
   );
 }
 
-/// The ways to show Mikky as the logo (user request, 2026-09-30: the
-/// mascot himself, more present).
+/// The ways to show Mikky as the logo (user requests, 2026-09-30: the
+/// mascot himself, more present; C, peeking, is « de loin la mieux » —
+/// its alternatives).
 enum _LogoKind {
-  /// The whole cat, in the middle.
-  whole,
-
-  /// His head, big, filling the square.
-  head,
-
-  /// Peeking over the bottom edge.
+  /// C: peeking over the bottom edge.
   peek,
+
+  /// Closer: only his ears and his eyes.
+  close,
+
+  /// Tilted, from the bottom right corner.
+  tilt,
+
+  /// From the right edge, his head sideways.
+  side,
+
+  /// Upside down, hanging from the top.
+  hang,
+
+  /// Happy eyes (his « finished » face).
+  happy,
 
   /// In pixels.
   pixel,
 }
 
+/// The square's color behind him.
+enum _TileTone { plain, blue, orange }
+
 /// Mikky as the logo on a square: the real drawing (he blinks and looks
 /// around), or the pixel one.
 class _Logo extends StatelessWidget {
-  const _Logo(this.kind, {required this.size, required this.dark, this.tile = true});
+  const _Logo(this.kind, {required this.size, required this.dark, this.tone = _TileTone.plain});
 
   final _LogoKind kind;
   final double size;
   final bool dark;
-  final bool tile;
+  final _TileTone tone;
 
   @override
   Widget build(BuildContext context) {
     final t = size;
-    Widget mikky(double m, double centerY) => Positioned(
-      left: (t - m) / 2,
-      top: centerY - m * .54,
-      child: MiniMikky(size: m, animate: t >= 32),
+    final animate = t >= 32;
+    // Him, [m] wide, his body's center at [cx], [cy], turned by [turn].
+    Widget mikky(double m, double cx, double cy, {double turn = 0, MikkyState state = MikkyState.idle}) => Positioned(
+      left: cx - m / 2,
+      top: cy - m * .54,
+      child: Transform.rotate(
+        angle: turn,
+        alignment: const Alignment(0, .08),
+        child: MiniMikky(size: m, animate: animate, state: state, badge: false),
+      ),
     );
     final child = switch (kind) {
-      _LogoKind.whole => Center(child: MiniMikky(size: t * .95, animate: t >= 32)),
-      _LogoKind.head => Stack(clipBehavior: Clip.hardEdge, children: [mikky(t * 1.3, t * .6)]),
-      _LogoKind.peek => Stack(clipBehavior: Clip.hardEdge, children: [mikky(t * 1.3, t * .9)]),
-      _LogoKind.pixel => Center(
-        child: PixelMap(PixelMikky.head, colors: PixelMikky.colors, size: t * .78),
-      ),
+      _LogoKind.peek => Stack(children: [mikky(t * 1.3, t / 2, t * .9)]),
+      _LogoKind.close => Stack(children: [mikky(t * 1.8, t / 2, t * 1.08)]),
+      _LogoKind.tilt => Stack(children: [mikky(t * 1.3, t * .62, t * .92, turn: -.32)]),
+      _LogoKind.side => Stack(children: [mikky(t * 1.3, t * 1.1, t / 2, turn: -math.pi / 2)]),
+      _LogoKind.hang => Stack(children: [mikky(t * 1.3, t / 2, t * .1, turn: math.pi)]),
+      _LogoKind.happy => Stack(children: [mikky(t * 1.3, t / 2, t * .9, state: MikkyState.finished)]),
+      _LogoKind.pixel => Stack(children: [
+        Positioned(
+          left: t * .06,
+          top: t * .2,
+          child: PixelMap(PixelMikky.head, colors: PixelMikky.colors, size: t * .88),
+        ),
+      ]),
+    };
+    final color = switch (tone) {
+      _TileTone.plain => dark ? const Color(0xFF2A2A2E) : const Color(0xFFFFFFFF),
+      _TileTone.blue => PixelFxPalette.signatureBlue.levels[1],
+      _TileTone.orange => PixelFxPalette.signatureOrange.levels[0],
     };
     return MikkyUiTheme(
       ui: dark ? MikkyUi.dark : MikkyUi.light,
-      child: tile
-          ? Builder(
-              builder: (context) => _Tile(
-                // Dark: charcoal, so the black cat stands out.
-                color: dark ? const Color(0xFF2A2A2E) : const Color(0xFFFFFFFF),
-                size: t,
-                radius: t * .23,
-                line: !dark,
-                child: ClipRRect(borderRadius: BorderRadius.circular(t * .23), child: SizedBox.square(dimension: t, child: child)),
-              ),
-            )
-          : SizedBox.square(dimension: t, child: child),
+      child: Builder(
+        builder: (context) => _Tile(
+          // Dark: charcoal, so the black cat stands out.
+          color: color,
+          size: t,
+          radius: t * .23,
+          line: !dark && tone == _TileTone.plain,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(t * .23),
+            child: SizedBox.square(dimension: t, child: child),
+          ),
+        ),
+      ),
     );
   }
 }
 
-/// One proposal for the logo: big on white and on black, then at the
-/// sizes Windows shows (taskbar, notification area).
+/// One proposal for the logo: big on white and on charcoal (or on its
+/// color), then at the sizes Windows shows (taskbar, notification area).
 class _LogoProposal extends StatelessWidget {
-  const _LogoProposal(this.kind);
+  const _LogoProposal(this.kind, {this.tone = _TileTone.plain});
 
   final _LogoKind kind;
+  final _TileTone tone;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final plain = tone == _TileTone.plain;
     return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
       Row(mainAxisSize: MainAxisSize.min, children: [
-        _Logo(kind, size: 120, dark: false),
+        _Logo(kind, size: 120, dark: false, tone: tone),
         const SizedBox(width: 12),
-        _Logo(kind, size: 120, dark: true),
+        _Logo(kind, size: 120, dark: true, tone: tone),
       ]),
       const SizedBox(height: 12),
       Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-        for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
+        for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, plain), (16.0, plain)]) ...[
           Column(mainAxisSize: MainAxisSize.min, children: [
-            _Logo(kind, size: px, dark: dark),
+            _Logo(kind, size: px, dark: dark, tone: tone),
             const SizedBox(height: 4),
             Text('${px.round()}', style: uiText(10, color: ui.text3, tabular: true)),
           ]),
           const SizedBox(width: 10),
         ],
-        // Alone, no square: the notification area.
-        Column(mainAxisSize: MainAxisSize.min, children: [
-          _Logo(kind, size: 20, dark: !ui.isLight, tile: false),
-          const SizedBox(height: 4),
-          Text('seul', style: uiText(10, color: ui.text3)),
-        ]),
       ]),
     ]);
   }
 }
 
-/// The fonts on trial (all free, SIL Open Font License): close to the one
-/// of their picture (ALTMistral, Mistral's own, not free), and pixel ones.
-const trialSans = ['Geist', 'Inter', 'Host Grotesk', 'Hanken Grotesk', 'Schibsted Grotesk', 'Onest', 'Space Grotesk'];
-const trialPixel = ['Pixelify Sans', 'Silkscreen', 'Jersey 10', 'Tiny5', 'VT323'];
-const trialMono = ['Geist Mono', 'JetBrains Mono', 'Space Mono'];
+/// Pixel fonts for the app's name (user request, 2026-09-30: Geist for
+/// the text; Tiny5, Jersey, Silkscreen for the name, and more to try).
+const _nameKept = ['Tiny5', 'Jersey 10', 'Silkscreen'];
+const _nameMore = [
+  'Jersey 15',
+  'Jersey 20',
+  'Jersey 25',
+  'Micro 5',
+  'Micro 5 Charted',
+  'Press Start 2P',
+  'Handjet',
+  'Bytesized',
+  'Workbench',
+  'Sixtyfour',
+  'Doto',
+  'Jacquard 12',
+  'DotGothic16',
+];
 
-/// One font: the mark with the name, a sentence, the sizes the window
-/// uses.
-class _FontSample extends StatelessWidget {
-  const _FontSample(this.family, {this.pixel = false});
+/// The app's name in one font: with the logo, then capitals, small
+/// letters, and as a title.
+class _NameSample extends StatelessWidget {
+  const _NameSample(this.family);
 
   final String family;
-  final bool pixel;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    TextStyle t(double size, {FontWeight weight = FontWeight.w400, Color? color, double height = 1.3, double tracking = 0}) =>
-        uiText(size, weight: weight, color: color ?? ui.text, height: height, tracking: tracking).copyWith(fontFamily: family);
+    // Thin ones read better heavy.
+    final weight = switch (family) {
+      'Doto' => FontWeight.w900,
+      'Handjet' => FontWeight.w700,
+      _ => FontWeight.w400,
+    };
+    TextStyle t(double size, {Color? color}) =>
+        uiText(size, weight: weight, color: color ?? ui.text, height: 1.05).copyWith(fontFamily: family);
     return SizedBox(
-      width: 380,
+      width: 340,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const MiniMikky(size: 46),
-          const SizedBox(width: 6),
-          Text('Mikky', style: t(36, weight: FontWeight.w600, height: 1.1, tracking: pixel ? 0 : -.02)),
+          _Logo(_LogoKind.peek, size: 58, dark: !ui.isLight),
+          const SizedBox(width: 14),
+          Expanded(
+            child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text('Mikky', maxLines: 1, style: t(56))),
+          ),
+        ]),
+        const SizedBox(height: 14),
+        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+          Text('MIKKY', style: t(26)),
+          const SizedBox(width: 18),
+          Text('mikky', style: t(26)),
         ]),
         const SizedBox(height: 10),
-        Text('Tes agents.\nSous l’œil de Mikky.', style: t(26, weight: FontWeight.w500, height: 1.12, tracking: pixel ? 0 : -.015)),
-        const SizedBox(height: 12),
-        if (!pixel) ...[
-          Text('Corrige les tests du moteur', style: t(14, weight: FontWeight.w600)),
-          Text('Modifie island_machine.dart · il y a 2 min', style: t(12.5, color: ui.text2)),
-          const SizedBox(height: 4),
-          Text('Codex · 5 h : 38 % · repart à 17 h 10', style: t(11.5, color: ui.text3)),
-        ] else
-          Text('38 %  ·  17:10  ·  3 étapes  ·  12 agents', style: t(18, color: ui.text2)),
+        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text('Mikky · 3 agents au travail', maxLines: 1, style: t(18, color: ui.text2))),
       ]),
     );
   }
 }
+
+/// A signature firework on a black square: how it looks on the island.
+class _FxTile extends StatelessWidget {
+  const _FxTile(this.child);
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => _Tile(color: const Color(0xFF0B0B0C), size: 140, radius: 30, child: child);
+}
+
+String _fxNote(SignatureFxKind k) => switch (k) {
+  SignatureFxKind.peony => 'Une sphère qui s’ouvre : têtes orange, traînées bleues.',
+  SignatureFxKind.twoStage => 'Un éclat bleu, puis un orange plus loin.',
+  SignatureFxKind.willow => 'Les étincelles retombent comme un saule.',
+  SignatureFxKind.ring => 'Un anneau qui s’élargit, bleu et orange en alternance, qui tourne.',
+  SignatureFxKind.spiral => 'Deux bras qui tournent, un bleu, un orange.',
+  SignatureFxKind.crossette => 'Quatre bras bleus qui se divisent en deux, orange.',
+  SignatureFxKind.cat => 'Les étincelles dessinent la tête de Mikky, il cligne, tout s’éparpille.',
+  SignatureFxKind.glitter => 'Des pixels qui scintillent dans un disque qui respire.',
+  SignatureFxKind.comet => 'Une comète bleue monte et éclate en orange.',
+  SignatureFxKind.waves => 'Des ondes carrées, bleue puis orange.',
+};
 
 final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
     const BoardSection(
       title: 'Logo',
-      note: 'Le logo, c’est Mikky lui-même : la mascotte, bien présente. Sur blanc et sur gris anthracite, puis aux tailles de Windows (barre des tâches, zone de notification).',
+      note: 'Le logo, c’est Mikky lui-même. C, qui dépasse, est retenue ; à côté, des variantes. Sur blanc et sur gris anthracite, puis aux tailles de Windows (barre des tâches, zone de notification).',
       frames: [
-        BoardFrame(label: 'A · Mikky entier', note: 'Le vrai dessin, au milieu : il cligne et regarde autour.', width: 252, child: _LogoProposal(_LogoKind.whole)),
-        BoardFrame(label: 'B · La tête en grand', note: 'Ses oreilles et ses yeux remplissent le carré.', width: 252, child: _LogoProposal(_LogoKind.head)),
-        BoardFrame(label: 'C · Qui dépasse', note: 'Il passe la tête par le bas du carré.', width: 252, child: _LogoProposal(_LogoKind.peek)),
-        BoardFrame(label: 'D · En pixels', note: 'Sa tête en 16 × 16, comme les feux d’artifice.', width: 252, child: _LogoProposal(_LogoKind.pixel)),
+        BoardFrame(label: 'C · Qui dépasse (retenue)', note: 'Il passe la tête par le bas du carré.', width: 252, child: _LogoProposal(_LogoKind.peek)),
+        BoardFrame(label: 'C2 · Plus près', note: 'Juste ses oreilles et ses yeux.', width: 252, child: _LogoProposal(_LogoKind.close)),
+        BoardFrame(label: 'C3 · Penché', note: 'Par le coin, la tête inclinée.', width: 252, child: _LogoProposal(_LogoKind.tilt)),
+        BoardFrame(label: 'C4 · Par le côté', note: 'Il entre par le bord droit.', width: 252, child: _LogoProposal(_LogoKind.side)),
       ],
+    ),
+    const BoardSection(
+      title: 'Logo, autres variantes',
+      frames: [
+        BoardFrame(label: 'C5 · La tête en bas', note: 'Suspendu au bord du haut.', width: 252, child: _LogoProposal(_LogoKind.hang)),
+        BoardFrame(label: 'C6 · Content', note: 'Ses yeux contents, ses étincelles.', width: 252, child: _LogoProposal(_LogoKind.happy)),
+        BoardFrame(label: 'C7 · En pixels', note: 'Sa tête en pixels, qui dépasse.', width: 252, child: _LogoProposal(_LogoKind.pixel)),
+        BoardFrame(label: 'C8 · Sur le bleu', note: 'Le fond aux couleurs signature.', width: 252, child: _LogoProposal(_LogoKind.peek, tone: _TileTone.blue)),
+        BoardFrame(label: 'C9 · Sur l’orange', width: 252, child: _LogoProposal(_LogoKind.peek, tone: _TileTone.orange)),
+      ],
+    ),
+    BoardSection(
+      title: 'Nom de l’app',
+      note: 'Geist pour tout le texte. Pour le nom, une police pixel : les trois retenues, puis d’autres pistes.',
+      frames: [for (final f in _nameKept) BoardFrame(label: '$f (retenue)', width: 340, child: _NameSample(f))],
+    ),
+    BoardSection(
+      title: 'Nom, autres pistes',
+      frames: [for (final f in _nameMore.take(7)) BoardFrame(label: f, width: 340, child: _NameSample(f))],
+    ),
+    BoardSection(
+      title: 'Nom, autres pistes (suite)',
+      frames: [for (final f in _nameMore.skip(7)) BoardFrame(label: f, width: 340, child: _NameSample(f))],
     ),
     BoardSection(
       title: 'Couleurs de l’interface',
@@ -349,9 +443,30 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
             const ThinkingStar(size: 40),
           ]),
         ),
+      ],
+    ),
+    BoardSection(
+      title: 'Feux d’artifice signature',
+      note: 'Bleu et orange seulement, des formes différentes. Sur noir, comme sur l’île.',
+      frames: [
+        for (final k in SignatureFxKind.values.take(5))
+          BoardFrame(label: SignatureFx.nameOf(k), note: _fxNote(k), width: 140, child: _FxTile(SignatureFx(k, size: 104))),
+      ],
+    ),
+    BoardSection(
+      title: 'Feux d’artifice signature (suite)',
+      frames: [
+        for (final k in SignatureFxKind.values.skip(5))
+          BoardFrame(label: SignatureFx.nameOf(k), note: _fxNote(k), width: 140, child: _FxTile(SignatureFx(k, size: 104))),
+        const BoardFrame(label: 'Calme', note: 'Celui des états, bleu au cœur, orange au bout.', width: 140, child: _FxTile(SignatureFirework(size: 84))),
+      ],
+    ),
+    BoardSection(
+      title: 'Couleurs signature',
+      note: 'L’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). Pour plus tard.',
+      frames: [
         BoardFrame(
-          label: 'Couleurs signature',
-          note: 'L’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). Gardées pour plus tard.',
+          label: 'Orange et bleu',
           width: 330,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
@@ -371,40 +486,14 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
               ),
           ]),
         ),
-        BoardFrame(
-          label: 'Feux d’artifice signature',
-          note: 'Chaque effet en orange, en bleu ; et le calme aux deux couleurs, bleu au cœur, orange au bout.',
-          width: 360,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  for (final k in [PixelFxKind.fireworkSoft, PixelFxKind.firework, PixelFxKind.sparkle, PixelFxKind.galaxy])
-                    Padding(padding: const EdgeInsets.only(right: 12), child: PixelFx(kind: k, palette: pal, size: 56, slow: k == PixelFxKind.fireworkSoft ? 2 / 3 : 1)),
-                ]),
-              ),
-            const SignatureFirework(size: 56),
-          ]),
-        ),
       ],
     ),
     BoardSection(
       title: 'Lettres',
-      note: 'Ta capture est en ALTMistral, la police maison de Mistral (pas libre). Voici des polices libres proches. Choisis-en une à gauche : toutes les planches passent dedans.',
-      frames: [for (final f in trialSans) BoardFrame(label: f, width: 380, child: _FontSample(f))],
-    ),
-    BoardSection(
-      title: 'Lettres pixel',
-      note: 'Pour les titres ou les chiffres, avec la police du texte.',
-      frames: [for (final f in trialPixel) BoardFrame(label: f, width: 380, child: _FontSample(f, pixel: true))],
-    ),
-    BoardSection(
-      title: 'Échelle',
-      note: 'Les tailles de la fenêtre, dans la police choisie à gauche.',
+      note: 'Geist et Geist Mono pour tout le texte (choisies le 2026-09-30) ; les tailles de la fenêtre.',
       frames: [
         BoardFrame(
-          label: '${UiFonts.sans} et ${UiFonts.mono}',
+          label: 'Geist et Geist Mono',
           width: 560,
           child: SizedBox(
             width: 560,

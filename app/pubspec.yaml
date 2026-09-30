@@ -39,92 +39,59 @@ flutter:
         - asset: assets/fonts/GeistMono-Regular.ttf
         - asset: assets/fonts/GeistMono-Medium.ttf
           weight: 500
-    # Fonts on trial in the boards (user request, 2026-09-30); keep the
-    # chosen ones, delete the rest.
-    - family: Hanken Grotesk
+    # Pixel fonts on trial for the app's name in the boards (user request,
+    # 2026-09-30); keep the chosen one, delete the rest.
+    - family: Bytesized
       fonts:
-        - asset: assets/fonts/trial/HankenGrotesk-400.ttf
-        - asset: assets/fonts/trial/HankenGrotesk-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/HankenGrotesk-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/HankenGrotesk-700.ttf
-          weight: 700
-    - family: Host Grotesk
+        - asset: assets/fonts/trial/Bytesized-400.ttf
+    - family: DotGothic16
       fonts:
-        - asset: assets/fonts/trial/HostGrotesk-400.ttf
-        - asset: assets/fonts/trial/HostGrotesk-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/HostGrotesk-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/HostGrotesk-700.ttf
-          weight: 700
-    - family: Inter
+        - asset: assets/fonts/trial/DotGothic16-400.ttf
+    - family: Doto
       fonts:
-        - asset: assets/fonts/trial/Inter-400.ttf
-        - asset: assets/fonts/trial/Inter-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/Inter-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/Inter-700.ttf
+        - asset: assets/fonts/trial/Doto-400.ttf
+        - asset: assets/fonts/trial/Doto-900.ttf
+          weight: 900
+    - family: Handjet
+      fonts:
+        - asset: assets/fonts/trial/Handjet-400.ttf
+        - asset: assets/fonts/trial/Handjet-700.ttf
           weight: 700
+    - family: Jacquard 12
+      fonts:
+        - asset: assets/fonts/trial/Jacquard12-400.ttf
     - family: Jersey 10
       fonts:
         - asset: assets/fonts/trial/Jersey10-400.ttf
-    - family: JetBrains Mono
+    - family: Jersey 15
       fonts:
-        - asset: assets/fonts/trial/JetBrainsMono-400.ttf
-        - asset: assets/fonts/trial/JetBrainsMono-500.ttf
-          weight: 500
-    - family: Onest
+        - asset: assets/fonts/trial/Jersey15-400.ttf
+    - family: Jersey 20
       fonts:
-        - asset: assets/fonts/trial/Onest-400.ttf
-        - asset: assets/fonts/trial/Onest-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/Onest-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/Onest-700.ttf
-          weight: 700
-    - family: Pixelify Sans
+        - asset: assets/fonts/trial/Jersey20-400.ttf
+    - family: Jersey 25
       fonts:
-        - asset: assets/fonts/trial/PixelifySans-400.ttf
-        - asset: assets/fonts/trial/PixelifySans-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/PixelifySans-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/PixelifySans-700.ttf
-          weight: 700
-    - family: Schibsted Grotesk
+        - asset: assets/fonts/trial/Jersey25-400.ttf
+    - family: Micro 5
       fonts:
-        - asset: assets/fonts/trial/SchibstedGrotesk-400.ttf
-        - asset: assets/fonts/trial/SchibstedGrotesk-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/SchibstedGrotesk-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/SchibstedGrotesk-700.ttf
-          weight: 700
+        - asset: assets/fonts/trial/Micro5-400.ttf
+    - family: Micro 5 Charted
+      fonts:
+        - asset: assets/fonts/trial/Micro5Charted-400.ttf
+    - family: Press Start 2P
+      fonts:
+        - asset: assets/fonts/trial/PressStart2P-400.ttf
     - family: Silkscreen
       fonts:
         - asset: assets/fonts/trial/Silkscreen-400.ttf
         - asset: assets/fonts/trial/Silkscreen-700.ttf
           weight: 700
-    - family: Space Grotesk
+    - family: Sixtyfour
       fonts:
-        - asset: assets/fonts/trial/SpaceGrotesk-400.ttf
-        - asset: assets/fonts/trial/SpaceGrotesk-500.ttf
-          weight: 500
-        - asset: assets/fonts/trial/SpaceGrotesk-600.ttf
-          weight: 600
-        - asset: assets/fonts/trial/SpaceGrotesk-700.ttf
-          weight: 700
-    - family: Space Mono
-      fonts:
-        - asset: assets/fonts/trial/SpaceMono-400.ttf
-        - asset: assets/fonts/trial/SpaceMono-700.ttf
-          weight: 700
+        - asset: assets/fonts/trial/Sixtyfour-400.ttf
     - family: Tiny5
       fonts:
         - asset: assets/fonts/trial/Tiny5-400.ttf
-    - family: VT323
+    - family: Workbench
       fonts:
-        - asset: assets/fonts/trial/VT323-400.ttf
+        - asset: assets/fonts/trial/Workbench-400.ttf
