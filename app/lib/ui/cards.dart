@@ -65,14 +65,15 @@ class GroupHeader extends StatelessWidget {
           child: Row(
             children: [
               if (status != null)
-                StatusFx(status!, size: 12)
+                // Big enough to read the pixels (user request, 2026-09-30).
+                StatusFx(status!, size: 18)
               else
                 Container(
                   width: 7,
                   height: 7,
                   decoration: BoxDecoration(color: color, shape: BoxShape.circle),
                 ),
-              const SizedBox(width: 7),
+              SizedBox(width: status == null ? 7 : 8),
               Text(label, style: style),
               const SizedBox(width: 4),
               Text(
