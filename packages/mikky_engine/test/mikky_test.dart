@@ -203,85 +203,41 @@ void main() {
   });
 
   group('forms: Mikky turns into the sign', () {
-    test('working: the fur ball, without shaking; thinking: the same fur ball, hopping', () {
+    test('working: the mascot himself, hopping', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(m, 2);
-      expect((m.form, m.badge), (MikkyForm.furball, null));
-      for (var i = 0; i < 60; i++) {
-        m.update(1 / 60);
-        expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
-      }
-      m.setState(MikkyState.thinking);
-      run(m, 1.5);
-      expect(m.form, MikkyForm.furball);
       final ups = <double>[];
-      for (var i = 0; i < 90; i++) {
+      for (var i = 0; i < 60 * 12; i++) {
         m.update(1 / 60);
+        expect(m.form, MikkyForm.cat);
+        expect(m.badge, isNull);
+        expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
         ups.add(MikkyGeometry.of(m, 100).translateY);
       }
       expect(ups.reduce(math.min), lessThan(-12));
     });
 
-    test('the fur ball is the mascot without ears, his own fur standing out all around', () {
-      double top(Mikky m) {
-        final c = MikkyGeometry.of(m, 100).contour;
-        var y = 0.0;
-        for (var j = 1; j < c.length; j += 2) {
-          y = math.min(y, c[j]);
-        }
-        return y;
-      }
-
-      /// How much the outline goes in and out (the fur), on the lower half.
-      double furriness(Mikky m) {
-        final c = MikkyGeometry.of(m, 100).contour;
-        var sum = 0.0;
-        for (var j = 2; j < c.length ~/ 2; j += 2) {
-          final r0 = math.sqrt(c[j - 2] * c[j - 2] + c[j - 1] * c[j - 1]);
-          final r1 = math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1]);
-          sum += (r1 - r0).abs();
-        }
-        return sum;
-      }
-
-      final cat = Mikky(random: math.Random(5));
-      run(cat, 2);
-      final ball = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(ball, 2);
-      // No ears: the top is the head, not the ear tips.
-      expect(top(ball), greaterThan(top(cat) + 30));
-      // More fur, and not only on the cheeks.
-      expect(furriness(ball), greaterThan(furriness(cat) * 2));
-      // His eyes, where they always are.
-      final eyes = MikkyGeometry.of(ball, 100).eyes;
-      expect(eyes, hasLength(2));
-      expect(eyes.first.shape, EyeShape.oval);
-    });
-
-    test('working and thinking go back to the cat now and then', () {
-      for (final s in [MikkyState.working, MikkyState.thinking]) {
-        final m = Mikky(random: math.Random(5))..setState(s);
-        final phases = <String>[];
-        for (var i = 0; i < 60 * 30; i++) {
-          m.update(1 / 60);
-          final phase = m.form != MikkyForm.cat && m.morph > .9 ? 'F' : (m.morph.abs() < .05 ? 'C' : null);
-          if (phase != null && (phases.isEmpty || phases.last != phase)) phases.add(phase);
-        }
-        expect(phases.take(5), ['C', 'F', 'C', 'F', 'C'], reason: '$s');
+    test('thinking: himself, looking up, with the « ••• » bubble; no hop', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
+      for (var i = 0; i < 60 * 12; i++) {
+        m.update(1 / 60);
+        expect(m.form, MikkyForm.cat);
+        expect(m.badge, const MikkyBadge(BadgeKind.dots, AgentStatus.thinking));
+        expect(MikkyGeometry.of(m, 100).translateY.abs(), lessThan(3));
       }
     });
 
     test('from one form to another, he goes back through the cat', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(m, 2);
-      m.setState(MikkyState.approval);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      untilBang(m);
+      run(m, .5);
+      m.play(MikkyEmote.love);
       var sawCat = false;
-      for (var i = 0; i < 180; i++) {
+      for (var i = 0; i < 60; i++) {
         m.update(1 / 60);
         if (m.morph.abs() < .1) sawCat = true;
       }
       expect(sawCat, isTrue);
-      expect(m.form, MikkyForm.bang);
+      expect(m.form, MikkyForm.heart);
     });
 
     test('the change is soft: it overshoots, then settles', () {
@@ -296,8 +252,8 @@ void main() {
     });
 
     test('back to the cat when the state has no form', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(m, 2);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      untilBang(m);
       m.setState(MikkyState.error);
       run(m, 3);
       expect(m.morph.abs(), lessThan(.01));
