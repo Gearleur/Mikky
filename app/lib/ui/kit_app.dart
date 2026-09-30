@@ -538,13 +538,13 @@ class _KitPartsState extends State<KitParts> {
             runSpacing: 6,
             children: [
               for (final (s, b, small) in [
-                (UiStatus.working, 'Travaille', 'feu d’artifice bleu'),
+                (UiStatus.working, 'Travaille', 'feu d’artifice bleu, vif'),
                 (UiStatus.thinking, 'Réfléchit', 'feu d’artifice violet'),
-                (UiStatus.approval, 'Attend ton feu vert', 'feu d’artifice orange'),
+                (UiStatus.approval, 'Attend ton feu vert', 'feu d’artifice orange, le plus vif'),
                 (UiStatus.finished, 'Terminé', 'feu d’artifice vert, figé'),
                 (UiStatus.error, 'Erreur', 'feu d’artifice rouge'),
                 (UiStatus.limited, 'Limité', 'feu d’artifice jaune'),
-                (UiStatus.sleeping, 'Dort', 'feu d’artifice gris, lent'),
+                (UiStatus.sleeping, 'Dort', 'feu d’artifice gris, le plus lent'),
               ])
                 SizedBox(
                   width: 200,
