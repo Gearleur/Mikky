@@ -216,7 +216,7 @@ class _AgentMockState extends State<AgentMock> {
           ),
         ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
-        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 52, layers: 10, sigma: .7, veil: .5)),
+        const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
         Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 82 : 54))),
         SideHead(

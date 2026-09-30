@@ -84,7 +84,11 @@ class SideHead extends StatelessWidget {
 /// way), not strong from its first pixels. Still: costs nothing when
 /// nothing moves.
 class EdgeBlur extends StatelessWidget {
-  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8});
+  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8, this.ramp = .5});
+
+  /// How the blur grows towards the edge: layer i reaches 1 − (i/n)^ramp
+  /// of the way; .5 grows evenly, lower is strong sooner, higher later.
+  final double ramp;
 
   /// The top edge (else the bottom).
   final bool top;
@@ -101,7 +105,7 @@ class EdgeBlur extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     // How far layer i reaches from the edge.
-    double reach(int i) => height * (1 - math.sqrt(i / layers));
+    double reach(int i) => height * (1 - math.pow(i / layers, ramp).toDouble());
     return IgnorePointer(
       child: SizedBox(
         height: height,
@@ -141,6 +145,49 @@ class EdgeBlur extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The top blur of an agent's page, as [style] says; the design boards
+/// have sliders to set it live (user request, 2026-09-30).
+class TopBlur extends StatelessWidget {
+  const TopBlur({super.key});
+
+  static final style = ValueNotifier(TopBlurStyle.standard);
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder(
+    valueListenable: style,
+    builder: (context, s, _) => EdgeBlur(top: true, height: s.height, layers: s.layers, sigma: s.sigma, veil: s.veil, ramp: s.ramp),
+  );
+}
+
+@immutable
+class TopBlurStyle {
+  const TopBlurStyle({required this.height, required this.layers, required this.sigma, required this.veil, required this.ramp});
+
+  /// In use (user requests, 2026-09-30).
+  static const standard = TopBlurStyle(height: 52, layers: 10, sigma: .7, veil: .5, ramp: .5);
+
+  final double height;
+  final int layers;
+  final double sigma;
+  final double veil;
+  final double ramp;
+
+  /// The blur at the very edge, all layers added up.
+  double get strongest => sigma * math.sqrt(layers.toDouble());
+
+  TopBlurStyle copyWith({double? height, int? layers, double? sigma, double? veil, double? ramp}) => TopBlurStyle(
+    height: height ?? this.height,
+    layers: layers ?? this.layers,
+    sigma: sigma ?? this.sigma,
+    veil: veil ?? this.veil,
+    ramp: ramp ?? this.ramp,
+  );
+
+  @override
+  String toString() =>
+      'hauteur ${height.round()} · couches $layers · flou ${sigma.toStringAsFixed(2)} · voile ${veil.toStringAsFixed(2)} · rampe ${ramp.toStringAsFixed(2)}';
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative
