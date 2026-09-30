@@ -9,6 +9,9 @@ import 'dart:convert';
 /// - `limit`: an error answer about the usage limit;
 /// - anything else: answers « ok ».
 class FakeAgent {
+  /// The option chosen for the last permission request.
+  String? lastPermission;
+
   FakeAgent(Stream<List<int>> input, this._output, {this.autoFallback = false}) {
     input.transform(utf8.decoder).transform(const LineSplitter()).listen(_onLine, onDone: () => closed = true);
   }
@@ -121,13 +124,15 @@ class FakeAgent {
             'toolCall': {'toolCallId': 't1', 'title': 'Write a.txt'},
             'options': [
               {'optionId': 'allow-once', 'name': 'Allow', 'kind': 'allow_once'},
+              {'optionId': 'allow-always', 'name': 'Always allow', 'kind': 'allow_always'},
               {'optionId': 'reject', 'name': 'Reject', 'kind': 'reject_once'},
             ],
           },
         });
         final reply = await answer.future;
         final outcome = (reply['result'] as Map)['outcome'] as Map;
-        final allowed = outcome['optionId'] == 'allow-once';
+        final allowed = outcome['optionId'] == 'allow-once' || outcome['optionId'] == 'allow-always';
+        lastPermission = outcome['optionId'] as String?;
         if (outcome['outcome'] == 'cancelled') {
           _send({'id': id, 'result': {'stopReason': 'cancelled'}});
           return;
@@ -135,6 +140,37 @@ class FakeAgent {
         _update({'sessionUpdate': 'tool_call_update', 'toolCallId': 't1', 'status': allowed ? 'completed' : 'failed'});
         _update({'sessionUpdate': 'plan', 'entries': [{'content': 'Créer a.txt', 'status': 'completed'}]});
         _update({'sessionUpdate': 'session_info_update', 'title': 'Créer a.txt'});
+        _send({'id': id, 'result': {'stopReason': 'end_turn'}});
+      case 'ask':
+        // Claude's question tool, as claude-agent-acp sends it.
+        final askId = _nextAsk++;
+        final answer = Completer<Map>();
+        _asked[askId] = answer;
+        _send({
+          'id': askId,
+          'method': 'elicitation/create',
+          'params': {
+            'mode': 'form',
+            'sessionId': sessionId,
+            'message': 'Quelle base ?',
+            'requestedSchema': {
+              'type': 'object',
+              'properties': {
+                'question_0': {
+                  'type': 'string',
+                  'oneOf': [
+                    {'const': 'SQLite', 'title': 'SQLite'},
+                    {'const': 'Postgres', 'title': 'Postgres'},
+                  ],
+                },
+                'question_0_custom': {'type': 'string'},
+              },
+            },
+          },
+        });
+        final reply = (await answer.future)['result'] as Map;
+        final chosen = (reply['content'] as Map?)?['question_0'] ?? reply['action'];
+        _update({'sessionUpdate': 'agent_message_chunk', 'messageId': 'm3', 'content': {'type': 'text', 'text': 'Choix : $chosen'}});
         _send({'id': id, 'result': {'stopReason': 'end_turn'}});
       case 'slow':
         _update({'sessionUpdate': 'tool_call', 'toolCallId': 't2', 'title': 'npm test', 'kind': 'execute', 'status': 'in_progress'});

@@ -90,8 +90,56 @@ class LaunchChoice {
       };
 }
 
-/// `%APPDATA%\Mikky\agents.json`: Mikky's agents, recent folders and last
-/// choices per folder (MVP spec §7). A broken file is set aside, not lost.
+/// What the user did with a session (any session: Mikky's or one started
+/// elsewhere): its own name, pinned, archived, an error marked as settled,
+/// or forgotten.
+class SessionMark {
+  const SessionMark({this.name, this.pinned = false, this.archived = false, this.settledAt, this.forgotten = false});
+
+  factory SessionMark.fromJson(Map<String, dynamic> j) => SessionMark(
+        name: j['name'] as String?,
+        pinned: j['pinned'] == true,
+        archived: j['archived'] == true,
+        settledAt: j['settledAt'] == null ? null : DateTime.parse(j['settledAt'] as String),
+        forgotten: j['forgotten'] == true,
+      );
+
+  /// The user's name for it, in place of the agent's title.
+  final String? name;
+  final bool pinned;
+
+  /// Off the home, in « Archives ».
+  final bool archived;
+
+  /// The error was seen and settled then: until something new happens,
+  /// the session counts as done.
+  final DateTime? settledAt;
+
+  /// Deleted from Mikky: never shown again.
+  final bool forgotten;
+
+  bool get isEmpty => name == null && !pinned && !archived && settledAt == null && !forgotten;
+
+  SessionMark copyWith({String? name, bool clearName = false, bool? pinned, bool? archived, DateTime? settledAt, bool? forgotten}) => SessionMark(
+        name: clearName ? null : (name ?? this.name),
+        pinned: pinned ?? this.pinned,
+        archived: archived ?? this.archived,
+        settledAt: settledAt ?? this.settledAt,
+        forgotten: forgotten ?? this.forgotten,
+      );
+
+  Map<String, dynamic> toJson() => {
+        if (name != null) 'name': name,
+        if (pinned) 'pinned': true,
+        if (archived) 'archived': true,
+        if (settledAt != null) 'settledAt': settledAt!.toIso8601String(),
+        if (forgotten) 'forgotten': true,
+      };
+}
+
+/// `%APPDATA%\Mikky\agents.json`: Mikky's agents, recent folders, last
+/// choices per folder (MVP spec §7), and the marks on sessions. A broken
+/// file is set aside, not lost.
 class AgentStore {
   AgentStore(this.file);
 
@@ -103,12 +151,17 @@ class AgentStore {
   final List<String> recentFolders = [];
   final Map<String, LaunchChoice> choices = {};
 
+  /// Marks by session key (`claude:<id>`, `codex:<id>`, or an agent id
+  /// while it has no session yet).
+  final Map<String, SessionMark> marks = {};
+
   static const maxRecentFolders = 8;
 
   Future<void> load() async {
     agents.clear();
     recentFolders.clear();
     choices.clear();
+    marks.clear();
     if (!await file.exists()) return;
     try {
       final j = (jsonDecode(await file.readAsString()) as Map).cast<String, dynamic>();
@@ -119,11 +172,15 @@ class AgentStore {
       for (final e in ((j['choices'] as Map?) ?? const {}).entries) {
         choices[e.key as String] = LaunchChoice.fromJson((e.value as Map).cast<String, dynamic>());
       }
+      for (final e in ((j['marks'] as Map?) ?? const {}).entries) {
+        marks[e.key as String] = SessionMark.fromJson((e.value as Map).cast<String, dynamic>());
+      }
     } catch (_) {
       await file.rename('${file.path}.broken');
       agents.clear();
       recentFolders.clear();
       choices.clear();
+      marks.clear();
     }
   }
 
@@ -141,6 +198,7 @@ class AgentStore {
       'agents': [for (final a in agents) a.toJson()],
       'recentFolders': recentFolders,
       'choices': {for (final e in choices.entries) e.key: e.value.toJson()},
+      'marks': {for (final e in marks.entries) e.key: e.value.toJson()},
     }));
     await tmp.rename(file.path);
   }
@@ -160,6 +218,17 @@ class AgentStore {
       if (a.sessionId == sessionId) return a;
     }
     return null;
+  }
+
+  SessionMark mark(String key) => marks[key] ?? const SessionMark();
+
+  /// Changes the mark of [key] (an empty mark is dropped).
+  void setMark(String key, SessionMark mark) {
+    if (mark.isEmpty) {
+      marks.remove(key);
+    } else {
+      marks[key] = mark;
+    }
   }
 
   /// Remembers [folder] first in the recent list, with its [choice].

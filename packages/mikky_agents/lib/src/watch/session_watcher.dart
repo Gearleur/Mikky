@@ -20,6 +20,11 @@ class WatchedSession {
   /// Last write seen on the file.
   DateTime modified = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// Id of the first user message (Claude). A resumed session (« fork »)
+  /// copies the history with the same ids: sessions sharing it are one
+  /// conversation.
+  String? firstMessage;
+
   int _offset = 0;
   final List<int> _partial = [];
   Object _reader = Object();
@@ -194,6 +199,7 @@ class SessionWatcher {
       } on FormatException {
         continue;
       }
+      if (s.firstMessage == null && json['type'] == 'user' && json['uuid'] is String) s.firstMessage = json['uuid'] as String;
       s.log.applyAll(_read(s, json));
     }
     _updates.add(s);

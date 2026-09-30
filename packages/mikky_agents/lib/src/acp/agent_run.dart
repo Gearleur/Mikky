@@ -67,6 +67,7 @@ class AgentRun {
   final _changes = StreamController<void>.broadcast();
   late final StreamSubscription<AcpTraffic> _traffic;
   final Map<Object, (List<PermissionOption>, Completer<Object?>)> _asked = {};
+  final Map<Object, Completer<Object?>> _questions = {};
   bool _closed = false;
 
   /// Fires after each change of [log] (and when the agent ends).
@@ -85,6 +86,9 @@ class AgentRun {
       'clientCapabilities': {
         'fs': {'readTextFile': false, 'writeTextFile': false},
         'terminal': false,
+        // Mikky shows forms: Claude may then use its question tool (the
+        // adapter forbids it to clients without this).
+        'elicitation': {'form': <String, Object?>{}},
       },
       'clientInfo': {'name': 'mikky', 'version': '0.1.0'},
     });
@@ -127,13 +131,15 @@ class AgentRun {
   }
 
   /// Answers the oldest pending permission request (or [requestId]).
-  /// Returns false if there is none.
-  bool answer({required bool allow, Object? requestId}) {
+  /// [always]: the agent's « always allow » option, when it offers one (the
+  /// same kind of action is then allowed without asking). Returns false if
+  /// there is no request.
+  bool answer({required bool allow, bool always = false, Object? requestId}) {
     final id = requestId ?? (_asked.isEmpty ? null : _asked.keys.first);
     final asked = id == null ? null : _asked.remove(id);
     if (asked == null) return false;
     final (options, done) = asked;
-    final wanted = allow ? ['allow_once', 'allow_always'] : ['reject_once', 'reject_always'];
+    final wanted = allow ? (always ? ['allow_always', 'allow_once'] : ['allow_once', 'allow_always']) : ['reject_once', 'reject_always'];
     PermissionOption? pick;
     for (final kind in wanted) {
       for (final o in options) {
@@ -143,6 +149,17 @@ class AgentRun {
     done.complete({
       'outcome': pick == null ? {'outcome': 'cancelled'} : {'outcome': 'selected', 'optionId': pick.id},
     });
+    return true;
+  }
+
+  /// Answers the pending question: [answers] by question key (a choice's
+  /// label, a list of them, or free text in the question's other key).
+  /// Null: the user declined to answer. Returns false if none is pending.
+  bool answerQuestion(Map<String, Object>? answers) {
+    if (_questions.isEmpty) return false;
+    final id = _questions.keys.first;
+    final done = _questions.remove(id)!;
+    done.complete(answers == null ? {'action': 'decline'} : {'action': 'accept', 'content': answers});
     return true;
   }
 
@@ -157,6 +174,10 @@ class AgentRun {
       });
     }
     _asked.clear();
+    for (final done in _questions.values) {
+      done.complete({'action': 'cancel'});
+    }
+    _questions.clear();
   }
 
   /// Ends the agent and everything it started.
@@ -175,6 +196,12 @@ class AgentRun {
   }
 
   Future<Object?> _onRequest(Object id, String method, Map<String, dynamic> params) {
+    if (method == 'elicitation/create' && params['mode'] == 'form') {
+      // Same id as the QuestionAsked the reader put in [log].
+      final done = Completer<Object?>();
+      _questions[id] = done;
+      return done.future;
+    }
     if (method != 'session/request_permission') {
       throw AcpError(-32601, 'Method not found: $method');
     }
@@ -195,6 +222,10 @@ class AgentRun {
       if (!done.isCompleted) done.complete({'outcome': {'outcome': 'cancelled'}});
     }
     _asked.clear();
+    for (final done in _questions.values) {
+      if (!done.isCompleted) done.complete({'action': 'cancel'});
+    }
+    _questions.clear();
     if (log.working) {
       log.apply(TurnEnded(StopReason.error, message: "L'agent s'est arrêté", at: DateTime.now()));
     }
