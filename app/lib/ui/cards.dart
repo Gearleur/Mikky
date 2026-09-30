@@ -184,33 +184,32 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the two lines, turning while the agent works.
-      final head = Row(
+      // big, level with the middle of everything beside it, turning while
+      // the agent works.
+      body = Row(
         children: [
           SizedBox(
-            width: 32,
+            width: 34,
             child: Center(
               // The logo turns while the agent works (not while it waits).
               child: status == UiStatus.working || status == UiStatus.thinking
-                  ? SpinningLogo(claude: brand == Brand.claude, child: BrandLogo(brand!, size: 28))
-                  : BrandLogo(brand!, size: 28),
+                  ? SpinningLogo(claude: brand == Brand.claude, child: BrandLogo(brand!, size: 32))
+                  : BrandLogo(brand!, size: 32),
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [titleRow, ?subtitleText],
+              children: [
+                titleRow,
+                ?subtitleText,
+                if (actions != null) Padding(padding: const EdgeInsets.only(top: 8), child: actions!),
+              ],
             ),
           ),
         ],
       );
-      body = actions == null
-          ? head
-          : Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [head, Padding(padding: const EdgeInsets.only(left: 42, top: 10), child: actions!)],
-            );
     } else {
       body = Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -324,31 +323,24 @@ class WaitActions extends StatelessWidget {
   }
 }
 
-/// A few answers side by side in a light hollow; the last one is the
-/// main one, a white rounded square with a soft shadow, the others plain
-/// text (after a toolbar the user liked, 2026-09-30).
+/// A few answers side by side, flat, in nothing: the last one is the main
+/// one, on a light grey; the others plain text. A press squashes them like
+/// jelly (user request, 2026-09-30).
 class AnswerBar extends StatelessWidget {
   const AnswerBar({super.key, required this.answers});
 
   final List<(String, VoidCallback?)> answers;
 
   @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return Surface(
-      radius: 12,
-      color: ui.track,
-      shadows: ui.inset,
-      padding: const EdgeInsets.all(3),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < answers.length; i++)
-            _Answer(label: answers[i].$1, onTap: answers[i].$2, main: i == answers.length - 1),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      for (var i = 0; i < answers.length; i++) ...[
+        if (i > 0) const SizedBox(width: 2),
+        _Answer(label: answers[i].$1, onTap: answers[i].$2, main: i == answers.length - 1),
+      ],
+    ],
+  );
 }
 
 class _Answer extends StatefulWidget {
@@ -374,22 +366,21 @@ class _AnswerState extends State<_Answer> {
       onExit: (_) => setState(() => _hover = false),
       child: Opacity(
         opacity: widget.onTap == null ? .35 : 1,
-        child: Pressable(
+        child: JellyPress(
           onTap: widget.onTap,
-          enabled: widget.onTap != null,
-          child: Surface(
-            radius: 9,
-            height: 26,
-            color: main ? ui.thumb : (_hover ? ui.hover : null),
-            shadows: main ? ui.shThumb : const [],
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-            child: Center(
-              widthFactor: 1,
-              child: Text(
-                widget.label,
-                maxLines: 1,
-                style: uiText(12.5, weight: FontWeight.w600, height: 1, color: main || _hover ? ui.text : ui.text2),
-              ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            height: 28,
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: main ? (_hover ? ui.ctlB : ui.track) : (_hover ? ui.hover : ui.hover.withValues(alpha: 0)),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              widget.label,
+              maxLines: 1,
+              style: uiText(13, weight: FontWeight.w600, height: 1, color: main || _hover ? ui.text : ui.text2),
             ),
           ),
         ),

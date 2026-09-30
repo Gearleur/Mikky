@@ -93,6 +93,56 @@ class _PressableState extends State<Pressable> with SingleTickerProviderStateMix
   );
 }
 
+/// Like [Pressable], but soft and a little sticky, like jelly: pressed,
+/// it spreads and flattens; let go, it springs back past its shape and
+/// wobbles a moment (user request, 2026-09-30).
+class JellyPress extends StatefulWidget {
+  const JellyPress({super.key, required this.child, this.onTap});
+
+  final Widget child;
+  final VoidCallback? onTap;
+
+  /// Soft and bouncy: it overshoots and wobbles twice.
+  static final spring = Motion.spring(420, .32);
+
+  @override
+  State<JellyPress> createState() => _JellyPressState();
+}
+
+class _JellyPressState extends State<JellyPress> {
+  bool _down = false;
+
+  void _set(bool down) {
+    if (_down != down) setState(() => _down = down);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final on = widget.onTap != null;
+    return MouseRegion(
+      cursor: on ? SystemMouseCursors.click : MouseCursor.defer,
+      child: Listener(
+        onPointerDown: on ? (e) => e.buttons == kPrimaryButton ? _set(true) : null : null,
+        onPointerUp: on ? (_) => _set(false) : null,
+        onPointerCancel: on ? (_) => _set(false) : null,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: widget.onTap,
+          child: SpringValue(
+            target: _down ? 1 : 0,
+            spring: JellyPress.spring,
+            builder: (context, x, _) => Transform(
+              alignment: Alignment.center,
+              transform: Matrix4.diagonal3Values(1 + .1 * x, 1 - .16 * x, 1),
+              child: widget.child,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Calls [onDown] as soon as the primary button goes down on [child]: for
 /// selectors and tabs, whose thumb must leave at once (no tap-or-drag wait).
 class PressDown extends StatelessWidget {
