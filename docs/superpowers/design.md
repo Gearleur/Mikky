@@ -94,9 +94,15 @@ Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 1
 - Limite atteinte : **étoile jaune en haut au milieu** de la page de l'agent ; dans le chat, la carte « Limite de l'abonnement atteinte · Reprend à 17 h 10 » avec « Relancer » (tout de suite) et « Relance auto ».
 - Une fois ensorcelé, **c'est mis** : plus de carte grise ni de bouton, juste « **Ensorcelé** · se relance à 17 h 11 », en gros, avec l'étoile violette ; **étoile violette en haut au milieu**. Pour l'enlever : le menu **···** de l'agent, « Arrêter la relance auto » (le même menu propose « Relance auto » sur un agent limité).
 - Mikky relance une minute après la reprise, par un message à l'agent (« La limite de l'abonnement est levée : reprends la tâche là où tu t'étais arrêté. ») ; heure inconnue : 30 min plus tard ; si la limite retombe, il attend la reprise suivante.
-- Sur l'**accueil** : ligne limitée avec l'étoile jaune après le titre, « Limite atteinte · reprend à 17 h 10 », « Relancer / Relance auto » ; ensorcelé : étoile violette, « Ensorcelé · se relance à 17 h 11 », sans bouton.
+- Sur l'**accueil** : ligne limitée avec l'étoile jaune après le titre, « Limite atteinte · reprend à 17 h 10 », « Relancer / Relance auto » ; ensorcelé : étoile violette, « Ensorcelé · se relance à 17 h 11 », sans bouton. **Relance automatique pour tous activée** : plus d'étoile violette sur chaque ligne (celle après « Agents » suffit) ; l'étoile jaune seulement sur un agent limité qu'on a choisi de ne pas relancer.
 - **Relance automatique pour tous** : un réglage (menu ··· de l'accueil, « Relance automatique », gardé d'un démarrage à l'autre), pas un interrupteur au-dessus des agents ; activée, une **petite étoile violette après « Agents »**, à côté de Mikky. Tout agent qui bute sur une limite est alors ensorcelé tout seul (jamais une vieille session au démarrage).
 - Les sorts sont en mémoire : un redémarrage de Mikky les lève (le réglage global, lui, reste).
+
+### Menu flottant (le nôtre, plus celui de Windows)
+Un panneau **gris clair** (`well`), coins 16, ombre douce ; le **carré blanc qui glisse** sous l'option survolée (sans trait fin) ; une **coche** pour ce qui est actif ; des traits fins entre les groupes ; en **rouge** ce qui ne se défait pas (Supprimer…, Arrêter tous les agents…). Il s'ouvre là où on a cliqué, dans la petite fenêtre, avec un petit fondu ; Échap ou un clic à côté le ferme (`showFloatingMenu`, `FloatingMenuPanel`). Partout dans la petite fenêtre : « ··· » de l'accueil (les réglages : thème, position, notifications, relance automatique, réglage de Mikky, arrêter, fermer), « ··· » d'un agent, dossier et modèle du nouvel agent. Le menu de Windows reste pour le clic droit sur l'île fermée et la zone de notification.
+
+### L'étoile grise d'un agent (son menu)
+**Invisible** tant que la souris n'est pas dessus : elle n'apparaît que quand on est vraiment proche ; un clic ouvre le menu de l'agent (le clic droit sur la ligne aussi).
 
 ### Page d'un agent
 - **Pas de titre ni de bandeau** : le fil remplit la page. Les boutons **flottent** dessus : retour à gauche ; à droite **pause** (deux traits, seulement pendant qu'il travaille ; remplace le carré « arrêter » le 2026-09-30, qui n'arrêtait que le tour) et **« ··· »** (menu : mettre en pause ou reprendre, **arrêter l'agent** (fin de son processus et de tout ce qu'il a lancé ; la session reste), ouvrir dans VS Code, ouvrir le dossier, renommer, épingler, archiver, marquer l'erreur comme réglée, supprimer). Le clic droit sur une ligne de l'accueil ouvre le même menu.
@@ -139,7 +145,7 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 3. **Palettes pixel** : les figer et les nommer.
 4. **Typographie** : une échelle nommée (titre, corps, légende, code).
 5. **Mikky en pixels** ? (première tête dans le feu d'artifice « Mikky »).
-6. **Menus à nos couleurs** : le choix de l'agent, du modèle et du dossier passe encore par le menu natif de Windows.
+6. **Menus à nos couleurs** : faits dans la petite fenêtre (menu flottant) ; restent le clic droit sur l'île fermée et la zone de notification. Un **écran de réglages** à part, un jour.
 7. **Infobulles** à nous (bulle blanche, ombre douce).
 8. **Sons** : un petit bip pixel quand un agent attend ou finit ?
 9. **Écrans à dessiner** : connexion à Claude / Codex, réglages ; une boîte de confirmation, une notification d'erreur, un état vide.

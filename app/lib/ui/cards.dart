@@ -527,8 +527,9 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWid
   return w;
 }();
 
-/// A grey pixel star to press (a 24 px target around it): opens a menu.
-/// Darker under the mouse.
+/// A grey pixel star to press: opens a menu. Not seen until the mouse is
+/// right on it (user request, 2026-09-30: « pas apparente, qu'on soit
+/// vraiment proche »); a 24 px target around it.
 class MenuStar extends StatelessWidget {
   const MenuStar({super.key, required this.onTap});
 
@@ -546,7 +547,7 @@ class MenuStar extends StatelessWidget {
               child: Center(
                 child: AnimatedOpacity(
                   duration: const Duration(milliseconds: 140),
-                  opacity: hover ? 1 : .7,
+                  opacity: hover ? 1 : 0,
                   child: const PixelStar(PixelFxPalette.grey, size: 10),
                 ),
               ),

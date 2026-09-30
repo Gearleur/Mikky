@@ -16,6 +16,7 @@ import '../settings.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
 import '../ui/feedback.dart';
+import '../ui/floating_menu.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/tokens.dart';
 import 'content/focus_model.dart';
@@ -90,7 +91,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       service: widget.agents,
       answer: _answerId,
       pickFolder: _overlay.pickFolder,
-      showMenu: _overlay.showMenu,
+      showMenu: _menu,
       islandMenu: _showMenu,
     ),
     onHome: (home) => setState(() => _sideHome = home),
@@ -98,6 +99,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool _sideHome = true;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
+
+  // The small window's content: our floating menus open inside it.
+  final _sideArea = GlobalKey();
   Timer? _deadlineTimer;
   double? _deadlineAt;
 
@@ -128,6 +132,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _overlay.onOutsideClick = _onOutsideClick;
     _overlay.onTrayClick = _onTrayClick;
     _overlay.onTrayMenu = _showMenu;
+    FloatingMenu.track();
     _overlay.onNotificationClick = _onNotificationClick;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
@@ -465,9 +470,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     return KeyEventResult.ignored;
   }
 
+  /// Our floating menu inside the small window while it is open (user
+  /// request, 2026-09-30); Windows' own elsewhere (a right click on the
+  /// closed island, the notification area).
+  Future<int?> _menu(List<MenuEntry> entries) {
+    final side = _sideArea.currentContext;
+    if (side != null && _motion.openness > .9) return showFloatingMenu(side, entries);
+    return _overlay.showMenu(entries);
+  }
+
   Future<void> _showMenu() async {
     final s = widget.settings;
-    final chosen = await _overlay.showMenu([
+    final chosen = await _menu([
       MenuEntry(_menuThemeAuto, 'Thème : automatique', checked: s.theme == ThemeChoice.auto),
       MenuEntry(_menuThemeDark, 'Thème : noir', checked: s.theme == ThemeChoice.dark),
       MenuEntry(_menuThemeLight, 'Thème : blanc', checked: s.theme == ThemeChoice.light),
@@ -538,7 +552,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   Future<void> _quit() async {
     final working = widget.agents.working;
     if (working > 0) {
-      final sure = await _overlay.showMenu([
+      final sure = await _menu([
         MenuEntry(_quitYes, working == 1 ? 'Quitter et arrêter l’agent au travail' : 'Quitter et arrêter les $working agents au travail'),
         const MenuEntry.separator(),
         const MenuEntry(2, 'Annuler'),
@@ -762,7 +776,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   offset: Offset(0, (1 - opacity) * 6),
                   child: MikkyUiTheme(
                     ui: ui,
-                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: _side),
+                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: _side)),
                   ),
                 ),
               ),

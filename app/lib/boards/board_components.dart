@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 
+import '../overlay/overlay_channel.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
+import '../ui/floating_menu.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
@@ -173,6 +175,15 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
             )),
           ]),
         ),
+      ],
+    ),
+    BoardSection(
+      title: 'Menu flottant',
+      note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il s’ouvre là où on a cliqué ; Échap ou un clic à côté le ferme.',
+      frames: [
+        const BoardFrame(label: 'Accueil ···', note: 'Les réglages de Mikky.', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
+        const BoardFrame(label: 'Un agent ···', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
+        const BoardFrame(label: 'À essayer', note: 'Clique sur ··· : le vrai menu s’ouvre.', width: 300, child: _MenuTry()),
       ],
     ),
     BoardSection(
@@ -380,3 +391,78 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
     ),
   ];
 });
+
+const _homeMenu = [
+  MenuEntry(1, 'Thème : automatique', checked: true),
+  MenuEntry(2, 'Thème : noir'),
+  MenuEntry(3, 'Thème : blanc'),
+  MenuEntry.separator(),
+  MenuEntry(4, 'En haut'),
+  MenuEntry(5, 'À droite', checked: true),
+  MenuEntry.separator(),
+  MenuEntry(6, 'Notifications', checked: true),
+  MenuEntry(7, 'Relance automatique', checked: true),
+  MenuEntry(8, 'Réglage de Mikky…'),
+  MenuEntry.separator(),
+  MenuEntry(9, 'Arrêter tous les agents de Mikky…'),
+  MenuEntry(10, 'Fermer Mikky · les agents continuent'),
+];
+
+const _agentMenu = [
+  MenuEntry(1, 'Ouvrir dans VS Code'),
+  MenuEntry(2, 'Ouvrir le dossier'),
+  MenuEntry.separator(),
+  MenuEntry(3, 'Arrêter la relance auto'),
+  MenuEntry(4, 'Renommer…'),
+  MenuEntry(5, 'Épingler'),
+  MenuEntry(6, 'Archiver'),
+  MenuEntry.separator(),
+  MenuEntry(7, 'Supprimer…'),
+];
+
+/// A small window with its ··· button: the real menu opens in it.
+class _MenuTry extends StatefulWidget {
+  const _MenuTry();
+
+  @override
+  State<_MenuTry> createState() => _MenuTryState();
+}
+
+class _MenuTryState extends State<_MenuTry> {
+  String? _chosen;
+
+  @override
+  void initState() {
+    super.initState();
+    FloatingMenu.track();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Container(
+      width: 300,
+      height: 420,
+      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
+      child: Builder(
+        builder: (inner) => Stack(children: [
+          Positioned(
+            top: 14,
+            right: 14,
+            child: RoundButton('more', size: 34, onPressed: () async {
+              final id = await showFloatingMenu(inner, _homeMenu);
+              if (!mounted) return;
+              setState(() => _chosen = id == null ? 'rien' : _homeMenu.firstWhere((e) => e.id == id).label);
+            }),
+          ),
+          Positioned(
+            left: 18,
+            bottom: 16,
+            right: 18,
+            child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(12.5, color: ui.text3)),
+          ),
+        ]),
+      ),
+    );
+  }
+}

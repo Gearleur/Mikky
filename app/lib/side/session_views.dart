@@ -539,6 +539,12 @@ class LimitedAgentCard extends StatelessWidget {
       final at = spells.relaunchAt(id);
       final spell = spells.isOn(id);
       final resets = log.limitResetsAt;
+      // With « Relance automatique » for all, the violet star after
+      // « Agents » says it: no star on each row it relaunches; the yellow
+      // one only on a limit left alone (user request, 2026-09-30).
+      final Widget? mark = spell
+          ? (spells.everywhere ? null : const StatusFx(UiStatus.thinking, size: 13))
+          : const PixelStar(PixelFxPalette.yellow, size: 11);
       return AgentCard(
         status: UiStatus.limited,
         title: title,
@@ -547,7 +553,7 @@ class LimitedAgentCard extends StatelessWidget {
         pinned: pinned,
         style: AgentCardStyle.waiting,
         // The spell's violet star, alive; the limit's yellow one, still.
-        mark: spell ? const StatusFx(UiStatus.thinking, size: 13) : const PixelStar(PixelFxPalette.yellow, size: 11),
+        mark: mark,
         subtitle: spell
             ? (at == null ? 'Ensorcelé · relancé' : 'Ensorcelé · se relance à ${hourText(at)}')
             : limitLine(resets),
