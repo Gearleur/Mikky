@@ -209,7 +209,7 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Limite atteinte, ensorcelé',
-        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Relance auto. Étoile violette : ensorcelé, il se relance tout seul (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Relance auto. Ensorcelé : une ligne normale, qui dit quand il se relance (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
         child: HomeMock(
           autoRelaunch: true,
           working: [_workingOne],

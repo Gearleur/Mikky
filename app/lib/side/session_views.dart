@@ -505,9 +505,9 @@ class _LimitBlockState extends State<_LimitBlock> {
 }
 
 /// An agent stopped by its limit, on the home: its logo, the yellow star,
-/// when it lifts, « Relancer » / « Relance auto »; under the spell the
-/// violet star and when it relaunches, nothing to press — the spell comes
-/// off in its ··· menu (user requests, 2026-09-30).
+/// when it lifts, « Relancer » / « Relance auto »; under the spell a plain
+/// row, « Ensorcelé · se relance à 17 h 11 », nothing to press — the
+/// spell comes off in its ··· menu (user requests, 2026-09-30).
 class LimitedAgentCard extends StatelessWidget {
   const LimitedAgentCard({
     super.key,
@@ -539,12 +539,10 @@ class LimitedAgentCard extends StatelessWidget {
       final at = spells.relaunchAt(id);
       final spell = spells.isOn(id);
       final resets = log.limitResetsAt;
-      // With « Relance automatique » for all, the violet star after
-      // « Agents » says it: no star on each row it relaunches; the yellow
-      // one only on a limit left alone (user request, 2026-09-30).
-      final Widget? mark = spell
-          ? (spells.everywhere ? null : const StatusFx(UiStatus.thinking, size: 13))
-          : const PixelStar(PixelFxPalette.yellow, size: 11);
+      // Under the spell the row looks like any other (its line says when
+      // it relaunches); only a limit left alone keeps the yellow star (user
+      // request, 2026-09-30).
+      final Widget? mark = spell ? null : const PixelStar(PixelFxPalette.yellow, size: 11);
       return AgentCard(
         status: UiStatus.limited,
         title: title,
