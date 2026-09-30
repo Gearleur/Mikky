@@ -102,10 +102,16 @@ abstract final class FakeSessions {
     TurnEnded(StopReason.endTurn, at: _at(206)),
   ]);
 
-  /// Stopped by an error (the subscription's limit).
+  /// Stopped by the subscription's limit, as Claude says it.
+  static SessionLog limited() => _log([
+    ..._fixing(),
+    TurnEnded(StopReason.rateLimited, message: '5-hour limit reached ∙ resets 5:10pm', at: _at(45)),
+  ]);
+
+  /// Stopped by an error.
   static SessionLog error() => _log([
     ..._fixing(),
-    TurnEnded(StopReason.rateLimited, message: 'Limite de l’abonnement atteinte : reprise à 17 h.', at: _at(45)),
+    TurnEnded(StopReason.error, message: 'Le processus de l’agent s’est arrêté (code 1).', at: _at(45)),
   ]);
 
   /// Stopped by the user.

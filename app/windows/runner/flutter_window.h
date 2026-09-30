@@ -66,6 +66,9 @@ class FlutterWindow : public Win32Window {
   // Sends the latest cursor position to Dart, at most once per timer tick.
   void FlushCursor();
 
+  // Puts the mouse hook back if Windows dropped it.
+  void WatchHook();
+
   // Adds or removes WS_EX_TRANSPARENT depending on |screen_point|.
   void UpdateClickThrough(POINT screen_point);
 
@@ -93,6 +96,9 @@ class FlutterWindow : public Win32Window {
   POINT last_cursor_{0, 0};
   POINT sent_cursor_{LONG_MIN, LONG_MIN};
   bool cursor_timer_pending_ = false;
+
+  // When the hook last heard the mouse (GetTickCount).
+  DWORD last_hook_tick_ = 0;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

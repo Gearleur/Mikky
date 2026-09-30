@@ -157,9 +157,8 @@ class Composer extends StatefulWidget {
   /// The agent's « / » commands.
   final List<AgentCommand> commands;
 
-  /// How far the options hang below the field: right under it, no longer
-  /// half inside, now the field is slim (user request, 2026-09-30).
-  static const optionsOverhang = 28.0;
+  /// How far the options hang below the field: half inside it.
+  static const optionsOverhang = 12.0;
 
   @override
   State<Composer> createState() => _ComposerState();
@@ -270,12 +269,13 @@ class _ComposerState extends State<Composer> {
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
         // Slim, like the latest iPhone's (user request, 2026-09-30): 40
-        // high, a full pill.
+        // high, a full pill; 8 more at the bottom when options sit half
+        // inside it, so they never cover the text.
         child: _frost(Surface(
           radius: 20,
           color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
           shadows: focused ? ui.focusRing : ui.inset,
-          padding: const EdgeInsets.fromLTRB(15, 4, 5, 4),
+          padding: EdgeInsets.fromLTRB(15, 4, 5, widget.options == null ? 4 : 12),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 32),
             child: Row(
@@ -379,7 +379,7 @@ class _CommandList extends StatelessWidget {
   }
 }
 
-/// `.cchip`: an option under the field (folder, model).
+/// `.cchip`: an option half inside the field (folder, model).
 class ComposerChip extends StatelessWidget {
   const ComposerChip(this.label, {super.key, this.icon, this.leading, this.onTap});
 

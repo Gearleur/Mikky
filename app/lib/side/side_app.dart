@@ -11,6 +11,7 @@ import '../ui/feedback.dart';
 import '../ui/motion.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import '../ui/sliding_hover.dart';
 import 'agent_page.dart';
 import 'new_agent_page.dart';
 import 'session_menu.dart';
@@ -258,6 +259,8 @@ class HomePage extends StatelessWidget {
     return Stack(children: [
       SideHead(
         title: 'Agents',
+        // The violet star while « Relance automatique » is on (set in ···).
+        titleMark: const AutoRelaunchMark(),
         // The island draws Mikky here (it moves from the tab to this spot).
         leading: const SizedBox(width: 42, height: 40),
         actions: [RoundButton('more', size: 34, onPressed: host.islandMenu, tooltip: 'Plus')],
@@ -268,23 +271,19 @@ class HomePage extends StatelessWidget {
             ? const _Empty()
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 2, 16, 72),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+                // The rows' hover: the sliding square of Oui / Non.
+                child: SlidingHover(radius: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body)),
               ),
       ),
       Positioned(right: 16, bottom: 16, child: RoundButton('go', size: 46, ink: true, onPressed: () => open('new'), tooltip: 'Nouvel agent')),
     ]);
   }
 
+  /// A row of the home; its menu (right click, or the grey star on the
+  /// right) acts on the agent without opening it.
   Widget _card(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
-    final card = _cardOf(context, e, g, now);
-    return GestureDetector(
-      onSecondaryTap: () => showSessionMenu(host, e, rename: () => open('rename:${e.id}')),
-      child: card,
-    );
-  }
-
-  Widget _cardOf(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
     final log = e.log;
+    void menu() => showSessionMenu(host, e, rename: () => open('rename:${e.id}'));
     final external = e.origin == AgentOrigin.external;
     final where = external ? ' · hors de Mikky' : '';
     return switch (g) {
@@ -297,6 +296,7 @@ class HomePage extends StatelessWidget {
           subtitle: 'Pose une question : ${log.detail}',
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
           status: UiStatus.approval,
@@ -307,6 +307,7 @@ class HomePage extends StatelessWidget {
           subtitle: askLabel(log),
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
+          onMenu: menu,
           actions: e.live
               ? WaitActions(
                   command: log.detail,
@@ -324,7 +325,32 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
+      HomeGroup.working when e.status == AgentStatus.paused => AgentCard(
+          status: UiStatus.sleeping,
+          title: e.name,
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
+          pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
+          subtitle: 'En pause',
+          onTap: () => open(e.id),
+          onMenu: menu,
+          actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))])),
+        ),
+      // Stopped by its subscription's limit: when it lifts, « Relancer » or
+      // « Ensorceler »; the violet star under the spell (2026-09-30).
+      HomeGroup.working when e.status == AgentStatus.rateLimited => LimitedAgentCard(
+        id: e.id,
+        title: e.name,
+        log: log,
+        send: (t) => host.service.source.send(e.id, t),
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        brand: Brand.of(e.provider),
+        pinned: e.mark.pinned,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.working => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
@@ -333,6 +359,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.done => AgentCard(
           status: UiStatus.of(e.status),
@@ -344,6 +371,7 @@ class HomePage extends StatelessWidget {
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
           style: AgentCardStyle.done,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.history => AgentCard(
           status: UiStatus.of(e.status),
@@ -353,6 +381,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           style: AgentCardStyle.old,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
     };
   }

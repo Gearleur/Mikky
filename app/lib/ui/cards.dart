@@ -6,6 +6,7 @@ import 'feedback.dart';
 import 'icons.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
+import 'sliding_hover.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -39,7 +40,22 @@ class CodePill extends StatelessWidget {
 /// folds or unfolds the group. With a [status] that has one, a small
 /// square of pixels instead of the dot.
 class GroupHeader extends StatelessWidget {
-  const GroupHeader({super.key, required this.label, required this.color, required this.count, this.open = true, this.onTap, this.first = false, this.status});
+  const GroupHeader({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.count,
+    this.open = true,
+    this.onTap,
+    this.first = false,
+    this.status,
+    this.quiet = false,
+  });
+
+  /// Pared down (trial, user requests 2026-09-30: « trop d'information »):
+  /// the firework only for « En attente » and « Travaillent », the name
+  /// and the count in grey, the chevron only under the mouse.
+  final bool quiet;
 
   final String label;
   final Color color;
@@ -54,6 +70,7 @@ class GroupHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    if (quiet) return _quiet(ui);
     final style = uiText(12.5, weight: FontWeight.w600, color: ui.text2, height: 1.2);
     return MouseRegion(
       cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
@@ -100,6 +117,44 @@ class GroupHeader extends StatelessWidget {
   }
 }
 
+extension on GroupHeader {
+  Widget _quiet(MikkyUi ui) => HoverBuilder(
+    builder: (context, hover) => MouseRegion(
+      cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(3, first ? 6 : 16, 6, 6),
+          child: Row(children: [
+            // One slot for every group, so the names line up.
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: status == UiStatus.approval || status == UiStatus.working ? Center(child: StatusFx(status!, size: 15)) : null,
+            ),
+            const SizedBox(width: 6),
+            Text(label, style: uiText(12, weight: FontWeight.w600, color: ui.text3, height: 1.2)),
+            const SizedBox(width: 5),
+            Text('$count', style: uiText(12, weight: FontWeight.w500, color: ui.text3, height: 1.2, tabular: true)),
+            const Spacer(),
+            AnimatedOpacity(
+              opacity: hover || !open ? 1 : 0,
+              duration: const Duration(milliseconds: 140),
+              child: AnimatedRotation(
+                turns: open ? 0 : -.25,
+                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+                curve: const Cubic(.34, 1.4, .64, 1),
+                child: MikkyIcon('down', size: 13, color: ui.text3),
+              ),
+            ),
+          ]),
+        ),
+      ),
+    ),
+  );
+}
+
 enum AgentCardStyle {
   /// At work: a grey card.
   normal,
@@ -130,7 +185,12 @@ class AgentCard extends StatelessWidget {
     this.onMenu,
     this.pinned = false,
     this.brand,
+    this.mark,
   });
+
+  /// A small sign right after the title: the yellow star of a limit, the
+  /// violet one of a spell.
+  final Widget? mark;
 
   final UiStatus status;
   final String title;
@@ -165,12 +225,17 @@ class AgentCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
-            ),
+            child: Row(children: [
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
+                ),
+              ),
+              if (mark != null) ...[const SizedBox(width: 6), mark!],
+            ]),
           ),
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
@@ -180,6 +245,7 @@ class AgentCard extends StatelessWidget {
               who,
               style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
             ),
+          if (!live) ?_menuStar(),
         ],
       ),
     );
@@ -197,13 +263,14 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the two lines; it turns while the agent works and
-      // hops now and then while it waits. Oui / Non below, under the text.
-      final logo = BrandLogo(brand!, size: 32);
+      // level with the two lines (24 px since the same day: « trop gros »);
+      // it turns while the agent works and hops now and then while it
+      // waits. Oui / Non below, under the text.
+      final logo = BrandLogo(brand!, size: 24);
       final head = Row(
         children: [
           SizedBox(
-            width: 34,
+            width: 28,
             child: Center(
               child: switch (status) {
                 UiStatus.working || UiStatus.thinking => SpinningLogo(claude: brand == Brand.claude, child: logo),
@@ -222,13 +289,14 @@ class AgentCard extends StatelessWidget {
               children: [titleRow, ?subtitleText],
             ),
           ),
+          ?_menuStar(),
         ],
       );
       body = actions == null
           ? head
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [head, Padding(padding: const EdgeInsets.only(left: 44, top: 8), child: actions!)],
+              children: [head, Padding(padding: const EdgeInsets.only(left: 38, top: 8), child: actions!)],
             );
     } else {
       body = Row(
@@ -270,17 +338,22 @@ class AgentCard extends StatelessWidget {
   }
 
   Widget _pressable(Widget card) {
-    // A light grey under the mouse, like every row that opens something.
-    final hovered = HoverBuilder(
-      enabled: onTap != null,
-      builder: (context, hover) {
-        final ui = MikkyUi.of(context);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
-          child: card,
-        );
-      },
+    // In a list with the sliding square (the home), the square shows the
+    // hover; alone, a light grey under the mouse.
+    final hovered = Builder(
+      builder: (context) => SlidingHover.maybeOf(context) != null && onTap != null
+          ? HoverTarget(child: card)
+          : HoverBuilder(
+              enabled: onTap != null,
+              builder: (context, hover) {
+                final ui = MikkyUi.of(context);
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
+                  child: card,
+                );
+              },
+            ),
     );
     final pressable = Pressable(onTap: onTap, pressedScale: .98, child: hovered);
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
@@ -299,7 +372,7 @@ class AgentCard extends StatelessWidget {
           SizedBox(
             width: 26,
             height: 26,
-            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 22)),
+            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 18)),
           ),
           const SizedBox(width: 9),
           Expanded(
@@ -313,10 +386,16 @@ class AgentCard extends StatelessWidget {
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
           Text(side, style: uiText(11.5, color: ui.text3, height: 1.2, tabular: true)),
+          ?_menuStar(),
         ],
       ),
     ));
   }
+
+  /// A small grey star on the right: the same menu as a right click
+  /// (pause, reprendre, arrêter, ranger…) without opening the agent (user
+  /// request, 2026-09-30).
+  Widget? _menuStar() => onMenu == null ? null : Padding(padding: const EdgeInsets.only(left: 6), child: MenuStar(onTap: onMenu!));
 }
 
 /// The Oui / Non of a waiting agent: the command, then the answers in a
@@ -502,3 +581,33 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWid
   tp.dispose();
   return w;
 }();
+
+/// A grey pixel star to press: opens a menu. Not seen until the mouse is
+/// right on it (user request, 2026-09-30: « pas apparente, qu'on soit
+/// vraiment proche »); a 24 px target around it.
+class MenuStar extends StatelessWidget {
+  const MenuStar({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: HoverBuilder(
+            builder: (context, hover) => SizedBox.square(
+              dimension: 24,
+              child: Center(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 140),
+                  opacity: hover ? 1 : 0,
+                  child: const PixelStar(PixelFxPalette.grey, size: 10),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}

@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/enchant.dart';
 import '../ui/cards.dart';
+import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/feedback.dart';
 import '../ui/pixel_fx.dart';
@@ -359,7 +361,7 @@ List<Widget> _mainSteps(SessionLog log, TurnSpan turn, List<ToolItem> tools, Mik
 /// did — its plan, what it thought and said on the way, every tool — then
 /// its answer, the whole width (user request, 2026-09-30). The last task
 /// is open, older ones folded.
-List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi}) {
+List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi, LimitHooks? limit}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
   void gap([double h = 8]) => out.add(SizedBox(height: h));
@@ -400,14 +402,16 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
             ? UiStatus.working
             : switch (turn.reason) {
                 StopReason.cancelled => UiStatus.sleeping,
-                StopReason.error || StopReason.rateLimited => UiStatus.error,
+                StopReason.rateLimited => UiStatus.limited,
+                StopReason.error => UiStatus.error,
                 _ => UiStatus.finished,
               },
         title: turn.running
             ? (log.detail.isEmpty ? 'Au travail' : log.detail)
             : switch (turn.reason) {
                 StopReason.cancelled => 'Tâche arrêtée',
-                StopReason.error || StopReason.rateLimited => 'Tâche en erreur',
+                StopReason.rateLimited => 'Limite atteinte',
+                StopReason.error => 'Tâche en erreur',
                 _ => 'Tâche terminée',
               },
         meta: meta,
@@ -420,7 +424,16 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
       gap(6);
     }
     if (turn.running) continue;
-    if (answer != null) {
+    if (turn.reason == StopReason.rateLimited && identical(turn, log.turns.last)) {
+      // The subscription's limit: when it lifts, not the raw message (user
+      // request, 2026-09-30).
+      if (answer != null) {
+        out.add(ChatMessage(me: false, text: answer.text.trim()));
+        gap(10);
+      }
+      out.add(_LimitBlock(log: log, message: turn.message, hooks: limit));
+      gap(14);
+    } else if (answer != null) {
       out.add(ChatMessage(me: false, text: answer.text.trim()));
       gap(14);
     } else if (turn.message != null) {
@@ -429,6 +442,226 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
     }
   }
   return out;
+}
+
+/// What an agent's page lends the thread to act on a limit: which agent,
+/// and how to write to it.
+class LimitHooks {
+  const LimitHooks(this.id, this.send);
+
+  final String id;
+  final Future<void> Function(String text) send;
+}
+
+/// « 17 h », « 17 h 05 ».
+String hourText(DateTime t) {
+  final l = t.toLocal();
+  return l.minute == 0 ? '${l.hour} h' : '${l.hour} h ${l.minute.toString().padLeft(2, '0')}';
+}
+
+/// The limit card, tied to the spell of its agent: « Ensorceler » makes
+/// Mikky relaunch the task by itself when the limit lifts.
+class _LimitBlock extends StatefulWidget {
+  const _LimitBlock({required this.log, this.message, this.hooks});
+
+  final SessionLog log;
+  final String? message;
+  final LimitHooks? hooks;
+
+  @override
+  State<_LimitBlock> createState() => _LimitBlockState();
+}
+
+class _LimitBlockState extends State<_LimitBlock> {
+  final _spells = Enchantments.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _spells.addListener(_changed);
+  }
+
+  @override
+  void dispose() {
+    _spells.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() => setState(() {});
+
+  @override
+  Widget build(BuildContext context) {
+    final h = widget.hooks;
+    final resets = widget.log.limitResetsAt;
+    return LimitCard(
+      resetsAt: resets,
+      message: widget.message,
+      relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
+      relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
+      onEnchant: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
+      onNow: h == null ? null : () => h.send(Enchantments.resumeMessage),
+    );
+  }
+}
+
+/// An agent stopped by its limit, on the home: its logo, the yellow star,
+/// when it lifts, « Relancer » / « Relance auto »; under the spell a plain
+/// row, « Ensorcelé · se relance à 17 h 11 », nothing to press — the
+/// spell comes off in its ··· menu (user requests, 2026-09-30).
+class LimitedAgentCard extends StatelessWidget {
+  const LimitedAgentCard({
+    super.key,
+    required this.id,
+    required this.title,
+    required this.log,
+    required this.send,
+    this.who = '',
+    this.brand,
+    this.pinned = false,
+    this.onTap,
+    this.onMenu,
+  });
+
+  final String id;
+  final String title;
+  final SessionLog log;
+  final Future<void> Function(String text) send;
+  final String who;
+  final Brand? brand;
+  final bool pinned;
+  final VoidCallback? onTap, onMenu;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Enchantments.instance,
+    builder: (context, _) {
+      final spells = Enchantments.instance;
+      final at = spells.relaunchAt(id);
+      final spell = spells.isOn(id);
+      final resets = log.limitResetsAt;
+      // Under the spell the row looks like any other (its line says when
+      // it relaunches); only a limit left alone keeps the yellow star (user
+      // request, 2026-09-30).
+      final Widget? mark = spell ? null : const PixelStar(PixelFxPalette.yellow, size: 11);
+      return AgentCard(
+        status: UiStatus.limited,
+        title: title,
+        who: who,
+        brand: brand,
+        pinned: pinned,
+        style: AgentCardStyle.waiting,
+        // The spell's violet star, alive; the limit's yellow one, still.
+        mark: mark,
+        subtitle: spell
+            ? (at == null ? 'Ensorcelé · relancé' : 'Ensorcelé · se relance à ${hourText(at)}')
+            : limitLine(resets),
+        onTap: onTap,
+        onMenu: onMenu,
+        actions: spell
+            ? null
+            : Align(
+                alignment: Alignment.centerRight,
+                child: AnswerBar(
+                  answers: [('Relancer', () => send(Enchantments.resumeMessage)), ('Relance auto', () => spells.enchant(id, resets, send))],
+                ),
+              ),
+      );
+    },
+  );
+}
+
+/// Top middle of an agent's page: the violet star while it is under the
+/// spell, the yellow one while its limit holds it (user requests,
+/// 2026-09-30).
+class SpellStar extends StatelessWidget {
+  const SpellStar({super.key, required this.id, this.limited = false, this.force = false});
+
+  final String id;
+
+  /// Stopped by its subscription's limit.
+  final bool limited;
+
+  /// Shown as under the spell whatever the spells say (boards).
+  final bool force;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Enchantments.instance,
+    builder: (context, _) => force || Enchantments.instance.isOn(id)
+        ? const IgnorePointer(child: StatusFx(UiStatus.thinking, size: 20))
+        : limited
+        ? const IgnorePointer(child: StatusFx(UiStatus.limited, size: 20))
+        : const SizedBox.shrink(),
+  );
+}
+
+/// The violet star after « Agents » while the global « Relance
+/// automatique » is on (it is set in the home's ··· menu).
+class AutoRelaunchMark extends StatelessWidget {
+  const AutoRelaunchMark({super.key, this.force = false});
+
+  /// Shown whatever the setting says (boards).
+  final bool force;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Enchantments.instance,
+    builder: (context, _) => force || Enchantments.instance.everywhere
+        ? const Padding(padding: EdgeInsets.only(left: 8, top: 2), child: StatusFx(UiStatus.thinking, size: 14))
+        : const SizedBox.shrink(),
+  );
+}
+
+/// A subscription's limit reached: the yellow state and when it lifts
+/// (user request, 2026-09-30), « Relancer » now or « Relance auto ». Once
+/// under the spell there is no card any more, only « Ensorcelé · se
+/// relance à 17 h 11 », big, with the violet star; the spell comes off in
+/// the agent's ··· menu.
+class LimitCard extends StatelessWidget {
+  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onEnchant, this.onNow});
+
+  final DateTime? resetsAt;
+  final String? message;
+
+  /// Under the spell: when Mikky relaunches it.
+  final DateTime? relaunchAt;
+
+  /// Under the spell, the relaunch sent.
+  final bool relaunched;
+  final VoidCallback? onEnchant, onNow;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (relaunchAt != null || relaunched) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
+        child: Row(children: [
+          const StatusFx(UiStatus.thinking, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: 'Ensorcelé', style: uiText(16, weight: FontWeight.w600, color: ui.text, height: 1.3)),
+                TextSpan(
+                  text: relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}',
+                  style: uiText(15, color: ui.text2, height: 1.3),
+                ),
+              ]),
+            ),
+          ),
+        ]),
+      );
+    }
+    final actions = [if (onNow != null) ('Relancer', onNow), if (onEnchant != null) ('Relance auto', onEnchant)];
+    return AgentCard(
+      status: UiStatus.limited,
+      title: 'Limite de l’abonnement atteinte',
+      who: '',
+      subtitle: resetsAt == null ? (message ?? 'Réessaie plus tard') : 'Reprend à ${hourText(resetsAt!)}',
+      actions: actions.isEmpty ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: actions)),
+    );
+  }
 }
 
 /// The permission request at the bottom of the thread: what it asks, the
@@ -451,6 +684,23 @@ class AskCard extends StatelessWidget {
           onNo: () => onAnswer(AgentAnswer.deny),
           onAlways: canAlways(log) ? () => onAnswer(AgentAnswer.allowAlways) : null,
         ),
+      );
+}
+
+/// An agent put on hold: its turn stopped, its session kept. « Reprendre »
+/// tells it to go on where it stopped (a message does too).
+class PausedCard extends StatelessWidget {
+  const PausedCard({super.key, required this.onResume});
+
+  final VoidCallback? onResume;
+
+  @override
+  Widget build(BuildContext context) => AgentCard(
+        status: UiStatus.sleeping,
+        title: 'En pause',
+        who: '',
+        subtitle: 'Travail arrêté, session gardée',
+        actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', onResume)])),
       );
 }
 

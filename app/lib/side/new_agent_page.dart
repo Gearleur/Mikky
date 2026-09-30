@@ -210,7 +210,7 @@ class _NewAgentPageState extends State<NewAgentPage> {
       SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
       Positioned.fill(
         top: 68,
-        bottom: 100,
+        bottom: 92,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const MiniMikky(size: 64),
           const SizedBox(height: 8),

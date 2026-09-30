@@ -78,8 +78,9 @@ void main() {
     const times = [.12, .3, .9, 1.7];
     final forms = <(String, MikkyState?, MikkyEmote?, List<double>)>[
       ('amour → cœur', null, MikkyEmote.love, times),
-      // The mascot himself, hopping like the fur ball: crouch, top, landing.
-      ('travaille → saute', MikkyState.working, null, const [.3, .62, .8, 1.0]),
+      // The mascot himself, one slow hop (1.5 × slower since 2026-09-30):
+      // crouch, top, coming down, landing.
+      ('travaille → saute', MikkyState.working, null, const [.12, .44, .7, 1.0]),
       // Two hops as the cat, then the "!" hops, then back to the cat.
       ('feu vert : 2 sauts', MikkyState.approval, null, const [.85, 2.25, 2.95, 6.2]),
       // Frame by frame, the cat turning into the "!": no white left inside.

@@ -16,6 +16,12 @@ namespace {
 constexpr UINT_PTR kCursorTimerId = 1;
 // ~60 Hz. Windows timers tick at ~15.6 ms anyway.
 constexpr UINT kCursorTimerMs = 16;
+// Windows silently drops a low-level hook that once answered too slowly
+// (a busy moment, a debug build): Mikky then stops following the mouse
+// (user report, 2026-09-30). Every 1.5 s, if the cursor moved without the
+// hook hearing it, the hook is put back.
+constexpr UINT_PTR kHookWatchTimerId = 2;
+constexpr UINT kHookWatchMs = 1500;
 // Posted by the hook, handled in the window procedure: the hook itself must
 // not call into Flutter.
 constexpr UINT kOutsideClickMessage = WM_APP + 1;
@@ -129,6 +135,9 @@ bool FlutterWindow::OnCreate() {
               << std::endl;
     g_hook_window = nullptr;
   }
+  if (is_overlay() && mouse_hook_) {
+    SetTimer(GetHandle(), kHookWatchTimerId, kHookWatchMs, nullptr);
+  }
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
@@ -193,6 +202,7 @@ void FlutterWindow::ShowNotification(const std::wstring& title,
 
 void FlutterWindow::OnDestroy() {
   RemoveTrayIcon();
+  KillTimer(GetHandle(), kHookWatchTimerId);
   if (mouse_hook_) {
     UnhookWindowsHookEx(mouse_hook_);
     mouse_hook_ = nullptr;
@@ -227,6 +237,7 @@ void FlutterWindow::OnGlobalCursor(POINT screen_point) {
   // state is already right for it.
   UpdateClickThrough(screen_point);
   last_cursor_ = screen_point;
+  last_hook_tick_ = GetTickCount();
   if (!cursor_timer_pending_) {
     cursor_timer_pending_ = true;
     SetTimer(GetHandle(), kCursorTimerId, kCursorTimerMs, nullptr);
@@ -268,6 +279,18 @@ void FlutterWindow::UpdateClickThrough(POINT screen_point) {
     ex_style &= ~WS_EX_TRANSPARENT;
   }
   SetWindowLongPtr(hwnd, GWL_EXSTYLE, ex_style);
+}
+
+void FlutterWindow::WatchHook() {
+  POINT cursor;
+  if (!GetCursorPos(&cursor)) return;
+  if (cursor.x == last_cursor_.x && cursor.y == last_cursor_.y) return;
+  if (GetTickCount() - last_hook_tick_ < kHookWatchMs) return;
+  // The cursor moved and the hook heard nothing: put it back.
+  if (mouse_hook_) UnhookWindowsHookEx(mouse_hook_);
+  mouse_hook_ = SetWindowsHookEx(WH_MOUSE_LL, LowLevelMouseProc,
+                                 GetModuleHandle(nullptr), 0);
+  OnGlobalCursor(cursor);
 }
 
 void FlutterWindow::FlushCursor() {
@@ -442,6 +465,10 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_TIMER:
       if (wparam == kCursorTimerId) {
         FlushCursor();
+        return 0;
+      }
+      if (wparam == kHookWatchTimerId) {
+        WatchHook();
         return 0;
       }
       break;

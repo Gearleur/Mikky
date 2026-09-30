@@ -50,6 +50,9 @@ class AgentsService extends ChangeNotifier {
   /// Models each tool offered in its last session (for the model menu).
   final Map<AgentProvider, List<SessionModel>> models = {};
 
+  /// `mikkyd`, which runs the agents; null: the app runs them itself.
+  DaemonClient? daemon;
+
   Timer? _notify;
   bool _disposed = false;
 
@@ -57,11 +60,44 @@ class AgentsService extends ChangeNotifier {
 
   /// Loads Mikky's agents, looks at both targets and starts watching their
   /// sessions. Never throws: a missing WSL is just unavailable.
-  Future<void> start() async {
+  Future<void> start({bool useDaemon = true}) async {
     await store.load();
     // The agents kept from before show at once, before the targets answer.
     _changed();
+    if (useDaemon) await _connectDaemon();
     await Future.wait([for (final h in AgentHost.values) _startTarget(h)]);
+  }
+
+  /// Connects to `mikkyd` (started if needed) and takes back the agents it
+  /// still runs. Without it, the app runs agents itself.
+  Future<void> _connectDaemon() async {
+    final exe = DaemonClient.findExecutable();
+    if (exe == null) {
+      debugPrint('mikky: no mikkyd found, agents run in the app');
+      return;
+    }
+    final client = await DaemonClient.ensure(exe);
+    if (client == null) {
+      debugPrint('mikky: mikkyd does not answer, agents run in the app');
+      return;
+    }
+    daemon = client;
+    // Gone (it crashed): its agents went with it; new ones run in the app.
+    unawaited(client.done.then((_) {
+      if (daemon == client) daemon = null;
+    }));
+    try {
+      final runs = await client.request('runs.list') as List;
+      for (final r in runs.cast<Map<String, dynamic>>()) {
+        final provider = AgentProvider.values.asNameMap()[r['provider']];
+        final host = AgentHost.values.asNameMap()[r['host']];
+        if (provider == null || host == null || r['alive'] != true) continue;
+        final run = await DaemonAgentRun.attach(client, r['run'] as String, cwd: r['cwd'] as String?);
+        source.adopt(run, provider: provider, host: host, cwd: r['cwd'] as String?);
+      }
+    } on DaemonError catch (e) {
+      debugPrint('mikky: mikkyd runs unreadable ($e)');
+    }
   }
 
   Future<void> _startTarget(AgentHost host) async {
@@ -125,7 +161,7 @@ class AgentsService extends ChangeNotifier {
 
   Future<AgentRun> _spawn(AgentProvider provider, AgentHost host, String cwd) async {
     final setup = await ready(host);
-    final run = await setup.spawn(provider, cwd: cwd);
+    final run = await setup.spawn(provider, cwd: cwd, daemon: daemon);
     run.changes.listen((_) {
       final m = run.log.models;
       if (m.isNotEmpty) models[provider] = m;
@@ -176,6 +212,7 @@ class AgentsService extends ChangeNotifier {
     for (final w in _watchers) {
       await w.stop();
     }
+    await daemon?.close();
   }
 
   @override

@@ -48,6 +48,7 @@ class MikkyTheme {
       AgentStatus.error: Color(0xFFF4505E),
       AgentStatus.finished: Color(0xFF34D399),
       AgentStatus.rateLimited: Color(0xFFFB923C),
+      AgentStatus.paused: Color(0x75FFFFFF),
       AgentStatus.idle: Color(0x75FFFFFF),
     },
   );
@@ -75,6 +76,7 @@ class MikkyTheme {
       AgentStatus.error: Color(0xFFFF3B30),
       AgentStatus.finished: Color(0xFF34C759),
       AgentStatus.rateLimited: Color(0xFFFFCC00),
+      AgentStatus.paused: Color(0x993C3C43),
       AgentStatus.idle: Color(0x993C3C43),
     },
   );

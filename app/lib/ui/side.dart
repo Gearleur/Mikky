@@ -35,7 +35,11 @@ class SideFrame extends StatelessWidget {
 /// `.side-head`: 68 px — Mikky small (or a back button), the title, and
 /// round buttons on the right.
 class SideHead extends StatelessWidget {
-  const SideHead({super.key, this.title, this.leading, this.actions = const [], this.small = false});
+  const SideHead({super.key, this.title, this.leading, this.actions = const [], this.small = false, this.titleMark});
+
+  /// A small sign right after the title (the violet star of « Relance
+  /// automatique » after « Agents »).
+  final Widget? titleMark;
 
   /// None on an agent's page: its buttons float over the thread (user
   /// request, 2026-09-30).
@@ -60,12 +64,17 @@ class SideHead extends StatelessWidget {
             Expanded(
               child: title == null
                   ? const SizedBox.shrink()
-                  : Text(
-                title!,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
-              ),
+                  : Row(children: [
+                      Flexible(
+                        child: Text(
+                          title!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
+                        ),
+                      ),
+                      ?titleMark,
+                    ]),
             ),
             for (final a in actions) ...[const SizedBox(width: 8), a],
           ],
@@ -147,47 +156,13 @@ class EdgeBlur extends StatelessWidget {
   }
 }
 
-/// The top blur of an agent's page, as [style] says; the design boards
-/// have sliders to set it live (user request, 2026-09-30).
+/// The top blur of an agent's page, with the values the user set with
+/// sliders in the design boards (2026-09-30).
 class TopBlur extends StatelessWidget {
   const TopBlur({super.key});
 
-  static final style = ValueNotifier(TopBlurStyle.standard);
-
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: style,
-    builder: (context, s, _) => EdgeBlur(top: true, height: s.height, layers: s.layers, sigma: s.sigma, veil: s.veil, ramp: s.ramp),
-  );
-}
-
-@immutable
-class TopBlurStyle {
-  const TopBlurStyle({required this.height, required this.layers, required this.sigma, required this.veil, required this.ramp});
-
-  /// In use: the user's, set with the boards' sliders (2026-09-30).
-  static const standard = TopBlurStyle(height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
-
-  final double height;
-  final int layers;
-  final double sigma;
-  final double veil;
-  final double ramp;
-
-  /// The blur at the very edge, all layers added up.
-  double get strongest => sigma * math.sqrt(layers.toDouble());
-
-  TopBlurStyle copyWith({double? height, int? layers, double? sigma, double? veil, double? ramp}) => TopBlurStyle(
-    height: height ?? this.height,
-    layers: layers ?? this.layers,
-    sigma: sigma ?? this.sigma,
-    veil: veil ?? this.veil,
-    ramp: ramp ?? this.ramp,
-  );
-
-  @override
-  String toString() =>
-      'hauteur ${height.round()} · couches $layers · flou ${sigma.toStringAsFixed(2)} · voile ${veil.toStringAsFixed(2)} · rampe ${ramp.toStringAsFixed(2)}';
+  Widget build(BuildContext context) => const EdgeBlur(top: true, height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative

@@ -9,11 +9,15 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
+import '../agents/enchant.dart';
 import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
+import '../ui/feedback.dart';
+import '../ui/floating_menu.dart';
+import '../ui/pixel_fx.dart';
 import '../ui/tokens.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
@@ -34,6 +38,7 @@ const _pastEdge = 40.0;
 const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
 const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10, _menuNotifications = 11;
+const _menuAutoRelaunch = 20;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -86,7 +91,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       service: widget.agents,
       answer: _answerId,
       pickFolder: _overlay.pickFolder,
-      showMenu: _overlay.showMenu,
+      showMenu: _menu,
       islandMenu: _showMenu,
     ),
     onHome: (home) => setState(() => _sideHome = home),
@@ -94,6 +99,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool _sideHome = true;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
+
+  // The small window's content: our floating menus open inside it.
+  final _sideArea = GlobalKey();
   Timer? _deadlineTimer;
   double? _deadlineAt;
 
@@ -124,6 +132,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _overlay.onOutsideClick = _onOutsideClick;
     _overlay.onTrayClick = _onTrayClick;
     _overlay.onTrayMenu = _showMenu;
+    FloatingMenu.track();
     _overlay.onNotificationClick = _onNotificationClick;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
@@ -246,7 +255,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   }
 
   static MikkyState _mikkyStateFor(AgentStatus? status) => switch (status) {
-        null || AgentStatus.idle => MikkyState.idle,
+        null || AgentStatus.idle || AgentStatus.paused => MikkyState.idle,
         AgentStatus.working => MikkyState.working,
         AgentStatus.thinking => MikkyState.thinking,
         AgentStatus.searching => MikkyState.searching,
@@ -461,9 +470,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     return KeyEventResult.ignored;
   }
 
+  /// Our floating menu inside the small window while it is open (user
+  /// request, 2026-09-30); Windows' own elsewhere (a right click on the
+  /// closed island, the notification area).
+  Future<int?> _menu(List<MenuEntry> entries) {
+    final side = _sideArea.currentContext;
+    if (side != null && _motion.openness > .9) return showFloatingMenu(side, entries);
+    return _overlay.showMenu(entries);
+  }
+
   Future<void> _showMenu() async {
     final s = widget.settings;
-    final chosen = await _overlay.showMenu([
+    final chosen = await _menu([
       MenuEntry(_menuThemeAuto, 'Thème : automatique', checked: s.theme == ThemeChoice.auto),
       MenuEntry(_menuThemeDark, 'Thème : noir', checked: s.theme == ThemeChoice.dark),
       MenuEntry(_menuThemeLight, 'Thème : blanc', checked: s.theme == ThemeChoice.light),
@@ -476,6 +494,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (_demo) const MenuEntry(_menuDemoStop, 'Démo : arrêter (retour aux vrais agents)'),
       const MenuEntry(_menuTuning, 'Réglage de Mikky…'),
       MenuEntry(_menuNotifications, 'Notifications', checked: s.notifications),
+      // Agents stopped by a subscription's limit relaunched by themselves
+      // (« Ensorcelé »); the violet star after « Agents » while on.
+      MenuEntry(_menuAutoRelaunch, 'Relance automatique', checked: Enchantments.instance.everywhere),
       const MenuEntry.separator(),
       const MenuEntry(_menuQuit, 'Quitter'),
     ]);
@@ -483,6 +504,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     switch (chosen) {
       case _menuQuit:
         await _quit();
+      case _menuAutoRelaunch:
+        Enchantments.instance.everywhere = !Enchantments.instance.everywhere;
       case _menuThemeAuto || _menuThemeDark || _menuThemeLight:
         s.theme = const {
           _menuThemeAuto: ThemeChoice.auto,
@@ -529,7 +552,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   Future<void> _quit() async {
     final working = widget.agents.working;
     if (working > 0) {
-      final sure = await _overlay.showMenu([
+      final sure = await _menu([
         MenuEntry(_quitYes, working == 1 ? 'Quitter et arrêter l’agent au travail' : 'Quitter et arrêter les $working agents au travail'),
         const MenuEntry.separator(),
         const MenuEntry(2, 'Annuler'),
@@ -656,6 +679,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     return count;
   }
 
+  /// The state that matters most among [agents]: waiting for you, then an
+  /// error, a limit, work, done; null when there are none.
+  static UiStatus? _mostPressing(List<Agent> agents) {
+    const order = [UiStatus.approval, UiStatus.error, UiStatus.limited, UiStatus.working, UiStatus.thinking, UiStatus.finished, UiStatus.sleeping];
+    UiStatus? best;
+    for (final a in agents) {
+      final st = UiStatus.of(a.status);
+      if (best == null || order.indexOf(st) < order.indexOf(best)) best = st;
+    }
+    return best;
+  }
+
   List<Widget> _compactContent(MikkyTheme theme, Rect rect) {
     final opacity = _motion.compactContentOpacity;
     if (opacity <= 0) return const [];
@@ -676,13 +711,23 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             ),
         ];
       case IslandEdge.right:
+        // Under Mikky, the firework of the most pressing state among the
+        // agents (user request, 2026-09-30); his name when there are none.
+        final top = _mostPressing(_snap.agents);
         return [
           Positioned(
             left: rect.left,
             top: rect.top + 62,
             width: _motion.metrics.compact.width,
             height: 18,
-            child: Opacity(opacity: opacity, child: Center(child: name)),
+            child: Opacity(
+              opacity: opacity,
+              child: Center(
+                child: top == null
+                    ? name
+                    : MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(top, size: 18)),
+              ),
+            ),
           ),
         ];
     }
@@ -731,7 +776,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   offset: Offset(0, (1 - opacity) * 6),
                   child: MikkyUiTheme(
                     ui: ui,
-                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: _side),
+                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: _side)),
                   ),
                 ),
               ),

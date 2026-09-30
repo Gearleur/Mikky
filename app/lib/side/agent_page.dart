@@ -95,8 +95,10 @@ class _AgentPageState extends State<AgentPage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
-      if ((log.pending.isNotEmpty || log.question != null) && e.live)
+      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(e.id, (t) => _source.send(e.id, t)))),
+      if (e.status == AgentStatus.paused)
+        Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () => _source.unpause(e.id)))
+      else if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: log.question != null
@@ -132,7 +134,7 @@ class _AgentPageState extends State<AgentPage> {
           child: SingleChildScrollView(
             controller: _scroll,
             // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 104 : 78)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 96 : 78)),
             child: SelectableArea(
               child: AnimatedSwitcher(
                 duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
@@ -165,11 +167,16 @@ class _AgentPageState extends State<AgentPage> {
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 82 : 54))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 74 : 54))),
+        // Top middle: the violet star under the spell (« Ensorcelé »), the
+        // yellow one while the limit holds it (user requests, 2026-09-30).
+        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: e.id, limited: e.status == AgentStatus.rateLimited))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [
-            if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
+            // No pause button any more: « Mettre en pause », « Reprendre »
+            // and « Arrêter l'agent » are in the ··· menu (user request,
+            // 2026-09-30).
             RoundButton(
               'more',
               size: 34,

@@ -1,12 +1,16 @@
 import 'package:flutter/widgets.dart';
 
+import '../overlay/overlay_channel.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
+import '../ui/floating_menu.dart';
+import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
+import '../ui/sliding_hover.dart';
 import '../ui/tabs.dart';
 import '../ui/thread.dart';
 import '../ui/tokens.dart';
@@ -174,6 +178,15 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
       ],
     ),
     BoardSection(
+      title: 'Menu flottant',
+      note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il s’ouvre là où on a cliqué ; Échap ou un clic à côté le ferme.',
+      frames: [
+        const BoardFrame(label: 'Accueil ···', note: 'Les réglages de Mikky.', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
+        const BoardFrame(label: 'Un agent ···', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
+        const BoardFrame(label: 'À essayer', note: 'Clique sur ··· : le vrai menu s’ouvre.', width: 300, child: _MenuTry()),
+      ],
+    ),
+    BoardSection(
       title: 'Navigation',
       frames: [
         BoardFrame(
@@ -210,7 +223,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
     ),
     BoardSection(
       title: 'Lignes de l’accueil',
-      note: 'Pas de cartes : des lignes, un fond gris au survol. Le logo de l’outil à gauche ; il tourne pendant le travail, sautille quand l’agent attend.',
+      note: 'Pas de cartes : des lignes. Au survol, le carré blanc de Oui / Non glisse sous la ligne (ressort des sélecteurs) et revient sur la ligne choisie. Le logo de l’outil à gauche ; il tourne pendant le travail, sautille quand l’agent attend.',
       frames: [
         BoardFrame(
           label: 'Titres de groupes',
@@ -222,8 +235,54 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           ]),
         ),
         BoardFrame(
+          label: 'Indicateur : le carré qui glisse',
+          note: 'Sur fond gris, le carré blanc marque le choix et glisse au clic ; au survol, le nom s’éclaire (colonne des planches). Dans une liste sans choix (accueil, étapes), le carré suit la souris.',
+          child: Container(
+            width: 260,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
+            child: Local(1, (picked, set) => SlidingHover(
+              radius: 12,
+              followHover: false,
+              hairline: false,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                for (final (i, t) in ['Marque', 'Composants', 'Accueil', 'Agent'].indexed)
+                  HoverTarget(
+                    selected: i == picked,
+                    child: HoverBuilder(
+                      builder: (context, hover) => GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => set(i),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                          child: Text(t, style: uiText(14, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
+                        ),
+                      ),
+                    ),
+                  ),
+              ]),
+            )),
+          ),
+        ),
+        BoardFrame(
+          label: 'Claude au travail : deux essais',
+          note: 'À gauche, son logo qui tourne et respire (dans l’app). À droite, l’étoile de Claude Code, comme dans son terminal : point, croix, astérisque, étoile, fleur, et retour.',
+          child: _Tray([
+            Row(children: [
+              const SizedBox(width: 34, child: Center(child: SpinningLogo(claude: true, child: BrandLogo(Brand.claude, size: 32)))),
+              const SizedBox(width: 40),
+              const SizedBox(width: 34, child: Center(child: ClaudeSpinner(size: 30))),
+              const SizedBox(width: 12),
+              Text('Pondering…', style: uiText(13, color: const Color(0xFFD97757), weight: FontWeight.w500)),
+            ]),
+          ], width: 300),
+        ),
+        BoardFrame(
           label: 'Agents',
           child: _Tray([
+            SlidingHover(
+              radius: 14,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             AgentCard(
               status: UiStatus.approval,
               title: 'Met à jour le site',
@@ -238,6 +297,8 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
             AgentCard(status: UiStatus.thinking, title: 'Prépare le plan de l’API', who: '', brand: Brand.codex, subtitle: 'Réfléchit au plan', pinned: true, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
+              ]),
+            ),
           ], width: 320),
         ),
       ],
@@ -330,3 +391,89 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
     ),
   ];
 });
+
+const _homeMenu = [
+  MenuEntry(1, 'Thème : automatique', checked: true),
+  MenuEntry(2, 'Thème : noir'),
+  MenuEntry(3, 'Thème : blanc'),
+  MenuEntry.separator(),
+  MenuEntry(4, 'En haut'),
+  MenuEntry(5, 'À droite', checked: true),
+  MenuEntry.separator(),
+  MenuEntry(6, 'Notifications', checked: true),
+  MenuEntry(7, 'Relance automatique', checked: true),
+  MenuEntry(8, 'Réglage de Mikky…'),
+  MenuEntry.separator(),
+  MenuEntry(9, 'Arrêter tous les agents de Mikky…'),
+  MenuEntry(10, 'Fermer Mikky · les agents continuent'),
+];
+
+const _agentMenu = [
+  MenuEntry(1, 'Ouvrir dans VS Code'),
+  MenuEntry(2, 'Ouvrir le dossier'),
+  MenuEntry.separator(),
+  MenuEntry(3, 'Arrêter la relance auto'),
+  MenuEntry(4, 'Renommer…'),
+  MenuEntry(5, 'Épingler'),
+  MenuEntry(6, 'Archiver'),
+  MenuEntry.separator(),
+  MenuEntry(7, 'Supprimer…'),
+];
+
+/// A small window with its ··· button: the real menu opens in it.
+class _MenuTry extends StatefulWidget {
+  const _MenuTry();
+
+  @override
+  State<_MenuTry> createState() => _MenuTryState();
+}
+
+class _MenuTryState extends State<_MenuTry> {
+  String? _chosen;
+  final _button = GlobalKey();
+
+  // The boards have no overlay of their own: this little window brings one
+  // (the app's has it).
+  late final _layer = OverlayEntry(builder: _window);
+
+  @override
+  void initState() {
+    super.initState();
+    FloatingMenu.track();
+  }
+
+  Widget _window(BuildContext inner) {
+    final ui = MikkyUi.of(inner);
+    return Stack(children: [
+      Positioned(
+        top: 14,
+        right: 14,
+        child: RoundButton('more', key: _button, size: 34, onPressed: () async {
+          final box = _button.currentContext!.findRenderObject() as RenderBox;
+          final id = await showFloatingMenu(inner, _homeMenu, from: box.localToGlobal(Offset.zero) & box.size);
+          if (!mounted) return;
+          setState(() => _chosen = id == null ? 'rien' : _homeMenu.firstWhere((e) => e.id == id).label);
+          _layer.markNeedsBuild();
+        }),
+      ),
+      Positioned(
+        left: 18,
+        bottom: 16,
+        right: 18,
+        child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(12.5, color: ui.text3)),
+      ),
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Container(
+      width: 300,
+      height: 460,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
+      child: Overlay(initialEntries: [_layer]),
+    );
+  }
+}
