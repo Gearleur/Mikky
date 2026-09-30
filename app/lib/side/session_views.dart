@@ -5,6 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../ui/cards.dart';
 import '../ui/buttons.dart';
 import '../ui/feedback.dart';
+import '../ui/pixel_fx.dart';
 import '../ui/selectors.dart';
 import '../ui/surface.dart';
 import '../ui/thread.dart';
@@ -204,12 +205,62 @@ class _Waiting extends StatelessWidget {
       );
 }
 
-/// Chat: the whole conversation. Each turn with work in it is a task card:
-/// live (back to Suivi) while it runs, « Tâche terminée » after.
+/// The icon of what a tool does.
+String _toolIcon(ToolKind k) => switch (k) {
+  ToolKind.read => 'file',
+  ToolKind.edit => 'file',
+  ToolKind.delete => 'x',
+  ToolKind.move => 'right',
+  ToolKind.search || ToolKind.fetch => 'search',
+  ToolKind.execute => 'agents',
+  ToolKind.think => 'more',
+  ToolKind.other => 'sliders',
+};
+
+/// One tool the agent used, as a line of its task: what, the command or
+/// the file, its state; a tap shows the code it changed or what the
+/// command printed.
+Widget _toolLine(ToolItem t, MikkyUi ui) {
+  final title = t.title.isEmpty ? (t.name ?? 'Outil') : t.title;
+  final raw = t.command ?? t.path;
+  final detail = raw == null || raw.trim() == title.trim() ? null : raw;
+  final diff = t.diff;
+  final note = _noteOf(t);
+  Widget? trailing;
+  if (t.active) {
+    trailing = const StatusFx(UiStatus.working, size: 12);
+  } else if (note != null) {
+    trailing = Text(note, style: uiText(11.5, weight: FontWeight.w500, color: ui.red));
+  } else if (diff != null) {
+    final added = diff.newText.split('\n').where((l) => l.trim().isNotEmpty).length;
+    final removed = (diff.oldText ?? '').split('\n').where((l) => l.trim().isNotEmpty).length;
+    trailing = Text.rich(
+      TextSpan(children: [
+        TextSpan(text: '+$added', style: TextStyle(color: ui.green)),
+        if (removed > 0) TextSpan(text: ' −$removed', style: TextStyle(color: ui.red)),
+      ]),
+      style: uiText(11.5, weight: FontWeight.w500, mono: true),
+    );
+  }
+  final output = t.output?.trim();
+  return ToolLine(
+    icon: _toolIcon(t.kind),
+    title: title,
+    detail: detail,
+    trailing: trailing,
+    body: diff != null ? _code(diff) : (output == null || output.isEmpty ? null : OutputBox(output)),
+  );
+}
+
+/// Chat: the whole conversation. The user's messages in bubbles; each turn
+/// with work in it is a task, part of the page, that shows what the agent
+/// did — its plan, what it thought and said on the way, every tool — then
+/// its answer, the whole width (user request, 2026-09-30). The last task
+/// is open, older ones folded.
 List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
-  void gap() => out.add(const SizedBox(height: 8));
+  void gap([double h = 8]) => out.add(SizedBox(height: h));
   for (final turn in log.turns) {
     final items = _itemsOf(log, turn);
     final users = items.whereType<UserItem>().toList();
@@ -222,40 +273,60 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
       out.add(ChatMessage(me: true, text: u.text));
       gap();
     }
+    final answer = turn.running ? null : items.whereType<AgentItem>().where((a) => !a.thought && a.text.trim().isNotEmpty).lastOrNull;
     if (tools.isNotEmpty || turn.plan.isNotEmpty) {
-      if (turn.running) {
-        out.add(TaskCard(title: log.detail.isEmpty ? 'Au travail' : log.detail, subtitle: 'Voir le suivi', live: true, onTap: toSuivi));
-        gap();
-        continue;
-      }
+      final details = <Widget>[
+        for (final e in turn.plan)
+          ToolLine(
+            icon: e.status == PlanStatus.completed ? 'check' : (e.status == PlanStatus.inProgress ? 'right' : 'more'),
+            title: e.content,
+          ),
+        for (final item in items)
+          if (item is ToolItem)
+            _toolLine(item, ui)
+          else if (item is AgentItem && item.text.trim().isNotEmpty && !identical(item, answer))
+            NoteLine(item.text.trim(), thought: item.thought),
+      ];
       final files = tools.where((t) => t.kind == ToolKind.edit && t.status == ToolStatus.completed).map((t) => t.path).toSet().length;
       final start = items.firstOrNull?.at, end = items.lastOrNull?.at;
       final minutes = start == null || end == null ? null : end.difference(start).inMinutes;
-      final title = switch (turn.reason) {
-        StopReason.cancelled => 'Tâche arrêtée',
-        StopReason.error || StopReason.rateLimited => 'Tâche en erreur',
-        _ => 'Tâche terminée',
-      };
-      final steps = _steps(log, turn);
-      out.add(TaskCard(
-        title: title,
-        subtitle: [
-          '${steps.length} étape${steps.length > 1 ? 's' : ''}',
-          if (files > 0) '$files fichier${files > 1 ? 's' : ''}',
-          if (minutes != null) minutes < 1 ? 'moins d’une min' : '$minutes min',
-        ].join(' · '),
-        steps: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _metro(steps, ui)),
+      final steps = tools.length;
+      final meta = [
+        '$steps étape${steps > 1 ? 's' : ''}',
+        if (files > 0) '$files fichier${files > 1 ? 's' : ''}',
+        if (!turn.running && minutes != null) minutes < 1 ? 'moins d’une min' : '$minutes min',
+      ].join(' · ');
+      out.add(TaskSection(
+        key: ValueKey('task-${turn.start}'),
+        status: turn.running
+            ? UiStatus.working
+            : switch (turn.reason) {
+                StopReason.cancelled => UiStatus.sleeping,
+                StopReason.error || StopReason.rateLimited => UiStatus.error,
+                _ => UiStatus.finished,
+              },
+        title: turn.running
+            ? (log.detail.isEmpty ? 'Au travail' : log.detail)
+            : switch (turn.reason) {
+                StopReason.cancelled => 'Tâche arrêtée',
+                StopReason.error || StopReason.rateLimited => 'Tâche en erreur',
+                _ => 'Tâche terminée',
+              },
+        meta: meta,
+        initiallyOpen: identical(turn, log.turns.last),
+        action: turn.running && toSuivi != null ? 'Suivi' : null,
+        onAction: toSuivi,
+        children: details,
       ));
-      gap();
+      gap(6);
     }
     if (turn.running) continue;
-    final answer = items.whereType<AgentItem>().where((a) => !a.thought && a.text.trim().isNotEmpty).lastOrNull;
     if (answer != null) {
       out.add(ChatMessage(me: false, text: answer.text.trim()));
-      gap();
+      gap(14);
     } else if (turn.message != null) {
       out.add(ChatMessage(me: false, text: turn.message!));
-      gap();
+      gap(14);
     }
   }
   return out;

@@ -6,6 +6,7 @@ import 'feedback.dart';
 import 'icons.dart';
 import 'markdown.dart';
 import 'motion.dart';
+import 'pixel_fx.dart';
 import 'tokens.dart';
 
 /// What a step of the metro line is (`.ti`, `ux-a.html`).
@@ -288,8 +289,9 @@ class Bubble extends StatelessWidget {
   }
 }
 
-/// A chat message with its line of meta (`.msg` + `.mmeta`), 84 % wide at
-/// most.
+/// A chat message with its line of meta (`.msg` + `.mmeta`). The user's
+/// is a bubble, 84 % wide at most; the agent's has no bubble and takes the
+/// whole width, as chat apps do (user request, 2026-09-30).
 class ChatMessage extends StatelessWidget {
   const ChatMessage({super.key, required this.me, required this.text, this.meta});
 
@@ -300,23 +302,247 @@ class ChatMessage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final metaLine = meta == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
+            child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
+          );
+    if (!me) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
+            child: DefaultTextStyle(style: uiText(14, color: ui.text, height: 1.5), child: AgentText(text)),
+          ),
+          ?metaLine,
+        ],
+      );
+    }
     return Column(
-      crossAxisAlignment: me ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.end,
       children: [
         FractionallySizedBox(
           widthFactor: .84,
-          alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-          child: Align(
-            alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-            child: Bubble(me: me, child: me ? Text(text) : AgentText(text)),
+          alignment: Alignment.centerRight,
+          child: Align(alignment: Alignment.centerRight, child: Bubble(me: true, child: Text(text))),
+        ),
+        ?metaLine,
+      ],
+    );
+  }
+}
+
+/// A task in the chat, part of the page (no card): its state in pixels,
+/// its title and figures, a chevron; open, what the agent did, along a
+/// thin line (user request, 2026-09-30). [action]: a link on the right
+/// (« Voir le suivi » while it works).
+class TaskSection extends StatefulWidget {
+  const TaskSection({
+    super.key,
+    required this.status,
+    required this.title,
+    this.meta,
+    this.children = const [],
+    this.initiallyOpen = false,
+    this.action,
+    this.onAction,
+  });
+
+  final UiStatus status;
+  final String title;
+  final String? meta;
+  final List<Widget> children;
+  final bool initiallyOpen;
+  final String? action;
+  final VoidCallback? onAction;
+
+  @override
+  State<TaskSection> createState() => _TaskSectionState();
+}
+
+class _TaskSectionState extends State<TaskSection> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final foldable = widget.children.isNotEmpty;
+    final head = Padding(
+      padding: const EdgeInsets.fromLTRB(0, 6, 4, 6),
+      child: Row(
+        children: [
+          SizedBox(width: 18, child: Center(child: StatusFx(widget.status, size: 14))),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: widget.title, style: uiText(13.5, weight: FontWeight.w600, color: ui.text)),
+                if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(12.5, color: ui.text3, tabular: true)),
+              ]),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (widget.action != null)
+            MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: GestureDetector(
+                onTap: widget.onAction,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Text(widget.action!, style: uiText(12.5, weight: FontWeight.w500, color: ui.blue)),
+                ),
+              ),
+            ),
+          if (foldable) ...[
+            const SizedBox(width: 6),
+            AnimatedRotation(
+              turns: _open ? .5 : 0,
+              duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+              curve: const Cubic(.34, 1.4, .64, 1),
+              child: MikkyIcon('down', size: 14, color: ui.text3),
+            ),
+          ],
+        ],
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        foldable
+            ? MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => setState(() => _open = !_open), child: head),
+              )
+            : head,
+        AnimatedSize(
+          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
+          curve: Motion.enter,
+          alignment: Alignment.topCenter,
+          child: _open && foldable
+              ? Container(
+                  margin: const EdgeInsets.only(left: 8, bottom: 4),
+                  padding: const EdgeInsets.only(left: 17),
+                  decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < widget.children.length; i++)
+                        Padding(padding: EdgeInsets.only(top: i == 0 ? 2 : 8), child: widget.children[i]),
+                    ],
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// One thing the agent did, in a task: an icon, what, and in mono the
+/// command or the file; on the right its state. A tap unfolds [body] (the
+/// code it changed, what the command printed).
+class ToolLine extends StatefulWidget {
+  const ToolLine({super.key, required this.icon, required this.title, this.detail, this.trailing, this.body});
+
+  final String icon;
+  final String title;
+  final String? detail;
+  final Widget? trailing;
+  final Widget? body;
+
+  @override
+  State<ToolLine> createState() => _ToolLineState();
+}
+
+class _ToolLineState extends State<ToolLine> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(padding: const EdgeInsets.only(top: 2), child: MikkyIcon(widget.icon, size: 14, color: ui.text3)),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(13, color: ui.text, height: 1.35)),
+              if (widget.detail != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Text(widget.detail!, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(11, mono: true, color: ui.text3, height: 1.4)),
+                ),
+            ],
           ),
         ),
-        if (meta != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
-            child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
-          ),
+        if (widget.trailing != null) Padding(padding: const EdgeInsets.only(left: 8, top: 1), child: widget.trailing!),
       ],
+    );
+    if (widget.body == null) return row;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => setState(() => _open = !_open), child: row),
+        ),
+        AnimatedSize(
+          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
+          curve: Motion.enter,
+          alignment: Alignment.topCenter,
+          child: _open ? Padding(padding: const EdgeInsets.only(left: 22, top: 6), child: widget.body) : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// A line of the agent's own words in a task: what it thought (grey,
+/// short), or what it said on the way.
+class NoteLine extends StatelessWidget {
+  const NoteLine(this.text, {super.key, this.thought = false});
+
+  final String text;
+  final bool thought;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Text(
+      // Short and plain: no markdown marks.
+      text.replaceAll(RegExp(r'\*\*|__|`'), ''),
+      maxLines: thought ? 2 : 4,
+      overflow: TextOverflow.ellipsis,
+      style: uiText(thought ? 12.5 : 13, color: thought ? ui.text3 : ui.text2, height: 1.4),
+    );
+  }
+}
+
+/// What a command printed, its last lines, in mono, in a light hollow.
+class OutputBox extends StatelessWidget {
+  const OutputBox(this.text, {super.key, this.lines = 12});
+
+  final String text;
+  final int lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final all = text.trimRight().split('\n');
+    final shown = all.length > lines ? all.sublist(all.length - lines) : all;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(10)),
+      child: Text(
+        [if (all.length > lines) '…', ...shown].join('\n'),
+        style: uiText(10.5, mono: true, color: ui.text2, height: 1.45),
+      ),
     );
   }
 }

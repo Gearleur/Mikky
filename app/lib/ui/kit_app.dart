@@ -312,7 +312,20 @@ class _KitAgentState extends State<KitAgent> {
         const SizedBox(height: 8),
         const ChatMessage(me: false, text: 'Deux tests échouent sur la fermeture auto : le délai attendu est 45 s, le code dit 60 s.'),
         const SizedBox(height: 8),
-        TaskCard(title: 'Corrige la fermeture auto', subtitle: 'Modifie island_machine.dart', live: true, onTap: () => setState(() => _view = 0)),
+        TaskSection(
+          status: UiStatus.working,
+          title: 'Corrige la fermeture auto',
+          meta: '3 étapes · 1 fichier',
+          initiallyOpen: true,
+          action: 'Suivi',
+          onAction: () => setState(() => _view = 0),
+          children: const [
+            NoteLine('Les tests attendent 45 s ; je regarde la constante.', thought: true),
+            ToolLine(icon: 'file', title: 'Lire island_machine.dart', detail: 'packages/mikky_engine/lib/src/island/island_machine.dart'),
+            ToolLine(icon: 'agents', title: 'Lancer les tests', detail: 'dart test', trailing: Text('échec', style: TextStyle(color: Color(0xFFFF3B30), fontSize: 11.5))),
+            ToolLine(icon: 'file', title: 'Modifier island_machine.dart', detail: 'autoCloseSec = 45', trailing: StatusFx(UiStatus.working, size: 12)),
+          ],
+        ),
       ],
     );
     return SideFrame(
@@ -635,19 +648,18 @@ class _KitPartsState extends State<KitParts> {
           ]),
         ]),
         section('Fil d’un agent', [
-          const TaskCard(
+          const TaskSection(
+            status: UiStatus.finished,
             title: 'Tâche terminée',
-            subtitle: '3 étapes · 1 fichier · 2 min',
+            meta: '3 étapes · 1 fichier · 2 min',
             initiallyOpen: true,
-            steps: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                MetroStep(kind: StepKind.done, past: true, first: true, child: Text('Lire la spec')),
-                MetroStep(kind: StepKind.done, past: true, child: Text('Écrire le résumé')),
-                MetroStep(kind: StepKind.end, past: true, last: true, child: Text('Terminé · 1 fichier')),
-              ],
-            ),
+            children: [
+              ToolLine(icon: 'check', title: 'Lire la spec'),
+              ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md', trailing: Text('+12', style: TextStyle(color: Color(0xFF34C759), fontSize: 11.5))),
+              NoteLine('Résumé écrit en français, 12 lignes.'),
+            ],
           ),
+          const ChatMessage(me: false, text: 'C’est fait : le résumé est dans **docs/resume.md**.'),
           Wrap(spacing: 8, runSpacing: 8, children: [for (final n in iconNames) MikkyIcon(n, size: 20, color: ui.text)]),
         ]),
       ],

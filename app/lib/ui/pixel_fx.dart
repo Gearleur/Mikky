@@ -18,9 +18,9 @@ enum PixelFxKind {
   /// up and closes again, over and over; the tips cool as it opens.
   firework,
 
-  /// The same, calmer: in the eight directions, frame by frame — a middle
-  /// star, a big one, a burst, the big one again — keeping its colors
-  /// (user requests, 2026-09-30).
+  /// The same, calmer: in the eight directions, frame by frame — a small
+  /// star, a middle one, a big one, the middle one again — keeping its
+  /// colors (user requests, 2026-09-30).
   fireworkSoft,
 
   /// Spiral arms around a white core, turning slowly, scattered pixels on
@@ -78,7 +78,7 @@ class StatusFx extends StatelessWidget {
   static double _still(PixelFxKind kind) => switch (kind) {
     PixelFxKind.sparkle => .72,
     PixelFxKind.firework => 1.2,
-    PixelFxKind.fireworkSoft => 1.8,
+    PixelFxKind.fireworkSoft => 1.0,
     PixelFxKind.galaxy => 1,
   };
 
@@ -230,31 +230,36 @@ class _FxPainter extends CustomPainter {
     return math.max(0, math.max(head, trail)) * cool * (between ? .75 : 1);
   }
 
-  /// Frame by frame, like a sprite: middle star, big star, burst (the
-  /// tips come off as bright dots), big star again (user request,
-  /// 2026-09-30: two steps looked poor).
+  /// Frame by frame, like a sprite: a small star, the middle one, the big
+  /// one, the middle one again (user requests, 2026-09-30: more than two
+  /// steps, but no burst).
   double _fireworkSoft(int dx, int dy) {
     const frames = [0, 1, 2, 1];
     final frame = frames[((t / 3.6) % 1 * frames.length).floor()];
+    return softFrame(frame, dx, dy);
+  }
+
+  /// One frame of the calm firework: 0 small, 1 middle, 2 big.
+  static double softFrame(int frame, int dx, int dy) {
     final ax = dx.abs(), ay = dy.abs();
     // The eight directions only: straight or diagonal.
     if (!(ax == 0 || ay == 0 || ax == ay)) return 0;
     final straight = ax == 0 || ay == 0;
     final step = math.max(ax, ay);
-    if (step == 0) return frame == 2 ? .9 : 1;
+    if (step == 0) return 1;
     switch (frame) {
-      case 0: // Middle star.
+      case 0: // Small star: the heart, its ring, short arms.
+        if (step == 1) return straight ? .7 : .45;
+        if (step == 2) return straight ? .3 : 0;
+        return 0;
+      case 1: // Middle star.
         if (step == 1) return straight ? .72 : .6;
         if (step == 2) return straight ? .45 : .3;
         return 0;
-      case 1: // Big star.
+      default: // Big star.
         if (step == 1) return straight ? .75 : .62;
         if (step == 2) return straight ? .55 : .35;
         return straight ? .3 : 0;
-      default: // Burst: a gap, then bright tips.
-        if (step == 1) return .5;
-        if (step == 2) return straight ? 0 : .6;
-        return straight ? .72 : .3;
     }
   }
 
