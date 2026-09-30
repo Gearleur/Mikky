@@ -70,6 +70,10 @@ abstract final class FloatingMenu {
   /// qu'il ralentisse à la fin et rebondisse légèrement, pas qu'il
   /// s'étire autant »): about 3 % past, open in about 0.25 s.
   static const spring = SpringDescription(mass: 1, stiffness: 300, damping: 26);
+
+  /// Closing: back into the button, which gives a slight gluey bounce —
+  /// a touch smaller, then its size (user request, 2026-09-30).
+  static const closeSpring = SpringDescription(mass: 1, stiffness: 380, damping: 23);
 }
 
 class _MorphMenu extends StatefulWidget {
@@ -131,7 +135,7 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     if (_closing) return;
     _closing = true;
     if (!Motion.reduced(context)) {
-      await _t.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeInCubic);
+      await _t.animateWith(SpringSimulation(FloatingMenu.closeSpring, _t.value, 0, 0, tolerance: const Tolerance(distance: .002, velocity: .02)));
     }
     widget.onGone(id);
   }
@@ -172,6 +176,18 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
   Widget _frame(MikkyUi ui, Rect target, Widget list) {
     final t = _t.value;
     final o = widget.origin;
+    // Past the button on the way back: the button itself, squeezed a
+    // little, before it comes back to its size.
+    if (t < 0) {
+      final r = o.deflate(math.min(-t, .2) * o.shortestSide * .8);
+      return Positioned.fromRect(
+        rect: r,
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: ui.ctlA, shape: BoxShape.circle),
+          child: Center(child: MikkyIcon('more', size: 16, color: ui.text)),
+        ),
+      );
+    }
     // Gluey: the width leads, the height follows a little behind.
     final w = t;
     final h = t < 1 ? math.pow(t.clamp(0.0, 1.0), 1.2).toDouble() : t;
