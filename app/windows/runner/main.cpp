@@ -37,7 +37,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   FlutterWindow window(project);
   if (kit) {
-    if (!window.Create(L"Composants de Mikky", Win32Window::Size(1320, 900),
+    if (!window.Create(L"Planches de Mikky", Win32Window::Size(1440, 920),
                        /*overlay=*/false)) {
       return EXIT_FAILURE;
     }

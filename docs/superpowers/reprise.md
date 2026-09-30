@@ -68,12 +68,14 @@ packages/mikky_agents/    Dart + dart:io : Target (Windows / WSL), job.dart (job
                           Node privé WSL), auth.dart (connexion), watch/ (SessionWatcher),
                           store.dart (agents.json), real_source.dart (RealAgentSource)
 app/lib/agents/           AgentsService : les vrais agents dans l'app
-app/lib/ui/               les composants (A3) et l'écran --kit ; markdown.dart (réponses des
+app/lib/ui/               les composants (A3) ; pixel_fx.dart (feux d'artifice) ; markdown.dart (réponses des
                           agents), brand_logo.dart (logos), selection.dart (copier)
 app/lib/side/             la petite fenêtre (A4) : side_app (navigation + accueil), agent_page,
                           new_agent_page (+ connexion), session_views (Suivi / Chat, cartes
                           Oui / Non et questions), session_menu (ranger, ouvrir, renommer)
 app/lib/island/           l'île ; à droite et ouverte, elle affiche la petite fenêtre
+app/lib/boards/           les planches (--kit) : marque, composants, et chaque écran dans
+                          chacun de ses états, à partir de fausses sessions
 app/windows/runner/       overlay natif : clics traversants, crochet souris (curseur et clic
                           en dehors), menu natif, sélecteur de dossier, activation du clavier
 ```
@@ -114,7 +116,7 @@ Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), 
 - Moteur : `C:\dev\flutter\bin\dart.bat test` dans `packages/mikky_engine`.
 - Goldens : `C:\dev\flutter\bin\flutter.bat test --update-goldens test/mikky_expressions_test.dart` dans `app/`, puis **regarder les images**.
 - Vérif à l'écran : captures GDI avec `CAPTUREBLT`, souris simulée avec `SendInput` (pas `SetCursorPos`), prototypes rendus avec Chrome headless (voir `CLAUDE.md`).
-- Composants : `mikky.exe --kit` (`--perf` pour les temps d'image). Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
+- **Planches** (comme Figma, pour valider avec l'utilisateur avant l'app) : `mikky.exe --kit` (`--perf` pour les temps d'image) — `app/lib/boards/` : Marque, Composants, Accueil, Agent, Messages ; chaque état d'écran vient de fausses sessions (`fake_sessions.dart`) ; molette = défiler, Maj = de côté, Ctrl = zoom ; clair, sombre ou les deux. Images : `app/test/boards_test.dart`. Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
 - Essais à l'écran de la petite fenêtre : souris simulée par `SendInput` (structure `INPUT` de 40 octets en x64 !), clavier par `SendKeys`, capture avec `CAPTUREBLT`.
 
 ## 8. Pièges déjà rencontrés

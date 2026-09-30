@@ -386,6 +386,7 @@ class TaskSection extends StatefulWidget {
     this.steps = const [],
     this.details = const [],
     this.initiallyOpen = false,
+    this.initiallyDetails = false,
     this.action,
     this.onAction,
   });
@@ -400,6 +401,9 @@ class TaskSection extends StatefulWidget {
   /// Everything, shown on demand.
   final List<Widget> details;
   final bool initiallyOpen;
+
+  /// The detail shown from the start (boards).
+  final bool initiallyDetails;
   final String? action;
   final VoidCallback? onAction;
 
@@ -409,7 +413,7 @@ class TaskSection extends StatefulWidget {
 
 class _TaskSectionState extends State<TaskSection> {
   late bool _open = widget.initiallyOpen;
-  bool _details = false;
+  late bool _details = widget.initiallyDetails;
 
   Widget _fold(BuildContext context, bool open, Widget child) => AnimatedSize(
     duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
@@ -515,7 +519,7 @@ enum TaskStepState { done, now, todo, failed }
 /// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
 /// tap unfolds [detail], what the agent did for it.
 class TaskStep extends StatefulWidget {
-  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.color});
+  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.color, this.initiallyOpen = false});
 
   final String label;
   final TaskStepState state;
@@ -523,6 +527,9 @@ class TaskStep extends StatefulWidget {
   /// The dot's color for what the step does (green creates, blue changes,
   /// orange runs a command…); grey when not given.
   final Color? color;
+
+  /// [detail] shown from the start (boards).
+  final bool initiallyOpen;
 
   /// In red after the label: « refusé », « échec ».
   final String? note;
@@ -533,7 +540,7 @@ class TaskStep extends StatefulWidget {
 }
 
 class _TaskStepState extends State<TaskStep> {
-  bool _open = false;
+  late bool _open = widget.initiallyOpen;
 
   @override
   Widget build(BuildContext context) {
@@ -596,8 +603,10 @@ class _TaskStepState extends State<TaskStep> {
 /// mono the command or the file; on the right its state. A tap unfolds
 /// [body] (the code it changed, what the command printed).
 class ToolLine extends StatefulWidget {
-  const ToolLine({super.key, required this.icon, required this.title, this.detail, this.trailing, this.body});
+  const ToolLine({super.key, required this.icon, required this.title, this.detail, this.trailing, this.body, this.initiallyOpen = false});
 
+  /// [body] shown from the start (boards).
+  final bool initiallyOpen;
   final String icon;
   final String title;
   final String? detail;
@@ -609,7 +618,7 @@ class ToolLine extends StatefulWidget {
 }
 
 class _ToolLineState extends State<ToolLine> {
-  bool _open = false;
+  late bool _open = widget.initiallyOpen;
 
   @override
   Widget build(BuildContext context) {

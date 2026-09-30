@@ -92,10 +92,13 @@ class HeadMikky extends StatelessWidget {
 /// blinking and looking around; still when [animate] is false (goldens)
 /// or Windows asks for fewer animations.
 class MiniMikky extends StatefulWidget {
-  const MiniMikky({super.key, this.size = 52, this.animate = true});
+  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle});
 
   final double size;
   final bool animate;
+
+  /// His state (the boards show each one).
+  final MikkyState state;
 
   @override
   State<MiniMikky> createState() => _MiniMikkyState();
@@ -109,6 +112,7 @@ class _MiniMikkyState extends State<MiniMikky> {
   @override
   void initState() {
     super.initState();
+    _mikky.setState(widget.state);
     for (var i = 0; i < 54; i++) {
       _mikky.update(1 / 60, lookX: .2, lookY: .1);
     }
