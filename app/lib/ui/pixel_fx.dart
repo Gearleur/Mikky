@@ -13,8 +13,8 @@ enum PixelFxKind {
   /// then goes out; two small ones twinkle in the corners.
   sparkle,
 
-  /// A dot that rises, bursts into a ring of dots in eight directions,
-  /// whose tips cool down to the darkest color.
+  /// A burst in the middle, in eight directions, that opens as it lights
+  /// up and closes again, over and over; the tips cool as it opens.
   firework,
 
   /// Spiral arms around a white core, turning slowly, scattered pixels on
@@ -131,30 +131,23 @@ class _FxPainter extends CustomPainter {
   // ----------------------------------------------------------- firework
 
   double _firework(int dx, int dy) {
-    final p = (t / 2.4) % 1;
+    // No launch: it stays in the middle, opens as it lights up, then
+    // closes again, over and over (user request, 2026-09-30).
+    final e = (1 - math.cos((t / 2.4) * math.pi * 2)) / 2;
+    final r = .7 + e * 3.3;
+    if (dx == 0 && dy == 0) return 1 - .15 * e;
     final d = math.sqrt((dx * dx + dy * dy).toDouble());
-    if (p < .22) {
-      // The dot rises to the middle and swells.
-      final rise = (1 - p / .22) * 3.2;
-      final ry = (rise).round();
-      if (dx == 0 && dy == ry) return 1;
-      if (dx == 0 && dy == ry + 1) return .45;
-      return 0;
-    }
-    final q = (p - .22) / .78;
-    final r = .6 + q * 4.2;
-    // Only along the eight directions, and a few in between.
+    // Along the eight directions, and the ones in between once it is open.
     final angle = math.atan2(dy.toDouble(), dx.toDouble());
     final onDir = (angle / (math.pi / 4) - (angle / (math.pi / 4)).roundToDouble()).abs() < .12;
-    final between = (angle / (math.pi / 8) - (angle / (math.pi / 8)).roundToDouble()).abs() < .1 && q > .25;
-    if (dx == 0 && dy == 0) return q < .15 ? 1 : 0;
+    final between = (angle / (math.pi / 8) - (angle / (math.pi / 8)).roundToDouble()).abs() < .1 && e > .45;
     if (!onDir && !between) return 0;
     // The head of each spark, and a short trail behind it.
     final head = 1 - ((d - r).abs() / 1.1);
-    final trail = d < r ? (1 - (r - d) / 2.4) * .55 : 0;
-    // Everything cools down: white, then the colors, then the darkest.
-    final cool = 1 - q * .78;
-    return math.max(0, math.max(head, trail)) * cool * (between ? .7 : 1);
+    final trail = d < r ? (1 - (r - d) / 3.2) * .7 : 0;
+    // Open, it cools a little: white small, deeper colors at its widest.
+    final cool = 1 - e * .35;
+    return math.max(0, math.max(head, trail)) * cool * (between ? .75 : 1);
   }
 
   // ------------------------------------------------------------- galaxy

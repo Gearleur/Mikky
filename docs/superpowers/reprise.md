@@ -106,6 +106,8 @@ Les transformations : **c'est Mikky lui-même qui se transforme**, de façon org
 
 Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), toujours en repassant par le chat. Code : `packages/mikky_engine/lib/src/mikky/` (`mikky.dart`, `mikky_geometry.dart`).
 
+**Direction artistique retenue le 2026-09-30 : « Mikky, le chat magique, avec de l'informatique et des pixels ».** Les indicateurs de la petite fenêtre sont en pixel art : carrés d'état 3 × 3 en vrais pixels espacés (`PixelStatus`, d'après l'avatar d'agent de SmoothUI, MIT), effets 9 × 9 sans fond (`app/lib/ui/pixel_fx.dart` : le feu d'artifice qui s'ouvre et se referme sur place est retenu ; étincelle et galaxie en essai), palettes violet / blanc, bleu clair / foncé, orange / rouge, rouge / rouge foncé. Mikky « Travaille » saute (sans devenir la boule) ; « Réfléchit » : le chat qui regarde en l'air avec la bulle « ••• » (première version). Mis de côté dans le kit : le lanceur carré, l'étoile qui réfléchit.
+
 ## 7. Lancer, tester, vérifier
 
 - App : `C:\dev\flutter\bin\flutter.bat run -d windows` dans `app/`, ou `app\build\windows\x64\runner\Release\mikky.exe` après `flutter.bat build windows --release`. Écran de réglage : ajouter `--tuning`.
