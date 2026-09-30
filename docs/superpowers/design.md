@@ -74,8 +74,8 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 ### Accueil
 - Groupes repliables **En attente / Travaillent / Terminés / Historique** (et Archives) ; en tête de groupe, l'état en feu d'artifice (ou l'étoile grise), le nom, le nombre ; titres alignés avec les lignes.
 - **Des lignes, pas de cartes** :
-  - au travail, en attente : le **logo de l'outil** (32 px) à gauche, au milieu des deux lignes de texte ; il tourne quand l'agent travaille ou réfléchit, il rebondit quand il attend ;
-  - terminés : ligne simple, petit logo (22 px), titre, « il y a 2 min · WSL » à droite ;
+  - au travail, en attente : le **logo de l'outil** (24 px) à gauche, au milieu des deux lignes de texte ; il tourne quand l'agent travaille ou réfléchit, il rebondit quand il attend ;
+  - terminés : ligne simple, petit logo (18 px), titre, « il y a 2 min · WSL » à droite ;
   - les logos doivent paraître de la même taille : celui d'OpenAI (Codex) est dessiné à 84 % de son carré, son nœud remplissant tout le carré (`Brand.scale`) ;
   - survol : le carré blanc qui glisse (voir Mouvement).
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.

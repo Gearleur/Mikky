@@ -263,13 +263,14 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the two lines; it turns while the agent works and
-      // hops now and then while it waits. Oui / Non below, under the text.
-      final logo = BrandLogo(brand!, size: 32);
+      // level with the two lines (24 px since the same day: « trop gros »);
+      // it turns while the agent works and hops now and then while it
+      // waits. Oui / Non below, under the text.
+      final logo = BrandLogo(brand!, size: 24);
       final head = Row(
         children: [
           SizedBox(
-            width: 34,
+            width: 28,
             child: Center(
               child: switch (status) {
                 UiStatus.working || UiStatus.thinking => SpinningLogo(claude: brand == Brand.claude, child: logo),
@@ -295,7 +296,7 @@ class AgentCard extends StatelessWidget {
           ? head
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [head, Padding(padding: const EdgeInsets.only(left: 44, top: 8), child: actions!)],
+              children: [head, Padding(padding: const EdgeInsets.only(left: 38, top: 8), child: actions!)],
             );
     } else {
       body = Row(
@@ -371,7 +372,7 @@ class AgentCard extends StatelessWidget {
           SizedBox(
             width: 26,
             height: 26,
-            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 22)),
+            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 18)),
           ),
           const SizedBox(width: 9),
           Expanded(
