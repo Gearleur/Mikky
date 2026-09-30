@@ -435,14 +435,17 @@ class _StarPainter extends CustomPainter {
 /// live like SmoothUI's agent avatar (MIT, © 2024 Eduardo Calvo): each
 /// pixel pulses on its own, the whole breathes, a wave crosses it on the
 /// diagonal and a pixel flashes now and then (user request, 2026-09-30).
-/// Every state has one; finished is just a light green square, still.
+/// Every state has one; finished is just a green square, still.
 /// [seed] gives another pattern, same colors.
 class PixelStatus extends StatelessWidget {
-  const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0});
+  const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0, this.color});
 
   final UiStatus status;
   final double size;
   final int seed;
+
+  /// Finished only: another green than the theme's (to compare two).
+  final Color? color;
 
   /// Base hue, saturation and lightness of each state, in HSL.
   static (double, double, double) _base(UiStatus s) => switch (s) {
@@ -458,16 +461,14 @@ class PixelStatus extends StatelessWidget {
   /// Loops are long so their seam never shows (times in ms, as SmoothUI).
   static const _periodMs = 60000.0;
 
-  /// Finished: just a light green square, still.
-  static const _doneGreen = Color(0xFF6EDC8C);
-
   @override
   Widget build(BuildContext context) {
     if (status == UiStatus.finished) {
       return Container(
         width: size,
         height: size,
-        decoration: BoxDecoration(color: _doneGreen, borderRadius: BorderRadius.circular(size * .24)),
+        // The green of a done task's bubble in the thread: punchier.
+        decoration: BoxDecoration(color: color ?? MikkyUi.of(context).green, borderRadius: BorderRadius.circular(size * .24)),
       );
     }
     final painter = _PixelPalette.of(_base(status), status.index * 7919 + seed);

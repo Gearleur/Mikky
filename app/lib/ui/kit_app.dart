@@ -609,6 +609,15 @@ class _KitPartsState extends State<KitParts> {
             for (final st in UiStatus.values) PixelStatus(st, size: 28),
             Text('Carrés d’état', style: uiText(13, color: ui.text2)),
           ]),
+          // Two greens for « Terminé », to choose (2026-09-30): A the theme's
+          // (done task bubbles), B punchier.
+          line([
+            PixelStatus(UiStatus.finished, size: 28, color: ui.green),
+            Text('A · ${ui.isLight ? '#34C759' : '#34D399'}', style: uiText(13, color: ui.text2)),
+            sep,
+            const PixelStatus(UiStatus.finished, size: 28, color: Color(0xFF00E676)),
+            Text('B · #00E676', style: uiText(13, color: ui.text2)),
+          ]),
           line([
             const DotSnake(UiStatus.working),
             Text('Lanceur', style: uiText(13, color: ui.text2)),
