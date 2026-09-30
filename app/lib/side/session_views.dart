@@ -499,15 +499,15 @@ class _LimitBlockState extends State<_LimitBlock> {
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
       relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
       onEnchant: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
-      onCancel: h == null ? null : () => _spells.cancel(h.id),
       onNow: h == null ? null : () => h.send(Enchantments.resumeMessage),
     );
   }
 }
 
-/// An agent stopped by its limit, on the home: its logo, when it lifts,
-/// « Relancer » / « Ensorceler »; under the spell a violet star, when it
-/// relaunches, « Annuler » (user request, 2026-09-30).
+/// An agent stopped by its limit, on the home: its logo, the yellow star,
+/// when it lifts, « Relancer » / « Relance auto »; under the spell the
+/// violet star and when it relaunches, nothing to press — the spell comes
+/// off in its ··· menu (user requests, 2026-09-30).
 class LimitedAgentCard extends StatelessWidget {
   const LimitedAgentCard({
     super.key,
@@ -553,61 +553,31 @@ class LimitedAgentCard extends StatelessWidget {
             : limitLine(resets),
         onTap: onTap,
         onMenu: onMenu,
-        actions: Align(
-          alignment: Alignment.centerRight,
-          child: AnswerBar(
-            answers: spell
-                ? [('Annuler', () => spells.cancel(id))]
-                : [('Relancer', () => send(Enchantments.resumeMessage)), ('Ensorceler', () => spells.enchant(id, resets, send))],
-          ),
-        ),
+        actions: spell
+            ? null
+            : Align(
+                alignment: Alignment.centerRight,
+                child: AnswerBar(
+                  answers: [('Relancer', () => send(Enchantments.resumeMessage)), ('Relance auto', () => spells.enchant(id, resets, send))],
+                ),
+              ),
       );
     },
   );
 }
 
-/// « Relance automatique », on the home: every agent stopped by a limit is
-/// put under the spell by itself (user request, 2026-09-30).
-class AutoRelaunchRow extends StatelessWidget {
-  const AutoRelaunchRow({super.key, this.value, this.onChanged});
-
-  /// For the boards: the switch's state without the real spells.
-  final bool? value;
-  final ValueChanged<bool>? onChanged;
-
-  @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Enchantments.instance,
-    builder: (context, _) {
-      final ui = MikkyUi.of(context);
-      final spells = Enchantments.instance;
-      final on = value ?? spells.everywhere;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(6, 14, 4, 0),
-        child: Row(children: [
-          SizedBox(width: 18, child: Center(child: PixelStar(PixelFxPalette.violet, size: 11))),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Relance automatique', style: uiText(12.5, weight: FontWeight.w600, color: ui.text2, height: 1.2)),
-              Text('Les agents arrêtés par une limite repartent seuls', style: uiText(11, color: ui.text3, height: 1.3)),
-            ]),
-          ),
-          MSwitch(value: on, onChanged: onChanged ?? (v) => spells.everywhere = v),
-        ]),
-      );
-    },
-  );
-}
-
-/// The violet star at the top of an agent's page while it is under the
-/// spell (user request, 2026-09-30).
+/// Top middle of an agent's page: the violet star while it is under the
+/// spell, the yellow one while its limit holds it (user requests,
+/// 2026-09-30).
 class SpellStar extends StatelessWidget {
-  const SpellStar({super.key, required this.id, this.force = false});
+  const SpellStar({super.key, required this.id, this.limited = false, this.force = false});
 
   final String id;
 
-  /// Shown whatever the spells say (boards).
+  /// Stopped by its subscription's limit.
+  final bool limited;
+
+  /// Shown as under the spell whatever the spells say (boards).
   final bool force;
 
   @override
@@ -615,16 +585,36 @@ class SpellStar extends StatelessWidget {
     listenable: Enchantments.instance,
     builder: (context, _) => force || Enchantments.instance.isOn(id)
         ? const IgnorePointer(child: StatusFx(UiStatus.thinking, size: 20))
+        : limited
+        ? const IgnorePointer(child: StatusFx(UiStatus.limited, size: 20))
+        : const SizedBox.shrink(),
+  );
+}
+
+/// The violet star after « Agents » while the global « Relance
+/// automatique » is on (it is set in the home's ··· menu).
+class AutoRelaunchMark extends StatelessWidget {
+  const AutoRelaunchMark({super.key, this.force = false});
+
+  /// Shown whatever the setting says (boards).
+  final bool force;
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Enchantments.instance,
+    builder: (context, _) => force || Enchantments.instance.everywhere
+        ? const Padding(padding: EdgeInsets.only(left: 8, top: 2), child: StatusFx(UiStatus.thinking, size: 14))
         : const SizedBox.shrink(),
   );
 }
 
 /// A subscription's limit reached: the yellow state and when it lifts
-/// (user request, 2026-09-30). « Relancer » now, or « Ensorceler »: Mikky
-/// relaunches it by itself then (violet, the magic's color, while under
-/// the spell).
+/// (user request, 2026-09-30), « Relancer » now or « Relance auto ». Once
+/// under the spell there is no card any more, only « Ensorcelé · se
+/// relance à 17 h 11 », big, with the violet star; the spell comes off in
+/// the agent's ··· menu.
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onEnchant, this.onCancel, this.onNow});
+  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onEnchant, this.onNow});
 
   final DateTime? resetsAt;
   final String? message;
@@ -634,26 +624,38 @@ class LimitCard extends StatelessWidget {
 
   /// Under the spell, the relaunch sent.
   final bool relaunched;
-  final VoidCallback? onEnchant, onCancel, onNow;
+  final VoidCallback? onEnchant, onNow;
 
   @override
   Widget build(BuildContext context) {
-    final spell = relaunchAt != null || relaunched;
-    final actions = spell
-        ? (onCancel == null ? null : [('Annuler', onCancel)])
-        : [if (onNow != null) ('Relancer', onNow), if (onEnchant != null) ('Ensorceler', onEnchant)];
+    final ui = MikkyUi.of(context);
+    if (relaunchAt != null || relaunched) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
+        child: Row(children: [
+          const StatusFx(UiStatus.thinking, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(children: [
+                TextSpan(text: 'Ensorcelé', style: uiText(16, weight: FontWeight.w600, color: ui.text, height: 1.3)),
+                TextSpan(
+                  text: relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}',
+                  style: uiText(15, color: ui.text2, height: 1.3),
+                ),
+              ]),
+            ),
+          ),
+        ]),
+      );
+    }
+    final actions = [if (onNow != null) ('Relancer', onNow), if (onEnchant != null) ('Relance auto', onEnchant)];
     return AgentCard(
-      status: spell ? UiStatus.thinking : UiStatus.limited,
-      title: spell ? 'Ensorcelée' : 'Limite de l’abonnement atteinte',
+      status: UiStatus.limited,
+      title: 'Limite de l’abonnement atteinte',
       who: '',
-      subtitle: relaunched
-          ? 'Relancée, Mikky attend la suite'
-          : relaunchAt != null
-          ? 'Se relance toute seule à ${hourText(relaunchAt!)}'
-          : resetsAt == null
-          ? (message ?? 'Réessaie plus tard')
-          : 'Reprend à ${hourText(resetsAt!)}',
-      actions: actions == null || actions.isEmpty ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: actions)),
+      subtitle: resetsAt == null ? (message ?? 'Réessaie plus tard') : 'Reprend à ${hourText(resetsAt!)}',
+      actions: actions.isEmpty ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: actions)),
     );
   }
 }

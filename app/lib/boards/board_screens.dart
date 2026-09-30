@@ -36,7 +36,12 @@ class HomeMock extends StatefulWidget {
     this.limits,
     this.historyOpen = false,
     this.limited = const [],
+    this.autoRelaunch = false,
   });
+
+  /// « Relance automatique » on (the home's ··· menu): the violet star
+  /// after « Agents ».
+  final bool autoRelaunch;
 
   /// Stopped by their limit, with the ones at work; true: already under
   /// the spell (« Ensorceler »).
@@ -135,7 +140,6 @@ class _HomeMockState extends State<HomeMock> {
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
         AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}, onMenu: () {}),
     ]);
-    if (body.isNotEmpty) body.add(const AutoRelaunchRow());
     if (widget.limits != null) {
       body.add(Padding(
         padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
@@ -148,7 +152,12 @@ class _HomeMockState extends State<HomeMock> {
     }
     return SideFrame(
       child: Stack(children: [
-        SideHead(title: 'Agents', leading: const HeadMikky(), actions: [RoundButton('more', size: 34, onPressed: () {})]),
+        SideHead(
+          title: 'Agents',
+          titleMark: AutoRelaunchMark(force: widget.autoRelaunch),
+          leading: const HeadMikky(),
+          actions: [RoundButton('more', size: 34, onPressed: () {})],
+        ),
         Positioned.fill(
           top: 68,
           child: body.isEmpty
@@ -200,8 +209,9 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Limite atteinte, ensorcelé',
-        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Ensorceler. Étoile violette : ensorcelé, il se relance tout seul. En bas, la relance automatique pour tous.',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Relance auto. Étoile violette : ensorcelé, il se relance tout seul (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
         child: HomeMock(
+          autoRelaunch: true,
           working: [_workingOne],
           limited: [
             (('Traduis la documentation', Brand.claude, '', ''), false),
@@ -314,7 +324,7 @@ class _AgentMockState extends State<AgentMock> {
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
         Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 74 : 54))),
-        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: _id))),
+        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: _id, limited: log.statusAt(log.lastEventAt ?? DateTime(2026)) == AgentStatus.rateLimited))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
@@ -442,12 +452,12 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : état jaune, et quand ça reprend, lu dans le message de l’agent. « Relancer » tout de suite, ou « Ensorceler ».',
+        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Relancer » tout de suite, ou « Relance auto ».',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
       ),
       BoardFrame(
         label: 'Ensorcelée',
-        note: 'Mikky la relancera tout seul quand la limite sera levée, par un message à l’agent ; en violet, la couleur de la magie, et une étoile violette en haut au milieu.',
+        note: 'Plus de carte : « Ensorcelé · se relance à 17 h 11 », en violet, la couleur de la magie, et l’étoile violette en haut au milieu. Pour l’enlever : le menu ··· de l’agent (« Arrêter la relance auto »).',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
       ),
       BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),

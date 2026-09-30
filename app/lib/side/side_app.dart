@@ -240,8 +240,6 @@ class HomePage extends StatelessWidget {
       for (final p in AgentProvider.values)
         if (host.service.source.limitsOf(p) case final l?) (p, l),
     ];
-    // « Relance automatique », for every agent stopped by a limit.
-    if (body.isNotEmpty) body.add(const AutoRelaunchRow());
     if (limits.isNotEmpty) {
       body.add(Padding(
         padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
@@ -261,6 +259,8 @@ class HomePage extends StatelessWidget {
     return Stack(children: [
       SideHead(
         title: 'Agents',
+        // The violet star while « Relance automatique » is on (set in ···).
+        titleMark: const AutoRelaunchMark(),
         // The island draws Mikky here (it moves from the tab to this spot).
         leading: const SizedBox(width: 42, height: 40),
         actions: [RoundButton('more', size: 34, onPressed: host.islandMenu, tooltip: 'Plus')],

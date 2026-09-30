@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
+import '../agents/enchant.dart';
 import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
@@ -36,6 +37,7 @@ const _pastEdge = 40.0;
 const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
 const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10, _menuNotifications = 11;
+const _menuAutoRelaunch = 20;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -478,6 +480,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (_demo) const MenuEntry(_menuDemoStop, 'Démo : arrêter (retour aux vrais agents)'),
       const MenuEntry(_menuTuning, 'Réglage de Mikky…'),
       MenuEntry(_menuNotifications, 'Notifications', checked: s.notifications),
+      // Agents stopped by a subscription's limit relaunched by themselves
+      // (« Ensorcelé »); the violet star after « Agents » while on.
+      MenuEntry(_menuAutoRelaunch, 'Relance automatique', checked: Enchantments.instance.everywhere),
       const MenuEntry.separator(),
       const MenuEntry(_menuQuit, 'Quitter'),
     ]);
@@ -485,6 +490,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     switch (chosen) {
       case _menuQuit:
         await _quit();
+      case _menuAutoRelaunch:
+        Enchantments.instance.everywhere = !Enchantments.instance.everywhere;
       case _menuThemeAuto || _menuThemeDark || _menuThemeLight:
         s.theme = const {
           _menuThemeAuto: ThemeChoice.auto,

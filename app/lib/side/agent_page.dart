@@ -168,9 +168,9 @@ class _AgentPageState extends State<AgentPage> {
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
         Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 74 : 54))),
-        // Under the spell (« Ensorcelé »): a violet star, top middle (user
-        // request, 2026-09-30).
-        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: e.id))),
+        // Top middle: the violet star under the spell (« Ensorcelé »), the
+        // yellow one while the limit holds it (user requests, 2026-09-30).
+        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: e.id, limited: e.status == AgentStatus.rateLimited))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [

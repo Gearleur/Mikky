@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/enchant.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/buttons.dart';
 import '../ui/field.dart';
@@ -12,6 +13,8 @@ import '../ui/tokens.dart';
 import 'side_app.dart';
 
 const _rename = 1, _pin = 2, _archive = 3, _settle = 4, _delete = 5, _code = 6, _folder = 7;
+// « Ensorcelé »: relaunched by itself when its limit lifts (2026-09-30).
+const _spell = 30, _unspell = 31;
 const _forget = 10, _forgetAndFile = 11, _cancel = 12, _pause = 13, _unpause = 14, _kill = 15;
 
 /// What to do with a session (a right click on its card, or ⋯ on its
@@ -35,6 +38,10 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
       const MenuEntry(_folder, 'Ouvrir le dossier'),
       const MenuEntry.separator(),
     ],
+    if (Enchantments.instance.isOn(e.id))
+      const MenuEntry(_unspell, 'Arrêter la relance auto')
+    else if (e.status == AgentStatus.rateLimited)
+      const MenuEntry(_spell, 'Relance auto'),
     const MenuEntry(_rename, 'Renommer…'),
     MenuEntry(_pin, m.pinned ? 'Désépingler' : 'Épingler'),
     MenuEntry(_archive, m.archived ? 'Sortir des archives' : 'Archiver'),
@@ -52,6 +59,10 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
       openInVsCode(folder!, e.host);
     case _folder:
       openFolder(folder!, e.host);
+    case _spell:
+      Enchantments.instance.enchant(e.id, e.log.limitResetsAt, (t) => source.send(e.id, t));
+    case _unspell:
+      Enchantments.instance.cancel(e.id);
     case _rename:
       rename();
     case _pin:
