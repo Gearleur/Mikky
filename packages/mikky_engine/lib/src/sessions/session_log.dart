@@ -106,6 +106,16 @@ class SessionLog {
   /// See [SessionStarted.modelOption].
   String? modelOption;
 
+  /// The model's context: tokens in it, and its size (null: unknown).
+  int? contextUsed;
+  int? contextSize;
+
+  /// Tokens used by every turn so far.
+  int tokens = 0;
+
+  /// The subscription's limits, as last seen.
+  LimitsSeen? limits;
+
   /// Time of the first and of the latest event that had one.
   DateTime? startedAt;
   DateTime? lastEventAt;
@@ -196,6 +206,13 @@ class SessionLog {
         _pending[e.requestId] = e;
       case PermissionAnswered():
         _pending.remove(e.requestId);
+      case ContextUsed():
+        contextUsed = e.used;
+        contextSize = e.size;
+      case TokensUsed():
+        tokens += e.total;
+      case LimitsSeen():
+        limits = e;
       case QuestionAsked():
         _question = e;
       case QuestionAnswered():

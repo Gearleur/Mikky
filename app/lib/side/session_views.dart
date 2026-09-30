@@ -359,3 +359,38 @@ class _QuestionCardState extends State<QuestionCard> {
     );
   }
 }
+
+/// 950, « 12,3 k », « 1,2 M ».
+String formatTokens(int n) {
+  String one(double v) => v.toStringAsFixed(v < 10 ? 1 : 0).replaceAll('.', ',').replaceAll(',0', '');
+  if (n < 1000) return '$n';
+  if (n < 1000000) return '${one(n / 1000)} k';
+  return '${one(n / 1000000)} M';
+}
+
+/// « Contexte 34 % · 12,3 k jetons » for an agent's page; empty if unknown.
+String usageLine(SessionLog log) {
+  final parts = <String>[
+    if (log.contextSize != null && log.contextUsed != null) 'Contexte ${(100 * log.contextUsed! / log.contextSize!).round()} %',
+    if (log.tokens > 0) '${formatTokens(log.tokens)} jetons',
+  ];
+  return parts.join(' · ');
+}
+
+/// « 6 % des 5 h, repart à 18:58 · 10 % de la semaine ».
+String limitsLine(LimitsSeen l) {
+  String window(LimitWindow w) {
+    final span = switch (w.minutes) {
+      300 => 'des 5 h',
+      10080 => 'de la semaine',
+      final m when m % 1440 == 0 => 'des ${m ~/ 1440} j',
+      final m when m % 60 == 0 => 'des ${m ~/ 60} h',
+      final m => 'des $m min',
+    };
+    final reset = w.resetsAt;
+    final back = reset == null || w.minutes > 1440 ? '' : ', repart à ${clockTime(reset)}';
+    return '${w.usedPercent.round()} % $span$back';
+  }
+
+  return [if (l.short != null) window(l.short!), if (l.long != null) window(l.long!)].join(' · ');
+}

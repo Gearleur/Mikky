@@ -469,6 +469,19 @@ class RealAgentSource implements AgentSource {
     }
   }
 
+  /// The latest subscription limits seen for [provider] (in any of its
+  /// sessions), or null.
+  LimitsSeen? limitsOf(AgentProvider provider) {
+    LimitsSeen? best;
+    for (final e in _entries) {
+      if (e.provider != provider) continue;
+      for (final l in [e.run?.log.limits, e.watched?.log.limits]) {
+        if (l != null && (best == null || (l.at ?? DateTime(0)).isAfter(best.at ?? DateTime(0)))) best = l;
+      }
+    }
+    return best;
+  }
+
   /// Answers agent [id]'s question (see [AgentRun.answerQuestion]).
   bool answerQuestion(String id, Map<String, Object>? answers) {
     final ok = entry(id)?.run?.answerQuestion(answers) ?? false;

@@ -88,7 +88,13 @@ class _AgentPageState extends State<AgentPage> {
     final suivi = working && _view == 0;
     if (!suivi) _follow(log);
 
+    final usage = usageLine(log);
     final content = <Widget>[
+      if (usage.isNotEmpty)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+          child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
+        ),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
       if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(

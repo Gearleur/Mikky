@@ -227,6 +227,28 @@ class HomePage extends StatelessWidget {
       group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history);
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
+    // What is left of the subscriptions (Codex tells it; Claude does not,
+    // short of reading its credentials, which Mikky never does).
+    final limits = [
+      for (final p in AgentProvider.values)
+        if (host.service.source.limitsOf(p) case final l?) (p, l),
+    ];
+    if (limits.isNotEmpty) {
+      body.add(Padding(
+        padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          for (final (p, l) in limits)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(Brand.of(p), size: 12)),
+                const SizedBox(width: 6),
+                Expanded(child: Text(limitsLine(l), style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
+              ]),
+            ),
+        ]),
+      ));
+    }
     return Stack(children: [
       SideHead(
         title: 'Agents',

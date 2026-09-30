@@ -119,7 +119,17 @@ class AcpReader {
           final text = error['message'] as String? ?? 'Erreur';
           return [TurnEnded(_isLimit(text) ? StopReason.rateLimited : StopReason.error, message: text, at: at)];
         }
-        return [TurnEnded(_stopReason(result?['stopReason'] as String?), at: at)];
+        final usage = (result?['usage'] as Map?)?.cast<String, dynamic>();
+        return [
+          if (usage != null)
+            TokensUsed(
+              input: (usage['inputTokens'] as num?)?.toInt() ?? 0,
+              output: (usage['outputTokens'] as num?)?.toInt() ?? 0,
+              cached: ((usage['cachedReadTokens'] as num?) ?? 0).toInt() + ((usage['cachedWriteTokens'] as num?) ?? 0).toInt(),
+              at: at,
+            ),
+          TurnEnded(_stopReason(result?['stopReason'] as String?), at: at),
+        ];
     }
     return const [];
   }
@@ -213,6 +223,9 @@ class AcpReader {
               PlanEntry(e['content'] as String? ?? '', _planStatus(e['status'] as String?)),
           ], at: at),
         ];
+      case 'usage_update':
+        final used = (u['used'] as num?)?.toInt(), size = (u['size'] as num?)?.toInt();
+        return [if (used != null && size != null && size > 0) ContextUsed(used, size, at: at)];
       case 'current_mode_update':
         _modeReported = true;
         return [ModeChanged(u['currentModeId'] as String, at: at)];

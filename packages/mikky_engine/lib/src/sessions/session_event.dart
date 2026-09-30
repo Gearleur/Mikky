@@ -256,3 +256,44 @@ class QuestionAnswered extends SessionEvent {
 
   final Object requestId;
 }
+
+/// How full the model's context is: [used] of [size] tokens.
+class ContextUsed extends SessionEvent {
+  const ContextUsed(this.used, this.size, {super.at});
+
+  final int used;
+  final int size;
+}
+
+/// Tokens a turn used (input, output, read from cache).
+class TokensUsed extends SessionEvent {
+  const TokensUsed({this.input = 0, this.output = 0, this.cached = 0, super.at});
+
+  final int input;
+  final int output;
+  final int cached;
+
+  int get total => input + output + cached;
+}
+
+/// One subscription window: [usedPercent] of it used, back to zero at
+/// [resetsAt].
+class LimitWindow {
+  const LimitWindow(this.usedPercent, {required this.minutes, this.resetsAt});
+
+  final double usedPercent;
+
+  /// Its length: 300 (5 h), 10080 (a week)…
+  final int minutes;
+  final DateTime? resetsAt;
+}
+
+/// Where the subscription stands (Codex writes it in its session files).
+class LimitsSeen extends SessionEvent {
+  const LimitsSeen({this.short, this.long, this.plan, super.at});
+
+  /// The short window (5 h) and the long one (a week).
+  final LimitWindow? short;
+  final LimitWindow? long;
+  final String? plan;
+}
