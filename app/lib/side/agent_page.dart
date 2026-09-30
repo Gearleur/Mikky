@@ -119,31 +119,20 @@ class _AgentPageState extends State<AgentPage> {
                 : null,
             commands: e.live ? log.commands : const [],
             onSend: _send,
+            glass: true,
           );
 
+    // No title, no band on top: the thread goes up to the top as it
+    // scrolls, the buttons float over it (user request, 2026-09-30).
     return Stack(
       children: [
-        SideHead(
-          title: e.name,
-          small: true,
-          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
-          actions: [
-            if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
-            RoundButton(
-              'more',
-              size: 34,
-              tooltip: 'Plus',
-              onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
-            ),
-          ],
-        ),
+        // The thread fills the page and passes under the buttons and the
+        // field, blurred (user request, 2026-09-30).
         Positioned.fill(
-          top: 68,
-          // Room for the field, or for the read-only note of outside sessions.
-          bottom: composer == null ? 44 : (working ? 90 : 78),
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+            // Room for the field, or for the read-only note of outside sessions.
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 104 : 78)),
             child: SelectableArea(
               child: AnimatedSwitcher(
                 duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
@@ -173,7 +162,23 @@ class _AgentPageState extends State<AgentPage> {
             ),
           ),
         ),
-        if (composer != null) Positioned(left: 12, right: 12, bottom: working ? 14 : 14, child: composer),
+        // Softer on top (user request, 2026-09-30: « trop puissant »).
+        const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
+        // Only behind the field, not above it (user request, 2026-09-30).
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 82 : 54))),
+        SideHead(
+          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+          actions: [
+            if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
+            RoundButton(
+              'more',
+              size: 34,
+              tooltip: 'Plus',
+              onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
+            ),
+          ],
+        ),
+        if (composer != null) Positioned(left: 20, right: 20, bottom: 12, child: composer),
         if (composer == null)
           Positioned(
             left: 16,

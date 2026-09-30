@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -134,7 +136,12 @@ class Composer extends StatefulWidget {
     this.autofocus = false,
     this.onEmptySend,
     this.commands = const [],
+    this.glass = false,
   });
+
+  /// Frosted: see-through and blurred, for a field the thread passes
+  /// under (an agent's page).
+  final bool glass;
 
   final TextEditingController? controller;
   final FocusNode? focusNode;
@@ -150,8 +157,9 @@ class Composer extends StatefulWidget {
   /// The agent's « / » commands.
   final List<AgentCommand> commands;
 
-  /// How far the options hang below the field.
-  static const optionsOverhang = 12.0;
+  /// How far the options hang below the field: right under it, no longer
+  /// half inside, now the field is slim (user request, 2026-09-30).
+  static const optionsOverhang = 28.0;
 
   @override
   State<Composer> createState() => _ComposerState();
@@ -240,6 +248,19 @@ class _ComposerState extends State<Composer> {
     super.dispose();
   }
 
+  /// Glass: the blurred thread behind the field's own see-through color.
+  Widget _frost(Widget surface) => !widget.glass
+      ? surface
+      : Stack(children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
+            ),
+          ),
+          surface,
+        ]);
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
@@ -248,11 +269,13 @@ class _ComposerState extends State<Composer> {
       onTap: _focus.requestFocus,
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
-        child: Surface(
-          radius: 26,
-          color: focused ? ui.thumb : ui.track,
+        // Slim, like the latest iPhone's (user request, 2026-09-30): 40
+        // high, a full pill.
+        child: _frost(Surface(
+          radius: 20,
+          color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
           shadows: focused ? ui.focusRing : ui.inset,
-          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(15, 4, 5, 4),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 32),
             child: Row(
@@ -271,13 +294,13 @@ class _ComposerState extends State<Composer> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                RoundButton('mic', size: 32, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
-                const SizedBox(width: 6),
-                RoundButton('up', size: 32, ink: true, onPressed: _send, tooltip: 'Envoyer'),
+                RoundButton('mic', size: 30, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
+                const SizedBox(width: 2),
+                RoundButton('up', size: 30, ink: true, onPressed: _send, tooltip: 'Envoyer'),
               ],
             ),
           ),
-        ),
+        )),
       ),
     );
     final options = widget.options;
@@ -356,7 +379,7 @@ class _CommandList extends StatelessWidget {
   }
 }
 
-/// `.cchip`: an option half inside the field (folder, model).
+/// `.cchip`: an option under the field (folder, model).
 class ComposerChip extends StatelessWidget {
   const ComposerChip(this.label, {super.key, this.icon, this.leading, this.onTap});
 
@@ -373,22 +396,26 @@ class ComposerChip extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       pressedScale: .95,
-      child: Surface(
-        height: 24,
-        color: ui.thumb,
-        shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
-            Text(
-              label,
-              style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
-            ),
-            const SizedBox(width: 4),
-            MikkyIcon('down', size: 11, color: ui.text2),
-          ],
+      child: HoverBuilder(
+        enabled: onTap != null,
+        builder: (context, hover) => Surface(
+          height: 24,
+          // A shade darker under the mouse.
+          color: hover ? Color.lerp(ui.thumb, ui.text, .06)! : ui.thumb,
+          shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
+              Text(
+                label,
+                style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
+              ),
+              const SizedBox(width: 4),
+              MikkyIcon('down', size: 11, color: ui.text2),
+            ],
+          ),
         ),
       ),
     );

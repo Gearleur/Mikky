@@ -61,19 +61,24 @@ class GroupHeader extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(6, first ? 4 : 12, 6, 8),
+          padding: EdgeInsets.fromLTRB(1, first ? 4 : 12, 6, 8),
           child: Row(
             children: [
-              if (status != null)
-                // Big enough to read the pixels (user request, 2026-09-30).
-                StatusFx(status!, size: 18)
-              else
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              // One slot for every group, so the labels line up and the
+              // firework's center is the grey pixel's (user request,
+              // 2026-09-30).
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: Center(
+                  child: status != null
+                      ? StatusFx(status!, size: 18)
+                      // Historique, Archives: the same star, grey and
+                      // still (user request, 2026-09-30).
+                      : PixelFx(kind: PixelFxKind.fireworkSoft, palette: PixelFxPalette.grey, size: 18, at: 1),
                 ),
-              SizedBox(width: status == null ? 7 : 8),
+              ),
+              const SizedBox(width: 8),
               Text(label, style: style),
               const SizedBox(width: 4),
               Text(
@@ -265,7 +270,19 @@ class AgentCard extends StatelessWidget {
   }
 
   Widget _pressable(Widget card) {
-    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: card);
+    // A light grey under the mouse, like every row that opens something.
+    final hovered = HoverBuilder(
+      enabled: onTap != null,
+      builder: (context, hover) {
+        final ui = MikkyUi.of(context);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
+          child: card,
+        );
+      },
+    );
+    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: hovered);
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
   }
 
@@ -485,93 +502,3 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWid
   tp.dispose();
   return w;
 }();
-
-/// `.taskcard`: a turn of work in the chat. [live]: the task at work (a
-/// grey card that leads back to Suivi); otherwise « Tâche terminée », an
-/// outline that unfolds its steps.
-class TaskCard extends StatefulWidget {
-  const TaskCard({super.key, required this.title, required this.subtitle, this.live = false, this.steps, this.onTap, this.initiallyOpen = false});
-
-  final String title;
-  final String subtitle;
-  final bool live;
-  final Widget? steps;
-  final VoidCallback? onTap;
-  final bool initiallyOpen;
-
-  @override
-  State<TaskCard> createState() => _TaskCardState();
-}
-
-class _TaskCardState extends State<TaskCard> {
-  late bool _open = widget.initiallyOpen;
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final head = Padding(
-      padding: const EdgeInsets.fromLTRB(8, 10, 12, 10),
-      child: Row(
-        children: [
-          StatusDot(widget.live ? UiStatus.working : UiStatus.finished),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(13.5, weight: FontWeight.w600, color: ui.text),
-                ),
-                Text(
-                  widget.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(12.5, color: ui.text2),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          widget.live
-              ? MikkyIcon('right', size: 15, color: ui.text3)
-              : AnimatedRotation(
-                  turns: _open ? .5 : 0,
-                  duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
-                  curve: const Cubic(.34, 1.4, .64, 1),
-                  child: MikkyIcon('down', size: 15, color: ui.text3),
-                ),
-        ],
-      ),
-    );
-    if (widget.live) {
-      return Pressable(
-        onTap: widget.onTap,
-        pressedScale: .98,
-        child: Surface(radius: 16, color: ui.well, child: head),
-      );
-    }
-    return Surface(
-      radius: 16,
-      shadows: [CssShadow(0, 0, 0, ui.line, spread: 1, inset: true)],
-      child: Column(
-        children: [
-          MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => setState(() => _open = !_open), child: head),
-          ),
-          AnimatedSize(
-            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
-            curve: Motion.enter,
-            alignment: Alignment.topCenter,
-            child: _open && widget.steps != null
-                ? Padding(padding: const EdgeInsets.fromLTRB(10, 0, 12, 4), child: widget.steps)
-                : const SizedBox(width: double.infinity),
-          ),
-        ],
-      ),
-    );
-  }
-}

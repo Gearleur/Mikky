@@ -46,6 +46,8 @@ class _Page extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SideFrame(
+        // Tall enough to see a whole task and the answer under it.
+        height: 1060,
         child: Stack(children: [
           SideHead(title: title, small: true, leading: const SizedBox(width: 34, height: 34)),
           Positioned.fill(
@@ -64,7 +66,7 @@ void main() {
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
     testWidgets('agent page views, $name', (tester) async {
-      const size = Size(1100, 600);
+      const size = Size(1100, 1100);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
