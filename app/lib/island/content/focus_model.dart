@@ -54,6 +54,7 @@ class AgentText {
         ),
       AgentStatus.finished => ('a terminé', const [FocusAction('OK', AgentAnswer.dismiss, primary: true)]),
       AgentStatus.rateLimited => ('est limité', const <FocusAction>[]),
+      AgentStatus.paused => ('est en pause', const <FocusAction>[]),
       AgentStatus.idle => ('attend', const <FocusAction>[]),
     };
     return AgentText(

@@ -246,7 +246,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   }
 
   static MikkyState _mikkyStateFor(AgentStatus? status) => switch (status) {
-        null || AgentStatus.idle => MikkyState.idle,
+        null || AgentStatus.idle || AgentStatus.paused => MikkyState.idle,
         AgentStatus.working => MikkyState.working,
         AgentStatus.thinking => MikkyState.thinking,
         AgentStatus.searching => MikkyState.searching,

@@ -327,6 +327,16 @@ class HomePage extends StatelessWidget {
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
           onTap: () => open(e.id),
         ),
+      HomeGroup.working when e.status == AgentStatus.paused => AgentCard(
+          status: UiStatus.sleeping,
+          title: e.name,
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
+          pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
+          subtitle: 'En pause',
+          onTap: () => open(e.id),
+          actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))])),
+        ),
       HomeGroup.working => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,

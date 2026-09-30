@@ -12,17 +12,24 @@ import '../ui/tokens.dart';
 import 'side_app.dart';
 
 const _rename = 1, _pin = 2, _archive = 3, _settle = 4, _delete = 5, _code = 6, _folder = 7;
-const _forget = 10, _forgetAndFile = 11, _cancel = 12;
+const _forget = 10, _forgetAndFile = 11, _cancel = 12, _pause = 13, _unpause = 14, _kill = 15;
 
 /// What to do with a session (a right click on its card, or ⋯ on its
-/// page): rename, pin, archive, settle an error, delete. Deleting asks
-/// again, and deletes Claude's or Codex's own file only if asked.
+/// page): pause or take off hold, stop the agent (its process and all it
+/// started; the session stays), rename, pin, archive, settle an error,
+/// delete. Deleting asks again, and deletes Claude's or Codex's own file
+/// only if asked.
 Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback rename, VoidCallback? deleted}) async {
   final source = host.service.source;
   final m = e.mark;
   final busy = e.live && e.log.working;
   final folder = e.cwd ?? e.log.cwd;
+  final paused = e.status == AgentStatus.paused;
   final chosen = await host.showMenu([
+    if (busy) const MenuEntry(_pause, 'Mettre en pause'),
+    if (paused) const MenuEntry(_unpause, 'Reprendre'),
+    if (e.live) const MenuEntry(_kill, 'Arrêter l’agent'),
+    if (busy || paused || e.live) const MenuEntry.separator(),
     if (folder != null) ...[
       const MenuEntry(_code, 'Ouvrir dans VS Code'),
       const MenuEntry(_folder, 'Ouvrir le dossier'),
@@ -35,6 +42,12 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
     if (!busy) ...[const MenuEntry.separator(), const MenuEntry(_delete, 'Supprimer…')],
   ]);
   switch (chosen) {
+    case _pause:
+      await source.pause(e.id);
+    case _unpause:
+      await source.unpause(e.id);
+    case _kill:
+      await source.stop(e.id);
     case _code:
       openInVsCode(folder!, e.host);
     case _folder:

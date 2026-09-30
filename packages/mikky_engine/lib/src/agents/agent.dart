@@ -8,6 +8,10 @@ enum AgentStatus {
   error,
   finished,
   rateLimited,
+
+  /// Put on hold by the user: its turn was stopped, its session kept, until
+  /// « Reprendre » or a new message.
+  paused,
   idle;
 
   /// The agent is blocked until the user answers: an alert (spec §5.3, 7).

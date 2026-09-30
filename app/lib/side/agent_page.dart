@@ -96,7 +96,9 @@ class _AgentPageState extends State<AgentPage> {
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
-      if ((log.pending.isNotEmpty || log.question != null) && e.live)
+      if (e.status == AgentStatus.paused)
+        Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () => _source.unpause(e.id)))
+      else if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: log.question != null
@@ -169,7 +171,9 @@ class _AgentPageState extends State<AgentPage> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [
-            if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
+            // Pause: the turn stops cleanly, the session stays (« Arrêter
+            // l'agent », which ends its process, is in the ⋯ menu).
+            if (e.live && working) RoundButton('pause', size: 34, onPressed: () => _source.pause(e.id), tooltip: 'Mettre en pause'),
             RoundButton(
               'more',
               size: 34,

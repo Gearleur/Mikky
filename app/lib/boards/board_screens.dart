@@ -29,6 +29,7 @@ class HomeMock extends StatefulWidget {
     super.key,
     this.waiting = const [],
     this.working = const [],
+    this.paused = const [],
     this.done = const [],
     this.history = 0,
     this.limits,
@@ -37,6 +38,9 @@ class HomeMock extends StatefulWidget {
 
   final List<SampleRow> waiting;
   final List<(SampleRow, UiStatus)> working;
+
+  /// Put on hold: with the ones at work, « Reprendre » on the card.
+  final List<SampleRow> paused;
   final List<SampleRow> done;
   final int history;
   final String? limits;
@@ -80,8 +84,18 @@ class _HomeMockState extends State<HomeMock> {
           actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
         ),
     ]);
-    group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length, [
+    group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length, [
       for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: w, brand: b, subtitle: s, onTap: () {}),
+      for (final (t, b, _, w) in widget.paused)
+        AgentCard(
+          status: UiStatus.sleeping,
+          title: t,
+          who: w,
+          brand: b,
+          subtitle: 'En pause',
+          onTap: () {},
+          actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () {})])),
+        ),
     ]);
     group('done', 'Terminés', ui.green, UiStatus.finished, widget.done.length, [
       for (final (t, b, s, w) in widget.done)
@@ -131,6 +145,8 @@ const _working = [
   (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working),
   (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.thinking),
 ];
+const _workingOne = (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working);
+const _paused = ('Prépare le plan de l’API', Brand.codex, '', '');
 const _done = [
   ('Résume la spec', Brand.claude, 'Il y a 2 min', ''),
   ('Ajoute les tests du lecteur Codex', Brand.codex, 'Il y a 14 min', 'WSL'),
@@ -145,6 +161,11 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Vide', note: 'Premier lancement, aucun agent.', child: HomeMock()),
       BoardFrame(label: 'Un agent attend', note: 'Oui / Non directement sur l’accueil.', child: HomeMock(waiting: [_waiting])),
       BoardFrame(label: 'Au travail', child: HomeMock(working: _working)),
+      BoardFrame(
+        label: 'Un agent en pause',
+        note: 'Avec ceux qui travaillent : gris, « En pause », Reprendre sur la carte.',
+        child: HomeMock(working: [_workingOne], paused: [_paused]),
+      ),
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Historique ouvert, limites Codex',
@@ -159,7 +180,15 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
 /// An agent's page in its window, fed by a made-up session (the same
 /// Suivi and Chat as the app's).
 class AgentMock extends StatefulWidget {
-  const AgentMock({super.key, required this.title, required this.log, this.chat = false, this.external = false, this.scrolled = false});
+  const AgentMock({
+    super.key,
+    required this.title,
+    required this.log,
+    this.chat = false,
+    this.external = false,
+    this.scrolled = false,
+    this.paused = false,
+  });
 
   /// Its name (the page does not show it any more; kept to tell the
   /// frames apart in the code).
@@ -174,6 +203,9 @@ class AgentMock extends StatefulWidget {
 
   /// Started in VS Code or a terminal: followed, read only.
   final bool external;
+
+  /// Put on hold by the user: « En pause » and Reprendre under the thread.
+  final bool paused;
 
   @override
   State<AgentMock> createState() => _AgentMockState();
@@ -200,7 +232,9 @@ class _AgentMockState extends State<AgentMock> {
       if (usage.isNotEmpty)
         Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true))),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
-      if (log.question != null)
+      if (widget.paused)
+        Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
+      else if (log.question != null)
         Padding(padding: const EdgeInsets.only(top: 12), child: QuestionCard(question: log.question!, onAnswer: (_) {}))
       else if (log.pending.isNotEmpty)
         Padding(padding: const EdgeInsets.only(top: 12), child: AskCard(log: log, onAnswer: (_) {})),
@@ -223,7 +257,7 @@ class _AgentMockState extends State<AgentMock> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
-            if (working && !widget.external) RoundButton('stop', size: 34, onPressed: () {}, tooltip: 'Arrêter l’agent'),
+            if (working && !widget.external) RoundButton('pause', size: 34, onPressed: () {}, tooltip: 'Mettre en pause'),
             RoundButton('more', size: 34, onPressed: () {}, tooltip: 'Plus'),
           ],
         ),
@@ -313,7 +347,7 @@ class NewAgentMock extends StatelessWidget {
 final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, attentes, fins', (context) => [
   BoardSection(
     title: 'Au travail',
-    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; arrêter, pendant qu’il travaille ; « ··· », le menu : VS Code, dossier, renommer, épingler, archiver, supprimer).',
+    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; pause, pendant qu’il travaille ; « ··· », le menu : pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
     frames: [
       BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working())),
       BoardFrame(label: 'Chat, avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true)),
@@ -347,6 +381,11 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(label: 'Erreur (limite)', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
       BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
+      BoardFrame(
+        label: 'En pause',
+        note: 'Le bouton pause en haut, pendant qu’il travaille ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le menu ···.',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled(), paused: true),
+      ),
     ],
   ),
   const BoardSection(

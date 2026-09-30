@@ -454,6 +454,23 @@ class AskCard extends StatelessWidget {
       );
 }
 
+/// An agent put on hold: its turn stopped, its session kept. « Reprendre »
+/// tells it to go on where it stopped (a message does too).
+class PausedCard extends StatelessWidget {
+  const PausedCard({super.key, required this.onResume});
+
+  final VoidCallback? onResume;
+
+  @override
+  Widget build(BuildContext context) => AgentCard(
+        status: UiStatus.sleeping,
+        title: 'En pause',
+        who: '',
+        subtitle: 'Travail arrêté, session gardée',
+        actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', onResume)])),
+      );
+}
+
 /// The agent offers « always allow » for its pending request.
 bool canAlways(SessionLog log) => log.pending.firstOrNull?.options.any((o) => o.kind == 'allow_always') ?? false;
 

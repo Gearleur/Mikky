@@ -76,6 +76,28 @@ void main() {
     expect(fakes.single.received, contains('session/set_mode'));
   });
 
+  test('pause stops the turn and holds the agent; Reprendre goes on; stop ends it', () async {
+    final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'));
+    await settle(() => source.entry(id)!.log.items.whereType<ToolItem>().isNotEmpty);
+    await source.pause(id);
+    await settle(() => source.entry(id)!.status == AgentStatus.paused);
+    final e = source.entry(id)!;
+    expect(e.live, isTrue);
+    expect(e.mark.pausedAt, isNotNull);
+    expect(homeGroupOf(e.homeStatus, e.lastActivity, DateTime.now()), HomeGroup.working);
+    // Off the island: nothing for the user to do there.
+    expect(statusOf(id), isNull);
+
+    await source.unpause(id);
+    await settle(() => source.entry(id)!.status == AgentStatus.finished);
+    expect(source.entry(id)!.mark.pausedAt, isNull);
+    expect(source.entry(id)!.log.items.whereType<UserItem>().last.text, 'Continue là où tu t’étais arrêté.');
+
+    await source.stop(id);
+    await settle(() => !source.entry(id)!.live);
+    expect(source.entry(id)!.status, AgentStatus.finished);
+  });
+
   test('a message while it works is slipped in; stop ends it', () async {
     final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'));
     await settle(() => statusOf(id) == AgentStatus.working);

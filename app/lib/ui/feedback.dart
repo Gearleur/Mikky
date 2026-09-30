@@ -239,7 +239,7 @@ enum UiStatus {
     AgentStatus.finished => finished,
     AgentStatus.error => error,
     AgentStatus.rateLimited => limited,
-    AgentStatus.idle => sleeping,
+    AgentStatus.idle || AgentStatus.paused => sleeping,
   };
 }
 
