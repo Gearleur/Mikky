@@ -9,19 +9,24 @@ import 'tokens.dart';
 /// others are ready for when they are added (idées 45, 46).
 enum Brand {
   claude('Claude', 'claude-color.svg'),
-  codex('Codex', 'openai.svg', 'openai-dark.svg'),
+  // OpenAI's knot fills its whole square: a little smaller, so it looks
+  // the size of Claude's star (user request, 2026-09-30).
+  codex('Codex', 'openai.svg', 'openai-dark.svg', .84),
   opencode('OpenCode', 'opencode-logo-light-square.svg', 'opencode-logo-dark-square.svg'),
   pi('pi', 'pi.svg', 'pi-dark.svg'),
   openclaw('OpenClaw', 'openclaw.svg'),
   gemini('Gemini', 'gemini-color.svg');
 
-  const Brand(this.label, this.light, [this.dark]);
+  const Brand(this.label, this.light, [this.dark, this.scale = 1]);
 
   final String label;
   final String light;
 
   /// For the dark theme, when the mark is black.
   final String? dark;
+
+  /// Drawn this much of its square, so the logos look the same size.
+  final double scale;
 
   static Brand of(AgentProvider provider) => switch (provider) {
         AgentProvider.claude => claude,
@@ -40,6 +45,10 @@ class BrandLogo extends StatelessWidget {
   Widget build(BuildContext context) {
     final dark = !MikkyUi.of(context).isLight;
     final file = dark ? (brand.dark ?? brand.light) : brand.light;
-    return SvgPicture.asset('assets/brands/$file', width: size, height: size, semanticsLabel: brand.label);
+    final mark = size * brand.scale;
+    return SizedBox.square(
+      dimension: size,
+      child: Center(child: SvgPicture.asset('assets/brands/$file', width: mark, height: mark, semanticsLabel: brand.label)),
+    );
   }
 }

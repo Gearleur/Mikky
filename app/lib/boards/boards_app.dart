@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/widgets.dart';
 
 import '../ui/selectors.dart';
@@ -47,19 +49,46 @@ class Boards extends StatefulWidget {
 
 class _BoardsState extends State<Boards> {
   late int _board = widget.initial;
+
+  /// The board picked in the sidebar: the white square goes there at
+  /// once; the board itself follows once it has arrived, since building
+  /// a whole board takes a frame long enough to make the square jump
+  /// (user request, 2026-09-30: the same smooth slide both ways).
+  late int _picked = widget.initial;
+  Timer? _switch;
   late int _themes = widget.themes;
   final _canvas = GlobalKey<BoardCanvasState>();
   double _scale = 1;
 
+  // The board, built again only when it changes: not while the square
+  // slides in the sidebar.
+  (int, int)? _shown;
+  Widget? _content;
+
+  Widget _contentOf(List<MikkyUi> bands) {
+    if (_shown != (_board, _themes)) {
+      _shown = (_board, _themes);
+      _content = KeyedSubtree(
+        key: ValueKey(_shown),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [for (final ui in bands) BoardBand(spec: boards[_board], ui: ui)],
+        ),
+      );
+    }
+    return _content!;
+  }
+
+  @override
+  void dispose() {
+    _switch?.cancel();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     const shell = MikkyUi.light;
-    final spec = boards[_board];
     final bands = [if (_themes != 1) MikkyUi.light, if (_themes != 0) MikkyUi.dark];
-    final content = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [for (final ui in bands) BoardBand(spec: spec, ui: ui)],
-    );
     return MikkyUiTheme(
       ui: shell,
       child: DefaultTextStyle(
@@ -68,10 +97,15 @@ class _BoardsState extends State<Boards> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _Sidebar(
-              selected: _board,
+              selected: _picked,
               onSelect: (i) {
-                setState(() => _board = i);
-                _canvas.currentState?.reset();
+                setState(() => _picked = i);
+                _switch?.cancel();
+                _switch = Timer(Duration(milliseconds: Motion.reduced(context) ? 0 : 220), () {
+                  if (!mounted) return;
+                  setState(() => _board = i);
+                  _canvas.currentState?.reset();
+                });
               },
               themes: _themes,
               onThemes: (i) => setState(() => _themes = i),
@@ -84,7 +118,7 @@ class _BoardsState extends State<Boards> {
                     key: _canvas,
                     background: bands.first.board,
                     onScale: (s) => setState(() => _scale = s),
-                    child: KeyedSubtree(key: ValueKey((_board, _themes)), child: content),
+                    child: _contentOf(bands),
                   ),
                 ),
                 Positioned(right: 16, bottom: 16, child: ZoomPill(canvas: _canvas, scale: _scale)),

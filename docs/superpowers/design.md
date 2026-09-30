@@ -72,6 +72,7 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 - **Des lignes, pas de cartes** :
   - au travail, en attente : le **logo de l'outil** (32 px) à gauche, au milieu des deux lignes de texte ; il tourne quand l'agent travaille ou réfléchit, il rebondit quand il attend ;
   - terminés : ligne simple, petit logo (22 px), titre, « il y a 2 min · WSL » à droite ;
+  - les logos doivent paraître de la même taille : celui d'OpenAI (Codex) est dessiné à 84 % de son carré, son nœud remplissant tout le carré (`Brand.scale`) ;
   - survol : le carré blanc qui glisse (voir Mouvement).
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.
 - Mikky en petit en haut à gauche ; bouton rond noir → en bas à droite pour un nouvel agent.
@@ -98,7 +99,7 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 
 - **Ressorts** : sélecteurs 380 / 0,70 (un peu gluants) ; formes de Mikky 95 / 0,38 (gelée). Rien de trop gluant : l'utilisateur veut que ce soit satisfaisant, pas mou.
 - Boucles décoratives à **30 images par seconde**, sur une seule horloge ; **figées** quand Windows demande moins d'animations ; **0 % de CPU** île cachée.
-- **Survol de base : le carré blanc de Oui / Non** (blanc, trait fin, ombre douce) qui **glisse** sur un ressort (380 / 0,70) jusqu'à la ligne sous la souris, et revient **se poser sur la ligne choisie** (`SlidingHover`, `HoverTarget` ; choisi par l'utilisateur le 2026-09-30). Dans une liste sans choix (lignes de l'accueil, étapes et outils du chat), il suit la souris. **Quand il marque un choix** (colonne des planches, et demain les onglets, menus…), **il reste sur le choix** et ne glisse qu'au clic ; le survol, c'est **le nom qui s'éclaire** : gris clair au repos (`text3`), noir sous la souris. **Contraste voulu** (capture de l'utilisateur) : carré blanc sur **fond gris clair** (`well`, ~`#F5F5F5`), ombre douce, sans trait fin ; le trait fin seulement pour un carré blanc sur la fenêtre blanche. Ailleurs (puces du champ, options des sélecteurs), un survol simple.
+- **Survol de base : le carré blanc de Oui / Non** (blanc, trait fin, ombre douce) qui **glisse** sur un ressort (380 / 0,70) jusqu'à la ligne sous la souris, et revient **se poser sur la ligne choisie** (`SlidingHover`, `HoverTarget` ; choisi par l'utilisateur le 2026-09-30). Dans une liste sans choix (lignes de l'accueil, étapes et outils du chat), il suit la souris. **Quand il marque un choix** (colonne des planches, et demain les onglets, menus…), **il reste sur le choix** et ne glisse qu'au clic ; le survol, c'est **le nom qui s'éclaire** : gris clair au repos (`text3`), noir sous la souris. **Contraste voulu** (capture de l'utilisateur) : carré blanc sur **fond gris clair** (`well`, ~`#F5F5F5`), ombre douce, sans trait fin ; le trait fin seulement pour un carré blanc sur la fenêtre blanche. Ailleurs (puces du champ, options des sélecteurs), un survol simple. Le mouvement du carré est le même dans les deux sens et pour toutes les distances ; rien de lourd ne doit se construire pendant qu'il glisse (dans les planches, la nouvelle planche s'affiche une fois le carré arrivé, 0,22 s).
 
 ## 9. Écarté (ne pas reproposer)
 
