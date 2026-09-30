@@ -35,12 +35,14 @@ class CodePill extends StatelessWidget {
 }
 
 /// `.group-h`: a home group's title (dot, label, count, chevron); a tap
-/// folds or unfolds the group.
+/// folds or unfolds the group. With a [status] that has one, a small
+/// square of pixels instead of the dot.
 class GroupHeader extends StatelessWidget {
-  const GroupHeader({super.key, required this.label, required this.color, required this.count, this.open = true, this.onTap, this.first = false});
+  const GroupHeader({super.key, required this.label, required this.color, required this.count, this.open = true, this.onTap, this.first = false, this.status});
 
   final String label;
   final Color color;
+  final UiStatus? status;
   final int count;
   final bool open;
   final VoidCallback? onTap;
@@ -61,11 +63,14 @@ class GroupHeader extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(6, first ? 4 : 12, 6, 8),
           child: Row(
             children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
+              if (status != null && StatusDot.pixels(status!))
+                PixelStatus(status!, size: 10)
+              else
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+                ),
               const SizedBox(width: 7),
               Text(label, style: style),
               const SizedBox(width: 4),

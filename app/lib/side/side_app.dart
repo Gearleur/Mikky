@@ -206,10 +206,10 @@ class HomePage extends StatelessWidget {
       HomeGroup.history: ('Historique', ui.grey),
     };
     final body = <Widget>[];
-    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false}) {
+    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false, UiStatus? status}) {
       if (list.isEmpty) return;
       final isOpen = scope.groups[key] ?? true;
-      body.add(GroupHeader(label: label, color: color, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
+      body.add(GroupHeader(label: label, color: color, status: status, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
       body.add(AnimatedSize(
         duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
         curve: Motion.enter,
@@ -225,7 +225,12 @@ class HomePage extends StatelessWidget {
     for (final g in HomeGroup.values) {
       final (label, color) = labels[g]!;
       // No cards any more: the rows follow each other without a gap.
-      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: true);
+      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: true, status: switch (g) {
+        HomeGroup.waiting => UiStatus.approval,
+        HomeGroup.working => UiStatus.working,
+        HomeGroup.done => UiStatus.finished,
+        HomeGroup.history => null,
+      });
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     // What is left of the subscriptions (Codex tells it; Claude does not,

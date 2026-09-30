@@ -109,7 +109,20 @@ class _KitHomeState extends State<KitHome> {
     Widget group(String id, String label, Color color, int n, List<Widget> cards, {bool first = false}) => Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GroupHeader(label: label, color: color, count: n, open: _open[id]!, first: first, onTap: () => setState(() => _open[id] = !_open[id]!)),
+        GroupHeader(
+          label: label,
+          color: color,
+          count: n,
+          open: _open[id]!,
+          first: first,
+          status: switch (id) {
+            'wait' => UiStatus.approval,
+            'work' => UiStatus.working,
+            'done' => UiStatus.finished,
+            _ => null,
+          },
+          onTap: () => setState(() => _open[id] = !_open[id]!),
+        ),
         if (_open[id]!)
           for (var i = 0; i < cards.length; i++)
             Padding(
@@ -524,10 +537,10 @@ class _KitPartsState extends State<KitParts> {
             runSpacing: 6,
             children: [
               for (final (s, b, small) in [
-                (UiStatus.working, 'Travaille', 'onde bleue'),
+                (UiStatus.working, 'Travaille', 'carré bleu qui vit'),
                 (UiStatus.thinking, 'Réfléchit', 'respire'),
-                (UiStatus.approval, 'Attend ton feu vert', 'deux sauts, une pause'),
-                (UiStatus.finished, 'Terminé', 'coche qui rebondit'),
+                (UiStatus.approval, 'Attend ton feu vert', 'carré orange qui vit'),
+                (UiStatus.finished, 'Terminé', 'carré vert, figé'),
                 (UiStatus.error, 'Erreur', 'tremble une fois'),
                 (UiStatus.limited, 'Limité', 'attend la fin de la limite'),
                 (UiStatus.sleeping, 'Dort', 'presque éteint'),
@@ -591,6 +604,11 @@ class _KitPartsState extends State<KitParts> {
           ]),
           // Set aside for now (user requests, 2026-09-30): the launcher, and
           // the star tried on Mikky thinking.
+          // The pixel squares, bigger (after SmoothUI's agent avatar).
+          line([
+            for (final st in [UiStatus.working, UiStatus.approval, UiStatus.finished]) PixelStatus(st, size: 28),
+            Text('Carrés d’état', style: uiText(13, color: ui.text2)),
+          ]),
           line([
             const DotSnake(UiStatus.working),
             Text('Lanceur', style: uiText(13, color: ui.text2)),

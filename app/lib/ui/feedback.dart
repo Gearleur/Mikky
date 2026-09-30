@@ -431,18 +431,145 @@ class _StarPainter extends CustomPainter {
   bool shouldRepaint(_StarPainter old) => old.t != t;
 }
 
+/// A small square of 3 × 3 pixels in shades of the state's color, that
+/// live like SmoothUI's agent avatar (MIT, © 2024 Eduardo Calvo): each
+/// pixel pulses on its own, the whole breathes, a wave crosses it on the
+/// diagonal and a pixel flashes now and then (user request, 2026-09-30).
+/// Finished stays still. [seed] gives another pattern, same colors.
+class PixelStatus extends StatelessWidget {
+  const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0});
+
+  final UiStatus status;
+  final double size;
+  final int seed;
+
+  /// Base hue, saturation and lightness of each state, in HSL.
+  static (double, double, double) _base(UiStatus s) => switch (s) {
+    UiStatus.working => (214, 90, 56),
+    UiStatus.thinking => (276, 72, 60),
+    UiStatus.approval => (30, 95, 55),
+    UiStatus.finished => (142, 62, 48),
+    UiStatus.error => (4, 88, 56),
+    UiStatus.limited => (46, 95, 52),
+    UiStatus.sleeping => (240, 4, 68),
+  };
+
+  /// Loops are long so their seam never shows (times in ms, as SmoothUI).
+  static const _periodMs = 60000.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final painter = _PixelPalette.of(_base(status), status.index * 7919 + seed);
+    if (status == UiStatus.finished) {
+      return CustomPaint(size: Size.square(size), painter: _PixelPainter(painter, null));
+    }
+    return Looping(
+      key: ValueKey(status),
+      period: const Duration(milliseconds: 60000),
+      frozenAt: .01,
+      builder: (context, t) => CustomPaint(size: Size.square(size), painter: _PixelPainter(painter, t * _periodMs)),
+    );
+  }
+}
+
+/// Three shades of one hue and the 3 × 3 cells, drawn once per state.
+class _PixelPalette {
+  _PixelPalette(this.colors, this.cells);
+
+  final List<HSLColor> colors;
+
+  /// Per cell: which shade, how bright, and its own phases.
+  final List<(int, double, double, double)> cells;
+
+  static final Map<(double, double, double, int), _PixelPalette> _cache = {};
+
+  static _PixelPalette of((double, double, double) base, int seed) => _cache[(base.$1, base.$2, base.$3, seed)] ??= () {
+    final rng = math.Random(seed);
+    final (h, s, l) = base;
+    // Neighbouring hues, as SmoothUI does, but closer (±20°): the state
+    // must still read blue, orange or green.
+    double hue() => (h - 20 + rng.nextDouble() * 40) % 360;
+    HSLColor c(double hue, double sat, double light) =>
+        HSLColor.fromAHSL(1, hue, (sat / 100).clamp(0.0, 1.0), (light / 100).clamp(0.0, 1.0));
+    final colors = [c(h, s, l), c(hue(), s - 5 + rng.nextDouble() * 10, l - 12), c(hue(), s - 10, l + 10)];
+    final cells = [
+      for (var i = 0; i < 9; i++) (rng.nextInt(3), .55 + rng.nextDouble() * .45, rng.nextDouble() * math.pi * 2, rng.nextDouble() * math.pi * 2),
+    ];
+    return _PixelPalette(colors, cells);
+  }();
+}
+
+class _PixelPainter extends CustomPainter {
+  _PixelPainter(this.palette, this.ms);
+
+  final _PixelPalette palette;
+
+  /// Milliseconds; null: still.
+  final double? ms;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final t = ms;
+    final side = size.shortestSide;
+    final half = side / 2;
+    // The whole square breathes a little in size.
+    final scale = t == null ? 1.0 : 1 + math.sin(t * .0008) * .03;
+    canvas.save();
+    canvas.translate(half, half);
+    canvas.scale(scale);
+    canvas.translate(-half, -half);
+    final shape = RRect.fromRectAndRadius(Offset.zero & Size.square(side), Radius.circular(side * .24));
+    // A soft glow of the main shade around it.
+    canvas.drawRRect(
+      shape,
+      Paint()
+        ..color = palette.colors.first.toColor().withValues(alpha: .35)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, side * .18),
+    );
+    canvas.clipRRect(shape);
+    final cell = side / 3;
+    final breathe = t == null ? 0.0 : math.sin(t * .001) * 6;
+    final paint = Paint();
+    for (var y = 0; y < 3; y++) {
+      for (var x = 0; x < 3; x++) {
+        final (shade, bright, phase, sparklePhase) = palette.cells[y * 3 + x];
+        final base = palette.colors[shade];
+        var light = base.lightness * 100;
+        if (t != null) {
+          final pulse = math.sin(t * .002 + phase) * 12;
+          final wave = math.sin(t * .0015 + (x + y) / 1.5) * 9;
+          final spark = math.sin(t * .004 + sparklePhase);
+          light += pulse + breathe + wave + (spark > .92 ? (spark - .92) / .08 * 20 : 0);
+        }
+        light = (light * (.75 + .25 * bright)).clamp(22.0, 88.0);
+        paint.color = base.withSaturation(math.min(1, base.saturation + .05)).withLightness(light / 100).toColor();
+        // A hair of overlap, so no seam shows between the pixels.
+        canvas.drawRect(Rect.fromLTWH(x * cell, y * cell, cell + .4, cell + .4), paint);
+      }
+    }
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_PixelPainter old) => old.ms != ms || old.palette != palette;
+}
+
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =
 /// blue with a widening wave (1.6 s); thinking, limited, sleeping = it
 /// breathes (2.4 s, 3.2 s, 4 s); waiting for a yes = two hops then a
-/// pause (1.8 s, 5 px); finished = green check that pops (550 ms);
-/// error = one shake (450 ms).
+/// pause (1.8 s, 5 px); error = one shake (450 ms). Working, waiting
+/// and finished are small squares of pixels now ([PixelStatus], user
+/// request, 2026-09-30); finished stays still.
 class StatusDot extends StatelessWidget {
   const StatusDot(this.status, {super.key});
 
   final UiStatus status;
 
+  static bool pixels(UiStatus s) => s == UiStatus.working || s == UiStatus.approval || s == UiStatus.finished;
+
   @override
   Widget build(BuildContext context) {
+    if (pixels(status)) return SizedBox.square(dimension: 28, child: Center(child: PixelStatus(status)));
     final c = statusColor(MikkyUi.of(context), status);
     Widget dot(double size, {Widget? child}) => Container(
       width: size,
