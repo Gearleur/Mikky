@@ -1,16 +1,27 @@
 // A2 check on the real machine: setup, sign-in, watching, and one real
 // Claude and Codex launched through RealAgentSource. Costs two tiny prompts.
 //
-// dart run tool/smoke.dart <windows-folder> <wsl-folder>
+// dart run tool/smoke.dart [--daemon] <windows-folder> <wsl-folder>
+// --daemon: through mikkyd (a build of daemon/, started as the app does).
 import 'dart:async';
 import 'dart:io';
 
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-Future<void> main(List<String> args) async {
+Future<void> main(List<String> all) async {
   final watch = Stopwatch()..start();
   void say(String s) => stdout.writeln('[${(watch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $s');
+  final args = [for (final a in all) if (!a.startsWith('--')) a];
+  DaemonClient? daemon;
+  if (all.contains('--daemon')) {
+    daemon = await DaemonClient.ensure(File('../../daemon/target/debug/mikkyd.exe').absolute.path);
+    if (daemon == null) {
+      say('mikkyd ne répond pas');
+      exit(1);
+    }
+    say('mikkyd : ${await daemon.request('hello')}');
+  }
 
   final setups = {AgentHost.windows: await AgentSetup.windows(), AgentHost.wsl: await AgentSetup.wsl()};
   for (final s in setups.values) {
@@ -38,7 +49,7 @@ Future<void> main(List<String> args) async {
 
   final source = RealAgentSource(
     clock: () => watch.elapsedMilliseconds / 1000,
-    spawn: (provider, host, cwd) => setups[host]!.spawn(provider, cwd: cwd),
+    spawn: (provider, host, cwd) => setups[host]!.spawn(provider, cwd: cwd, daemon: daemon),
   );
   for (final w in watchers) {
     source.follow(w);
@@ -62,7 +73,12 @@ Future<void> main(List<String> args) async {
   final external = source.entries.where((e) => e.origin == AgentOrigin.external && ids.every((id) => e.sessionId != source.entry(id)!.sessionId));
   say('entrées : ${source.entries.length} (avant les lancements : $before) ; doublons des deux lancements : ${source.entries.length - before - 2}');
   say('sessions extérieures suivies : ${external.length} ; événements de fichiers : $events');
+  if (daemon != null) say('mikkyd, avant l’arrêt : ${await daemon.request('runs.list')}');
   await source.stopAll();
+  if (daemon != null) {
+    say('mikkyd, après : ${await daemon.request('runs.list')}');
+    await daemon.close();
+  }
   for (final w in watchers) {
     await w.stop();
   }

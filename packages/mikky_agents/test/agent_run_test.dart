@@ -11,7 +11,7 @@ final _now = DateTime.now();
 
 Future<(FakeAgent, AgentRun)> opened({bool autoFallback = false, String? mode, String? resume}) async {
   final agent = FakeAgent.inMemory(autoFallback: autoFallback);
-  final run = AgentRun.connect(agent.clientInput, agent.clientOutput);
+  final run = LocalAgentRun.connect(agent.clientInput, agent.clientOutput);
   await run.open(cwd: '/tmp/x', mode: mode, resume: resume);
   return (agent, run);
 }
@@ -143,7 +143,7 @@ void main() {
   });
 
   test('a real process: spawn, talk, stop', () async {
-    final run = await AgentRun.spawn(WindowsTarget(), Platform.resolvedExecutable, ['test/support/fake_agent_main.dart']);
+    final run = await LocalAgentRun.spawn(WindowsTarget(), Platform.resolvedExecutable, ['test/support/fake_agent_main.dart']);
     await run.open(cwd: Directory.current.path);
     await run.prompt('bonjour');
     expect(run.log.statusAt(_now), AgentStatus.finished);

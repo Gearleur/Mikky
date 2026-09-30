@@ -94,13 +94,14 @@ class LaunchChoice {
 /// elsewhere): its own name, pinned, archived, an error marked as settled,
 /// or forgotten.
 class SessionMark {
-  const SessionMark({this.name, this.pinned = false, this.archived = false, this.settledAt, this.forgotten = false});
+  const SessionMark({this.name, this.pinned = false, this.archived = false, this.settledAt, this.pausedAt, this.forgotten = false});
 
   factory SessionMark.fromJson(Map<String, dynamic> j) => SessionMark(
         name: j['name'] as String?,
         pinned: j['pinned'] == true,
         archived: j['archived'] == true,
         settledAt: j['settledAt'] == null ? null : DateTime.parse(j['settledAt'] as String),
+        pausedAt: j['pausedAt'] == null ? null : DateTime.parse(j['pausedAt'] as String),
         forgotten: j['forgotten'] == true,
       );
 
@@ -115,16 +116,31 @@ class SessionMark {
   /// the session counts as done.
   final DateTime? settledAt;
 
+  /// Put on hold then by the user (« Pause »), until « Reprendre » or a
+  /// new message.
+  final DateTime? pausedAt;
+
   /// Deleted from Mikky: never shown again.
   final bool forgotten;
 
-  bool get isEmpty => name == null && !pinned && !archived && settledAt == null && !forgotten;
+  bool get isEmpty => name == null && !pinned && !archived && settledAt == null && pausedAt == null && !forgotten;
 
-  SessionMark copyWith({String? name, bool clearName = false, bool? pinned, bool? archived, DateTime? settledAt, bool? forgotten}) => SessionMark(
+  SessionMark copyWith({
+    String? name,
+    bool clearName = false,
+    bool? pinned,
+    bool? archived,
+    DateTime? settledAt,
+    DateTime? pausedAt,
+    bool clearPaused = false,
+    bool? forgotten,
+  }) =>
+      SessionMark(
         name: clearName ? null : (name ?? this.name),
         pinned: pinned ?? this.pinned,
         archived: archived ?? this.archived,
         settledAt: settledAt ?? this.settledAt,
+        pausedAt: clearPaused ? null : (pausedAt ?? this.pausedAt),
         forgotten: forgotten ?? this.forgotten,
       );
 
@@ -133,6 +149,7 @@ class SessionMark {
         if (pinned) 'pinned': true,
         if (archived) 'archived': true,
         if (settledAt != null) 'settledAt': settledAt!.toIso8601String(),
+        if (pausedAt != null) 'pausedAt': pausedAt!.toIso8601String(),
         if (forgotten) 'forgotten': true,
       };
 }

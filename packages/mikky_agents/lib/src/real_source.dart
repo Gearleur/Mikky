@@ -270,10 +270,37 @@ class RealAgentSource implements AgentSource {
     }
   }
 
+  /// Takes back an agent `mikkyd` still runs (after the app restarted):
+  /// the one kept with the same session, or a new one.
+  void adopt(AgentRun run, {required AgentProvider provider, required AgentHost host, String? cwd}) {
+    final sessionId = run.sessionId;
+    // Kept agents know their session from the store until a file shows up.
+    var e = sessionId == null
+        ? null
+        : _entries.where((x) => x.run == null && (x.sessionId ?? _stored[x.id]?.sessionId) == sessionId).firstOrNull;
+    if (e == null) {
+      e = AgentEntry._('m${DateTime.now().microsecondsSinceEpoch}-${_ids++}', provider, host, AgentOrigin.mikky, cwd, _now());
+      _entries.add(e);
+    }
+    final entry = e
+      ..origin = AgentOrigin.mikky
+      ..run = run
+      ..startedAt = clock()
+      ..statusSince = clock();
+    _subs.add(run.changes.listen((_) {
+      _remember(entry);
+      _changed();
+    }));
+    _remember(entry);
+    _changed();
+  }
+
   /// A message for agent [id]: slipped in while it works, or the next turn.
+  /// It ends a pause.
   Future<void> send(String id, String text) async {
     final e = entry(id);
     if (e == null) return;
+    if (e.mark.pausedAt != null) _mark(id, (m) => m.copyWith(clearPaused: true));
     if (!e.live) return resume(id, text);
     e.dismissed = false;
     await e.run!.prompt(text);
@@ -281,6 +308,19 @@ class RealAgentSource implements AgentSource {
 
   /// Stops the current work of agent [id]; it keeps its session.
   Future<void> cancel(String id) async => entry(id)?.run?.cancel();
+
+  /// Puts agent [id] on hold: its turn stops cleanly, its session stays,
+  /// and it shows « En pause » until [unpause] or a new message.
+  Future<void> pause(String id) async {
+    final e = entry(id);
+    if (e == null || !e.live) return;
+    _mark(id, (m) => m.copyWith(pausedAt: _now()));
+    await e.run!.cancel();
+  }
+
+  /// Takes agent [id] off hold: it goes on where it stopped (continued in
+  /// its session if its process ended meanwhile).
+  Future<void> unpause(String id) => send(id, 'Continue là où tu t’étais arrêté.');
 
   /// Ends agent [id] and everything it started.
   Future<void> stop(String id) async {
@@ -376,7 +416,9 @@ class RealAgentSource implements AgentSource {
       final watchedOnly = e.run == null && e.failure == null;
       // Just launched: thinking until the agent says something.
       if (e.run != null && e.log.turns.isEmpty && e.status == AgentStatus.thinking) continue;
-      final s = e.log.statusAt(now, staleAfter: watchedOnly ? staleAfter : null);
+      var s = e.log.statusAt(now, staleAfter: watchedOnly ? staleAfter : null);
+      // Paused: once its stopped turn is over, until it is taken off hold.
+      if (e.mark.pausedAt != null && !e.log.working && !s.needsYou) s = AgentStatus.paused;
       if (s != e.status) _setStatus(e, s);
     }
   }
