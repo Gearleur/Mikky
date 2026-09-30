@@ -119,49 +119,51 @@ class _AgentPageState extends State<AgentPage> {
                 : null,
             commands: e.live ? log.commands : const [],
             onSend: _send,
+            glass: true,
           );
 
     // No title, no band on top: the thread goes up to the top as it
     // scrolls, the buttons float over it (user request, 2026-09-30).
     return Stack(
       children: [
+        // The thread fills the page and passes under the buttons and the
+        // field, blurred (user request, 2026-09-30).
         Positioned.fill(
-          // Room for the field, or for the read-only note of outside sessions.
-          bottom: composer == null ? 44 : (working ? 90 : 78),
-          child: TopFade(
-            child: SingleChildScrollView(
-              controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(16, 62, 16, 16),
-              child: SelectableArea(
-                child: AnimatedSwitcher(
-                  duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
-                  switchInCurve: Motion.enter,
-                  transitionBuilder: (child, a) => FadeTransition(
-                    opacity: a,
-                    child: SlideTransition(
-                      position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
-                      child: child,
-                    ),
+          child: SingleChildScrollView(
+            controller: _scroll,
+            // Room for the field, or for the read-only note of outside sessions.
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 104 : 92)),
+            child: SelectableArea(
+              child: AnimatedSwitcher(
+                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
+                switchInCurve: Motion.enter,
+                transitionBuilder: (child, a) => FadeTransition(
+                  opacity: a,
+                  child: SlideTransition(
+                    position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
+                    child: child,
                   ),
-                  child: Column(
-                    key: ValueKey(suivi),
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      if (content.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 60),
-                          child: Center(
-                            child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
-                          ),
+                ),
+                child: Column(
+                  key: ValueKey(suivi),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (content.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: Center(
+                          child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
                         ),
-                      ...content,
-                    ],
-                  ),
+                      ),
+                    ...content,
+                  ],
                 ),
               ),
             ),
           ),
         ),
+        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 60)),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 56 : (working ? 104 : 92))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [

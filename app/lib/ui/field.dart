@@ -1,3 +1,5 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -134,7 +136,12 @@ class Composer extends StatefulWidget {
     this.autofocus = false,
     this.onEmptySend,
     this.commands = const [],
+    this.glass = false,
   });
+
+  /// Frosted: see-through and blurred, for a field the thread passes
+  /// under (an agent's page).
+  final bool glass;
 
   final TextEditingController? controller;
   final FocusNode? focusNode;
@@ -240,6 +247,19 @@ class _ComposerState extends State<Composer> {
     super.dispose();
   }
 
+  /// Glass: the blurred thread behind the field's own see-through color.
+  Widget _frost(Widget surface) => !widget.glass
+      ? surface
+      : Stack(children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(26),
+              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
+            ),
+          ),
+          surface,
+        ]);
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
@@ -248,9 +268,9 @@ class _ComposerState extends State<Composer> {
       onTap: _focus.requestFocus,
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
-        child: Surface(
+        child: _frost(Surface(
           radius: 26,
-          color: focused ? ui.thumb : ui.track,
+          color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
           shadows: focused ? ui.focusRing : ui.inset,
           padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
           child: ConstrainedBox(
@@ -277,7 +297,7 @@ class _ComposerState extends State<Composer> {
               ],
             ),
           ),
-        ),
+        )),
       ),
     );
     final options = widget.options;

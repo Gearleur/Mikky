@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter, TileMode;
 
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -74,26 +75,70 @@ class SideHead extends StatelessWidget {
   }
 }
 
-/// The thread fading out at the very top, under the floating buttons of
-/// an agent's page: no band, it still goes up to the top (user request,
-/// 2026-09-30).
-class TopFade extends StatelessWidget {
-  const TopFade({super.key, required this.child, this.height = 60});
+/// A soft blur on the edge of a page, stronger at the edge, gone
+/// further in, with a veil of the window's color: the thread passes under
+/// the floating buttons at the top and under the field at the bottom
+/// (user request, 2026-09-30: « ultra smooth, ultra moderne »). Layers of
+/// light blur, each a little shorter than the last, stack up towards the
+/// edge. Still: costs nothing when nothing moves.
+class EdgeBlur extends StatelessWidget {
+  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8});
 
-  final Widget child;
+  /// The top edge (else the bottom).
+  final bool top;
   final double height;
+  final int layers;
+
+  /// Blur of each layer; they add up towards the edge.
+  final double sigma;
+
+  /// Opacity of the window's color at the edge.
+  final double veil;
 
   @override
-  Widget build(BuildContext context) => ShaderMask(
-    blendMode: BlendMode.dstIn,
-    shaderCallback: (bounds) => LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: const [Color(0x00000000), Color(0xFF000000)],
-      stops: [0, (height / bounds.height).clamp(0.0, 1.0)],
-    ).createShader(bounds),
-    child: child,
-  );
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final step = height / layers;
+    return IgnorePointer(
+      child: SizedBox(
+        height: height,
+        child: Stack(
+          children: [
+            for (var i = 0; i < layers; i++)
+              Positioned(
+                // Off the window's sides: the blur would take in its edge.
+                left: 8,
+                right: 8,
+                top: top ? 0 : step * i,
+                bottom: top ? step * i : 0,
+                child: ClipRect(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.clamp),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+              ),
+            Positioned.fill(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: top ? Alignment.topCenter : Alignment.bottomCenter,
+                    end: top ? Alignment.bottomCenter : Alignment.topCenter,
+                    colors: [
+                      ui.island.withValues(alpha: veil),
+                      ui.island.withValues(alpha: veil * .45),
+                      ui.island.withValues(alpha: 0),
+                    ],
+                    stops: const [0, .45, 1],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative
