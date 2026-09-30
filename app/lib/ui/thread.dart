@@ -7,6 +7,7 @@ import 'icons.dart';
 import 'markdown.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
+import 'sliding_hover.dart';
 import 'tokens.dart';
 
 /// What a step of the metro line is (`.ti`, `ux-a.html`).
@@ -354,6 +355,19 @@ class _HoverRowState extends State<HoverRow> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     if (widget.onTap == null) return Padding(padding: widget.padding, child: widget.child);
+    // In a task: the sliding square shows the hover.
+    if (SlidingHover.maybeOf(context) != null) {
+      return HoverTarget(
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Padding(padding: widget.padding, child: widget.child),
+          ),
+        ),
+      );
+    }
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _hover = true),
@@ -457,58 +471,63 @@ class _TaskSectionState extends State<TaskSection> {
         ],
       ],
     );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Level with the text of the messages: the hover grey reaches out a
-        // little on the left instead of pushing the row right.
-        Transform.translate(
-          offset: const Offset(-4, 0),
-          child: HoverRow(
-            onTap: foldable ? () => setState(() => _open = !_open) : null,
-            padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
-            child: head,
-          ),
-        ),
-        _fold(
-          context,
-          _open && foldable,
-          Container(
-            margin: const EdgeInsets.only(left: 6, bottom: 4),
-            padding: const EdgeInsets.only(left: 10),
-            decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ...widget.steps,
-                if (widget.details.isNotEmpty) ...[
-                  _fold(
-                    context,
-                    _details,
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(6, 6, 0, 2),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (var i = 0; i < widget.details.length; i++)
-                            Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 8), child: widget.details[i]),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: HoverRow(
-                      onTap: () => setState(() => _details = !_details),
-                      child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(12, weight: FontWeight.w500, color: ui.text3)),
-                    ),
-                  ),
-                ],
-              ],
+    // The sliding square of the Oui / Non answers as hover (user request,
+    // 2026-09-30).
+    return SlidingHover(
+      radius: 9,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Level with the text of the messages: the hover grey reaches out a
+          // little on the left instead of pushing the row right.
+          Transform.translate(
+            offset: const Offset(-4, 0),
+            child: HoverRow(
+              onTap: foldable ? () => setState(() => _open = !_open) : null,
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+              child: head,
             ),
           ),
-        ),
-      ],
+          _fold(
+            context,
+            _open && foldable,
+            Container(
+              margin: const EdgeInsets.only(left: 6, bottom: 4),
+              padding: const EdgeInsets.only(left: 10),
+              decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...widget.steps,
+                  if (widget.details.isNotEmpty) ...[
+                    _fold(
+                      context,
+                      _details,
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(6, 6, 0, 2),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            for (var i = 0; i < widget.details.length; i++)
+                              Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 8), child: widget.details[i]),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: HoverRow(
+                        onTap: () => setState(() => _details = !_details),
+                        child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(12, weight: FontWeight.w500, color: ui.text3)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

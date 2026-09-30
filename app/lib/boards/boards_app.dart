@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
+import '../ui/sliding_hover.dart';
 import '../ui/tokens.dart';
 import 'board_brand.dart';
 import 'board_components.dart';
@@ -153,28 +153,31 @@ class _Sidebar extends StatelessWidget {
             Text('Planches', style: uiText(17, weight: FontWeight.w600, color: ui.text)),
           ]),
           const SizedBox(height: 18),
-          for (var i = 0; i < boards.length; i++)
-            HoverBuilder(
-              builder: (context, hover) => MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  onTap: () => onSelect(i),
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 140),
-                    margin: const EdgeInsets.only(bottom: 2),
-                    padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                    decoration: BoxDecoration(
-                      color: i == selected ? ui.well : (hover ? ui.hover : null),
-                      borderRadius: BorderRadius.circular(10),
+          // The hover and the choice: the sliding square of Oui / Non (user
+          // request, 2026-09-30).
+          SlidingHover(
+            radius: 10,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+              for (var i = 0; i < boards.length; i++)
+                HoverTarget(
+                  selected: i == selected,
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => onSelect(i),
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                          Text(boards[i].name, style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: ui.text)),
+                          Text(boards[i].note, maxLines: 2, style: uiText(11.5, color: ui.text3, height: 1.35)),
+                        ]),
+                      ),
                     ),
-                    child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(boards[i].name, style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: ui.text)),
-                      Text(boards[i].note, maxLines: 2, style: uiText(11.5, color: ui.text3, height: 1.35)),
-                    ]),
                   ),
                 ),
-              ),
-            ),
+            ]),
+          ),
           const Spacer(),
           Text(
             'Glisser : déplacer (partout, ou Espace, ou le bouton du milieu) · Molette : défiler · Maj : de côté · Ctrl : zoom',

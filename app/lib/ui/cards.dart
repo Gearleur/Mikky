@@ -6,6 +6,7 @@ import 'feedback.dart';
 import 'icons.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
+import 'sliding_hover.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -270,17 +271,22 @@ class AgentCard extends StatelessWidget {
   }
 
   Widget _pressable(Widget card) {
-    // A light grey under the mouse, like every row that opens something.
-    final hovered = HoverBuilder(
-      enabled: onTap != null,
-      builder: (context, hover) {
-        final ui = MikkyUi.of(context);
-        return AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
-          decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
-          child: card,
-        );
-      },
+    // In a list with the sliding square (the home), the square shows the
+    // hover; alone, a light grey under the mouse.
+    final hovered = Builder(
+      builder: (context) => SlidingHover.maybeOf(context) != null && onTap != null
+          ? HoverTarget(child: card)
+          : HoverBuilder(
+              enabled: onTap != null,
+              builder: (context, hover) {
+                final ui = MikkyUi.of(context);
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 140),
+                  decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
+                  child: card,
+                );
+              },
+            ),
     );
     final pressable = Pressable(onTap: onTap, pressedScale: .98, child: hovered);
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);

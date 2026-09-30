@@ -7,6 +7,7 @@ import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
+import '../ui/sliding_hover.dart';
 import '../ui/tabs.dart';
 import '../ui/thread.dart';
 import '../ui/tokens.dart';
@@ -210,7 +211,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
     ),
     BoardSection(
       title: 'Lignes de l’accueil',
-      note: 'Pas de cartes : des lignes, un fond gris au survol. Le logo de l’outil à gauche ; il tourne pendant le travail, sautille quand l’agent attend.',
+      note: 'Pas de cartes : des lignes. Au survol, le carré blanc de Oui / Non glisse sous la ligne (ressort des sélecteurs) et revient sur la ligne choisie. Le logo de l’outil à gauche ; il tourne pendant le travail, sautille quand l’agent attend.',
       frames: [
         BoardFrame(
           label: 'Titres de groupes',
@@ -222,8 +223,29 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           ]),
         ),
         BoardFrame(
+          label: 'Survol : le carré qui glisse',
+          note: 'Le survol de base, partout où il y a une liste : accueil, étapes du chat, colonne des planches. Posé sur la ligne choisie.',
+          child: _Tray([
+            SlidingHover(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                for (final (i, t) in ['Marque', 'Composants', 'Accueil', 'Agent'].indexed)
+                  HoverTarget(
+                    selected: i == 1,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                      child: Text(t, style: uiText(14, weight: i == 1 ? FontWeight.w600 : FontWeight.w500, color: ui.text)),
+                    ),
+                  ),
+              ]),
+            ),
+          ], width: 260),
+        ),
+        BoardFrame(
           label: 'Agents',
           child: _Tray([
+            SlidingHover(
+              radius: 14,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             AgentCard(
               status: UiStatus.approval,
               title: 'Met à jour le site',
@@ -238,6 +260,8 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
             AgentCard(status: UiStatus.thinking, title: 'Prépare le plan de l’API', who: '', brand: Brand.codex, subtitle: 'Réfléchit au plan', pinned: true, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
+              ]),
+            ),
           ], width: 320),
         ),
       ],

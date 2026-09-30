@@ -11,6 +11,7 @@ import '../ui/feedback.dart';
 import '../ui/motion.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import '../ui/sliding_hover.dart';
 import 'agent_page.dart';
 import 'new_agent_page.dart';
 import 'session_menu.dart';
@@ -268,7 +269,8 @@ class HomePage extends StatelessWidget {
             ? const _Empty()
             : SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 2, 16, 72),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+                // The rows' hover: the sliding square of Oui / Non.
+                child: SlidingHover(radius: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body)),
               ),
       ),
       Positioned(right: 16, bottom: 16, child: RoundButton('go', size: 46, ink: true, onPressed: () => open('new'), tooltip: 'Nouvel agent')),

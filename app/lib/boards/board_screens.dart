@@ -11,6 +11,7 @@ import '../ui/icons.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
+import '../ui/sliding_hover.dart';
 import '../ui/thread.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
@@ -116,7 +117,7 @@ class _HomeMockState extends State<HomeMock> {
                 )
               : SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(16, 2, 16, 72),
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+                  child: SlidingHover(radius: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body)),
                 ),
         ),
         Positioned(right: 16, bottom: 16, child: RoundButton('go', size: 46, ink: true, onPressed: () {}, tooltip: 'Nouvel agent')),
