@@ -81,11 +81,12 @@ class _HomeMockState extends State<HomeMock> {
           subtitle: s,
           style: AgentCardStyle.waiting,
           onTap: () {},
+          onMenu: () {},
           actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
         ),
     ]);
     group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length, [
-      for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: w, brand: b, subtitle: s, onTap: () {}),
+      for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: w, brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
           status: UiStatus.sleeping,
@@ -94,16 +95,17 @@ class _HomeMockState extends State<HomeMock> {
           brand: b,
           subtitle: 'En pause',
           onTap: () {},
+          onMenu: () {},
           actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () {})])),
         ),
     ]);
     group('done', 'Terminés', ui.green, UiStatus.finished, widget.done.length, [
       for (final (t, b, s, w) in widget.done)
-        AgentCard(status: UiStatus.finished, title: t, who: w, brand: b, subtitle: s, style: AgentCardStyle.done, onTap: () {}),
+        AgentCard(status: UiStatus.finished, title: t, who: w, brand: b, subtitle: s, style: AgentCardStyle.done, onTap: () {}, onMenu: () {}),
     ]);
     group('old', 'Historique', ui.grey, null, widget.history, [
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
-        AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}),
+        AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}, onMenu: () {}),
     ]);
     if (widget.limits != null) {
       body.add(Padding(

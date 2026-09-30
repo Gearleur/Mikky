@@ -181,6 +181,7 @@ class AgentCard extends StatelessWidget {
               who,
               style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
             ),
+          if (!live) ?_menuStar(),
         ],
       ),
     );
@@ -223,6 +224,7 @@ class AgentCard extends StatelessWidget {
               children: [titleRow, ?subtitleText],
             ),
           ),
+          ?_menuStar(),
         ],
       );
       body = actions == null
@@ -319,10 +321,16 @@ class AgentCard extends StatelessWidget {
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
           Text(side, style: uiText(11.5, color: ui.text3, height: 1.2, tabular: true)),
+          ?_menuStar(),
         ],
       ),
     ));
   }
+
+  /// A small grey star on the right: the same menu as a right click
+  /// (pause, reprendre, arrêter, ranger…) without opening the agent (user
+  /// request, 2026-09-30).
+  Widget? _menuStar() => onMenu == null ? null : Padding(padding: const EdgeInsets.only(left: 6), child: MenuStar(onTap: onMenu!));
 }
 
 /// The Oui / Non of a waiting agent: the command, then the answers in a
@@ -508,3 +516,32 @@ double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWid
   tp.dispose();
   return w;
 }();
+
+/// A grey pixel star to press (a 24 px target around it): opens a menu.
+/// Darker under the mouse.
+class MenuStar extends StatelessWidget {
+  const MenuStar({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onTap,
+          child: HoverBuilder(
+            builder: (context, hover) => SizedBox.square(
+              dimension: 24,
+              child: Center(
+                child: AnimatedOpacity(
+                  duration: const Duration(milliseconds: 140),
+                  opacity: hover ? 1 : .7,
+                  child: const PixelStar(PixelFxPalette.grey, size: 10),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+}

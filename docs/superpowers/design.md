@@ -14,6 +14,10 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 ## 2. Direction artistique
 
+### Planche technique (2026-09-30)
+
+Page « Technique » dans `--kit`, sur le même canvas avec zoom et thèmes clair/sombre. Présentation à plat : schéma des trois couches, parcours cliquable d’une demande, transition Dart/Rust, optimisations, mesures, données et feuille de route R2–R7. Statuts toujours écrits en plus de la couleur : vert « En place », orange « Transition », violet « Prévu », bleu « À mesurer ». Le contenu est un instantané documenté, pas une télémétrie ; les anciens benchmarks sont datés et les capacités futures explicitement distinguées du code actuel.
+
 **« Mikky, le chat magique, avec de l'informatique et des pixels »** (2026-09-30).
 
 - Une interface **à plat** : noir, blanc, gris ; pas de cartes en relief, pas de blocs ; des lignes simples, des pilules, des boutons ronds.
@@ -76,6 +80,7 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
   - survol : le carré blanc qui glisse (voir Mouvement).
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.
 - Mikky en petit en haut à gauche ; bouton rond noir → en bas à droite pour un nouvel agent.
+- **Petite étoile grise à droite de chaque ligne** (demande de l'utilisateur, 2026-09-30) : l'étoile en pixels (`MenuStar`, 10 px, un peu pâle, plus nette au survol) ouvre le menu de l'agent (pause, reprendre, arrêter, VS Code, renommer, ranger…) sans ouvrir sa page ; le clic droit sur la ligne fait pareil.
 - **Agent en pause** (2026-09-30, proposé sur les planches) : dans « Travaillent », même s'il est en pause depuis longtemps ; étoile grise, « En pause », **Reprendre** à plat sous la ligne (même barre que Oui / Non).
 
 ### Page d'un agent

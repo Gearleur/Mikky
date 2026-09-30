@@ -277,16 +277,11 @@ class HomePage extends StatelessWidget {
     ]);
   }
 
+  /// A row of the home; its menu (right click, or the grey star on the
+  /// right) acts on the agent without opening it.
   Widget _card(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
-    final card = _cardOf(context, e, g, now);
-    return GestureDetector(
-      onSecondaryTap: () => showSessionMenu(host, e, rename: () => open('rename:${e.id}')),
-      child: card,
-    );
-  }
-
-  Widget _cardOf(BuildContext context, AgentEntry e, HomeGroup g, DateTime now) {
     final log = e.log;
+    void menu() => showSessionMenu(host, e, rename: () => open('rename:${e.id}'));
     final external = e.origin == AgentOrigin.external;
     final where = external ? ' · hors de Mikky' : '';
     return switch (g) {
@@ -299,6 +294,7 @@ class HomePage extends StatelessWidget {
           subtitle: 'Pose une question : ${log.detail}',
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
           status: UiStatus.approval,
@@ -309,6 +305,7 @@ class HomePage extends StatelessWidget {
           subtitle: askLabel(log),
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
+          onMenu: menu,
           actions: e.live
               ? WaitActions(
                   command: log.detail,
@@ -326,6 +323,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.working when e.status == AgentStatus.paused => AgentCard(
           status: UiStatus.sleeping,
@@ -335,6 +333,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           subtitle: 'En pause',
           onTap: () => open(e.id),
+          onMenu: menu,
           actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))])),
         ),
       HomeGroup.working => AgentCard(
@@ -345,6 +344,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.done => AgentCard(
           status: UiStatus.of(e.status),
@@ -356,6 +356,7 @@ class HomePage extends StatelessWidget {
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
           style: AgentCardStyle.done,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
       HomeGroup.history => AgentCard(
           status: UiStatus.of(e.status),
@@ -365,6 +366,7 @@ class HomePage extends StatelessWidget {
           brand: Brand.of(e.provider),
           style: AgentCardStyle.old,
           onTap: () => open(e.id),
+          onMenu: menu,
         ),
     };
   }
