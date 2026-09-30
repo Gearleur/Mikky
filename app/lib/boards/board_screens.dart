@@ -347,7 +347,6 @@ class _AgentMockState extends State<AgentMock> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
-            if (working && !widget.external) RoundButton('pause', size: 34, onPressed: () {}, tooltip: 'Mettre en pause'),
             RoundButton('more', size: 34, onPressed: () {}, tooltip: 'Plus'),
           ],
         ),
@@ -437,7 +436,7 @@ class NewAgentMock extends StatelessWidget {
 final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, attentes, fins', (context) => [
   BoardSection(
     title: 'Au travail',
-    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; pause, pendant qu’il travaille ; « ··· », le menu : pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
+    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
     frames: [
       BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working())),
       BoardFrame(label: 'Chat, avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true)),
@@ -483,7 +482,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
       BoardFrame(
         label: 'En pause',
-        note: 'Le bouton pause en haut, pendant qu’il travaille ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le menu ···.',
+        note: '« Mettre en pause » dans le menu ··· ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le même menu.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled(), paused: true),
       ),
     ],

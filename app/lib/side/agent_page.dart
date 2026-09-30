@@ -174,9 +174,9 @@ class _AgentPageState extends State<AgentPage> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [
-            // Pause: the turn stops cleanly, the session stays (« Arrêter
-            // l'agent », which ends its process, is in the ⋯ menu).
-            if (e.live && working) RoundButton('pause', size: 34, onPressed: () => _source.pause(e.id), tooltip: 'Mettre en pause'),
+            // No pause button any more: « Mettre en pause », « Reprendre »
+            // and « Arrêter l'agent » are in the ··· menu (user request,
+            // 2026-09-30).
             RoundButton(
               'more',
               size: 34,
