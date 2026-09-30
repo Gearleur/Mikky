@@ -13,6 +13,9 @@ void main() {
     expect(g(AgentStatus.thinking), HomeGroup.working);
     expect(g(AgentStatus.searching), HomeGroup.working);
     expect(g(AgentStatus.rateLimited), HomeGroup.working);
+    // Paused: unfinished work, with the ones at work, however long ago.
+    expect(g(AgentStatus.paused), HomeGroup.working);
+    expect(g(AgentStatus.paused, const Duration(days: 2)), HomeGroup.working);
     expect(g(AgentStatus.finished), HomeGroup.done);
     expect(g(AgentStatus.idle), HomeGroup.done);
     const old = Duration(days: 2);

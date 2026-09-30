@@ -58,7 +58,8 @@ void main() {
 
     final limit = started()..apply(const TurnEnded(StopReason.rateLimited, message: 'Usage limit reached, resets at 5pm'));
     expect(limit.statusAt(_at(1)), AgentStatus.rateLimited);
-    expect(limit.detail, contains('resets'));
+    // The limit, said in French, with when it lifts (the message stays in the thread).
+    expect(limit.detail, 'Limite atteinte · reprend à 17 h');
   });
 
   test('a new turn closes the one left open', () {

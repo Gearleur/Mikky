@@ -5,7 +5,8 @@ enum HomeGroup {
   /// Needs the user: a yes / no, a question, an error.
   waiting,
 
-  /// At work, or held by the subscription limit until it resets.
+  /// At work, paused by the user, or held by the subscription limit until
+  /// it resets.
   working,
 
   /// Done or stopped, recently.
@@ -29,7 +30,7 @@ HomeGroup homeGroupOf(
   // An error waits for the user a while; left alone, it is just a session
   // that ended badly (still shown red in « Terminés »).
   if (status == AgentStatus.error) return old ? HomeGroup.history : (idle > errorWaitsFor ? HomeGroup.done : HomeGroup.waiting);
-  if (status.isBusy || status == AgentStatus.rateLimited) return HomeGroup.working;
+  if (status.isBusy || status == AgentStatus.rateLimited || status == AgentStatus.paused) return HomeGroup.working;
   return old ? HomeGroup.history : HomeGroup.done;
 }
 

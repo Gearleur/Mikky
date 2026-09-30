@@ -1,4 +1,5 @@
 import '../agents/agent.dart';
+import 'rate_limit.dart';
 import 'session_event.dart';
 
 /// One line of a session's thread, as the Chat view shows it.
@@ -290,6 +291,7 @@ class SessionLog {
     }
     if (_turns.isEmpty) return '';
     final turn = _turns.last;
+    if (!turn.running && turn.reason == StopReason.rateLimited) return limitLine(limitResetsAt);
     if (!turn.running && turn.message != null) return _line(turn.message!);
     if (turn.reason == StopReason.cancelled) return '';
     for (var i = _items.length - 1; i >= turn.start; i--) {
@@ -306,6 +308,15 @@ class SessionLog {
   ToolItem? _toolFor(PermissionAsked asked) {
     final i = _tools[asked.toolCallId];
     return i == null ? null : _items[i] as ToolItem;
+  }
+
+  /// When the subscription limit that stopped the last turn lifts, if the
+  /// agent said.
+  DateTime? get limitResetsAt {
+    if (_turns.isEmpty) return null;
+    final turn = _turns.last;
+    if (turn.running || turn.reason != StopReason.rateLimited || turn.message == null) return null;
+    return limitResetOf(turn.message!, lastEventAt ?? DateTime.now());
   }
 
   static String _line(String s) {
