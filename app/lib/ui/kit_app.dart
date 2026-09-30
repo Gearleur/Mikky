@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'brand_logo.dart';
 import 'buttons.dart';
 import 'cards.dart';
 import 'feedback.dart';
@@ -580,6 +581,16 @@ class _KitPartsState extends State<KitParts> {
               ],
             ),
             const TypingDots(),
+          ]),
+        ]),
+        section('Logos des outils', [
+          Wrap(spacing: 14, runSpacing: 10, children: [
+            for (final b in Brand.values)
+              Row(mainAxisSize: MainAxisSize.min, children: [
+                BrandLogo(b, size: 20),
+                const SizedBox(width: 6),
+                Text(b.label, style: uiText(13, weight: FontWeight.w600, color: ui.text)),
+              ]),
           ]),
         ]),
         section('Fil d’un agent', [

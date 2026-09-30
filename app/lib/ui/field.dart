@@ -243,10 +243,13 @@ class _ComposerState extends State<Composer> {
 
 /// `.cchip`: an option half inside the field (folder, model).
 class ComposerChip extends StatelessWidget {
-  const ComposerChip(this.label, {super.key, this.icon, this.onTap});
+  const ComposerChip(this.label, {super.key, this.icon, this.leading, this.onTap});
 
   final String label;
   final String? icon;
+
+  /// In place of [icon]: a tool's logo…
+  final Widget? leading;
   final VoidCallback? onTap;
 
   @override
@@ -263,7 +266,7 @@ class ComposerChip extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
+            if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
             Text(
               label,
               style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),

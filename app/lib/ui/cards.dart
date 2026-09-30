@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 
+import 'brand_logo.dart';
 import 'buttons.dart';
 import 'feedback.dart';
 import 'icons.dart';
@@ -112,6 +113,7 @@ class AgentCard extends StatelessWidget {
     this.onTap,
     this.onMenu,
     this.pinned = false,
+    this.brand,
   });
 
   final UiStatus status;
@@ -129,6 +131,9 @@ class AgentCard extends StatelessWidget {
 
   /// Kept at the top of its group: a small pin before [who].
   final bool pinned;
+
+  /// The tool's logo, before [who].
+  final Brand? brand;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +163,7 @@ class AgentCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
+                    if (brand != null) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
                     Text(
                       who,
                       style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),

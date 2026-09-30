@@ -4,6 +4,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../overlay/overlay_channel.dart';
+import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/feedback.dart';
@@ -257,6 +258,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           subtitle: 'Pose une question : ${log.detail}',
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
@@ -266,6 +268,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           subtitle: askLabel(log),
           style: AgentCardStyle.waiting,
           onTap: () => open(e.id),
@@ -283,6 +286,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
           onTap: () => open(e.id),
         ),
@@ -291,6 +295,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
           onTap: () => open(e.id),
         ),
@@ -299,6 +304,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
           style: AgentCardStyle.done,
           onTap: () => open(e.id),
@@ -308,6 +314,7 @@ class HomePage extends StatelessWidget {
           title: e.name,
           who: whoOf(e),
           pinned: e.mark.pinned,
+          brand: Brand.of(e.provider),
           style: AgentCardStyle.old,
           onTap: () => open(e.id),
         ),
