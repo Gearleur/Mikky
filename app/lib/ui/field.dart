@@ -157,8 +157,9 @@ class Composer extends StatefulWidget {
   /// The agent's « / » commands.
   final List<AgentCommand> commands;
 
-  /// How far the options hang below the field.
-  static const optionsOverhang = 12.0;
+  /// How far the options hang below the field: right under it, no longer
+  /// half inside, now the field is slim (user request, 2026-09-30).
+  static const optionsOverhang = 28.0;
 
   @override
   State<Composer> createState() => _ComposerState();
@@ -253,7 +254,7 @@ class _ComposerState extends State<Composer> {
       : Stack(children: [
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(26),
+              borderRadius: BorderRadius.circular(20),
               child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
             ),
           ),
@@ -268,11 +269,13 @@ class _ComposerState extends State<Composer> {
       onTap: _focus.requestFocus,
       child: MouseRegion(
         cursor: SystemMouseCursors.text,
+        // Slim, like the latest iPhone's (user request, 2026-09-30): 40
+        // high, a full pill.
         child: _frost(Surface(
-          radius: 26,
+          radius: 20,
           color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
           shadows: focused ? ui.focusRing : ui.inset,
-          padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+          padding: const EdgeInsets.fromLTRB(15, 4, 5, 4),
           child: ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 32),
             child: Row(
@@ -291,9 +294,9 @@ class _ComposerState extends State<Composer> {
                   ),
                 ),
                 const SizedBox(width: 6),
-                RoundButton('mic', size: 32, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
-                const SizedBox(width: 6),
-                RoundButton('up', size: 32, ink: true, onPressed: _send, tooltip: 'Envoyer'),
+                RoundButton('mic', size: 30, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
+                const SizedBox(width: 2),
+                RoundButton('up', size: 30, ink: true, onPressed: _send, tooltip: 'Envoyer'),
               ],
             ),
           ),
@@ -376,7 +379,7 @@ class _CommandList extends StatelessWidget {
   }
 }
 
-/// `.cchip`: an option half inside the field (folder, model).
+/// `.cchip`: an option under the field (folder, model).
 class ComposerChip extends StatelessWidget {
   const ComposerChip(this.label, {super.key, this.icon, this.leading, this.onTap});
 

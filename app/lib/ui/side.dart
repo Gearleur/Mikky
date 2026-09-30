@@ -79,8 +79,10 @@ class SideHead extends StatelessWidget {
 /// further in, with a veil of the window's color: the thread passes under
 /// the floating buttons at the top and under the field at the bottom
 /// (user request, 2026-09-30: « ultra smooth, ultra moderne »). Layers of
-/// light blur, each a little shorter than the last, stack up towards the
-/// edge. Still: costs nothing when nothing moves.
+/// light blur stack up towards the edge; their lengths are set so the
+/// blur grows evenly from nothing (layer i reaches 1 − √(i/n) of the
+/// way), not strong from its first pixels. Still: costs nothing when
+/// nothing moves.
 class EdgeBlur extends StatelessWidget {
   const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8});
 
@@ -98,7 +100,8 @@ class EdgeBlur extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final step = height / layers;
+    // How far layer i reaches from the edge.
+    double reach(int i) => height * (1 - math.sqrt(i / layers));
     return IgnorePointer(
       child: SizedBox(
         height: height,
@@ -109,8 +112,8 @@ class EdgeBlur extends StatelessWidget {
                 // Off the window's sides: the blur would take in its edge.
                 left: 8,
                 right: 8,
-                top: top ? 0 : step * i,
-                bottom: top ? step * i : 0,
+                top: top ? 0 : height - reach(i),
+                bottom: top ? height - reach(i) : 0,
                 child: ClipRect(
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.clamp),
@@ -124,12 +127,11 @@ class EdgeBlur extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: top ? Alignment.topCenter : Alignment.bottomCenter,
                     end: top ? Alignment.bottomCenter : Alignment.topCenter,
+                    // Eased: fades in slowly from the thread's side.
                     colors: [
-                      ui.island.withValues(alpha: veil),
-                      ui.island.withValues(alpha: veil * .45),
-                      ui.island.withValues(alpha: 0),
+                      for (final k in [1.0, .72, .45, .22, .07, 0.0]) ui.island.withValues(alpha: veil * k),
                     ],
-                    stops: const [0, .45, 1],
+                    stops: const [0, .2, .4, .6, .8, 1],
                   ),
                 ),
               ),

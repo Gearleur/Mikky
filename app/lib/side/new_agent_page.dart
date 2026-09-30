@@ -210,7 +210,7 @@ class _NewAgentPageState extends State<NewAgentPage> {
       SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
       Positioned.fill(
         top: 68,
-        bottom: 90,
+        bottom: 100,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const MiniMikky(size: 64),
           const SizedBox(height: 8),
@@ -231,9 +231,9 @@ class _NewAgentPageState extends State<NewAgentPage> {
         ]),
       ),
       Positioned(
-        left: 12,
-        right: 12,
-        bottom: 14,
+        left: 20,
+        right: 20,
+        bottom: 12,
         child: Composer(
           placeholder: 'Que doit faire l’agent ?',
           autofocus: true,

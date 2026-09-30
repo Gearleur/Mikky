@@ -211,14 +211,14 @@ class _AgentMockState extends State<AgentMock> {
         Positioned.fill(
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : (working ? 104 : 92)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : (working ? 104 : 78)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
           ),
         ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
-        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 60, layers: 8, sigma: .8, veil: .55)),
+        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 52, layers: 10, sigma: .7, veil: .5)),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 80 : 68))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 82 : 54))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
@@ -228,9 +228,9 @@ class _AgentMockState extends State<AgentMock> {
         ),
         if (!readOnly)
           Positioned(
-            left: 12,
-            right: 12,
-            bottom: 14,
+            left: 20,
+            right: 20,
+            bottom: 12,
             child: Composer(
               glass: true,
               placeholder: working ? 'Écris à cet agent…' : 'Continuer avec cet agent…',
@@ -271,7 +271,7 @@ class NewAgentMock extends StatelessWidget {
         SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour')),
         Positioned.fill(
           top: 68,
-          bottom: 90,
+          bottom: 100,
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             const MiniMikky(size: 64),
             const SizedBox(height: 8),
@@ -292,9 +292,9 @@ class NewAgentMock extends StatelessWidget {
           ]),
         ),
         Positioned(
-          left: 12,
-          right: 12,
-          bottom: 14,
+          left: 20,
+          right: 20,
+          bottom: 12,
           child: Composer(
             placeholder: 'Que doit faire l’agent ?',
             options: Row(mainAxisSize: MainAxisSize.min, children: [
