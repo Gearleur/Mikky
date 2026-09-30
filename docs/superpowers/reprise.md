@@ -21,7 +21,7 @@ Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github
 
 ### Nouveau cap (2026-09-30, en fin de session) : `mikkyd` en Rust
 
-L'utilisateur veut un « Replicas » avec une app de bureau : `mikkyd` (Rust) qui gère les agents, d'abord sur le PC puis sur un VPS, un canal sécurisé entre agents (identités, jetons), une grande fenêtre (équipes, harnais), l'île qui continue ; le web plus tard ; optimiser l'app. **Proposition à valider : `specs/2026-09-30-mikkyd-design.md`** (architecture, ce qui va en Rust, étapes R0 à R7, 4 questions en §11). Tant qu'elle n'est pas validée, la liste ci-dessous tient toujours, mais son ordre est à revoir avec l'utilisateur.
+L'utilisateur veut un « Replicas » avec une app de bureau : `mikkyd` (Rust) qui gère les agents, d'abord sur le PC puis sur un VPS, un canal sécurisé entre agents (identités, jetons), une grande fenêtre (équipes, harnais), l'île qui continue ; le web plus tard ; optimiser l'app. **Spec validée : `specs/2026-09-30-mikkyd-design.md`** (architecture, ce qui va en Rust, étapes R0 à R7, réponses de l'utilisateur en §11). On commence par R0. La liste ci-dessous devient : nouveaux outils → R5, agents qui se parlent → R6 (la recherche A7.7 reste à faire avant), le reste à reprendre avec l'utilisateur.
 
 ### Prochaine session, dans l'ordre (demandé par l'utilisateur le 2026-09-30)
 

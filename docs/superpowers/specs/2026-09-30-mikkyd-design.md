@@ -1,6 +1,6 @@
 # Mikky — `mikkyd` : le cerveau en Rust, les machines, le VPS et le canal entre agents
 
-Créé le 2026-09-30. **Statut : proposition, à valider par l'utilisateur.** Rien n'est commencé.
+Créé le 2026-09-30. **Statut : validé par l'utilisateur le 2026-09-30**, avec ses réponses aux questions du §11.
 
 ## 1. Ce que l'utilisateur veut (2026-09-30)
 
@@ -52,7 +52,7 @@ On garde l'autre option en tête, sans la recommander : un démon en Dart compil
 - **L'app ne parle qu'au `mikkyd` du PC.** C'est lui qui se relie aux autres machines (le VPS) et les montre comme les siennes. **Un seul point de contrôle**, donc un seul bouton « tout arrêter ».
 - **Le VPS** fait tourner le même binaire (`mikkyd` pour Linux, service systemd, utilisateur `mikky` dédié). Claude et Codex y sont connectés avec l'abonnement de l'utilisateur (connexion par code, comme Codex `--device-auth` aujourd'hui).
 
-**WSL, une machine comme les autres (à choisir, §11) :** au lieu que le `mikkyd` Windows pilote `wsl.exe` et une sonde Node, on lance un `mikkyd` Linux dans WSL, relié au `mikkyd` Windows comme le VPS. On supprime la sonde et les pièges de `wsl.exe` (UTF-16, `bash -l`, chemins). Même code pour WSL et VPS.
+**WSL, une machine comme les autres (validé, §11) :** au lieu que le `mikkyd` Windows pilote `wsl.exe` et une sonde Node, on lance un `mikkyd` Linux dans WSL, relié au `mikkyd` Windows comme le VPS. On supprime la sonde et les pièges de `wsl.exe` (UTF-16, `bash -l`, chemins). Même code pour WSL et VPS.
 
 ## 4. Ce qui va en Rust, ce qui reste en Dart
 
@@ -99,7 +99,7 @@ Les agents ne se parlent jamais directement : **tout passe par `mikkyd`**, qui s
 
 ### 7.3 Droits et garde-fous
 
-- **Droits par équipe** : un agent parle à son équipe ; parler hors de l'équipe, ou à une autre machine, demande l'accord de l'utilisateur (par défaut, réglable).
+- **Droits par équipe** : au sein d'une équipe, les agents se parlent **librement, même d'une machine à l'autre** (choix de l'utilisateur, §11). Parler hors de son équipe demande l'accord de l'utilisateur.
 - **Déléguer ne donne jamais plus de droits** : une tâche déléguée par un agent en mode Demander ne peut pas lancer un agent en Auto.
 - **Les messages d'un autre agent sont des données, pas des ordres** : `mikkyd` les donne à l'agent avec leur origine, pour limiter une injection de consigne qui passerait d'agent en agent.
 - Limites : nombre de messages par minute, profondeur de délégation (A délègue à B qui délègue à C…), bouton « tout arrêter ».
@@ -113,7 +113,7 @@ Une **enveloppe structurée** (de, à, équipe, genre : message / tâche / résu
 
 - **Un harnais = un outil qui parle ACP** (ou un secours CLI), décrit par un petit fichier dans `mikkyd` : comment le lancer, vérifier qu'il est connecté, où il écrit ses sessions. Claude et Codex deviennent deux fichiers comme les autres ; OpenCode et Gemini CLI (qui parlent ACP) s'ajoutent de la même façon, pi et OpenClaw si c'est possible sans clé d'API.
 - **Une équipe** : un nom, un dossier ou un dépôt, des agents avec un rôle (chef, exécutant, relecteur), chacun son harnais, son modèle, ses permissions et son **worktree**. Un canal par équipe (§7), un tableau de tâches. C'est la base des boucles « Chef et équipe » et « Codeur et relecteur » (idées 30-31).
-- **Écrire son propre harnais : à trancher (§11).** Aujourd'hui, la règle est « abonnements seulement » et « Mikky n'est pas un harnais ». Un harnais maison devrait appeler le modèle lui-même, donc avec une clé d'API. À vérifier : à notre connaissance, l'abonnement Claude n'est pas prévu pour un harnais tiers. Si on le veut quand même, ce serait un programme à part, qui parle ACP, que Mikky lance comme les autres. Le cœur de Mikky resterait « pas un harnais ».
+- **Pas de harnais maison (décidé, §11)** : on s'en tient aux harnais existants, open source compris. Les règles « abonnements seulement » et « Mikky n'est pas un harnais » restent.
 
 ## 9. La grande fenêtre (« la maison de Mikky », idées §2 A)
 
@@ -127,7 +127,7 @@ Chaque étape se termine par une vérification à l'écran avec l'utilisateur, u
 
 **R1 — `mikkyd` fait ce que fait `mikky_agents`, sur le PC.** Lancer / continuer / arrêter Claude et Codex (Windows et WSL), Demander / Auto, Oui / Non / Toujours, questions à choix, connexion des outils, SQLite à la place de `agents.json` (migration au premier lancement). API WebSocket. Côté app : `DaemonAgentSource`, avec l'ancien chemin Dart gardé derrière un réglage jusqu'à ce que tout marche pareil. **Liste de contrôle : tout ce qui marche dans A0 à A7.6.** Tests : le faux agent ACP et les enregistrements, rejoués en Rust.
 
-**R2 — Sessions extérieures en Rust.** Surveillance des fichiers de Claude et Codex (crate `notify`), lecteurs portés depuis le moteur Dart avec les mêmes fixtures, résumés pour l'accueil. WSL : `mikkyd` dans WSL si on le choisit (§3), sinon la sonde actuelle.
+**R2 — Sessions extérieures en Rust.** Surveillance des fichiers de Claude et Codex (crate `notify`), lecteurs portés depuis le moteur Dart avec les mêmes fixtures, résumés pour l'accueil. WSL : un `mikkyd` Linux dans WSL, relié au `mikkyd` Windows (§3), qui remplace la sonde Node et le pilotage par `wsl.exe`.
 
 **R3 — Les agents vivent sans l'app.** `mikkyd` démarre à l'ouverture de session ; quitter l'app n'arrête plus les agents ; l'app se reconnecte et retrouve tout. On supprime `mikky_agents` et les lecteurs Dart devenus inutiles.
 
@@ -143,9 +143,9 @@ Chaque étape se termine par une vérification à l'écran avec l'utilisateur, u
 
 **En parallèle : optimiser l'app.** Mesurer d'abord (`--perf`, release) : le flou en couches des pages d'agent, les longues conversations (markdown reconstruit ?), le démarrage, la taille de l'exe. Corriger ce que les mesures montrent. Avec `mikkyd`, l'app ne lance plus de processus et ne lit plus de fichiers : elle ne fait plus qu'afficher.
 
-## 11. Questions pour l'utilisateur
+## 11. Réponses de l'utilisateur (2026-09-30)
 
-1. **Écrire nos propres harnais** : on s'en tient aux harnais existants (open source compris), ou tu veux un jour un harnais maison, avec une clé d'API (§8) ?
-2. **WSL** : un `mikkyd` dans WSL, comme une machine (recommandé), ou le `mikkyd` Windows qui pilote `wsl.exe` comme aujourd'hui ?
-3. **Liaison avec le VPS** : tunnel SSH d'abord (recommandé), ou tout de suite un réseau privé (Tailscale / WireGuard) ?
-4. **Messages entre machines** : accord de l'utilisateur par défaut (recommandé), ou libres au sein d'une équipe ?
+1. **Harnais** : seulement les harnais existants, open source compris ; pas de harnais maison, pas de clé d'API (§8).
+2. **WSL** : un `mikkyd` dans WSL, relié au `mikkyd` Windows comme une machine (§3).
+3. **VPS** : tunnel SSH d'abord (§6).
+4. **Messages** : libres au sein d'une équipe, même entre machines ; l'accord de l'utilisateur seulement hors de l'équipe (§7.3).
