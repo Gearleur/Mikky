@@ -33,7 +33,7 @@ const _pastEdge = 40.0;
 
 const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
-const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10;
+const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10, _menuNotifications = 11;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -122,6 +122,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     super.initState();
     _overlay.onCursor = _onCursor;
     _overlay.onOutsideClick = _onOutsideClick;
+    _overlay.onTrayClick = _onTrayClick;
+    _overlay.onTrayMenu = _showMenu;
+    _overlay.onNotificationClick = _onNotificationClick;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
     // Real agents move on their own: the island follows them.
@@ -136,6 +139,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     WidgetsBinding.instance.removeObserver(this);
     _overlay.onCursor = null;
     _overlay.onOutsideClick = null;
+    _overlay.onTrayClick = null;
+    _overlay.onTrayMenu = null;
+    _overlay.onNotificationClick = null;
     _agentsSub?.cancel();
     _deadlineTimer?.cancel();
     _ticker.dispose();
@@ -233,6 +239,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     if (s.bubble && !prev.bubble) _mikky.twitch();
     _bubble.target = s.bubble ? 1 : 0;
+    _notify(s);
     final changed = s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
     if (changed || !_motion.isGone) _wake();
     _schedule();
@@ -289,6 +296,62 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _mikky.hover(overMikky);
     if (overMikky) _mikky.pointerMoved();
     _apply();
+  }
+
+  // ------------------------------------------------------ notifications
+
+  /// The state each agent was last notified in.
+  final Map<String, AgentStatus> _notified = {};
+
+  /// The agent of the last notification (a click on it opens its page).
+  String? _notifiedAgent;
+
+  /// A Windows notification when a real agent starts waiting for the user,
+  /// fails or finishes — unless the small window is open (the user is
+  /// looking at it). Once per agent and state.
+  void _notify(IslandSnapshot s) {
+    final ids = {for (final a in s.agents) a.id};
+    _notified.removeWhere((id, _) => !ids.contains(id));
+    if (_demo || !widget.settings.notifications) return;
+    for (final a in s.agents) {
+      final body = switch (a.status) {
+        AgentStatus.approval => 'Attend ton feu vert${a.detail.isEmpty ? '' : ' : ${a.detail}'}',
+        AgentStatus.question => 'Te pose une question${a.detail.isEmpty ? '' : ' : ${a.detail}'}',
+        AgentStatus.error => 'Erreur${a.detail.isEmpty ? '' : ' : ${a.detail}'}',
+        AgentStatus.finished => a.detail.isEmpty ? 'Terminé' : 'Terminé : ${a.detail}',
+        _ => null,
+      };
+      if (body == null) {
+        _notified.remove(a.id);
+        continue;
+      }
+      if (_notified[a.id] == a.status) continue;
+      _notified[a.id] = a.status;
+      if (_sideOpen) continue;
+      _notifiedAgent = a.id;
+      _overlay.notify(a.name, body);
+    }
+  }
+
+  /// A click on the icon in the notification area: open or close.
+  void _onTrayClick() {
+    final now = _clock.now;
+    if (_snap.shape == IslandShape.open) {
+      _machine.close(now);
+    } else {
+      _machine.click(now);
+      _overlay.activate();
+    }
+    _apply();
+  }
+
+  /// A click on a notification: the island opens on that agent.
+  void _onNotificationClick() {
+    final id = _notifiedAgent;
+    if (_snap.shape != IslandShape.open) _machine.click(_clock.now);
+    _overlay.activate();
+    _apply();
+    if (id != null && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
   }
 
   /// A click elsewhere closes the island the user opened (click, hover), like
@@ -412,6 +475,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       const MenuEntry(_menuDemoAdd, 'Démo : ajouter un agent'),
       if (_demo) const MenuEntry(_menuDemoStop, 'Démo : arrêter (retour aux vrais agents)'),
       const MenuEntry(_menuTuning, 'Réglage de Mikky…'),
+      MenuEntry(_menuNotifications, 'Notifications', checked: s.notifications),
       const MenuEntry.separator(),
       const MenuEntry(_menuQuit, 'Quitter'),
     ]);
@@ -449,6 +513,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         _demo = false;
         _machine.setAgents(_source.agents, now);
         _apply();
+      case _menuNotifications:
+        s.notifications = !s.notifications;
+        unawaited(s.save());
       case _menuTuning:
         // A normal window, in its own process (see windows/runner/main.cpp).
         unawaited(Process.start(Platform.resolvedExecutable, const ['--tuning'], mode: ProcessStartMode.detached));

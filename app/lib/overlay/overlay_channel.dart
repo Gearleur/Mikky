@@ -21,11 +21,23 @@ class OverlayChannel {
   /// menus and dialogs (the click goes on to the app below).
   void Function()? onOutsideClick;
 
+  /// The icon in the notification area: left click, right click, and a
+  /// click on a notification.
+  void Function()? onTrayClick;
+  void Function()? onTrayMenu;
+  void Function()? onNotificationClick;
+
   Rect? _hitRect;
 
   Future<void> _handle(MethodCall call) async {
     if (call.method == 'outsideClick') {
       onOutsideClick?.call();
+    } else if (call.method == 'trayClick') {
+      onTrayClick?.call();
+    } else if (call.method == 'trayMenu') {
+      onTrayMenu?.call();
+    } else if (call.method == 'notificationClick') {
+      onNotificationClick?.call();
     } else if (call.method == 'cursor') {
       final args = call.arguments as List<Object?>;
       onCursor?.call(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
@@ -63,6 +75,9 @@ class OverlayChannel {
   /// Windows' folder picker, on top of the island. Null if cancelled.
   /// WSL folders are reachable through `\\wsl.localhost\…`.
   Future<String?> pickFolder(String title) => _channel.invokeMethod<String>('pickFolder', title);
+
+  /// A Windows notification (from the icon in the notification area).
+  void notify(String title, String body) => _channel.invokeMethod<void>('notify', [title, body]);
 
   void quit() => _channel.invokeMethod<void>('quit');
 }

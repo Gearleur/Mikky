@@ -109,6 +109,13 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     });
   }
 
+  /// Opens agent [id]'s page from anywhere (a click on its notification).
+  void openAgent(String id) {
+    if (_pages.last.key == 'agent:$id') return;
+    setState(() => _pages.removeRange(1, _pages.length));
+    _open(id);
+  }
+
   /// The new agent becomes its agent page (a short fade, no slide).
   void _replaceTop(_Page page) => setState(() => _pages[_pages.length - 1] = page);
 
