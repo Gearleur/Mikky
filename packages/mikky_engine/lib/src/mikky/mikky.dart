@@ -64,7 +64,7 @@ enum MikkyForm {
   heart,
 
   /// Himself without ears, his fur standing out a little more all around:
-  /// a ball of fur (working; hopping while thinking).
+  /// a ball of fur, hopping (thinking).
   furball,
 
   /// The bar of a "!", without eyes; a little fur ball below, well apart,
@@ -195,17 +195,14 @@ class Mikky {
   bool _approvalBang = false;
   int _hopsLeft = 0;
 
-  /// Working and thinking go round too: the fur ball (or the hopping ball)
-  /// for a while, then his usual self for a moment (user request,
-  /// 2026-09-29).
+  /// Thinking goes round too: the hopping fur ball for a while, then his
+  /// usual self for a moment (user request, 2026-09-29). Working is the
+  /// mascot himself, hopping like the ball (user request, 2026-09-30).
   bool _formOn = false;
   double _formToggleAt = 0;
 
-  /// How long each phase lasts, seconds: (fur ball, cat).
-  (double, double) _cycle(MikkyState s) => switch (s) {
-        MikkyState.working => (6 + _random.nextDouble() * 3, 2.5 + _random.nextDouble() * 1.5),
-        _ => (4 + _random.nextDouble() * 2, 2 + _random.nextDouble()),
-      };
+  /// How long each phase of thinking lasts, seconds: (fur ball, cat).
+  (double, double) _cycle() => (4 + _random.nextDouble() * 2, 2 + _random.nextDouble());
 
   MikkyState _state = MikkyState.idle;
   double _dizzyUntil = -1;
@@ -241,7 +238,6 @@ class Mikky {
     final e = _emote;
     if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
     return switch (state) {
-      MikkyState.working => _formOn ? MikkyForm.furball : MikkyForm.cat,
       MikkyState.thinking => _formOn ? MikkyForm.furball : MikkyForm.cat,
       MikkyState.approval => _approvalBang ? MikkyForm.bang : MikkyForm.cat,
       _ => MikkyForm.cat,
@@ -406,9 +402,11 @@ class Mikky {
         _burst(ParticleKind.sparkle, 8);
       case MikkyState.dizzy:
         roll(turns: 2, ms: 1100);
-      case MikkyState.working || MikkyState.thinking:
+      case MikkyState.thinking:
         _formOn = true;
-        _formToggleAt = _time + _cycle(s).$1;
+        _formToggleAt = _time + _cycle().$1;
+      case MikkyState.working:
+        break;
       case MikkyState.idle ||
             MikkyState.searching ||
             MikkyState.rateLimited ||
@@ -642,13 +640,15 @@ class Mikky {
       }
     }
     // Thinking: the fur ball hops (his own hop, squash and stretch).
-    if (st == MikkyState.thinking && _formOn && _emote == null && _morph.value > .6 && _time > _nextBeat) {
+    // Working: the mascot hops the same way, without turning into the ball.
+    final hopping = st == MikkyState.working || (st == MikkyState.thinking && _formOn && _morph.value > .6);
+    if (hopping && _emote == null && _time > _nextBeat) {
       hop(height: .2);
       _nextBeat = _time + .66;
     }
-    if ((st == MikkyState.working || st == MikkyState.thinking) && _time > _formToggleAt) {
+    if (st == MikkyState.thinking && _time > _formToggleAt) {
       _formOn = !_formOn;
-      final (on, off) = _cycle(st);
+      final (on, off) = _cycle();
       _formToggleAt = _time + (_formOn ? on : off);
       // Back to himself for a moment: a blink and an ear flick.
       if (!_formOn) {

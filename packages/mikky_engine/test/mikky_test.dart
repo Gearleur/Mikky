@@ -203,23 +203,22 @@ void main() {
   });
 
   group('forms: Mikky turns into the sign', () {
-    test('working: the fur ball, without shaking; thinking: the same fur ball, hopping', () {
+    test('working: the mascot himself, hopping; thinking: the fur ball, hopping the same way', () {
+      List<double> ups(Mikky m) => [
+            for (var i = 0; i < 90; i++) MikkyGeometry.of(m..update(1 / 60), 100).translateY,
+          ];
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
-      run(m, 2);
-      expect((m.form, m.badge), (MikkyForm.furball, null));
-      for (var i = 0; i < 60; i++) {
+      for (var i = 0; i < 60 * 12; i++) {
         m.update(1 / 60);
+        expect(m.form, MikkyForm.cat);
+        expect(m.badge, isNull);
         expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
       }
+      expect(ups(m).reduce(math.min), lessThan(-12));
       m.setState(MikkyState.thinking);
       run(m, 1.5);
       expect(m.form, MikkyForm.furball);
-      final ups = <double>[];
-      for (var i = 0; i < 90; i++) {
-        m.update(1 / 60);
-        ups.add(MikkyGeometry.of(m, 100).translateY);
-      }
-      expect(ups.reduce(math.min), lessThan(-12));
+      expect(ups(m).reduce(math.min), lessThan(-12));
     });
 
     test('the fur ball is the mascot without ears, his own fur standing out all around', () {
@@ -246,7 +245,7 @@ void main() {
 
       final cat = Mikky(random: math.Random(5));
       run(cat, 2);
-      final ball = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      final ball = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
       run(ball, 2);
       // No ears: the top is the head, not the ear tips.
       expect(top(ball), greaterThan(top(cat) + 30));
@@ -258,8 +257,8 @@ void main() {
       expect(eyes.first.shape, EyeShape.oval);
     });
 
-    test('working and thinking go back to the cat now and then', () {
-      for (final s in [MikkyState.working, MikkyState.thinking]) {
+    test('thinking goes back to the cat now and then', () {
+      for (final s in [MikkyState.thinking]) {
         final m = Mikky(random: math.Random(5))..setState(s);
         final phases = <String>[];
         for (var i = 0; i < 60 * 30; i++) {
@@ -272,7 +271,7 @@ void main() {
     });
 
     test('from one form to another, he goes back through the cat', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
       run(m, 2);
       m.setState(MikkyState.approval);
       var sawCat = false;
@@ -296,7 +295,7 @@ void main() {
     });
 
     test('back to the cat when the state has no form', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
       run(m, 2);
       m.setState(MikkyState.error);
       run(m, 3);
