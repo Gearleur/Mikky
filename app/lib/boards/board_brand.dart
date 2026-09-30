@@ -51,11 +51,11 @@ class _Missing extends StatelessWidget {
   const _Missing();
 
   static const _items = [
-    ('Nom et icône', 'Mikky : validé. L’icône : une des étoiles signature (A, B, C) en haut de cette planche, à choisir ; puis l’icône de l’app et de la zone de notification.'),
-    ('Couleur signature', 'Validée : l’orange de ta capture et le même en bleu. Reste à dire où elles servent dans l’interface (liens, focus, sélection, le bouton « go » ?).'),
+    ('Nom et logo', 'Mikky : validé. Le logo, c’est Mikky lui-même : quatre propositions en haut de cette planche, à choisir ; puis l’icône de l’app et de la zone de notification.'),
+    ('Couleurs signature', 'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).'),
     ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
     ('Typographie', 'En essai : choisis une police à gauche, toutes les planches passent dedans. Puis une échelle nommée (titre, corps, légende, code), et une police pixel pour les titres ou les chiffres ?'),
-    ('Mikky en pixels', 'Mikky est dessiné en courbes ; la marque est en pixels. Une version pixel de Mikky (icône, zone de notification) ? À voir.'),
+    ('Mikky en pixels', 'Une première tête en pixels est dans les propositions de logo (D). À voir.'),
     ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
     ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),
     ('Sons', 'Aucun son. Un petit « bip » pixel quand un agent attend ou finit ?'),
@@ -113,37 +113,97 @@ class _Tile extends StatelessWidget {
   );
 }
 
-/// One proposal for the icon: big on black and on white, then at the
-/// sizes Windows shows (taskbar, notification area).
-class _IconProposal extends StatelessWidget {
-  const _IconProposal(this.rows);
+/// The ways to show Mikky as the logo (user request, 2026-09-30: the
+/// mascot himself, more present).
+enum _LogoKind {
+  /// The whole cat, in the middle.
+  whole,
 
-  final List<String> rows;
+  /// His head, big, filling the square.
+  head,
+
+  /// Peeking over the bottom edge.
+  peek,
+
+  /// In pixels.
+  pixel,
+}
+
+/// Mikky as the logo on a square: the real drawing (he blinks and looks
+/// around), or the pixel one.
+class _Logo extends StatelessWidget {
+  const _Logo(this.kind, {required this.size, required this.dark, this.tile = true});
+
+  final _LogoKind kind;
+  final double size;
+  final bool dark;
+  final bool tile;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = size;
+    Widget mikky(double m, double centerY) => Positioned(
+      left: (t - m) / 2,
+      top: centerY - m * .54,
+      child: MiniMikky(size: m, animate: t >= 32),
+    );
+    final child = switch (kind) {
+      _LogoKind.whole => Center(child: MiniMikky(size: t * .95, animate: t >= 32)),
+      _LogoKind.head => Stack(clipBehavior: Clip.hardEdge, children: [mikky(t * 1.3, t * .6)]),
+      _LogoKind.peek => Stack(clipBehavior: Clip.hardEdge, children: [mikky(t * 1.3, t * .9)]),
+      _LogoKind.pixel => Center(
+        child: PixelMap(PixelMikky.head, colors: PixelMikky.colors, size: t * .78),
+      ),
+    };
+    return MikkyUiTheme(
+      ui: dark ? MikkyUi.dark : MikkyUi.light,
+      child: tile
+          ? Builder(
+              builder: (context) => _Tile(
+                // Dark: charcoal, so the black cat stands out.
+                color: dark ? const Color(0xFF2A2A2E) : const Color(0xFFFFFFFF),
+                size: t,
+                radius: t * .23,
+                line: !dark,
+                child: ClipRRect(borderRadius: BorderRadius.circular(t * .23), child: SizedBox.square(dimension: t, child: child)),
+              ),
+            )
+          : SizedBox.square(dimension: t, child: child),
+    );
+  }
+}
+
+/// One proposal for the logo: big on white and on black, then at the
+/// sizes Windows shows (taskbar, notification area).
+class _LogoProposal extends StatelessWidget {
+  const _LogoProposal(this.kind);
+
+  final _LogoKind kind;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
       Row(mainAxisSize: MainAxisSize.min, children: [
-        _Tile(color: const Color(0xFF0B0B0C), child: SignatureStar(rows, size: 76)),
+        _Logo(kind, size: 120, dark: false),
         const SizedBox(width: 12),
-        _Tile(color: const Color(0xFFFFFFFF), line: true, child: SignatureStar(rows, size: 76)),
+        _Logo(kind, size: 120, dark: true),
       ]),
       const SizedBox(height: 12),
       Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-        for (final px in [48.0, 32.0, 24.0, 16.0]) ...[
+        for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
           Column(mainAxisSize: MainAxisSize.min, children: [
-            _Tile(color: const Color(0xFF0B0B0C), size: px, radius: px * .22, child: SignatureStar(rows, size: px * .72)),
+            _Logo(kind, size: px, dark: dark),
             const SizedBox(height: 4),
             Text('${px.round()}', style: uiText(10, color: ui.text3, tabular: true)),
           ]),
           const SizedBox(width: 10),
         ],
-        // Alone, no background: the notification area.
+        // Alone, no square: the notification area.
         Column(mainAxisSize: MainAxisSize.min, children: [
-          SignatureStar(rows, size: 16),
+          _Logo(kind, size: 20, dark: !ui.isLight, tile: false),
           const SizedBox(height: 4),
-          Text('seule', style: uiText(10, color: ui.text3)),
+          Text('seul', style: uiText(10, color: ui.text3)),
         ]),
       ]),
     ]);
@@ -173,8 +233,8 @@ class _FontSample extends StatelessWidget {
       width: 380,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const SignatureStar(SignatureStar.small, size: 30),
-          const SizedBox(width: 10),
+          const MiniMikky(size: 46),
+          const SizedBox(width: 6),
           Text('Mikky', style: t(36, weight: FontWeight.w600, height: 1.1, tracking: pixel ? 0 : -.02)),
         ]),
         const SizedBox(height: 10),
@@ -195,41 +255,14 @@ class _FontSample extends StatelessWidget {
 final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
-    BoardSection(
-      title: 'Signature',
-      note: 'Les deux couleurs de Mikky : l’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). L’étoile : bleue au milieu, orange aux extrémités.',
+    const BoardSection(
+      title: 'Logo',
+      note: 'Le logo, c’est Mikky lui-même : la mascotte, bien présente. Sur blanc et sur gris anthracite, puis aux tailles de Windows (barre des tâches, zone de notification).',
       frames: [
-        BoardFrame(
-          label: 'Orange et bleu',
-          note: 'Du cœur au bord, quatre niveaux chacun.',
-          width: 330,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  for (final c in pal.levels)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Container(width: 78, height: 56, color: c),
-                        const SizedBox(height: 4),
-                        Text(_hex(c), style: uiText(10.5, mono: true, color: ui.text3)),
-                      ]),
-                    ),
-                ]),
-              ),
-          ]),
-        ),
-        const BoardFrame(label: 'A · petite étoile', note: 'Sept pixels de côté : le cœur et ses diagonales en bleu, rouge puis orange au bout.', width: 252, child: _IconProposal(SignatureStar.small)),
-        const BoardFrame(label: 'B · grande étoile', note: 'Neuf pixels : des bras plus longs, le bleu va jusqu’au plus foncé avant l’orange.', width: 252, child: _IconProposal(SignatureStar.big)),
-        const BoardFrame(label: 'C · croix', note: 'Le cœur en bleu, les bras orange qui s’éclaircissent au bout.', width: 252, child: _IconProposal(SignatureStar.block)),
-        const BoardFrame(
-          label: 'Vivante',
-          note: 'Le feu d’artifice calme, aux deux couleurs : démarrage, « Nouvel agent ».',
-          width: 200,
-          child: _Tile(color: Color(0xFF0B0B0C), size: 150, radius: 34, child: SignatureFirework(size: 96)),
-        ),
+        BoardFrame(label: 'A · Mikky entier', note: 'Le vrai dessin, au milieu : il cligne et regarde autour.', width: 252, child: _LogoProposal(_LogoKind.whole)),
+        BoardFrame(label: 'B · La tête en grand', note: 'Ses oreilles et ses yeux remplissent le carré.', width: 252, child: _LogoProposal(_LogoKind.head)),
+        BoardFrame(label: 'C · Qui dépasse', note: 'Il passe la tête par le bas du carré.', width: 252, child: _LogoProposal(_LogoKind.peek)),
+        BoardFrame(label: 'D · En pixels', note: 'Sa tête en 16 × 16, comme les feux d’artifice.', width: 252, child: _LogoProposal(_LogoKind.pixel)),
       ],
     ),
     BoardSection(
@@ -314,6 +347,44 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
                 child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, kind: k, size: 40))]),
               ),
             const ThinkingStar(size: 40),
+          ]),
+        ),
+        BoardFrame(
+          label: 'Couleurs signature',
+          note: 'L’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). Gardées pour plus tard.',
+          width: 330,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  for (final c in pal.levels)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Container(width: 78, height: 56, color: c),
+                        const SizedBox(height: 4),
+                        Text(_hex(c), style: uiText(10.5, mono: true, color: ui.text3)),
+                      ]),
+                    ),
+                ]),
+              ),
+          ]),
+        ),
+        BoardFrame(
+          label: 'Feux d’artifice signature',
+          note: 'Chaque effet en orange, en bleu ; et le calme aux deux couleurs, bleu au cœur, orange au bout.',
+          width: 360,
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  for (final k in [PixelFxKind.fireworkSoft, PixelFxKind.firework, PixelFxKind.sparkle, PixelFxKind.galaxy])
+                    Padding(padding: const EdgeInsets.only(right: 12), child: PixelFx(kind: k, palette: pal, size: 56, slow: k == PixelFxKind.fireworkSoft ? 2 / 3 : 1)),
+                ]),
+              ),
+            const SignatureFirework(size: 56),
           ]),
         ),
       ],
