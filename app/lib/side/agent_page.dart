@@ -95,7 +95,7 @@ class _AgentPageState extends State<AgentPage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
+      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(e.id, (t) => _source.send(e.id, t)))),
       if (e.status == AgentStatus.paused)
         Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () => _source.unpause(e.id)))
       else if ((log.pending.isNotEmpty || log.question != null) && e.live)

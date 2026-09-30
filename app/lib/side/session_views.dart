@@ -1,7 +1,9 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/enchant.dart';
 import '../ui/cards.dart';
 import '../ui/buttons.dart';
 import '../ui/feedback.dart';
@@ -359,10 +361,15 @@ List<Widget> _mainSteps(SessionLog log, TurnSpan turn, List<ToolItem> tools, Mik
 /// did — its plan, what it thought and said on the way, every tool — then
 /// its answer, the whole width (user request, 2026-09-30). The last task
 /// is open, older ones folded.
-List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi}) {
+List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi, LimitHooks? limit}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
   void gap([double h = 8]) => out.add(SizedBox(height: h));
+  // Under the spell, the relaunch got through: the spell is over.
+  final last = log.turns.lastOrNull;
+  if (limit != null && last != null && !last.running && last.reason != StopReason.rateLimited) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => Enchantments.instance.done(limit.id));
+  }
   for (final turn in log.turns) {
     final items = _itemsOf(log, turn);
     final users = items.whereType<UserItem>().toList();
@@ -429,7 +436,7 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
         out.add(ChatMessage(me: false, text: answer.text.trim()));
         gap(10);
       }
-      out.add(LimitCard(resetsAt: log.limitResetsAt, message: turn.message));
+      out.add(_LimitBlock(log: log, message: turn.message, hooks: limit));
       gap(14);
     } else if (answer != null) {
       out.add(ChatMessage(me: false, text: answer.text.trim()));
@@ -442,23 +449,129 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
   return out;
 }
 
-/// A subscription's limit reached: the yellow state, when it lifts, and
-/// what the agent said, small (user request, 2026-09-30).
+/// What an agent's page lends the thread to act on a limit: which agent,
+/// and how to write to it.
+class LimitHooks {
+  const LimitHooks(this.id, this.send);
+
+  final String id;
+  final Future<void> Function(String text) send;
+}
+
+/// « 17 h », « 17 h 05 ».
+String hourText(DateTime t) {
+  final l = t.toLocal();
+  return l.minute == 0 ? '${l.hour} h' : '${l.hour} h ${l.minute.toString().padLeft(2, '0')}';
+}
+
+/// The limit card, tied to the spell of its agent: « Ensorceler » makes
+/// Mikky relaunch the task by itself when the limit lifts.
+class _LimitBlock extends StatefulWidget {
+  const _LimitBlock({required this.log, this.message, this.hooks});
+
+  final SessionLog log;
+  final String? message;
+  final LimitHooks? hooks;
+
+  @override
+  State<_LimitBlock> createState() => _LimitBlockState();
+}
+
+class _LimitBlockState extends State<_LimitBlock> {
+  final _spells = Enchantments.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _spells.addListener(_changed);
+    _checkAgain();
+  }
+
+  @override
+  void didUpdateWidget(_LimitBlock old) {
+    super.didUpdateWidget(old);
+    _checkAgain();
+  }
+
+  @override
+  void dispose() {
+    _spells.removeListener(_changed);
+    super.dispose();
+  }
+
+  void _changed() {
+    // A spell cast while the tree is being built (a page opening): redraw
+    // once it is done.
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() {});
+      });
+    } else {
+      setState(() {});
+    }
+  }
+
+  // A relaunch sent under the spell and stopped by the limit again: wait
+  // for the next reset.
+  void _checkAgain() {
+    final h = widget.hooks, at = widget.log.lastEventAt;
+    if (h == null || at == null) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _spells.limitedAgain(h.id, at, widget.log.limitResetsAt, h.send));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final h = widget.hooks;
+    final resets = widget.log.limitResetsAt;
+    return LimitCard(
+      resetsAt: resets,
+      message: widget.message,
+      relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
+      relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
+      onEnchant: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
+      onCancel: h == null ? null : () => _spells.cancel(h.id),
+      onNow: h == null ? null : () => h.send(Enchantments.resumeMessage),
+    );
+  }
+}
+
+/// A subscription's limit reached: the yellow state and when it lifts
+/// (user request, 2026-09-30). « Relancer » now, or « Ensorceler »: Mikky
+/// relaunches it by itself then (violet, the magic's color, while under
+/// the spell).
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.message});
+  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onEnchant, this.onCancel, this.onNow});
 
   final DateTime? resetsAt;
   final String? message;
 
+  /// Under the spell: when Mikky relaunches it.
+  final DateTime? relaunchAt;
+
+  /// Under the spell, the relaunch sent.
+  final bool relaunched;
+  final VoidCallback? onEnchant, onCancel, onNow;
+
   @override
-  Widget build(BuildContext context) => AgentCard(
-        status: UiStatus.limited,
-        title: 'Limite de l’abonnement atteinte',
-        who: '',
-        subtitle: resetsAt == null
-            ? (message ?? 'Réessaie plus tard')
-            : 'Reprend à ${limitLine(resetsAt).split('reprend à ').last}',
-      );
+  Widget build(BuildContext context) {
+    final spell = relaunchAt != null || relaunched;
+    final actions = spell
+        ? (onCancel == null ? null : [('Annuler', onCancel)])
+        : [if (onNow != null) ('Relancer', onNow), if (onEnchant != null) ('Ensorceler', onEnchant)];
+    return AgentCard(
+      status: spell ? UiStatus.thinking : UiStatus.limited,
+      title: spell ? 'Ensorcelée' : 'Limite de l’abonnement atteinte',
+      who: '',
+      subtitle: relaunched
+          ? 'Relancée, Mikky attend la suite'
+          : relaunchAt != null
+          ? 'Se relance toute seule à ${hourText(relaunchAt!)}'
+          : resetsAt == null
+          ? (message ?? 'Réessaie plus tard')
+          : 'Reprend à ${hourText(resetsAt!)}',
+      actions: actions == null || actions.isEmpty ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: actions)),
+    );
+  }
 }
 
 /// The permission request at the bottom of the thread: what it asks, the

@@ -90,6 +90,8 @@ Sous Mikky, le **feu d'artifice de l'état le plus pressant** parmi les agents (
 ### Limite de l'abonnement
 Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 10 » (l'heure lue dans le message de Claude ou de Codex) ; dans le chat, la tâche « Limite atteinte » et une carte jaune « Limite de l'abonnement atteinte · Reprend à 17 h 10 ».
 
+**Ensorcelée** (le mode magique, 2026-09-30) : sur la carte de la limite, « Relancer » tout de suite ou **« Ensorceler »** : Mikky relancera la tâche tout seul une minute après la reprise, par un message à l'agent (« La limite de l'abonnement est levée : reprends la tâche là où tu t'étais arrêté. ») ; heure inconnue : il essaie 30 min plus tard ; si la limite retombe, il attend la reprise suivante. La carte passe en **violet**, la couleur de la magie : « Ensorcelée · Se relance toute seule à 17 h 11 », avec « Annuler ». Pour l'instant en mémoire : un redémarrage de Mikky lève les sorts.
+
 ### Page d'un agent
 - **Pas de titre ni de bandeau** : le fil remplit la page. Les boutons **flottent** dessus : retour à gauche ; à droite **pause** (deux traits, seulement pendant qu'il travaille ; remplace le carré « arrêter » le 2026-09-30, qui n'arrêtait que le tour) et **« ··· »** (menu : mettre en pause ou reprendre, **arrêter l'agent** (fin de son processus et de tout ce qu'il a lancé ; la session reste), ouvrir dans VS Code, ouvrir le dossier, renommer, épingler, archiver, marquer l'erreur comme réglée, supprimer). Le clic droit sur une ligne de l'accueil ouvre le même menu.
 - **En pause** : sous le fil, une carte grise « En pause · Travail arrêté, session gardée » avec **Reprendre**, qui dit à l'agent de continuer là où il en était ; écrire un message reprend aussi.

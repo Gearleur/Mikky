@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/enchant.dart';
 import '../side/session_views.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
@@ -191,7 +192,11 @@ class AgentMock extends StatefulWidget {
     this.external = false,
     this.scrolled = false,
     this.paused = false,
+    this.enchanted = false,
   });
+
+  /// Stopped by its limit, and already under the spell (« Ensorceler »).
+  final bool enchanted;
 
   /// Its name (the page does not show it any more; kept to tell the
   /// frames apart in the code).
@@ -218,8 +223,22 @@ class _AgentMockState extends State<AgentMock> {
   late int _view = widget.chat ? 1 : 0;
   late final _scroll = ScrollController(initialScrollOffset: widget.scrolled ? 120 : 0);
 
+  // Its own agent id for the spell, as the app's page would have.
+  late final _id = 'board-${identityHashCode(this)}';
+  late final _limit = LimitHooks(_id, (_) async {});
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.enchanted) {
+      // Seen from when the limit hit, so the spell waits until its time.
+      Enchantments.instance.enchant(_id, widget.log.limitResetsAt, _limit.send, now: widget.log.lastEventAt);
+    }
+  }
+
   @override
   void dispose() {
+    Enchantments.instance.cancel(_id);
     _scroll.dispose();
     super.dispose();
   }
@@ -234,7 +253,7 @@ class _AgentMockState extends State<AgentMock> {
     final content = <Widget>[
       if (usage.isNotEmpty)
         Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true))),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0))),
+      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: _limit)),
       if (widget.paused)
         Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
       else if (log.question != null)
@@ -384,8 +403,13 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : état jaune, et quand ça reprend, lu dans le message de l’agent.',
+        note: 'L’abonnement est au bout : état jaune, et quand ça reprend, lu dans le message de l’agent. « Relancer » tout de suite, ou « Ensorceler ».',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
+      ),
+      BoardFrame(
+        label: 'Ensorcelée',
+        note: 'Mikky la relancera tout seul quand la limite sera levée, par un message à l’agent ; en violet, la couleur de la magie.',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
       ),
       BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
       BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
