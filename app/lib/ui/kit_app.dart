@@ -137,7 +137,8 @@ class _KitHomeState extends State<KitHome> {
                     AgentCard(
                       status: UiStatus.approval,
                       title: 'Met à jour le site',
-                      who: 'Codex',
+                      who: 'WSL',
+                      brand: Brand.codex,
                       subtitle: 'Veut lancer une commande',
                       style: AgentCardStyle.waiting,
                       actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
@@ -147,14 +148,16 @@ class _KitHomeState extends State<KitHome> {
                     AgentCard(
                       status: UiStatus.working,
                       title: 'Corrige les tests du moteur',
-                      who: 'Claude',
+                      who: '',
+                      brand: Brand.claude,
                       subtitle: 'Modifie island_machine.dart',
                       onTap: () {},
                     ),
                     AgentCard(
                       status: UiStatus.thinking,
                       title: 'Prépare le plan de l’API',
-                      who: 'Claude',
+                      who: '',
+                      brand: Brand.claude,
                       subtitle: 'Réfléchit au plan',
                       onTap: () {},
                     ),

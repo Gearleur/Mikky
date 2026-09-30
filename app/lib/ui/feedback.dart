@@ -242,6 +242,83 @@ enum UiStatus {
   };
 }
 
+/// The color of a state: blue working, purple thinking, amber waiting…
+Color statusColor(MikkyUi ui, UiStatus status) => switch (status) {
+  UiStatus.working => ui.blue,
+  UiStatus.thinking => ui.purple,
+  UiStatus.approval => ui.amber,
+  UiStatus.finished => ui.green,
+  UiStatus.error => ui.red,
+  UiStatus.limited => ui.yellow,
+  UiStatus.sleeping => ui.grey,
+};
+
+/// A small matrix of dots, three high, lit column after column from left
+/// to right in the state's color, with a short trail; then a pause (user
+/// request, 2026-09-30). Slow and smooth: one pass in about 2 s.
+class DotSweep extends StatelessWidget {
+  const DotSweep(this.status, {super.key, this.columns = 7});
+
+  final UiStatus status;
+  final int columns;
+
+  static const dot = 3.0, pitch = 5.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = statusColor(MikkyUi.of(context), status);
+    return Looping(
+      key: ValueKey(status),
+      period: const Duration(milliseconds: 2600),
+      frozenAt: .45,
+      builder: (context, t) => CustomPaint(
+        size: Size((columns - 1) * pitch + dot, 2 * pitch + dot),
+        painter: _SweepPainter(t, columns, color),
+      ),
+    );
+  }
+}
+
+class _SweepPainter extends CustomPainter {
+  _SweepPainter(this.t, this.columns, this.color);
+
+  final double t;
+  final int columns;
+  final Color color;
+
+  /// How many columns the light leaves behind it.
+  static const trail = 3.2;
+
+  /// Part of the period the pass takes; the rest is a pause, all dim.
+  static const pass = .8;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    // The head goes from before the first column until its trail has left
+    // the last one.
+    final p = Curves.easeInOutSine.transform((t / pass).clamp(0, 1));
+    final head = -1.2 + p * (columns + trail + 1.2);
+    final paint = Paint();
+    for (var c = 0; c < columns; c++) {
+      final d = head - c;
+      // A soft front edge, then the trail fading out.
+      final lit = d < 0 ? (1 + d / 1.2).clamp(0.0, 1.0) : (1 - d / trail).clamp(0.0, 1.0);
+      final i = Curves.easeInOut.transform(lit);
+      for (var r = 0; r < 3; r++) {
+        paint.color = color.withValues(alpha: .16 + .84 * i);
+        canvas.drawCircle(
+          Offset(c * DotSweep.pitch + DotSweep.dot / 2, r * DotSweep.pitch + DotSweep.dot / 2),
+          DotSweep.dot / 2 + .25 * i,
+          paint,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SweepPainter old) => old.t != t || old.color != color || old.columns != columns;
+}
+
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =
 /// blue with a widening wave (1.6 s); thinking, limited, sleeping = it
 /// breathes (2.4 s, 3.2 s, 4 s); waiting for a yes = two hops then a
@@ -254,16 +331,7 @@ class StatusDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final c = switch (status) {
-      UiStatus.working => ui.blue,
-      UiStatus.thinking => ui.purple,
-      UiStatus.approval => ui.amber,
-      UiStatus.finished => ui.green,
-      UiStatus.error => ui.red,
-      UiStatus.limited => ui.yellow,
-      UiStatus.sleeping => ui.grey,
-    };
+    final c = statusColor(MikkyUi.of(context), status);
     Widget dot(double size, {Widget? child}) => Container(
       width: size,
       height: size,

@@ -18,9 +18,12 @@ class CodePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Container(
+    // In a hollow, so it shows on the raised grey cards too.
+    return Surface(
+      radius: 9,
+      color: ui.track,
+      shadows: ui.inset,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(color: ui.track, borderRadius: BorderRadius.circular(9)),
       child: Text(
         code,
         maxLines: maxLines,
@@ -142,10 +145,15 @@ class AgentCard extends StatelessWidget {
     final ui = MikkyUi.of(context);
     final old = style == AgentCardStyle.old;
     final plain = style == AgentCardStyle.done || old;
+    // At work or waiting: the tool's logo, and the dots lit in the state's
+    // color (user request, 2026-09-30). History keeps its dot.
+    final live = !plain && brand != null;
     final body = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Transform.translate(offset: const Offset(0, -4), child: StatusDot(status)),
+        live
+            ? SizedBox(width: 28, height: 20, child: Center(child: BrandLogo(brand!, size: 22)))
+            : Transform.translate(offset: const Offset(0, -4), child: StatusDot(status)),
         const SizedBox(width: 10),
         Expanded(
           child: Column(
@@ -165,11 +173,13 @@ class AgentCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 8),
                     if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
-                    if (brand != null) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
-                    Text(
-                      who,
-                      style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
-                    ),
+                    if (brand != null && !live) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
+                    if (who.isNotEmpty)
+                      Text(
+                        who,
+                        style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
+                      ),
+                    if (live) ...[if (who.isNotEmpty) const SizedBox(width: 8), DotSweep(status)],
                   ],
                 ),
               ),
@@ -189,11 +199,13 @@ class AgentCard extends StatelessWidget {
         ),
       ],
     );
+    // The grey cards stand out a little, like the buttons: they open.
     final card = Surface(
       radius: old ? 14 : 18,
-      color: plain ? null : ui.well,
+      gradient: plain ? null : ui.control,
       shadows: switch (style) {
-        AgentCardStyle.waiting => [CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
+        AgentCardStyle.waiting => [ui.highlight, ...ui.shCtl, CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
+        AgentCardStyle.normal => [ui.highlight, ...ui.shCtl],
         _ => const [],
       },
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),

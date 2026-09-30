@@ -285,7 +285,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting when e.log.question != null => AgentCard(
           status: UiStatus.approval,
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: 'Pose une question : ${log.detail}',
@@ -295,7 +295,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
           status: UiStatus.approval,
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: askLabel(log),
@@ -313,7 +313,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.waiting => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
@@ -322,7 +322,7 @@ class HomePage extends StatelessWidget {
       HomeGroup.working => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
