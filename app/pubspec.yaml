@@ -41,54 +41,21 @@ flutter:
           weight: 500
     # Pixel fonts on trial for the app's name in the boards (user request,
     # 2026-09-30); keep the chosen one, delete the rest.
-    - family: Bytesized
-      fonts:
-        - asset: assets/fonts/trial/Bytesized-400.ttf
-    - family: DotGothic16
-      fonts:
-        - asset: assets/fonts/trial/DotGothic16-400.ttf
-    - family: Doto
-      fonts:
-        - asset: assets/fonts/trial/Doto-400.ttf
-        - asset: assets/fonts/trial/Doto-900.ttf
-          weight: 900
-    - family: Handjet
-      fonts:
-        - asset: assets/fonts/trial/Handjet-400.ttf
-        - asset: assets/fonts/trial/Handjet-700.ttf
-          weight: 700
     - family: Jacquard 12
       fonts:
         - asset: assets/fonts/trial/Jacquard12-400.ttf
+    - family: Jacquard 24
+      fonts:
+        - asset: assets/fonts/trial/Jacquard24-400.ttf
+    - family: Jacquarda Bastarda 9
+      fonts:
+        - asset: assets/fonts/trial/JacquardaBastarda9-400.ttf
     - family: Jersey 10
       fonts:
         - asset: assets/fonts/trial/Jersey10-400.ttf
     - family: Jersey 15
       fonts:
         - asset: assets/fonts/trial/Jersey15-400.ttf
-    - family: Jersey 20
-      fonts:
-        - asset: assets/fonts/trial/Jersey20-400.ttf
-    - family: Jersey 25
-      fonts:
-        - asset: assets/fonts/trial/Jersey25-400.ttf
-    - family: Micro 5
-      fonts:
-        - asset: assets/fonts/trial/Micro5-400.ttf
-    - family: Micro 5 Charted
-      fonts:
-        - asset: assets/fonts/trial/Micro5Charted-400.ttf
-    - family: Press Start 2P
-      fonts:
-        - asset: assets/fonts/trial/PressStart2P-400.ttf
-    - family: Silkscreen
-      fonts:
-        - asset: assets/fonts/trial/Silkscreen-400.ttf
-        - asset: assets/fonts/trial/Silkscreen-700.ttf
-          weight: 700
-    - family: Sixtyfour
-      fonts:
-        - asset: assets/fonts/trial/Sixtyfour-400.ttf
     - family: Tiny5
       fonts:
         - asset: assets/fonts/trial/Tiny5-400.ttf
