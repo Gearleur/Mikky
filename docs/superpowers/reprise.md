@@ -53,7 +53,7 @@ Ensuite, dans l'ordre voulu par l'utilisateur : gérer Claude et Codex, **planif
 
 ## 3. Design
 
-Tout est dans **`design.md`** (la référence visuelle : les planches, `mikky.exe --kit`).
+Tout est dans **`design.md`** (la référence visuelle : les planches, `mikky.exe --kit`). Pour reprendre le design : **§11** (ce qui a été fait le 2026-09-30), **§12** (le code à remanier, les bonnes pratiques qui manquent), **§13** (les prochaines étapes, dans l'ordre).
 
 ## 4. Comment le code est rangé (partie A du MVP)
 

@@ -2,6 +2,8 @@
 
 Dernière mise à jour : 2026-09-30
 
+> **Pour reprendre (prochaine conversation)** : lire ce fichier, surtout **§11 (ce qui a été fait)**, **§12 (le code à remanier)** et **§13 (les prochaines étapes, dans l'ordre)** ; ouvrir les planches (`app\build\windows\x64\runner\Release\mikky.exe --kit`, après `flutter build windows --release`). Deux choix attendent l'utilisateur (§13, étape 1). D'autres sessions travaillent en même temps dans le dépôt (le démon Rust, l'accueil, la page d'agent) : n'enregistrer que ses propres fichiers ou lignes (voir §12).
+
 Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque, couleurs, pixels, écrans, mouvement, et ce qui a été écarté. La construction de l'app (code, agents, ce qui marche, pièges) est dans `reprise.md`. Quand on touche au visuel, on lit ce fichier ; quand une décision de design est prise, on l'écrit ici.
 
 ## 1. Comment on travaille le design
@@ -10,13 +12,10 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 - **On propose, l'utilisateur choisit** : plusieurs variantes côte à côte sur une planche, il dit laquelle garder (souvent en quelques mots), on retire les autres. Un composant n'apparaît qu'une fois sur la planche Composants (pas de doublons).
 - **Réglages en direct** : quand une valeur se juge à l'œil, des curseurs dans la colonne de gauche des planches ; l'utilisateur envoie ses valeurs (« Copier »), on les met dans l'app, puis on retire les curseurs (fait pour le flou du haut).
 - **Vérifier avant de montrer** : images de test des planches (`app/test/boards_test.dart`, `test/goldens/boards/`), les regarder, corriger, puis relancer `--kit`.
+- **Planche technique** (2026-09-30, autre session) : Page « Technique » dans `--kit`, sur le même canvas avec zoom et thèmes clair/sombre. Présentation à plat : schéma des trois couches, parcours cliquable d’une demande, transition Dart/Rust, optimisations, mesures, données et feuille de route R2–R7. Statuts toujours écrits en plus de la couleur : vert « En place », orange « Transition », violet « Prévu », bleu « À mesurer ». Le contenu est un instantané documenté, pas une télémétrie ; les anciens benchmarks sont datés et les capacités futures explicitement distinguées du code actuel.
 - Les maquettes HTML de `design/prototypes/` sont **dépassées** depuis le 2026-09-30 (abandonnées par l'utilisateur) ; gardées pour l'historique.
 
 ## 2. Direction artistique
-
-### Planche technique (2026-09-30)
-
-Page « Technique » dans `--kit`, sur le même canvas avec zoom et thèmes clair/sombre. Présentation à plat : schéma des trois couches, parcours cliquable d’une demande, transition Dart/Rust, optimisations, mesures, données et feuille de route R2–R7. Statuts toujours écrits en plus de la couleur : vert « En place », orange « Transition », violet « Prévu », bleu « À mesurer ». Le contenu est un instantané documenté, pas une télémétrie ; les anciens benchmarks sont datés et les capacités futures explicitement distinguées du code actuel.
 
 **« Mikky, le chat magique, avec de l'informatique et des pixels »** (2026-09-30).
 
@@ -141,19 +140,55 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 - Polices de texte autres que Geist (Inter, Host Grotesk, Hanken, Schibsted, Onest, Space Grotesk) ; pour le nom : Tiny5, Silkscreen, Jersey 15 à 25, Workbench, Jacquard 12, Micro 5, Press Start 2P, Doto, etc.
 - Les maquettes HTML comme référence.
 
-## 10. Reste à décider
+## 10. Où c'est dans le code
 
-1. **Logo** : le petit quelque chose de magique ; puis l'icône de l'app et de la zone de notification.
-2. **Couleurs signature** : où elles servent dans l'interface (plus tard).
-3. **Palettes pixel** : les figer et les nommer.
-4. **Typographie** : une échelle nommée (titre, corps, légende, code).
-5. **Mikky en pixels** ? (première tête dans le feu d'artifice « Mikky »).
-6. **Menus à nos couleurs** : faits dans la petite fenêtre (menu flottant) ; restent le clic droit sur l'île fermée et la zone de notification. Un **écran de réglages** à part, un jour.
-7. **Infobulles** à nous (bulle blanche, ombre douce).
-8. **Sons** : un petit bip pixel quand un agent attend ou finit ?
-9. **Écrans à dessiner** : connexion à Claude / Codex, réglages ; une boîte de confirmation, une notification d'erreur, un état vide.
+- **Jetons** (couleurs, ombres, texte `uiText`) : `app/lib/ui/tokens.dart` · **mouvement** (ressorts, `Looping`, horloge à 30 i/s, `HoverBuilder`) : `motion.dart` et `feedback.dart`.
+- **Pixels** : `pixel_fx.dart` (palettes, `StatusFx`, `PixelStar`, essais, `SignatureFx`, `PixelMikky`).
+- **Composants** : `app/lib/ui/` — `cards.dart` (titres de groupes, lignes d'agents, Oui / Non `AnswerBar`, `MenuStar`), `thread.dart` (bulles, tâches, étapes, outils, ligne de métro), `field.dart` (champ, puces), `side.dart` (en-tête, `EdgeBlur`, `TopBlur`, Mikky en petit), `sliding_hover.dart` (le carré qui glisse), `floating_menu.dart` (notre menu), `selectors.dart`, `buttons.dart`, `markdown.dart`, `brand_logo.dart`, `icons.dart`.
+- **Fenêtre** : `app/lib/side/` — `session_views.dart` (Suivi, Chat, cartes de limite et d'attente), `agent_page.dart`, `side_app.dart` (accueil), `session_menu.dart` (menu d'un agent) ; **sorts** (relance auto) : `app/lib/agents/enchant.dart`.
+- **Île** : `app/lib/island/island_view.dart` (feu d'artifice sous Mikky, menus) ; **Mikky** : `packages/mikky_engine/lib/src/mikky/` et `app/lib/mikky/mikky_painter.dart` ; **limite** (heure de reprise) : `packages/mikky_engine/lib/src/sessions/rate_limit.dart`.
+- **Planches** : `app/lib/boards/` (`board_brand.dart`, `board_components.dart`, `board_screens.dart`, `board_technical.dart`, `canvas.dart`, `boards_app.dart`, `fake_sessions.dart`) ; images de test `app/test/goldens/boards/`.
 
-## 11. Où c'est dans le code
+## 11. Ce qui a été fait (session du 2026-09-30)
 
-- Jetons (couleurs, texte) : `app/lib/ui/tokens.dart` · pixels : `app/lib/ui/pixel_fx.dart` · composants : `app/lib/ui/` · fenêtre : `app/lib/side/` · Mikky : `packages/mikky_engine/lib/src/mikky/` et `app/lib/mikky/mikky_painter.dart`.
-- Planches : `app/lib/boards/` (`board_brand.dart`, `board_components.dart`, `board_screens.dart`, `canvas.dart`, `boards_app.dart`, `fake_sessions.dart`).
+- **Méthode** : les planches à la Figma (`--kit`) deviennent la référence ; ce fichier sépare le design de la construction (`reprise.md`).
+- **Direction** « chat magique, informatique, pixels » : états en feux d'artifice de pixels (vitesse par état), petites étoiles fixes par action dans le chat, étoile grise pour les groupes calmes.
+- **Marque** : nom Mikky ; logo C (Mikky qui dépasse) et C2–C4 ; Geist pour le texte, Jacquard 24 puis Jersey 10 pour le nom ; couleurs signature orange et bleu (en réserve) ; dix feux d'artifice signature en essai.
+- **Mikky** : saute lentement en travaillant, regarde toujours la souris (plus de balayage), crochet souris remis si Windows le retire ; sous lui, dans l'île fermée, le feu d'artifice de l'état le plus pressant.
+- **Accueil** : lignes sans cartes, logos (24 / 18 px) qui tournent ou sautillent, Oui / Non à plat au carré qui glisse, survol au carré qui glisse, étoile grise du menu invisible tant qu'on n'est pas dessus ; essai d'un accueil épuré.
+- **Page d'un agent** : sans titre ni bandeau, boutons qui flottent (retour, « ··· » ; plus de pause), flou progressif en haut (valeurs de l'utilisateur) et derrière le champ, champ fin façon iPhone en verre dépoli, options à moitié dedans.
+- **Chat** : réponses sans bulle, listes propres, tâches en grandes lignes colorées, détail au clic.
+- **Limite de l'abonnement** : état jaune avec l'heure de reprise ; **Ensorcelé / Relance auto** (par agent ou pour tous, dans les réglages), étoiles jaune et violette.
+- **Menu flottant** à nous : le bouton « ··· » s'étire en menu et s'y replie en rebondissant ; remplace le menu de Windows dans la petite fenêtre.
+
+## 12. Le code du design : à remanier, bonnes pratiques
+
+**À remanier** (par ordre d'intérêt) :
+1. **Jetons incomplets** : les rayons (9, 10, 11, 12, 14, 16, 20, 22, 26), les tailles de texte (de 10 à 30), les ombres (le menu a les siennes en dur) et les durées (140, 160, 180, 200, 220 ms…) sont écrits à la main partout. Ajouter une échelle nommée : rayons, espacements, styles de texte (titre, corps, légende, code), ombres (`shMenu`), durées. C'est aussi l'étape « échelle typographique » de la marque.
+2. **Fichiers trop gros, qui mélangent tout** : `pixel_fx.dart` (870 lignes : états + essais + signature + Mikky en pixels) → séparer le cœur, les essais (seulement pour les planches) et la signature ; `thread.dart` (820) → bulles, tâches, ligne de métro ; `feedback.dart` (550) → `UiStatus` et ses couleurs à part, `Looping` avec le mouvement, les essais (`ThinkingStar`, `ClaudeSpinner`) à part ; `session_views.dart` (820) → séparer la logique (qui transforme une session en étapes, testable sans écran) des cartes (limite, sort, attente, pause).
+3. **`AgentCard` fait trop de choses** (style, marque, état, actions, épingle, menu…) : une ligne « vivante » (au travail, en attente, limitée) et une ligne « terminée » séparées.
+4. **Code mort ou en essai à trier une fois les choix faits** : `PixelMap` (plus utilisé), les effets en essai (étincelle, feu d'artifice complet, galaxie, `ThinkingStar`), le perdant entre `SpinningLogo` et `ClaudeSpinner`, `GroupHeader.color` (plus lu), le mode `quiet` si l'épuré est refusé, `MSwitch` (à garder pour l'écran de réglages). Les deux polices du nom sont dans `assets/fonts/trial/` et pas encore utilisées dans l'app : dossier à renommer quand le nom sera posé.
+5. **Couleurs de marque en dur** : l'orange de Claude (`#D97757`) dans `ClaudeSpinner`, les couleurs de `ThinkingStar` ; les ranger avec les marques (`Brand`) ou les jetons.
+6. **Deux survols qui cohabitent** (fond gris `HoverBuilder` et carré qui glisse) : écrire la règle dans les composants eux-mêmes (liste → carré ; élément isolé → gris), pour ne plus choisir au cas par cas.
+
+**Bonnes pratiques pas encore couvertes** :
+- **Contraste** : `text3` (`#A2A1A6` sur blanc, environ 2,5 : 1) est sous le minimum lisible pour du petit texte (4,5 : 1) ; il sert aux heures, légendes, noms au repos. À foncer un peu, ou le réserver au décor.
+- **Lecteurs d'écran** : presque aucune étiquette (`Semantics`) ; les boutons ronds et les étoiles n'ont pas de nom lisible.
+- **Clavier** : le menu flottant ne se parcourt pas aux flèches ni avec Entrée ; l'ordre de tabulation et un anneau de focus visible restent à vérifier partout.
+- **Découvrabilité** : l'étoile grise (menu d'un agent) est invisible hors survol ; le clic droit reste le chemin sûr, à dire quelque part (infobulle, premier lancement).
+- **Textes** : tous les libellés sont écrits en dur dans le code ; les réunir dans un fichier garderait le vocabulaire homogène (« Ensorcelé », « Relance auto »…) et préparerait d'autres langues.
+- **Tests** : planches en images, composants principaux testés ; il manque une image de l'île fermée (feu d'artifice sous Mikky) et des tests des cartes de limite et de sort.
+- **Performance** : couches de flou (3 en haut, 12 en bas) et nombreuses boucles ; mesurer avec `--perf` sur un long chat.
+- **Travail à plusieurs** : d'autres sessions modifient les mêmes fichiers. N'enregistrer que ses fichiers (`git add <fichiers>`), et pour un fichier partagé, construire la version à enregistrer à partir de la dernière enregistrée (`git hash-object -w` + `git update-index --cacheinfo`). Un script qui réécrit un fichier calcule tout avant d'écrire, après une copie.
+
+## 13. Prochaines étapes (design et marque), dans l'ordre
+
+1. **Deux choix de l'utilisateur** : l'animation de Claude au travail (son logo qui tourne, ou l'étoile de Claude Code, planche Composants) ; l'accueil épuré (planche Accueil), à appliquer ou non.
+2. **Voir le travail dans l'app** : redémarrer Mikky (après accord : ça coupe les agents), vérifier le menu flottant en vrai, le feu d'artifice sous Mikky, les limites et les sorts.
+3. **Jetons et remaniement** (§12, points 1 à 3) : c'est ce qui rendra les étapes suivantes rapides et cohérentes.
+4. **Icône** : l'icône de l'app et de la zone de notification à partir du logo C (et le « petit quelque chose de magique ») ; le nom « Mikky » en Jacquard 24 là où il s'affiche (en-tête de l'accueil, écran « à propos »).
+5. **Palettes pixel** figées et nommées ; décider où vivent les couleurs signature (focus, liens, bouton « go », magie de Mikky).
+6. **Écrans à dessiner** : réglages (ils vivent pour l'instant dans le menu « ··· »), connexion à Claude / Codex, boîte de confirmation, notification d'erreur, état vide ; nos infobulles (bulle blanche, ombre douce).
+7. **Codex dans le chat** (avec la session technique, quand l'abonnement revient) : sorties des commandes, plan, réflexions (résumés à activer dans sa configuration), messages en cours hors du détail.
+8. **Accessibilité** (§12) : contraste de `text3`, étiquettes, menu au clavier.
+9. **Plus tard, à voir** : sons (un petit bip pixel), Mikky en pixels, sorts gardés après un redémarrage.
