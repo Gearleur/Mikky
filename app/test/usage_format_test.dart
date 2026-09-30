@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mikky/side/session_views.dart';
+import 'package:mikky/side/session_text.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 void main() {

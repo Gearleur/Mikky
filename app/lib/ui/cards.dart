@@ -7,6 +7,7 @@ import 'icons.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
 import 'sliding_hover.dart';
+import 'status.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -92,7 +93,7 @@ class GroupHeader extends StatelessWidget {
                       ? StatusFx(status!, size: 18)
                       // Historique, Archives: the same star, grey and
                       // still (user request, 2026-09-30).
-                      : PixelFx(kind: PixelFxKind.fireworkSoft, palette: PixelFxPalette.grey, size: 18, at: 1),
+                      : PixelFx(palette: PixelFxPalette.grey, size: 18, at: 1),
                 ),
               ),
               const SizedBox(width: 8),

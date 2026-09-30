@@ -10,7 +10,9 @@ import '../ui/selection.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import 'session_cards.dart';
 import 'session_menu.dart';
+import 'session_text.dart';
 import 'session_views.dart';
 import 'side_app.dart';
 

@@ -224,3 +224,72 @@ abstract final class DecorClock {
     }
   }
 }
+
+/// A widget animated forever by one controller of [period]; stops (and
+/// shows [frozenAt]) when Windows asks for fewer animations. [frozenAt]
+/// is where the CSS animation ends, as the prototypes show with
+/// `prefers-reduced-motion` (and their `#calme` captures).
+class Looping extends StatefulWidget {
+  const Looping({super.key, required this.period, required this.builder, this.frozenAt = 0, this.repeat = true});
+
+  final Duration period;
+  final Widget Function(BuildContext context, double t) builder;
+  final double frozenAt;
+
+  /// False: plays once (a pop, a shake).
+  final bool repeat;
+
+  @override
+  State<Looping> createState() => _LoopingState();
+}
+
+class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
+  // One-shot (pop, shake): short, at 60 fps. Loops: on the DecorClock.
+  late final AnimationController _c = AnimationController(vsync: this, duration: widget.period);
+  bool _onClock = false;
+  Duration? _start;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = Motion.reduced(context);
+    if (!widget.repeat) {
+      if (reduced) {
+        _c.value = 1;
+      } else if (_c.value == 0 && !_c.isAnimating) {
+        _c.forward();
+      }
+      return;
+    }
+    final run = Motion.loops(context);
+    if (!run && _onClock) {
+      DecorClock.unlisten(_tick);
+      _onClock = false;
+    } else if (run && !_onClock) {
+      DecorClock.listen(_tick);
+      _onClock = true;
+    }
+  }
+
+  void _tick() => setState(() {});
+
+  double get _t {
+    if (!_onClock) return widget.frozenAt;
+    final now = DecorClock.now.value;
+    final start = _start ??= now;
+    final period = widget.period.inMicroseconds;
+    return ((now - start).inMicroseconds % period) / period;
+  }
+
+  @override
+  void dispose() {
+    if (_onClock) DecorClock.unlisten(_tick);
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: widget.repeat ? widget.builder(context, _t) : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
+  );
+}

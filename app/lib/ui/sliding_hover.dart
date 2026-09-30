@@ -227,3 +227,54 @@ class _HoverTargetState extends State<HoverTarget> {
     child: widget.child,
   );
 }
+
+/// Something to click in the chat: a light grey under the mouse, the
+/// hand cursor (user request, 2026-09-30).
+class HoverRow extends StatefulWidget {
+  const HoverRow({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4)});
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  State<HoverRow> createState() => _HoverRowState();
+}
+
+class _HoverRowState extends State<HoverRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (widget.onTap == null) return Padding(padding: widget.padding, child: widget.child);
+    // In a task: the sliding square shows the hover.
+    if (SlidingHover.maybeOf(context) != null) {
+      return HoverTarget(
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Padding(padding: widget.padding, child: widget.child),
+          ),
+        ),
+      );
+    }
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: widget.padding,
+          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(9)),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}

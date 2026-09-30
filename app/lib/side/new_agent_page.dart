@@ -14,7 +14,7 @@ import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
-import 'session_views.dart';
+import 'session_text.dart';
 import 'side_app.dart';
 
 /// The new agent (UX `ux-a.html`, « Nouvel agent »): an empty chat, the

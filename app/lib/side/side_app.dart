@@ -7,15 +7,17 @@ import '../overlay/overlay_channel.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
-import '../ui/feedback.dart';
 import '../ui/motion.dart';
 import '../ui/side.dart';
-import '../ui/tokens.dart';
 import '../ui/sliding_hover.dart';
+import '../ui/status.dart';
+import '../ui/tokens.dart';
 import 'agent_page.dart';
 import 'new_agent_page.dart';
+import 'session_cards.dart';
 import 'session_menu.dart';
-import 'session_views.dart';
+import 'session_steps.dart';
+import 'session_text.dart';
 
 /// What the small window needs from the island around it.
 class SideHost {

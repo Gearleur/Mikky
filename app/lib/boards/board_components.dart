@@ -7,13 +7,15 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/floating_menu.dart';
+import '../ui/metro.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
+import '../ui/status.dart';
 import '../ui/tabs.dart';
-import '../ui/thread.dart';
 import '../ui/tokens.dart';
+import '../ui/trials/claude_spinner.dart';
 import 'canvas.dart';
 
 /// A bit of state of its own, so a click rebuilds only its widget.

@@ -4,11 +4,14 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/brand_logo.dart';
-import '../ui/feedback.dart';
 import '../ui/icons.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/side.dart';
+import '../ui/status.dart';
 import '../ui/tokens.dart';
+import '../ui/trials/pixel_trials.dart';
+import '../ui/trials/signature_fx.dart';
+import '../ui/trials/thinking_star.dart';
 import 'canvas.dart';
 
 String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
@@ -369,10 +372,10 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
           note: 'Étincelle, feu d’artifice complet, galaxie ; et l’étoile qui réfléchit, mise de côté.',
           width: 520,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final k in [PixelFxKind.sparkle, PixelFxKind.firework, PixelFxKind.galaxy])
+            for (final k in const <PixelEffect>[Sparkle(), Firework(), Galaxy()])
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, kind: k, size: 40))]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, effect: k, size: 40))]),
               ),
             const ThinkingStar(size: 40),
           ]),
