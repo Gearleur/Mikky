@@ -216,56 +216,28 @@ void main() {
       expect(ups.reduce(math.min), lessThan(-12));
     });
 
-    test('thinking: by magic, the star; he shrinks into it, sparkles fly', () {
+    test('thinking: himself, looking up, with the « ••• » bubble; no hop', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
-      run(m, .1);
-      expect(m.particles.where((p) => p.kind == ParticleKind.sparkle), isNotEmpty);
-      run(m, 1.5);
-      expect((m.form, m.badge), (MikkyForm.star, null));
-      final g = MikkyGeometry.of(m, 100);
-      expect(g.magic, closeTo(1, .1));
-      // He keeps his own outline, ears included: the painter shrinks him.
-      final cat = MikkyGeometry.of(Mikky(random: math.Random(5))..update(1 / 60), 100);
-      double top(MikkyGeometry g) {
-        var y = 0.0;
-        for (var j = 1; j < g.contour.length; j += 2) {
-          y = math.min(y, g.contour[j]);
-        }
-        return y;
-      }
-
-      expect(top(g), closeTo(top(cat), 8));
-      // The star does not hop.
-      for (var i = 0; i < 90; i++) {
+      for (var i = 0; i < 60 * 12; i++) {
         m.update(1 / 60);
+        expect(m.form, MikkyForm.cat);
+        expect(m.badge, const MikkyBadge(BadgeKind.dots, AgentStatus.thinking));
         expect(MikkyGeometry.of(m, 100).translateY.abs(), lessThan(3));
       }
     });
 
-    test('thinking goes back to the cat now and then', () {
-      for (final s in [MikkyState.thinking]) {
-        final m = Mikky(random: math.Random(5))..setState(s);
-        final phases = <String>[];
-        for (var i = 0; i < 60 * 30; i++) {
-          m.update(1 / 60);
-          final phase = m.form != MikkyForm.cat && m.morph > .9 ? 'F' : (m.morph.abs() < .05 ? 'C' : null);
-          if (phase != null && (phases.isEmpty || phases.last != phase)) phases.add(phase);
-        }
-        expect(phases.take(5), ['C', 'F', 'C', 'F', 'C'], reason: '$s');
-      }
-    });
-
     test('from one form to another, he goes back through the cat', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
-      run(m, 2);
-      m.setState(MikkyState.approval);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      untilBang(m);
+      run(m, .5);
+      m.play(MikkyEmote.love);
       var sawCat = false;
-      for (var i = 0; i < 180; i++) {
+      for (var i = 0; i < 60; i++) {
         m.update(1 / 60);
         if (m.morph.abs() < .1) sawCat = true;
       }
       expect(sawCat, isTrue);
-      expect(m.form, MikkyForm.bang);
+      expect(m.form, MikkyForm.heart);
     });
 
     test('the change is soft: it overshoots, then settles', () {
@@ -280,8 +252,8 @@ void main() {
     });
 
     test('back to the cat when the state has no form', () {
-      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
-      run(m, 2);
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.approval);
+      untilBang(m);
       m.setState(MikkyState.error);
       run(m, 3);
       expect(m.morph.abs(), lessThan(.01));

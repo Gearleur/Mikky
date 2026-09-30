@@ -588,10 +588,15 @@ class _KitPartsState extends State<KitParts> {
               ],
             ),
             const TypingDots(),
-            sep,
-            // Set aside for now (user request, 2026-09-30).
+          ]),
+          // Set aside for now (user requests, 2026-09-30): the launcher, and
+          // the star tried on Mikky thinking.
+          line([
             const DotSnake(UiStatus.working),
-            Text('Lanceur (de côté)', style: uiText(13, color: ui.text2)),
+            Text('Lanceur', style: uiText(13, color: ui.text2)),
+            sep,
+            const ThinkingStar(size: 30),
+            Text('Étoile qui réfléchit', style: uiText(13, color: ui.text2)),
           ]),
         ]),
         section('Logos des outils', [

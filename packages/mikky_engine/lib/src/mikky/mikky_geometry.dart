@@ -74,7 +74,6 @@ class MikkyGeometry {
     required this.badgeX,
     required this.badgeY,
     required this.particles,
-    this.magic = 0,
   });
 
   final double radius;
@@ -98,11 +97,6 @@ class MikkyGeometry {
 
   /// Positions and sizes in pixels from the anchor.
   final List<MikkyParticle> particles;
-
-  /// How far he has turned into the magic star (thinking): 0 himself, 1
-  /// the star; may overshoot a little. The painter shrinks him into the
-  /// star's bright core and grows its rays.
-  final double magic;
 
   int get pointCount => contour.length ~/ 2;
 
@@ -130,8 +124,7 @@ class MikkyGeometry {
     final hw = heart.clamp(0.0, 1.2);
     final furry = form == MikkyForm.furball ? w : 0.0;
     final bang = form == MikkyForm.bang ? m : 0.0;
-    // The star does not melt him: he shrinks into it (see [magic]).
-    final earMelt = form == MikkyForm.heart || form == MikkyForm.star ? 0.0 : w;
+    final earMelt = form == MikkyForm.heart ? 0.0 : w;
     final eyeMelt = form == MikkyForm.bang ? w : 0.0;
 
     double earBump(double x) {
@@ -262,7 +255,6 @@ class MikkyGeometry {
       particles: [
         for (final q in mikky.particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
       ],
-      magic: form == MikkyForm.star ? m : 0,
     );
   }
 }
