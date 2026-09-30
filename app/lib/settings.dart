@@ -9,7 +9,7 @@ import 'theme.dart';
 /// User settings kept between launches, in `%APPDATA%\Mikky\settings.json`.
 /// Nothing secret goes here.
 class Settings {
-  Settings({this.theme = ThemeChoice.auto, this.edge = IslandEdge.top, this.notifications = true, this.daemon = true});
+  Settings({this.theme = ThemeChoice.auto, this.edge = IslandEdge.top, this.notifications = true, this.daemon = true, this.autoRelaunch = false});
 
   ThemeChoice theme;
 
@@ -19,6 +19,10 @@ class Settings {
 
   /// Windows notifications when an agent waits, fails or finishes.
   bool notifications;
+
+  /// « Relance automatique »: agents stopped by a subscription's limit go
+  /// on by themselves when it lifts (the home's switch).
+  bool autoRelaunch;
 
   /// Where the island lives: top center or right edge.
   IslandEdge edge;
@@ -38,6 +42,7 @@ class Settings {
         edge: IslandEdge.values.asNameMap()[json['edge']] ?? IslandEdge.top,
         notifications: json['notifications'] as bool? ?? true,
         daemon: json['daemon'] as bool? ?? true,
+        autoRelaunch: json['autoRelaunch'] as bool? ?? false,
       );
     } catch (e) {
       debugPrint('mikky: settings unreadable, using defaults ($e)');
@@ -74,7 +79,7 @@ class Settings {
       final file = _file;
       if (file == null) return;
       await file.parent.create(recursive: true);
-      await file.writeAsString(jsonEncode({'theme': theme.name, 'edge': edge.name, 'notifications': notifications, 'daemon': daemon}));
+      await file.writeAsString(jsonEncode({'theme': theme.name, 'edge': edge.name, 'notifications': notifications, 'daemon': daemon, 'autoRelaunch': autoRelaunch}));
     } catch (e) {
       debugPrint('mikky: settings not saved ($e)');
     }

@@ -240,6 +240,8 @@ class HomePage extends StatelessWidget {
       for (final p in AgentProvider.values)
         if (host.service.source.limitsOf(p) case final l?) (p, l),
     ];
+    // « Relance automatique », for every agent stopped by a limit.
+    if (body.isNotEmpty) body.add(const AutoRelaunchRow());
     if (limits.isNotEmpty) {
       body.add(Padding(
         padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
@@ -336,6 +338,19 @@ class HomePage extends StatelessWidget {
           onMenu: menu,
           actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))])),
         ),
+      // Stopped by its subscription's limit: when it lifts, « Relancer » or
+      // « Ensorceler »; the violet star under the spell (2026-09-30).
+      HomeGroup.working when e.status == AgentStatus.rateLimited => LimitedAgentCard(
+        id: e.id,
+        title: e.name,
+        log: log,
+        send: (t) => host.service.source.send(e.id, t),
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        brand: Brand.of(e.provider),
+        pinned: e.mark.pinned,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.working => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,

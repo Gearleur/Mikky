@@ -131,7 +131,12 @@ class AgentCard extends StatelessWidget {
     this.onMenu,
     this.pinned = false,
     this.brand,
+    this.mark,
   });
+
+  /// A small sign right after the title: the yellow star of a limit, the
+  /// violet one of a spell.
+  final Widget? mark;
 
   final UiStatus status;
   final String title;
@@ -166,12 +171,17 @@ class AgentCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
-            ),
+            child: Row(children: [
+              Flexible(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
+                ),
+              ),
+              if (mark != null) ...[const SizedBox(width: 6), mark!],
+            ]),
           ),
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],

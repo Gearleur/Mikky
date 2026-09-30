@@ -35,7 +35,12 @@ class HomeMock extends StatefulWidget {
     this.history = 0,
     this.limits,
     this.historyOpen = false,
+    this.limited = const [],
   });
+
+  /// Stopped by their limit, with the ones at work; true: already under
+  /// the spell (« Ensorceler »).
+  final List<(SampleRow, bool)> limited;
 
   final List<SampleRow> waiting;
   final List<(SampleRow, UiStatus)> working;
@@ -53,6 +58,26 @@ class HomeMock extends StatefulWidget {
 
 class _HomeMockState extends State<HomeMock> {
   late final _open = {'wait': true, 'work': true, 'done': true, 'old': widget.historyOpen};
+
+  // The spells of the limited rows, as the app's agents would have.
+  late final _ids = [for (var i = 0; i < widget.limited.length; i++) 'board-home-${identityHashCode(this)}-$i'];
+  final _log = FakeSessions.limited();
+
+  @override
+  void initState() {
+    super.initState();
+    for (final (i, (_, spell)) in widget.limited.indexed) {
+      if (spell) Enchantments.instance.enchant(_ids[i], _log.limitResetsAt, (_) async {}, now: _log.lastEventAt);
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final id in _ids) {
+      Enchantments.instance.cancel(id);
+    }
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,8 +111,10 @@ class _HomeMockState extends State<HomeMock> {
           actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
         ),
     ]);
-    group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length, [
+    group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length + widget.limited.length, [
       for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: w, brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
+      for (final (i, ((t, b, _, w), _)) in widget.limited.indexed)
+        LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
           status: UiStatus.sleeping,
@@ -108,6 +135,7 @@ class _HomeMockState extends State<HomeMock> {
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
         AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}, onMenu: () {}),
     ]);
+    if (body.isNotEmpty) body.add(const AutoRelaunchRow());
     if (widget.limits != null) {
       body.add(Padding(
         padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
@@ -147,7 +175,6 @@ const _waiting = ('Met à jour le site', Brand.codex, 'Veut lancer une commande'
 const _working = [
   (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working),
   (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.thinking),
-  (('Traduis la documentation', Brand.claude, 'Limite atteinte · reprend à 17 h 10', ''), UiStatus.limited),
 ];
 const _workingOne = (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working);
 const _paused = ('Prépare le plan de l’API', Brand.codex, '', '');
@@ -171,6 +198,17 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
         child: HomeMock(working: [_workingOne], paused: [_paused]),
       ),
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
+      BoardFrame(
+        label: 'Limite atteinte, ensorcelé',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Ensorceler. Étoile violette : ensorcelé, il se relance tout seul. En bas, la relance automatique pour tous.',
+        child: HomeMock(
+          working: [_workingOne],
+          limited: [
+            (('Traduis la documentation', Brand.claude, '', ''), false),
+            (('Nettoie les imports', Brand.codex, '', 'WSL'), true),
+          ],
+        ),
+      ),
       BoardFrame(
         label: 'Historique ouvert, limites Codex',
         child: HomeMock(done: _done, history: 12, historyOpen: true, limits: 'Codex · 5 h : 38 % · semaine : 12 % · repart à 17 h 10'),
@@ -276,6 +314,7 @@ class _AgentMockState extends State<AgentMock> {
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
         Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 74 : 54))),
+        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: _id))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
@@ -408,7 +447,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Ensorcelée',
-        note: 'Mikky la relancera tout seul quand la limite sera levée, par un message à l’agent ; en violet, la couleur de la magie.',
+        note: 'Mikky la relancera tout seul quand la limite sera levée, par un message à l’agent ; en violet, la couleur de la magie, et une étoile violette en haut au milieu.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
       ),
       BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
