@@ -272,7 +272,19 @@ class AgentCard extends StatelessWidget {
   }
 
   Widget _pressable(Widget card) {
-    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: card);
+    // A light grey under the mouse, like every row that opens something.
+    final hovered = HoverBuilder(
+      enabled: onTap != null,
+      builder: (context, hover) {
+        final ui = MikkyUi.of(context);
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
+          child: card,
+        );
+      },
+    );
+    final pressable = Pressable(onTap: onTap, pressedScale: .98, child: hovered);
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
   }
 

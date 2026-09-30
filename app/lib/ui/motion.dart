@@ -93,6 +93,32 @@ class _PressableState extends State<Pressable> with SingleTickerProviderStateMix
   );
 }
 
+/// Builds [builder] with whether the mouse is over it (user request,
+/// 2026-09-30: everything that can be clicked answers the mouse).
+class HoverBuilder extends StatefulWidget {
+  const HoverBuilder({super.key, required this.builder, this.enabled = true});
+
+  final Widget Function(BuildContext context, bool hover) builder;
+  final bool enabled;
+
+  @override
+  State<HoverBuilder> createState() => _HoverBuilderState();
+}
+
+class _HoverBuilderState extends State<HoverBuilder> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.builder(context, false);
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: widget.builder(context, _hover),
+    );
+  }
+}
+
 /// Calls [onDown] as soon as the primary button goes down on [child]: for
 /// selectors and tabs, whose thumb must leave at once (no tap-or-drag wait).
 class PressDown extends StatelessWidget {

@@ -82,11 +82,15 @@ class Segmented extends StatelessWidget {
                     child: PressDown(
                       // On press, not on release: the thumb leaves at once.
                       onDown: onChanged == null || i == selected ? null : () => onChanged!(i),
-                      child: Center(
-                        child: AnimatedDefaultTextStyle(
-                          duration: const Duration(milliseconds: 180),
-                          style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected ? ui.text : ui.text2),
-                          child: Text(options[i], maxLines: 1),
+                      // The others darken under the mouse.
+                      child: HoverBuilder(
+                        enabled: onChanged != null && i != selected,
+                        builder: (context, hover) => Center(
+                          child: AnimatedDefaultTextStyle(
+                            duration: const Duration(milliseconds: 180),
+                            style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected || hover ? ui.text : ui.text2),
+                            child: Text(options[i], maxLines: 1),
+                          ),
                         ),
                       ),
                     ),

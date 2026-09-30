@@ -373,22 +373,26 @@ class ComposerChip extends StatelessWidget {
     return Pressable(
       onTap: onTap,
       pressedScale: .95,
-      child: Surface(
-        height: 24,
-        color: ui.thumb,
-        shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
-        padding: const EdgeInsets.symmetric(horizontal: 9),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
-            Text(
-              label,
-              style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
-            ),
-            const SizedBox(width: 4),
-            MikkyIcon('down', size: 11, color: ui.text2),
-          ],
+      child: HoverBuilder(
+        enabled: onTap != null,
+        builder: (context, hover) => Surface(
+          height: 24,
+          // A shade darker under the mouse.
+          color: hover ? Color.lerp(ui.thumb, ui.text, .06)! : ui.thumb,
+          shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
+          padding: const EdgeInsets.symmetric(horizontal: 9),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
+              Text(
+                label,
+                style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
+              ),
+              const SizedBox(width: 4),
+              MikkyIcon('down', size: 11, color: ui.text2),
+            ],
+          ),
         ),
       ),
     );
