@@ -270,6 +270,31 @@ class RealAgentSource implements AgentSource {
     }
   }
 
+  /// Takes back an agent `mikkyd` still runs (after the app restarted):
+  /// the one kept with the same session, or a new one.
+  void adopt(AgentRun run, {required AgentProvider provider, required AgentHost host, String? cwd}) {
+    final sessionId = run.sessionId;
+    // Kept agents know their session from the store until a file shows up.
+    var e = sessionId == null
+        ? null
+        : _entries.where((x) => x.run == null && (x.sessionId ?? _stored[x.id]?.sessionId) == sessionId).firstOrNull;
+    if (e == null) {
+      e = AgentEntry._('m${DateTime.now().microsecondsSinceEpoch}-${_ids++}', provider, host, AgentOrigin.mikky, cwd, _now());
+      _entries.add(e);
+    }
+    final entry = e
+      ..origin = AgentOrigin.mikky
+      ..run = run
+      ..startedAt = clock()
+      ..statusSince = clock();
+    _subs.add(run.changes.listen((_) {
+      _remember(entry);
+      _changed();
+    }));
+    _remember(entry);
+    _changed();
+  }
+
   /// A message for agent [id]: slipped in while it works, or the next turn.
   Future<void> send(String id, String text) async {
     final e = entry(id);

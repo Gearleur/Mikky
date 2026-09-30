@@ -34,8 +34,8 @@ Future<void> main(List<String> args) async {
   // Claude and Codex: found and followed in the background, never blocking
   // the island's first frame.
   final agents = AgentsService(clock: () => clock.now);
-  unawaited(agents.start());
   final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
+  unawaited(agents.start(useDaemon: settings.daemon && !args.contains('--no-daemon')));
   // Before the first frame: the window only shows up once it is in place.
   await overlay.setPlacement(settings.edge, windowSizeFor(settings.edge));
   // A bare WidgetsApp: no background (everything outside the island must

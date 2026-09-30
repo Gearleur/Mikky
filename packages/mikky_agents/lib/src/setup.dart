@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'acp/agent_run.dart';
+import 'daemon/daemon_client.dart';
+import 'daemon/daemon_run.dart';
 import 'target.dart';
 
 /// Versions checked in the A0 probe (2026-09-29).
@@ -121,9 +123,12 @@ class AgentSetup {
     return r.exitCode == 0 && path.startsWith('/') ? path : null;
   }
 
-  /// Starts the adapter of [provider] in [cwd] (a path of this target, or
-  /// a Windows path that WSL can reach).
-  Future<AgentRun> spawn(AgentProvider provider, {required String cwd}) async {
+  /// How to start the adapter of [provider] in [cwd] (a path of this
+  /// target, or a Windows path that WSL can reach).
+  Future<({String executable, List<String> args, String cwd, Map<String, String> env})> command(
+    AgentProvider provider, {
+    required String cwd,
+  }) async {
     final env = <String, String>{};
     if (provider == AgentProvider.claude) {
       final claude = await claudeExecutable();
@@ -131,7 +136,18 @@ class AgentSetup {
     }
     final t = target;
     final where = t is WslTarget ? t.linuxPath(cwd) : cwd;
-    return AgentRun.spawn(target, node, [adapterScript(provider)], cwd: where, env: env);
+    return (executable: node, args: [adapterScript(provider)], cwd: where, env: env);
+  }
+
+  /// Starts the adapter of [provider] in [cwd]: through [daemon] if given,
+  /// else Mikky runs it itself.
+  Future<AgentRun> spawn(AgentProvider provider, {required String cwd, DaemonClient? daemon}) async {
+    final c = await command(provider, cwd: cwd);
+    if (daemon != null) {
+      return DaemonAgentRun.start(daemon,
+          provider: provider, host: target.host, executable: c.executable, args: c.args, cwd: c.cwd, env: c.env);
+    }
+    return LocalAgentRun.spawn(target, c.executable, c.args, cwd: c.cwd, env: c.env);
   }
 }
 

@@ -25,7 +25,7 @@ void main() {
       spawn: (provider, host, cwd) async {
         final f = FakeAgent.inMemory();
         fakes.add(f);
-        return AgentRun.connect(f.clientInput, f.clientOutput);
+        return LocalAgentRun.connect(f.clientInput, f.clientOutput);
       },
     );
   });

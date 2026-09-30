@@ -22,11 +22,61 @@ String modeFor(AgentProvider provider, PermissionMode permissions) => switch ((p
 List<SessionModel> offeredModels(List<SessionModel> models) =>
     [for (final m in models) if (!'${m.id} ${m.name}'.toLowerCase().contains('haiku')) m];
 
-/// One agent session driven by Mikky through ACP: open it, prompt it,
-/// answer its permission requests, cancel or stop it. Everything it does
-/// lands in [log] (MVP spec §3.1).
-class AgentRun {
-  AgentRun._(this._connection, [this._process, this._target, this.workingDirectory]) {
+/// One agent session Mikky drives through ACP: open it, prompt it, answer
+/// its permission requests, cancel or stop it. Everything it does lands in
+/// [log] (MVP spec §3.1). [LocalAgentRun] talks to the adapter itself;
+/// `DaemonAgentRun` goes through `mikkyd`.
+abstract interface class AgentRun {
+  SessionLog get log;
+
+  /// Fires after each change of [log] (and when the agent ends).
+  Stream<void> get changes;
+
+  String? get sessionId;
+
+  /// False once the adapter has ended.
+  bool get alive;
+
+  /// The folder the adapter was started in, in its target's own form
+  /// (`/tmp/x` in WSL even if the user picked `\\wsl.localhost\…\tmp\x`).
+  /// The session must use this one: the agent runs its commands there.
+  String? get workingDirectory;
+
+  /// Handshake, then a new session in [cwd] — or [resume] an existing one
+  /// (its thread is replayed into [log]) — then the permission [mode].
+  Future<void> open({required String cwd, String? resume, String? mode});
+
+  Future<void> setMode(String mode);
+
+  /// Switches to [model] (one of [SessionLog.models]).
+  Future<void> setModel(String model);
+
+  /// Sends the user's message. While the agent works, it is slipped in
+  /// (queued by the agent). Completes when the agent has answered it;
+  /// errors are in [log], never thrown.
+  Future<void> prompt(String text);
+
+  /// Answers the oldest pending permission request (or [requestId]).
+  /// [always]: the agent's « always allow » option, when it offers one (the
+  /// same kind of action is then allowed without asking). Returns false if
+  /// there is no request.
+  bool answer({required bool allow, bool always = false, Object? requestId});
+
+  /// Answers the pending question: [answers] by question key (a choice's
+  /// label, a list of them, or free text in the question's other key).
+  /// Null: the user declined to answer. Returns false if none is pending.
+  bool answerQuestion(Map<String, Object>? answers);
+
+  /// Stops the current turn; the agent stays open for the next message.
+  Future<void> cancel();
+
+  /// Ends the agent and everything it started.
+  Future<void> stop();
+}
+
+/// An [AgentRun] that talks to the adapter itself, on its stdin / stdout.
+class LocalAgentRun implements AgentRun {
+  LocalAgentRun._(this._connection, [this._process, this._target, this.workingDirectory]) {
     _connection.onRequest = _onRequest;
     _traffic = _connection.traffic.listen((t) {
       log.applyAll(_reader.read(t.message, outgoing: t.outgoing, at: t.at));
@@ -36,11 +86,11 @@ class AgentRun {
   }
 
   /// Talks to an agent already connected on [input] / [output] (tests).
-  factory AgentRun.connect(Stream<List<int>> input, StreamSink<List<int>> output) =>
-      AgentRun._(AcpConnection(input, output));
+  factory LocalAgentRun.connect(Stream<List<int>> input, StreamSink<List<int>> output) =>
+      LocalAgentRun._(AcpConnection(input, output));
 
   /// Starts the adapter [executable] on [target] and connects to it.
-  static Future<AgentRun> spawn(
+  static Future<LocalAgentRun> spawn(
     Target target,
     String executable,
     List<String> args, {
@@ -51,18 +101,17 @@ class AgentRun {
     target.contain(process);
     // Adapters log on stderr: drained so the pipe never fills.
     process.stderr.drain<void>();
-    return AgentRun._(AcpConnection(process.stdout, process.stdin), process, target, cwd);
+    return LocalAgentRun._(AcpConnection(process.stdout, process.stdin), process, target, cwd);
   }
 
   final AcpConnection _connection;
   final Process? _process;
   final Target? _target;
 
-  /// The folder the adapter was started in, in its target's own form
-  /// (`/tmp/x` in WSL even if the user picked `\\wsl.localhost\…\tmp\x`).
-  /// The session must use this one: the agent runs its commands there.
+  @override
   final String? workingDirectory;
   final AcpReader _reader = AcpReader();
+  @override
   final SessionLog log = SessionLog();
   final _changes = StreamController<void>.broadcast();
   late final StreamSubscription<AcpTraffic> _traffic;
@@ -70,16 +119,16 @@ class AgentRun {
   final Map<Object, Completer<Object?>> _questions = {};
   bool _closed = false;
 
-  /// Fires after each change of [log] (and when the agent ends).
+  @override
   Stream<void> get changes => _changes.stream;
 
+  @override
   String? get sessionId => log.sessionId;
 
-  /// False once the adapter has ended.
+  @override
   bool get alive => !_closed;
 
-  /// Handshake, then a new session in [cwd] — or [resume] an existing one
-  /// (its thread is replayed into [log]) — then the permission [mode].
+  @override
   Future<void> open({required String cwd, String? resume, String? mode}) async {
     await _connection.request('initialize', {
       'protocolVersion': 1,
@@ -100,11 +149,12 @@ class AgentRun {
     if (mode != null) await setMode(mode);
   }
 
+  @override
   Future<void> setMode(String mode) async {
     await _connection.request('session/set_mode', {'sessionId': log.sessionId, 'modeId': mode});
   }
 
-  /// Switches to [model] (one of [SessionLog.models]).
+  @override
   Future<void> setModel(String model) async {
     final option = log.modelOption;
     if (option != null) {
@@ -114,9 +164,7 @@ class AgentRun {
     }
   }
 
-  /// Sends the user's message. While the agent works, it is slipped in
-  /// (queued by the agent). Completes when the agent has answered it;
-  /// errors are in [log], never thrown.
+  @override
   Future<void> prompt(String text) async {
     try {
       await _connection.request('session/prompt', {
@@ -130,10 +178,7 @@ class AgentRun {
     }
   }
 
-  /// Answers the oldest pending permission request (or [requestId]).
-  /// [always]: the agent's « always allow » option, when it offers one (the
-  /// same kind of action is then allowed without asking). Returns false if
-  /// there is no request.
+  @override
   bool answer({required bool allow, bool always = false, Object? requestId}) {
     final id = requestId ?? (_asked.isEmpty ? null : _asked.keys.first);
     final asked = id == null ? null : _asked.remove(id);
@@ -152,9 +197,7 @@ class AgentRun {
     return true;
   }
 
-  /// Answers the pending question: [answers] by question key (a choice's
-  /// label, a list of them, or free text in the question's other key).
-  /// Null: the user declined to answer. Returns false if none is pending.
+  @override
   bool answerQuestion(Map<String, Object>? answers) {
     if (_questions.isEmpty) return false;
     final id = _questions.keys.first;
@@ -163,7 +206,7 @@ class AgentRun {
     return true;
   }
 
-  /// Stops the current turn; the agent stays open for the next message.
+  @override
   Future<void> cancel() async {
     _connection.notify('session/cancel', {'sessionId': log.sessionId});
     // After a cancel, ACP wants every open permission request answered
@@ -180,7 +223,7 @@ class AgentRun {
     _questions.clear();
   }
 
-  /// Ends the agent and everything it started.
+  @override
   Future<void> stop() async {
     if (_closed) return;
     if (log.working) await cancel();

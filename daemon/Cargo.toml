@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["mikky-acp"]
+members = ["mikky-acp", "mikkyd"]
 
 [workspace.package]
 edition = "2024"
@@ -8,7 +8,17 @@ version = "0.1.0"
 publish = false
 
 [workspace.dependencies]
-agent-client-protocol = "2.2"
-anyhow = "1"
+mikky-acp = { path = "mikky-acp" }
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+futures-util = { version = "0.3", default-features = false, features = ["sink", "std"] }
+getrandom = "0.4"
+serde_json = "1"
 tokio = { version = "1", features = ["full"] }
-tokio-util = { version = "0.7", features = ["compat"] }
+tokio-tungstenite = "0.30"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Security",
+    "Win32_Security_Credentials",
+    "Win32_System_JobObjects",
+    "Win32_System_Threading",
+] }
