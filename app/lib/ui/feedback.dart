@@ -253,104 +253,16 @@ Color statusColor(MikkyUi ui, UiStatus status) => switch (status) {
   UiStatus.sleeping => ui.grey,
 };
 
-/// Behind [child], a field of small dots, invisible until a soft patch of
-/// light in the state's color slides slowly over them from left to right,
-/// leaving a short trail; then a pause (user request, 2026-09-30, after a
-/// halftone glow they showed).
-class DotGlow extends StatelessWidget {
-  const DotGlow({super.key, required this.status, required this.child, this.radius = 18});
-
-  final UiStatus status;
-  final Widget child;
-
-  /// The field is clipped to this rounded shape.
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = statusColor(MikkyUi.of(context), status);
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(radius),
-            child: Looping(
-              key: ValueKey(status),
-              period: const Duration(milliseconds: 6500),
-              frozenAt: .3,
-              builder: (context, t) => CustomPaint(painter: _GlowPainter(t, color)),
-            ),
-          ),
-        ),
-        child,
-      ],
-    );
-  }
-}
-
-class _GlowPainter extends CustomPainter {
-  _GlowPainter(this.t, this.color);
-
-  final double t;
-  final Color color;
-
-  /// Distance between two dots, and the biggest dot's radius.
-  static const pitch = 4.5, big = 1.35;
-
-  /// Part of the period the pass takes; the rest is a pause, all dark.
-  static const pass = .82;
-
-  /// How far the light reaches ahead of its center, and behind (the trail).
-  static const ahead = 34.0, behind = 80.0;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (t > pass) return;
-    final p = Curves.easeInOutSine.transform(t / pass);
-    final head = -ahead * 2 + p * (size.width + ahead * 2 + behind * 2);
-    final cy = size.height / 2;
-    final paint = Paint()..color = color;
-    final x0 = math.max(0, ((head - behind * 2.2) / pitch).floor());
-    final x1 = math.min((size.width / pitch).ceil(), ((head + ahead * 2.2) / pitch).ceil());
-    final rows = (size.height / pitch).ceil();
-    for (var c = x0; c <= x1; c++) {
-      final x = c * pitch + pitch / 2;
-      final d = x - head;
-      final along = d > 0 ? math.exp(-(d / ahead) * (d / ahead)) : math.exp(-(d / behind) * (d / behind));
-      for (var r = 0; r < rows; r++) {
-        final y = r * pitch + pitch / 2;
-        final v = (y - cy) / (size.height * .4);
-        // A little grain, always the same for a given dot.
-        final grain = .8 + .4 * _hash(c, r);
-        final i = along * math.exp(-v * v) * grain;
-        if (i < .1) continue;
-        // Halftone: the dots grow toward the center more than they darken.
-        paint.color = color.withValues(alpha: .1 + .32 * math.min(1, i));
-        canvas.drawCircle(Offset(x, y), big * (.3 + .7 * math.min(1, i)), paint);
-      }
-    }
-  }
-
-  static double _hash(int a, int b) {
-    var h = a * 374761393 + b * 668265263;
-    h = (h ^ (h >> 13)) * 1274126177;
-    return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
-  }
-
-  @override
-  bool shouldRepaint(_GlowPainter old) => old.t != t || old.color != color;
-}
-
-/// A snake of lit dots running round a 4 × 4 grid of faint dots, in the
-/// state's color: a small launcher that says « at work » (user request,
-/// 2026-09-30, after Grok's loader).
+/// A snake of square pixels running round a 4 × 4 square, in the state's
+/// color, one step at a time like the game; the pixels it has left are
+/// gone (user request, 2026-09-30, after Grok's loader).
 class DotSnake extends StatelessWidget {
   const DotSnake(this.status, {super.key});
 
   final UiStatus status;
 
-  static const pitch = 5.4, dot = 3.6;
-  static const size = 3 * pitch + dot;
+  static const pitch = 5.5, pixel = 4.5;
+  static const size = 3 * pitch + pixel;
 
   @override
   Widget build(BuildContext context) {
@@ -370,34 +282,25 @@ class _SnakePainter extends CustomPainter {
   final double t;
   final Color color;
 
-  /// A closed path through the 16 dots (column, row), each next to the last.
+  /// A closed path through the 16 cells (column, row), each next to the last.
   static const path = [
     (0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (1, 1), (1, 2),
     (2, 2), (3, 2), (3, 3), (2, 3), (1, 3), (0, 3), (0, 2), (0, 1),
   ];
 
-  /// How many dots the snake lights, head included.
-  static const length = 6.0;
+  /// How many pixels the snake is long.
+  static const length = 6;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final head = t * path.length;
-    final paint = Paint();
-    for (var k = 0; k < path.length; k++) {
-      // How far behind the head this dot is, along the path.
-      final behind = (head - k) % path.length;
-      final lit = behind < 1 ? behind : (behind < length ? 1 - (behind - 1) / (length - 1) : 0.0);
-      final i = Curves.easeOut.transform(lit.clamp(0.0, 1.0));
-      final (c, r) = path[k];
-      paint.color = color.withValues(alpha: .14 + .86 * i);
+    final head = (t * path.length).floor() % path.length;
+    final paint = Paint()..color = color;
+    for (var k = 0; k < length; k++) {
+      final (c, r) = path[(head - k) % path.length];
       canvas.drawRRect(
         RRect.fromRectAndRadius(
-          Rect.fromCenter(
-            center: Offset(c * DotSnake.pitch + DotSnake.dot / 2, r * DotSnake.pitch + DotSnake.dot / 2),
-            width: DotSnake.dot * (.8 + .2 * i),
-            height: DotSnake.dot * (.8 + .2 * i),
-          ),
-          const Radius.circular(1.1),
+          Rect.fromLTWH(c * DotSnake.pitch, r * DotSnake.pitch, DotSnake.pixel, DotSnake.pixel),
+          const Radius.circular(1),
         ),
         paint,
       );
@@ -406,26 +309,6 @@ class _SnakePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_SnakePainter old) => old.t != t || old.color != color;
-}
-
-/// A tool's logo that turns slowly and breathes while its agent works,
-/// like Claude Code's star (user request, 2026-09-30).
-class SpinningLogo extends StatelessWidget {
-  const SpinningLogo({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) => Looping(
-    period: const Duration(milliseconds: 3200),
-    builder: (context, t) {
-      final breath = (1 - math.cos(t * 4 * math.pi)) / 2;
-      return Transform.rotate(
-        angle: Curves.easeInOutCubic.transform(t) * math.pi,
-        child: Transform.scale(scale: .84 + .16 * breath, child: child),
-      );
-    },
-  );
 }
 
 /// `.status`: a 10 px dot in a 28 px box, animated by state: working =

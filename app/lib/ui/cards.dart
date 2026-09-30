@@ -148,77 +148,87 @@ class AgentCard extends StatelessWidget {
     // At work or waiting: the tool's logo, and the dots lit in the state's
     // color (user request, 2026-09-30). History keeps its dot.
     final live = !plain && brand != null;
-    final body = Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        live
-            ? SizedBox(
-                width: 28,
-                height: 20,
-                child: Center(
-                  // Claude's own star turns while it works; the others keep still.
-                  child: brand == Brand.claude && (status == UiStatus.working || status == UiStatus.thinking)
-                      ? SpinningLogo(child: BrandLogo(brand!, size: 22))
-                      : BrandLogo(brand!, size: 22),
-                ),
-              )
-            : Transform.translate(offset: const Offset(0, -4), child: StatusDot(status)),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                height: 20,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
-                    if (brand != null && !live) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
-                    if (who.isNotEmpty)
-                      Text(
-                        who,
-                        style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
-                      ),
-                    if (live && actions != null) ...[const SizedBox(width: 10), DotSnake(status)],
-
-                  ],
-                ),
-              ),
-              if (subtitle != null)
-                Padding(
-                  padding: const EdgeInsets.only(top: 1),
-                  child: Text(
-                    subtitle!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: uiText(12.5, color: ui.text2),
-                  ),
-                ),
-              if (actions != null) Padding(padding: const EdgeInsets.only(top: 10), child: actions!),
-            ],
+    final titleRow = SizedBox(
+      height: 20,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
+            ),
           ),
-        ),
-        // The launcher: a snake of dots, level with the two lines (on the
-        // title's line when Oui / Non need the whole width).
-        if (live && actions == null) ...[const SizedBox(width: 12), Padding(padding: const EdgeInsets.only(top: 2), child: DotSnake(status))],
-      ],
+          const SizedBox(width: 8),
+          if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
+          if (brand != null && !live) ...[BrandLogo(brand!, size: 12), const SizedBox(width: 4)],
+          if (who.isNotEmpty)
+            Text(
+              who,
+              style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
+            ),
+          // Oui / Non need the whole width: the snake goes up here.
+          if (live && actions != null) ...[const SizedBox(width: 10), DotSnake(status)],
+        ],
+      ),
     );
-    // At work: no card, the dots glow behind the row. Waiting: a raised
-    // card (it holds Oui / Non), the dots behind too. Without a logo (the
-    // Oui / Non of an agent's page): the grey card as before.
-    final padded = Padding(
-      padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
-      child: body,
-    );
+    final subtitleText = subtitle == null
+        ? null
+        : Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Text(
+              subtitle!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: uiText(12.5, color: ui.text2),
+            ),
+          );
+    final Widget body;
+    if (live) {
+      // At work or waiting (user request, 2026-09-30): the tool's logo,
+      // big, level with the two lines, and on the right the snake of dots.
+      final head = Row(
+        children: [
+          SizedBox(width: 32, child: Center(child: BrandLogo(brand!, size: 28))),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [titleRow, ?subtitleText],
+            ),
+          ),
+          if (actions == null) ...[const SizedBox(width: 12), DotSnake(status)],
+        ],
+      );
+      body = actions == null
+          ? head
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [head, Padding(padding: const EdgeInsets.only(left: 42, top: 10), child: actions!)],
+            );
+    } else {
+      body = Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Transform.translate(offset: const Offset(0, -4), child: StatusDot(status)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                titleRow,
+                ?subtitleText,
+                if (actions != null) Padding(padding: const EdgeInsets.only(top: 10), child: actions!),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    // At work: no card, a plain row. Waiting: a raised card with the
+    // orange outline (it holds Oui / Non). Without a logo (the Oui / Non
+    // of an agent's page): the grey card as before.
     final waiting = style == AgentCardStyle.waiting;
     final card = Surface(
       radius: old ? 14 : 18,
@@ -228,7 +238,8 @@ class AgentCard extends StatelessWidget {
         if (live && waiting) ...[ui.highlight, ...ui.shCtl],
         if (waiting) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
       ],
-      child: live ? DotGlow(status: status, child: padded) : padded,
+      padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
+      child: body,
     );
     return _pressable(card);
   }
