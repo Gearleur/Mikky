@@ -18,9 +18,13 @@ enum PixelFxKind {
   /// up and closes again, over and over; the tips cool as it opens.
   firework,
 
-  /// The same, calmer: it opens only halfway, more slowly, in the eight
-  /// directions only, and keeps its colors.
+  /// The same, calmer: only its last two steps, a middle star and a big
+  /// one, back and forth, slowly, in the eight directions, keeping its
+  /// colors (user request, 2026-09-30).
   fireworkSoft,
+
+  /// The calm one, turning by notches (to try).
+  fireworkSpin,
 
   /// Spiral arms around a white core, turning slowly, scattered pixels on
   /// the edge.
@@ -77,7 +81,7 @@ class StatusFx extends StatelessWidget {
   static double _still(PixelFxKind kind) => switch (kind) {
     PixelFxKind.sparkle => .72,
     PixelFxKind.firework => 1.2,
-    PixelFxKind.fireworkSoft => 1.8,
+    PixelFxKind.fireworkSoft || PixelFxKind.fireworkSpin => 1.8,
     PixelFxKind.galaxy => 1,
   };
 
@@ -105,7 +109,7 @@ class PixelFx extends StatelessWidget {
   final double slow;
 
   /// The calm firework needs only 7 × 7: bigger pixels when small.
-  static int gridOf(PixelFxKind kind) => kind == PixelFxKind.fireworkSoft ? 7 : 9;
+  static int gridOf(PixelFxKind kind) => kind == PixelFxKind.fireworkSoft || kind == PixelFxKind.fireworkSpin ? 7 : 9;
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +153,10 @@ class _FxPainter extends CustomPainter {
         final i = switch (kind) {
           PixelFxKind.sparkle => _sparkle(x - c, y - c),
           PixelFxKind.firework => _firework(x - c, y - c),
-          PixelFxKind.fireworkSoft => _fireworkSoft(x - c, y - c),
+          PixelFxKind.fireworkSoft => _fireworkSoft(x - c, y - c, 0),
+          // It turns by notches of 22.5°, like a pixel sprite: in between
+          // angles the 7 × 7 grid only makes blobs.
+          PixelFxKind.fireworkSpin => _fireworkSoft(x - c, y - c, (t / .5).floor() * math.pi / 8),
           PixelFxKind.galaxy => _galaxy(x - c, y - c, x, y),
         };
         final level = _level(i);
@@ -218,18 +225,23 @@ class _FxPainter extends CustomPainter {
     return math.max(0, math.max(head, trail)) * cool * (between ? .75 : 1);
   }
 
-  double _fireworkSoft(int dx, int dy) {
+  /// [turn]: how far the star has turned, radians.
+  double _fireworkSoft(int dx, int dy, double turn) {
     final e = (1 - math.cos((t / 3.6) * math.pi * 2)) / 2;
-    final r = .9 + e * 1.8;
+    // Middle star (diagonals two steps out) ⇄ big star (axes three out).
+    final r = 2.4 + e * .6;
     if (dx == 0 && dy == 0) return 1;
-    final ax = dx.abs(), ay = dy.abs();
-    // The eight directions only: straight or diagonal.
-    if (!(ax == 0 || ay == 0 || ax == ay)) return 0;
-    // Diagonal steps are longer: count them as such.
-    final d = ax == ay ? ax * 1.4 : math.max(ax, ay).toDouble();
-    if (d > r + .4) return 0;
+    final d = math.sqrt((dx * dx + dy * dy).toDouble());
+    // On one of the eight rays when close enough to its line.
+    final a = math.atan2(dy.toDouble(), dx.toDouble()) - turn;
+    final k = (a / (math.pi / 4)).roundToDouble();
+    final off = a - k * math.pi / 4;
+    if ((d * math.sin(off)).abs() > .5) return 0;
+    final along = d * math.cos(off);
+    // Diagonal steps are longer: the star stays round.
+    if (along > r + .45) return 0;
     // Bright near the heart, softer toward the tip.
-    return .85 - (d / (r + .6)) * .5;
+    return .85 - (along / (r + .6)) * .5;
   }
 
   // ------------------------------------------------------------- galaxy
