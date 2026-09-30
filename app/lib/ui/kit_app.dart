@@ -619,6 +619,7 @@ class _KitPartsState extends State<KitParts> {
                 child: Text(switch (kind) {
                   PixelFxKind.sparkle => 'Étincelle',
                   PixelFxKind.firework => 'Feu d’artifice',
+                  PixelFxKind.fireworkSoft => 'Plus simple',
                   PixelFxKind.galaxy => 'Galaxie',
                 }, style: uiText(13, color: ui.text2)),
               ),

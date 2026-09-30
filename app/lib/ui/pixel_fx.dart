@@ -17,6 +17,10 @@ enum PixelFxKind {
   /// up and closes again, over and over; the tips cool as it opens.
   firework,
 
+  /// The same, calmer: it opens only halfway, more slowly, in the eight
+  /// directions only, and keeps its colors.
+  fireworkSoft,
+
   /// Spiral arms around a white core, turning slowly, scattered pixels on
   /// the edge.
   galaxy,
@@ -82,6 +86,7 @@ class _FxPainter extends CustomPainter {
         final i = switch (kind) {
           PixelFxKind.sparkle => _sparkle(x - c, y - c),
           PixelFxKind.firework => _firework(x - c, y - c),
+          PixelFxKind.fireworkSoft => _fireworkSoft(x - c, y - c),
           PixelFxKind.galaxy => _galaxy(x - c, y - c, x, y),
         };
         final level = _level(i);
@@ -148,6 +153,20 @@ class _FxPainter extends CustomPainter {
     // Open, it cools a little: white small, deeper colors at its widest.
     final cool = 1 - e * .35;
     return math.max(0, math.max(head, trail)) * cool * (between ? .75 : 1);
+  }
+
+  double _fireworkSoft(int dx, int dy) {
+    final e = (1 - math.cos((t / 3.6) * math.pi * 2)) / 2;
+    final r = .9 + e * 1.8;
+    if (dx == 0 && dy == 0) return 1;
+    final ax = dx.abs(), ay = dy.abs();
+    // The eight directions only: straight or diagonal.
+    if (!(ax == 0 || ay == 0 || ax == ay)) return 0;
+    // Diagonal steps are longer: count them as such.
+    final d = ax == ay ? ax * 1.4 : math.max(ax, ay).toDouble();
+    if (d > r + .4) return 0;
+    // Bright near the heart, softer toward the tip.
+    return .85 - (d / (r + .6)) * .5;
   }
 
   // ------------------------------------------------------------- galaxy
