@@ -65,8 +65,10 @@ abstract final class FloatingMenu {
     });
   }
 
-  /// Slightly soft: a little overshoot, settled in about 0.3 s.
-  static const spring = SpringDescription(mass: 1, stiffness: 420, damping: 29);
+  /// Soft and gluey: a bit slower, a real little bounce (user requests,
+  /// 2026-09-30: « pas assez gluant, un peu trop rapide, légèrement »);
+  /// open in about 0.25 s, settled in about 0.45 s.
+  static const spring = SpringDescription(mass: 1, stiffness: 300, damping: 18.5);
 }
 
 class _MorphMenu extends StatefulWidget {
@@ -128,7 +130,7 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     if (_closing) return;
     _closing = true;
     if (!Motion.reduced(context)) {
-      await _t.animateTo(0, duration: const Duration(milliseconds: 170), curve: Curves.easeInCubic);
+      await _t.animateTo(0, duration: const Duration(milliseconds: 200), curve: Curves.easeInCubic);
     }
     widget.onGone(id);
   }
@@ -171,7 +173,7 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     final o = widget.origin;
     // Gluey: the width leads, the height follows a little behind.
     final w = t;
-    final h = t < 1 ? math.pow(t.clamp(0.0, 1.0), 1.45).toDouble() : t;
+    final h = t < 1 ? math.pow(t.clamp(0.0, 1.0), 1.8).toDouble() : t;
     double lerp(double a, double b, double f) => a + (b - a) * f;
     // It opens upwards when there was no room below.
     final growsUp = target.top < o.top;
