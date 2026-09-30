@@ -6,6 +6,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - **`docs/superpowers/reprise.md` — read first: where we are in building the app, what is left, known pitfalls.**
 - **`docs/superpowers/design.md` — all the design (art direction, brand, colours, pixels, screens, motion, what was rejected, what is left to decide). Read it before any visual change; write every design decision there, not in `reprise.md`.**
 - `docs/superpowers/idees.md` — all feature ideas (Paperclip-like companion, loops, LocalSend, VPS, mails, mini-apps) and the chosen MVP (2026-09-29). Nothing there is decided beyond the MVP and the validated design.
+- `docs/superpowers/specs/2026-09-30-mikkyd-design.md` — proposal (not yet approved, 2026-09-30): Rust daemon `mikkyd` on PC then VPS, app as a client, secure agent-to-agent channel, big window, steps R0–R7.
 - `docs/superpowers/specs/2026-09-28-etape-1-design.md` — step 1 spec (in French). **Status: approved by the user on 2026-09-28.**
 - `docs/superpowers/plans/2026-09-28-etape-1-plan.md` — step 1 plan and progress. J0, J1, J2 done (J2 still to validate with the user); J3 partly. See its "Avancement" section.
 - `packages/mikky_engine/` — pure Dart engine: Mikky (states, emotes, forms, geometry), island rules (`IslandMachine`), agents (`AgentSource`, `DemoAgentSource`). Tests: `C:\dev\flutter\bin\dart.bat test` in that folder.

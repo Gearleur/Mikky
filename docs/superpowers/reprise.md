@@ -19,6 +19,10 @@ Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github
 - **Pas encore poussé sur GitHub** : les commits depuis A7.1 (demander avant de pousser).
 - **Décisions** : ACP comme Paperclip ; abonnements seulement, pas d'API ; Mikky n'est pas un harnais ; pas de Haiku ; Node privé de Mikky dans WSL ; agents dans un job object Windows ; sélecteurs un peu plus gluants (ressort 380 / 0,70) ; barre d'onglets gardée pour plus tard. Ne jamais piloter souris / clavier (SendInput) pendant que l'utilisateur utilise le PC.
 
+### Nouveau cap (2026-09-30, en fin de session) : `mikkyd` en Rust
+
+L'utilisateur veut un « Replicas » avec une app de bureau : `mikkyd` (Rust) qui gère les agents, d'abord sur le PC puis sur un VPS, un canal sécurisé entre agents (identités, jetons), une grande fenêtre (équipes, harnais), l'île qui continue ; le web plus tard ; optimiser l'app. **Proposition à valider : `specs/2026-09-30-mikkyd-design.md`** (architecture, ce qui va en Rust, étapes R0 à R7, 4 questions en §11). Tant qu'elle n'est pas validée, la liste ci-dessous tient toujours, mais son ordre est à revoir avec l'utilisateur.
+
 ### Prochaine session, dans l'ordre (demandé par l'utilisateur le 2026-09-30)
 
 1. **Essayer les nouveaux outils** : OpenCode, pi, OpenClaw, Gemini CLI. Aucun n'est installé (ni Windows ni WSL). Pour chacun : l'installer, voir comment il se connecte **avec un abonnement, sans clé d'API** (sinon on le laisse de côté), s'il parle ACP (Gemini CLI a un mode ACP, `--experimental-acp` ; OpenCode aurait `opencode acp` ; pi et OpenClaw : à vérifier), puis le brancher comme Claude et Codex (`AgentProvider`, `AgentSetup`, lecteur de ses fichiers de session). Logos déjà prêts (`app/lib/ui/brand_logo.dart`).
