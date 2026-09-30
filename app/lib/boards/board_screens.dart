@@ -215,8 +215,10 @@ class _AgentMockState extends State<AgentMock> {
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
           ),
         ),
-        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 60)),
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 56 : (working ? 104 : 92))),
+        // Softer on top (user request, 2026-09-30: « trop puissant »).
+        const Positioned(top: 0, left: 0, right: 0, child: EdgeBlur(top: true, height: 60, layers: 8, sigma: .8, veil: .55)),
+        // Only behind the field, not above it (user request, 2026-09-30).
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 80 : 68))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
