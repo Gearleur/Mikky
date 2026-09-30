@@ -63,7 +63,7 @@ class GroupHeader extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(6, first ? 4 : 12, 6, 8),
           child: Row(
             children: [
-              if (status != null && StatusDot.pixels(status!))
+              if (status != null)
                 PixelStatus(status!, size: 10)
               else
                 Container(

@@ -435,7 +435,8 @@ class _StarPainter extends CustomPainter {
 /// live like SmoothUI's agent avatar (MIT, © 2024 Eduardo Calvo): each
 /// pixel pulses on its own, the whole breathes, a wave crosses it on the
 /// diagonal and a pixel flashes now and then (user request, 2026-09-30).
-/// Finished stays still. [seed] gives another pattern, same colors.
+/// Every state has one; finished is just a light green square, still.
+/// [seed] gives another pattern, same colors.
 class PixelStatus extends StatelessWidget {
   const PixelStatus(this.status, {super.key, this.size = 14, this.seed = 0});
 
@@ -457,12 +458,19 @@ class PixelStatus extends StatelessWidget {
   /// Loops are long so their seam never shows (times in ms, as SmoothUI).
   static const _periodMs = 60000.0;
 
+  /// Finished: just a light green square, still.
+  static const _doneGreen = Color(0xFF6EDC8C);
+
   @override
   Widget build(BuildContext context) {
-    final painter = _PixelPalette.of(_base(status), status.index * 7919 + seed);
     if (status == UiStatus.finished) {
-      return CustomPaint(size: Size.square(size), painter: _PixelPainter(painter, null));
+      return Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: _doneGreen, borderRadius: BorderRadius.circular(size * .24)),
+      );
     }
+    final painter = _PixelPalette.of(_base(status), status.index * 7919 + seed);
     return Looping(
       key: ValueKey(status),
       period: const Duration(milliseconds: 60000),
@@ -554,91 +562,15 @@ class _PixelPainter extends CustomPainter {
   bool shouldRepaint(_PixelPainter old) => old.ms != ms || old.palette != palette;
 }
 
-/// `.status`: a 10 px dot in a 28 px box, animated by state: working =
-/// blue with a widening wave (1.6 s); thinking, limited, sleeping = it
-/// breathes (2.4 s, 3.2 s, 4 s); waiting for a yes = two hops then a
-/// pause (1.8 s, 5 px); error = one shake (450 ms). Working, waiting
-/// and finished are small squares of pixels now ([PixelStatus], user
-/// request, 2026-09-30); finished stays still.
+/// `.status`: an agent's state in a 28 px box — a small square of pixels
+/// in the state's color ([PixelStatus]; user request, 2026-09-30).
 class StatusDot extends StatelessWidget {
   const StatusDot(this.status, {super.key});
 
   final UiStatus status;
 
-  static bool pixels(UiStatus s) => s == UiStatus.working || s == UiStatus.approval || s == UiStatus.finished;
-
   @override
-  Widget build(BuildContext context) {
-    if (pixels(status)) return SizedBox.square(dimension: 28, child: Center(child: PixelStatus(status)));
-    final c = statusColor(MikkyUi.of(context), status);
-    Widget dot(double size, {Widget? child}) => Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(color: c, shape: BoxShape.circle),
-      alignment: Alignment.center,
-      child: child,
-    );
-    final Widget inner = switch (status) {
-      UiStatus.working => Looping(
-        key: const ValueKey('working'),
-        period: const Duration(milliseconds: 1600),
-        frozenAt: 1,
-        builder: (context, t) {
-          final e = const Cubic(.2, .6, .3, 1).transform(t);
-          return Stack(
-            alignment: Alignment.center,
-            clipBehavior: Clip.none,
-            children: [
-              Transform.scale(
-                scale: 1 + 1.8 * e,
-                child: Opacity(opacity: .5 * (1 - e), child: dot(10)),
-              ),
-              dot(10),
-            ],
-          );
-        },
-      ),
-      UiStatus.thinking || UiStatus.limited || UiStatus.sleeping => Looping(
-        key: ValueKey(status),
-        period: Duration(
-          milliseconds: switch (status) {
-            UiStatus.thinking => 2400,
-            UiStatus.limited => 3200,
-            _ => 4000,
-          },
-        ),
-        builder: (context, t) {
-          final b = (1 - math.cos(t * 2 * math.pi)) / 2;
-          final e = Curves.easeInOut.transform(b);
-          return Opacity(
-            opacity: (1 - .45 * e) * (status == UiStatus.sleeping ? .7 : 1),
-            child: Transform.scale(scale: 1 - .28 * e, child: dot(10)),
-          );
-        },
-      ),
-      UiStatus.approval => Looping(
-        key: const ValueKey('approval'),
-        period: const Duration(milliseconds: 1800),
-        builder: (context, t) => Transform.translate(offset: Offset(0, -5 * hop(t)), child: dot(10)),
-      ),
-      UiStatus.finished => Looping(
-        key: const ValueKey('finished'),
-        period: const Duration(milliseconds: 550),
-        repeat: false,
-        builder: (context, t) => Transform.scale(
-          scale: .3 + .7 * const Cubic(.34, 1.8, .64, 1).transform(t),
-          child: dot(18, child: const MikkyIcon('check', size: 11, color: Color(0xFFFFFFFF), stroke: 3)),
-        ),
-      ),
-      UiStatus.error => Looping(
-        key: const ValueKey('error'),
-        period: const Duration(milliseconds: 450),
-        repeat: false,
-        builder: (context, t) => Transform.translate(offset: Offset(_shake(t), 0), child: dot(10)),
-      ),
-    };
-    return SizedBox.square(dimension: 28, child: Center(child: inner));
-  }
+  Widget build(BuildContext context) => SizedBox.square(dimension: 28, child: Center(child: PixelStatus(status)));
 
   /// `@keyframes hop`: up 5 px at 10 % and 30 %, down at 20 % and 42 %.
   static double hop(double t) {
@@ -649,14 +581,6 @@ class StatusDot extends StatelessWidget {
     if (t < .3) return up(.2, .3);
     if (t < .42) return down(.3, .42);
     return 0;
-  }
-
-  /// `@keyframes shake`: -3, 3, -2, 1 px.
-  static double _shake(double t) {
-    const keys = [0.0, -3.0, 3.0, -2.0, 1.0, 0.0];
-    final x = t * 5;
-    final i = x.floor().clamp(0, 4);
-    return keys[i] + (keys[i + 1] - keys[i]) * (x - i);
   }
 }
 

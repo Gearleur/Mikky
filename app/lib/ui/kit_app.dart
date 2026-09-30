@@ -538,12 +538,12 @@ class _KitPartsState extends State<KitParts> {
             children: [
               for (final (s, b, small) in [
                 (UiStatus.working, 'Travaille', 'carré bleu qui vit'),
-                (UiStatus.thinking, 'Réfléchit', 'respire'),
+                (UiStatus.thinking, 'Réfléchit', 'carré violet qui vit'),
                 (UiStatus.approval, 'Attend ton feu vert', 'carré orange qui vit'),
-                (UiStatus.finished, 'Terminé', 'carré vert, figé'),
-                (UiStatus.error, 'Erreur', 'tremble une fois'),
-                (UiStatus.limited, 'Limité', 'attend la fin de la limite'),
-                (UiStatus.sleeping, 'Dort', 'presque éteint'),
+                (UiStatus.finished, 'Terminé', 'carré vert clair, figé'),
+                (UiStatus.error, 'Erreur', 'carré rouge qui vit'),
+                (UiStatus.limited, 'Limité', 'carré jaune qui vit'),
+                (UiStatus.sleeping, 'Dort', 'carré gris qui vit'),
               ])
                 SizedBox(
                   width: 200,
@@ -606,7 +606,7 @@ class _KitPartsState extends State<KitParts> {
           // the star tried on Mikky thinking.
           // The pixel squares, bigger (after SmoothUI's agent avatar).
           line([
-            for (final st in [UiStatus.working, UiStatus.approval, UiStatus.finished]) PixelStatus(st, size: 28),
+            for (final st in UiStatus.values) PixelStatus(st, size: 28),
             Text('Carrés d’état', style: uiText(13, color: ui.text2)),
           ]),
           line([
