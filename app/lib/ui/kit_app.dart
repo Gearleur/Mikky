@@ -315,15 +315,27 @@ class _KitAgentState extends State<KitAgent> {
         TaskSection(
           status: UiStatus.working,
           title: 'Corrige la fermeture auto',
-          meta: '3 étapes · 1 fichier',
+          meta: '3 étapes',
           initiallyOpen: true,
           action: 'Suivi',
           onAction: () => setState(() => _view = 0),
-          children: const [
+          steps: const [
+            TaskStep(
+              label: 'Lit island_machine.dart',
+              detail: ToolLine(icon: 'file', title: 'Lire island_machine.dart', detail: 'packages/mikky_engine/lib/src/island/island_machine.dart'),
+            ),
+            TaskStep(
+              label: 'Lance une commande',
+              state: TaskStepState.failed,
+              note: 'échec',
+              detail: ToolLine(icon: 'agents', title: 'Lancer les tests', detail: 'dart test', body: OutputBox('00:02 +74 -2: Some tests failed.')),
+            ),
+            TaskStep(label: 'Modifie island_machine.dart', state: TaskStepState.now),
+          ],
+          details: const [
             NoteLine('Les tests attendent 45 s ; je regarde la constante.', thought: true),
             ToolLine(icon: 'file', title: 'Lire island_machine.dart', detail: 'packages/mikky_engine/lib/src/island/island_machine.dart'),
-            ToolLine(icon: 'agents', title: 'Lancer les tests', detail: 'dart test', trailing: Text('échec', style: TextStyle(color: Color(0xFFFF3B30), fontSize: 11.5))),
-            ToolLine(icon: 'file', title: 'Modifier island_machine.dart', detail: 'autoCloseSec = 45', trailing: StatusFx(UiStatus.working, size: 12)),
+            ToolLine(icon: 'agents', title: 'Lancer les tests', detail: 'dart test', body: OutputBox('00:02 +74 -2: Some tests failed.')),
           ],
         ),
       ],
@@ -651,12 +663,16 @@ class _KitPartsState extends State<KitParts> {
           const TaskSection(
             status: UiStatus.finished,
             title: 'Tâche terminée',
-            meta: '3 étapes · 1 fichier · 2 min',
+            meta: '2 étapes · 1 fichier · 2 min',
             initiallyOpen: true,
-            children: [
-              ToolLine(icon: 'check', title: 'Lire la spec'),
-              ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md', trailing: Text('+12', style: TextStyle(color: Color(0xFF34C759), fontSize: 11.5))),
-              NoteLine('Résumé écrit en français, 12 lignes.'),
+            steps: [
+              TaskStep(label: 'Lit la spec'),
+              TaskStep(label: 'Crée resume.md', detail: ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md')),
+            ],
+            details: [
+              NoteLine('Je lis la spec puis j’écris un résumé court.', thought: true),
+              ToolLine(icon: 'file', title: 'Lire la spec', detail: 'docs/spec.md'),
+              ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md'),
             ],
           ),
           const ChatMessage(me: false, text: 'C’est fait : le résumé est dans **docs/resume.md**.'),

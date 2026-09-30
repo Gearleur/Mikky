@@ -252,6 +252,92 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
   );
 }
 
+/// What kind of main step a tool belongs to: tools of the same kind in a
+/// row make one step (« Lit 3 fichiers »). Null: not worth a step (the
+/// agent's own bookkeeping, like loading its tools or its to-do list).
+String? _groupOf(ToolItem t) => switch (t.kind) {
+  ToolKind.read || ToolKind.search => 'look',
+  ToolKind.edit => 'edit:${t.path ?? t.id}',
+  ToolKind.delete => 'delete:${t.id}',
+  ToolKind.move => 'move:${t.id}',
+  ToolKind.execute => 'run',
+  ToolKind.fetch => 'web',
+  ToolKind.think => null,
+  ToolKind.other => t.status == ToolStatus.failed ? 'other:${t.id}' : null,
+};
+
+/// A main step in a few words, for tools of one group.
+String _stepLabel(List<ToolItem> tools) {
+  final t = tools.first;
+  final n = tools.length;
+  String name(ToolItem t) => folderName(t.path ?? t.diff?.path);
+  switch (t.kind) {
+    case ToolKind.read || ToolKind.search:
+      final reads = tools.where((t) => t.kind == ToolKind.read).length;
+      if (reads == n) return n == 1 && name(t).isNotEmpty ? 'Lit ${name(t)}' : 'Lit $n fichiers';
+      if (reads == 0) return n == 1 ? 'Cherche dans le code' : 'Cherche dans le code ($n fois)';
+      return 'Explore le code ($n)';
+    case ToolKind.edit:
+      final created = t.diff != null && t.diff!.oldText == null;
+      final file = name(t).isEmpty ? 'un fichier' : name(t);
+      return '${created ? 'Crée' : 'Modifie'} $file';
+    case ToolKind.delete:
+      return 'Supprime ${name(t).isEmpty ? 'un fichier' : name(t)}';
+    case ToolKind.move:
+      return 'Déplace ${name(t).isEmpty ? 'un fichier' : name(t)}';
+    case ToolKind.execute:
+      return n == 1 ? 'Lance une commande' : 'Lance $n commandes';
+    case ToolKind.fetch:
+      return n == 1 ? 'Va sur internet' : 'Va sur internet ($n fois)';
+    case ToolKind.think || ToolKind.other:
+      return t.title.isEmpty ? (t.name ?? 'Outil') : t.title;
+  }
+}
+
+/// The main steps of a turn: its plan when the agent made one, else its
+/// tools grouped (user request, 2026-09-30: the big lines first, the
+/// detail on a click).
+List<Widget> _mainSteps(SessionLog log, TurnSpan turn, List<ToolItem> tools, MikkyUi ui) {
+  if (turn.plan.isNotEmpty) {
+    // As in Suivi: while it works, the first step not done is the one at
+    // work when the agent marked none.
+    final marked = turn.plan.any((e) => e.status == PlanStatus.inProgress);
+    final firstTodo = turn.plan.indexWhere((e) => e.status == PlanStatus.pending);
+    return [
+      for (var i = 0; i < turn.plan.length; i++)
+        TaskStep(
+          label: turn.plan[i].content,
+          state: switch (turn.plan[i].status) {
+            PlanStatus.completed => TaskStepState.done,
+            PlanStatus.inProgress => turn.running ? TaskStepState.now : TaskStepState.done,
+            PlanStatus.pending => turn.running && !marked && i == firstTodo ? TaskStepState.now : TaskStepState.todo,
+          },
+        ),
+    ];
+  }
+  final groups = <(String, List<ToolItem>)>[];
+  for (final t in tools) {
+    final g = _groupOf(t);
+    if (g == null) continue;
+    if (groups.isNotEmpty && groups.last.$1 == g && !g.contains(':')) {
+      groups.last.$2.add(t);
+    } else {
+      groups.add((g, [t]));
+    }
+  }
+  return [
+    for (final (_, group) in groups)
+      TaskStep(
+        label: _stepLabel(group),
+        state: group.any((t) => t.active)
+            ? TaskStepState.now
+            : (group.any((t) => t.status == ToolStatus.failed) ? TaskStepState.failed : TaskStepState.done),
+        note: group.map(_noteOf).nonNulls.firstOrNull,
+        detail: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final t in group) _toolLine(t, ui)]),
+      ),
+  ];
+}
+
 /// Chat: the whole conversation. The user's messages in bubbles; each turn
 /// with work in it is a task, part of the page, that shows what the agent
 /// did — its plan, what it thought and said on the way, every tool — then
@@ -275,12 +361,9 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
     }
     final answer = turn.running ? null : items.whereType<AgentItem>().where((a) => !a.thought && a.text.trim().isNotEmpty).lastOrNull;
     if (tools.isNotEmpty || turn.plan.isNotEmpty) {
+      final steps = _mainSteps(log, turn, tools, ui);
+      // Everything, on demand: what it thought and said, every tool.
       final details = <Widget>[
-        for (final e in turn.plan)
-          ToolLine(
-            icon: e.status == PlanStatus.completed ? 'check' : (e.status == PlanStatus.inProgress ? 'right' : 'more'),
-            title: e.content,
-          ),
         for (final item in items)
           if (item is ToolItem)
             _toolLine(item, ui)
@@ -290,9 +373,8 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
       final files = tools.where((t) => t.kind == ToolKind.edit && t.status == ToolStatus.completed).map((t) => t.path).toSet().length;
       final start = items.firstOrNull?.at, end = items.lastOrNull?.at;
       final minutes = start == null || end == null ? null : end.difference(start).inMinutes;
-      final steps = tools.length;
       final meta = [
-        '$steps étape${steps > 1 ? 's' : ''}',
+        '${steps.length} étape${steps.length > 1 ? 's' : ''}',
         if (files > 0) '$files fichier${files > 1 ? 's' : ''}',
         if (!turn.running && minutes != null) minutes < 1 ? 'moins d’une min' : '$minutes min',
       ].join(' · ');
@@ -316,7 +398,8 @@ List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi
         initiallyOpen: identical(turn, log.turns.last),
         action: turn.running && toSuivi != null ? 'Suivi' : null,
         onAction: toSuivi,
-        children: details,
+        steps: steps,
+        details: details,
       ));
       gap(6);
     }

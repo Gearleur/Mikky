@@ -313,7 +313,7 @@ class ChatMessage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(4, 2, 4, 2),
+            padding: const EdgeInsets.fromLTRB(0, 2, 2, 2),
             child: DefaultTextStyle(style: uiText(14, color: ui.text, height: 1.5), child: AgentText(text)),
           ),
           ?metaLine,
@@ -334,17 +334,57 @@ class ChatMessage extends StatelessWidget {
   }
 }
 
+/// Something to click in the chat: a light grey under the mouse, the
+/// hand cursor (user request, 2026-09-30).
+class HoverRow extends StatefulWidget {
+  const HoverRow({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4)});
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  State<HoverRow> createState() => _HoverRowState();
+}
+
+class _HoverRowState extends State<HoverRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (widget.onTap == null) return Padding(padding: widget.padding, child: widget.child);
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 140),
+          padding: widget.padding,
+          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(9)),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
+}
+
 /// A task in the chat, part of the page (no card): its state in pixels,
-/// its title and figures, a chevron; open, what the agent did, along a
-/// thin line (user request, 2026-09-30). [action]: a link on the right
-/// (« Voir le suivi » while it works).
+/// its title and figures, a chevron. Open: its main steps, as dots; under
+/// them « Voir le détail » shows [details], everything the agent did (user
+/// requests, 2026-09-30). [action]: a link on the right (« Suivi » while
+/// it works).
 class TaskSection extends StatefulWidget {
   const TaskSection({
     super.key,
     required this.status,
     required this.title,
     this.meta,
-    this.children = const [],
+    this.steps = const [],
+    this.details = const [],
     this.initiallyOpen = false,
     this.action,
     this.onAction,
@@ -353,7 +393,12 @@ class TaskSection extends StatefulWidget {
   final UiStatus status;
   final String title;
   final String? meta;
-  final List<Widget> children;
+
+  /// The main steps ([TaskStep]).
+  final List<Widget> steps;
+
+  /// Everything, shown on demand.
+  final List<Widget> details;
   final bool initiallyOpen;
   final String? action;
   final VoidCallback? onAction;
@@ -364,76 +409,170 @@ class TaskSection extends StatefulWidget {
 
 class _TaskSectionState extends State<TaskSection> {
   late bool _open = widget.initiallyOpen;
+  bool _details = false;
+
+  Widget _fold(BuildContext context, bool open, Widget child) => AnimatedSize(
+    duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
+    curve: Motion.enter,
+    alignment: Alignment.topCenter,
+    child: open ? child : const SizedBox(width: double.infinity),
+  );
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final foldable = widget.children.isNotEmpty;
-    final head = Padding(
-      padding: const EdgeInsets.fromLTRB(0, 6, 4, 6),
-      child: Row(
-        children: [
-          SizedBox(width: 18, child: Center(child: StatusFx(widget.status, size: 14))),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: widget.title, style: uiText(13.5, weight: FontWeight.w600, color: ui.text)),
-                if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(12.5, color: ui.text3, tabular: true)),
-              ]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
+    final foldable = widget.steps.isNotEmpty || widget.details.isNotEmpty;
+    final head = Row(
+      children: [
+        StatusFx(widget.status, size: 14),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: widget.title, style: uiText(13.5, weight: FontWeight.w600, color: ui.text)),
+              if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(12.5, color: ui.text3, tabular: true)),
+            ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-          if (widget.action != null)
-            MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: GestureDetector(
-                onTap: widget.onAction,
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: Text(widget.action!, style: uiText(12.5, weight: FontWeight.w500, color: ui.blue)),
-                ),
-              ),
-            ),
-          if (foldable) ...[
-            const SizedBox(width: 6),
-            AnimatedRotation(
-              turns: _open ? .5 : 0,
-              duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
-              curve: const Cubic(.34, 1.4, .64, 1),
-              child: MikkyIcon('down', size: 14, color: ui.text3),
-            ),
-          ],
+        ),
+        if (widget.action != null)
+          HoverRow(
+            onTap: widget.onAction,
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            child: Text(widget.action!, style: uiText(12.5, weight: FontWeight.w500, color: ui.blue)),
+          ),
+        if (foldable) ...[
+          const SizedBox(width: 4),
+          AnimatedRotation(
+            turns: _open ? .5 : 0,
+            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+            curve: const Cubic(.34, 1.4, .64, 1),
+            child: MikkyIcon('down', size: 14, color: ui.text3),
+          ),
         ],
-      ),
+      ],
     );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        foldable
-            ? MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => setState(() => _open = !_open), child: head),
-              )
-            : head,
+        // Level with the text of the messages: the hover grey reaches out a
+        // little on the left instead of pushing the row right.
+        Transform.translate(
+          offset: const Offset(-4, 0),
+          child: HoverRow(
+            onTap: foldable ? () => setState(() => _open = !_open) : null,
+            padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+            child: head,
+          ),
+        ),
+        _fold(
+          context,
+          _open && foldable,
+          Container(
+            margin: const EdgeInsets.only(left: 6, bottom: 4),
+            padding: const EdgeInsets.only(left: 10),
+            decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                ...widget.steps,
+                if (widget.details.isNotEmpty) ...[
+                  _fold(
+                    context,
+                    _details,
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(6, 6, 0, 2),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (var i = 0; i < widget.details.length; i++)
+                            Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 8), child: widget.details[i]),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: HoverRow(
+                      onTap: () => setState(() => _details = !_details),
+                      child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(12, weight: FontWeight.w500, color: ui.text3)),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// How a main step of a task went.
+enum TaskStepState { done, now, todo, failed }
+
+/// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
+/// tap unfolds [detail], what the agent did for it.
+class TaskStep extends StatefulWidget {
+  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail});
+
+  final String label;
+  final TaskStepState state;
+
+  /// In red after the label: « refusé », « échec ».
+  final String? note;
+  final Widget? detail;
+
+  @override
+  State<TaskStep> createState() => _TaskStepState();
+}
+
+class _TaskStepState extends State<TaskStep> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final (dot, text) = switch (widget.state) {
+      TaskStepState.done => (ui.text3, ui.text2),
+      TaskStepState.now => (ui.blue, ui.text),
+      TaskStepState.todo => (ui.track, ui.text3),
+      TaskStepState.failed => (ui.red, ui.text2),
+    };
+    final row = Row(
+      children: [
+        Container(width: 6, height: 6, decoration: BoxDecoration(color: dot, borderRadius: BorderRadius.circular(1.5))),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(text: widget.label),
+              if (widget.note != null) TextSpan(text: ' · ${widget.note}', style: TextStyle(color: ui.red, fontWeight: FontWeight.w500)),
+            ]),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(13, weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400, color: text, height: 1.35),
+          ),
+        ),
+        if (widget.detail != null)
+          AnimatedRotation(
+            turns: _open ? .5 : 0,
+            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
+            child: MikkyIcon('down', size: 12, color: ui.text3),
+          ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HoverRow(onTap: widget.detail == null ? null : () => setState(() => _open = !_open), child: row),
         AnimatedSize(
-          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
+          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
           curve: Motion.enter,
           alignment: Alignment.topCenter,
-          child: _open && foldable
-              ? Container(
-                  margin: const EdgeInsets.only(left: 8, bottom: 4),
-                  padding: const EdgeInsets.only(left: 17),
-                  decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < widget.children.length; i++)
-                        Padding(padding: EdgeInsets.only(top: i == 0 ? 2 : 8), child: widget.children[i]),
-                    ],
-                  ),
-                )
+          child: _open && widget.detail != null
+              ? Padding(padding: const EdgeInsets.fromLTRB(22, 2, 0, 6), child: widget.detail)
               : const SizedBox(width: double.infinity),
         ),
       ],
@@ -441,9 +580,9 @@ class _TaskSectionState extends State<TaskSection> {
   }
 }
 
-/// One thing the agent did, in a task: an icon, what, and in mono the
-/// command or the file; on the right its state. A tap unfolds [body] (the
-/// code it changed, what the command printed).
+/// One thing the agent did, in the detail of a task: an icon, what, and in
+/// mono the command or the file; on the right its state. A tap unfolds
+/// [body] (the code it changed, what the command printed).
 class ToolLine extends StatefulWidget {
   const ToolLine({super.key, required this.icon, required this.title, this.detail, this.trailing, this.body});
 
@@ -472,7 +611,7 @@ class _ToolLineState extends State<ToolLine> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(13, color: ui.text, height: 1.35)),
+              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(12.5, color: ui.text, height: 1.35)),
               if (widget.detail != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
@@ -484,19 +623,17 @@ class _ToolLineState extends State<ToolLine> {
         if (widget.trailing != null) Padding(padding: const EdgeInsets.only(left: 8, top: 1), child: widget.trailing!),
       ],
     );
-    if (widget.body == null) return row;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: () => setState(() => _open = !_open), child: row),
-        ),
+        HoverRow(onTap: widget.body == null ? null : () => setState(() => _open = !_open), child: row),
         AnimatedSize(
           duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
           curve: Motion.enter,
           alignment: Alignment.topCenter,
-          child: _open ? Padding(padding: const EdgeInsets.only(left: 22, top: 6), child: widget.body) : const SizedBox(width: double.infinity),
+          child: _open && widget.body != null
+              ? Padding(padding: const EdgeInsets.only(left: 28, top: 4, right: 4), child: widget.body)
+              : const SizedBox(width: double.infinity),
         ),
       ],
     );
