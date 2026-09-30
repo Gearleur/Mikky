@@ -168,8 +168,6 @@ class AgentCard extends StatelessWidget {
               who,
               style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
             ),
-          // Oui / Non need the whole width: the snake goes up here.
-          if (live && actions != null) ...[const SizedBox(width: 10), DotSnake(status)],
         ],
       ),
     );
@@ -187,7 +185,7 @@ class AgentCard extends StatelessWidget {
     final Widget body;
     if (live) {
       // At work or waiting (user request, 2026-09-30): the tool's logo,
-      // big, level with the two lines, and on the right the snake of dots.
+      // big, level with the two lines; at work, the launcher on the right.
       final head = Row(
         children: [
           SizedBox(width: 32, child: Center(child: BrandLogo(brand!, size: 28))),
@@ -198,7 +196,8 @@ class AgentCard extends StatelessWidget {
               children: [titleRow, ?subtitleText],
             ),
           ),
-          if (actions == null) ...[const SizedBox(width: 12), DotSnake(status)],
+          // Waiting is stuck: no launcher then.
+          if (style != AgentCardStyle.waiting) ...[const SizedBox(width: 12), DotSnake(status)],
         ],
       );
       body = actions == null

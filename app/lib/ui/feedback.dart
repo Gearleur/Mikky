@@ -253,23 +253,24 @@ Color statusColor(MikkyUi ui, UiStatus status) => switch (status) {
   UiStatus.sleeping => ui.grey,
 };
 
-/// A snake of square pixels running round a 4 × 4 square, in the state's
-/// color, one step at a time like the game; the pixels it has left are
-/// gone (user request, 2026-09-30, after Grok's loader).
+/// A classic launcher: three square pixels running round the edge of a
+/// 3 × 3 square, one step at a time, in the state's color; the tail fades
+/// and the empty cells are gone (user request, 2026-09-30, after Grok's
+/// loader).
 class DotSnake extends StatelessWidget {
   const DotSnake(this.status, {super.key});
 
   final UiStatus status;
 
-  static const pitch = 5.5, pixel = 4.5;
-  static const size = 3 * pitch + pixel;
+  static const pitch = 6.0, pixel = 5.0;
+  static const size = 2 * pitch + pixel;
 
   @override
   Widget build(BuildContext context) {
     final color = statusColor(MikkyUi.of(context), status);
     return Looping(
       key: ValueKey(status),
-      period: const Duration(milliseconds: 2400),
+      period: const Duration(milliseconds: 1200),
       frozenAt: .3,
       builder: (context, t) => CustomPaint(size: const Size.square(size), painter: _SnakePainter(t, color)),
     );
@@ -282,25 +283,23 @@ class _SnakePainter extends CustomPainter {
   final double t;
   final Color color;
 
-  /// A closed path through the 16 cells (column, row), each next to the last.
-  static const path = [
-    (0, 0), (1, 0), (2, 0), (3, 0), (3, 1), (2, 1), (1, 1), (1, 2),
-    (2, 2), (3, 2), (3, 3), (2, 3), (1, 3), (0, 3), (0, 2), (0, 1),
-  ];
+  /// Round the edge of the square, clockwise (column, row).
+  static const path = [(0, 0), (1, 0), (2, 0), (2, 1), (2, 2), (1, 2), (0, 2), (0, 1)];
 
-  /// How many pixels the snake is long.
-  static const length = 6;
+  /// The head, then the tail fading out.
+  static const tail = [1.0, .5, .2];
 
   @override
   void paint(Canvas canvas, Size size) {
     final head = (t * path.length).floor() % path.length;
-    final paint = Paint()..color = color;
-    for (var k = 0; k < length; k++) {
+    final paint = Paint();
+    for (var k = 0; k < tail.length; k++) {
       final (c, r) = path[(head - k) % path.length];
+      paint.color = color.withValues(alpha: tail[k]);
       canvas.drawRRect(
         RRect.fromRectAndRadius(
           Rect.fromLTWH(c * DotSnake.pitch, r * DotSnake.pitch, DotSnake.pixel, DotSnake.pixel),
-          const Radius.circular(1),
+          const Radius.circular(1.2),
         ),
         paint,
       );
