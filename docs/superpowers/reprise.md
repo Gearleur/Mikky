@@ -1,19 +1,30 @@
 # Mikky — où on en est (pour reprendre)
 
-Dernière mise à jour : 2026-09-29 (fin de session) · Dépôt : https://github.com/Gearleur/Mikky (branche `main`)
+Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github.com/Gearleur/Mikky (branche `main`)
 
 À lire en premier dans une nouvelle conversation, avec `CLAUDE.md` et `idees.md` (toutes les idées et le MVP choisi). Spec et plan de l'étape 1 : `specs/2026-09-28-etape-1-design.md`, `plans/2026-09-28-etape-1-plan.md`.
 
 ## 0. En bref
 
 - **L'étape 1 marche** : Mikky et son île sous Windows (§1).
-- **Depuis le 2026-09-29, Mikky est un compagnon d'agents** : il lance et suit Claude Code et Codex, un « Paperclip plus simple » (`idees.md`). Spec du MVP validée : `specs/2026-09-29-mvp-design.md`. Plan et avancement détaillé : `plans/2026-09-29-mvp-plan.md`.
-- **Partie A du MVP, où on en est** :
-  - **A0** essai ACP réussi (Claude et Codex, Windows et WSL) ; **A1** moteur des sessions ; **A2** `packages/mikky_agents` (lancer, suivre, connexion, surveillance des sessions, magasin) ; **A3** composants de la petite fenêtre (`app/lib/ui/`, `mikky.exe --kit`) ; **A4** la petite fenêtre elle-même (`app/lib/side/`), branchée sur les vrais agents. Tous faits.
-  - **A5** fait : les quatre combinaisons (Claude / Codex, Windows / WSL) lancées depuis la fenêtre avec Oui / Non, continuer un agent, position « en haut », clic en dehors qui referme.
-  - **Suite** : A6 (finition : menus aux couleurs des maquettes, mesures, push), puis la partie B (gérer Claude et Codex, tâches planifiées).
-- **À valider par l'utilisateur** : l'ensemble de la petite fenêtre en vrai (il a validé le kit, « le reste est parfait »).
-- **Décisions de la session** : ACP comme Paperclip ; abonnements seulement, pas d'API ; Mikky n'est pas un harnais ; pas de Haiku ; Node privé de Mikky dans WSL ; agents dans un job object Windows ; sélecteurs un peu plus gluants (ressort 380 / 0,70) ; barre d'onglets gardée pour plus tard.
+- **Depuis le 2026-09-29, Mikky est un compagnon d'agents** : il lance et suit Claude Code et Codex, un « Paperclip plus simple » (`idees.md`). Spec du MVP validée : `specs/2026-09-29-mvp-design.md`. Plan et avancement détaillé : `plans/2026-09-29-mvp-plan.md` (A0 à A7).
+- **Fait (A0 à A7.6)** :
+  - Claude et Codex lancés et suivis par ACP, sous Windows ou dans WSL (les quatre combinaisons vérifiées depuis la fenêtre), Demander / Auto, Oui / Non / « Toujours », questions à choix de Claude (vérifié avec le vrai Claude), arrêt d'un agent (job object), continuer un agent, reprise après redémarrage, sessions lancées ailleurs (VS Code, terminal) vues en direct.
+  - La petite fenêtre à droite (`app/lib/side/`) : accueil en groupes, page d'un agent (Suivi / Chat), nouvel agent (dossier, modèle, Où, Permissions), connexion. Clic en dehors qui referme, copier / coller, Mikky qui prend l'état de l'agent.
+  - Ranger les sessions : renommer, épingler, archiver, erreur réglée, supprimer (avec ou sans le fichier, confirmé), reprises reliées à l'originale, erreurs qui traînent sorties d'« En attente ».
+  - Logos des outils (Lobe icons via Paperclip, MIT) ; icône Mikky (app + zone de notification) ; notifications Windows (attend, question, erreur, fini ; réglable dans le menu).
+  - Contexte et jetons d'un agent ; limites de l'abonnement Codex (5 h, semaine) sur l'accueil.
+  - Chat : blocs de code avec « Copier », liens cliquables, gras, listes ; « Ouvrir dans VS Code » / « Ouvrir le dossier » ; commandes « / » de l'agent au-dessus du champ.
+- **Pas encore vu à l'écran** (à vérifier avec l'utilisateur) : l'icône de la zone de notification et les notifications ; les commandes « / » avec le vrai Claude ; « Ouvrir dans VS Code » en WSL.
+- **Pas encore poussé sur GitHub** : les commits depuis A7.1 (demander avant de pousser).
+- **Décisions** : ACP comme Paperclip ; abonnements seulement, pas d'API ; Mikky n'est pas un harnais ; pas de Haiku ; Node privé de Mikky dans WSL ; agents dans un job object Windows ; sélecteurs un peu plus gluants (ressort 380 / 0,70) ; barre d'onglets gardée pour plus tard. Ne jamais piloter souris / clavier (SendInput) pendant que l'utilisateur utilise le PC.
+
+### Prochaine session, dans l'ordre (demandé par l'utilisateur le 2026-09-30)
+
+1. **Essayer les nouveaux outils** : OpenCode, pi, OpenClaw, Gemini CLI. Aucun n'est installé (ni Windows ni WSL). Pour chacun : l'installer, voir comment il se connecte **avec un abonnement, sans clé d'API** (sinon on le laisse de côté), s'il parle ACP (Gemini CLI a un mode ACP, `--experimental-acp` ; OpenCode aurait `opencode acp` ; pi et OpenClaw : à vérifier), puis le brancher comme Claude et Codex (`AgentProvider`, `AgentSetup`, lecteur de ses fichiers de session). Logos déjà prêts (`app/lib/ui/brand_logo.dart`).
+2. **Les agents se parlent et se donnent des tâches** (A7.7), même sans mémoire commune : **d'abord lire la recherche**, puis proposer une spec à l'utilisateur. Questions : messagerie en langage naturel, JSON structuré, ou un mélange (enveloppe structurée + texte libre) ? Comment déléguer une tâche et récupérer le résultat ? Pistes à vérifier (ne rien citer sans l'avoir lu) : protocole A2A de Google (tâches, « agent cards »), MCP (un serveur MCP de Mikky donné à chaque agent, façon VelaTerm `vsearch` / `vrefer` / `vtell`), Agora (méta-protocole : langage naturel puis protocoles structurés négociés), « Why Do Multi-Agent LLM Systems Fail? » (MAST, 2025 : échecs de coordination), les revues de protocoles de communication entre agents (2025), la communication par état latent / cache KV (impossible entre Claude et Codex fermés, à noter seulement), ce que font Paperclip, Claude Code (sous-agents, équipes d'agents) et Codex.
+3. **Choisir les fonctions les plus importantes** pour la suite, avec l'utilisateur (liste complète : `idees.md` §7, items 41 à 67). Ma proposition : tâches planifiées / routines (55, partie B du MVP), boîte de réception de tout ce qui attend (47), modifier / renvoyer le dernier message (62), worktrees par lancement (58), pièces jointes (59), écran de réglages (67), puis LocalSend, mails avec Laya, dictée.
+4. En passant : finition A6 (menus natifs → menus aux couleurs des maquettes, mesures).
 
 ## 1. Ce qui marche (étape 1, sous Windows)
 
@@ -57,9 +68,11 @@ packages/mikky_agents/    Dart + dart:io : Target (Windows / WSL), job.dart (job
                           Node privé WSL), auth.dart (connexion), watch/ (SessionWatcher),
                           store.dart (agents.json), real_source.dart (RealAgentSource)
 app/lib/agents/           AgentsService : les vrais agents dans l'app
-app/lib/ui/               les composants (A3) et l'écran --kit
+app/lib/ui/               les composants (A3) et l'écran --kit ; markdown.dart (réponses des
+                          agents), brand_logo.dart (logos), selection.dart (copier)
 app/lib/side/             la petite fenêtre (A4) : side_app (navigation + accueil), agent_page,
-                          new_agent_page (+ connexion), session_views (Suivi / Chat)
+                          new_agent_page (+ connexion), session_views (Suivi / Chat, cartes
+                          Oui / Non et questions), session_menu (ranger, ouvrir, renommer)
 app/lib/island/           l'île ; à droite et ouverte, elle affiche la petite fenêtre
 app/windows/runner/       overlay natif : clics traversants, crochet souris (curseur et clic
                           en dehors), menu natif, sélecteur de dossier, activation du clavier
