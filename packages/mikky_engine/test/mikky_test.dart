@@ -203,58 +203,43 @@ void main() {
   });
 
   group('forms: Mikky turns into the sign', () {
-    test('working: the mascot himself, hopping; thinking: the fur ball, hopping the same way', () {
-      List<double> ups(Mikky m) => [
-            for (var i = 0; i < 90; i++) MikkyGeometry.of(m..update(1 / 60), 100).translateY,
-          ];
+    test('working: the mascot himself, hopping', () {
       final m = Mikky(random: math.Random(5))..setState(MikkyState.working);
+      final ups = <double>[];
       for (var i = 0; i < 60 * 12; i++) {
         m.update(1 / 60);
         expect(m.form, MikkyForm.cat);
         expect(m.badge, isNull);
         expect(MikkyGeometry.of(m, 100).translateX, closeTo(0, 1e-9));
+        ups.add(MikkyGeometry.of(m, 100).translateY);
       }
-      expect(ups(m).reduce(math.min), lessThan(-12));
-      m.setState(MikkyState.thinking);
-      run(m, 1.5);
-      expect(m.form, MikkyForm.furball);
-      expect(ups(m).reduce(math.min), lessThan(-12));
+      expect(ups.reduce(math.min), lessThan(-12));
     });
 
-    test('the fur ball is the mascot without ears, his own fur standing out all around', () {
-      double top(Mikky m) {
-        final c = MikkyGeometry.of(m, 100).contour;
+    test('thinking: by magic, the star; he shrinks into it, sparkles fly', () {
+      final m = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
+      run(m, .1);
+      expect(m.particles.where((p) => p.kind == ParticleKind.sparkle), isNotEmpty);
+      run(m, 1.5);
+      expect((m.form, m.badge), (MikkyForm.star, null));
+      final g = MikkyGeometry.of(m, 100);
+      expect(g.magic, closeTo(1, .1));
+      // He keeps his own outline, ears included: the painter shrinks him.
+      final cat = MikkyGeometry.of(Mikky(random: math.Random(5))..update(1 / 60), 100);
+      double top(MikkyGeometry g) {
         var y = 0.0;
-        for (var j = 1; j < c.length; j += 2) {
-          y = math.min(y, c[j]);
+        for (var j = 1; j < g.contour.length; j += 2) {
+          y = math.min(y, g.contour[j]);
         }
         return y;
       }
 
-      /// How much the outline goes in and out (the fur), on the lower half.
-      double furriness(Mikky m) {
-        final c = MikkyGeometry.of(m, 100).contour;
-        var sum = 0.0;
-        for (var j = 2; j < c.length ~/ 2; j += 2) {
-          final r0 = math.sqrt(c[j - 2] * c[j - 2] + c[j - 1] * c[j - 1]);
-          final r1 = math.sqrt(c[j] * c[j] + c[j + 1] * c[j + 1]);
-          sum += (r1 - r0).abs();
-        }
-        return sum;
+      expect(top(g), closeTo(top(cat), 8));
+      // The star does not hop.
+      for (var i = 0; i < 90; i++) {
+        m.update(1 / 60);
+        expect(MikkyGeometry.of(m, 100).translateY.abs(), lessThan(3));
       }
-
-      final cat = Mikky(random: math.Random(5));
-      run(cat, 2);
-      final ball = Mikky(random: math.Random(5))..setState(MikkyState.thinking);
-      run(ball, 2);
-      // No ears: the top is the head, not the ear tips.
-      expect(top(ball), greaterThan(top(cat) + 30));
-      // More fur, and not only on the cheeks.
-      expect(furriness(ball), greaterThan(furriness(cat) * 2));
-      // His eyes, where they always are.
-      final eyes = MikkyGeometry.of(ball, 100).eyes;
-      expect(eyes, hasLength(2));
-      expect(eyes.first.shape, EyeShape.oval);
     });
 
     test('thinking goes back to the cat now and then', () {

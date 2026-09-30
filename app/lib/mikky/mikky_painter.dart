@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/animation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -8,6 +9,12 @@ const _eyeWhite = Color(0xFFF7F7F7);
 const _heartPink = Color(0xFFFF4D6D);
 const _starGold = Color(0xFFFFD25A);
 const _sweatBlue = Color(0xFF7CC4FF);
+
+// The thinking star: a white core in a pale blue glow, orange to pink rays.
+const _starCore = Color(0xFFFFFFFF);
+const _starGlow = Color(0xFFBFE3FF);
+const _rayWarm = Color(0xFFFF9A4D);
+const _rayPink = Color(0xFFFF5C8A);
 
 /// Draws one frame of Mikky's geometry, centered on [center].
 class MikkyPainter extends CustomPainter {
@@ -42,10 +49,14 @@ class MikkyPainter extends CustomPainter {
     ];
     final body = Path()..addPolygon(points, true);
 
+    // Turning into the star, he shrinks into its core.
+    final magic = g.magic.clamp(0.0, 1.0);
+    final shrink = 1 - Curves.easeOut.transform((magic / .6).clamp(0.0, 1.0));
+
     canvas.save();
     canvas.translate(center.dx + g.translateX, center.dy + g.translateY);
     canvas.rotate(g.tilt);
-    canvas.scale(g.scaleX, g.scaleY);
+    canvas.scale(g.scaleX * shrink, g.scaleY * shrink);
 
     // The body and the fur balls that came out of it: all of them are him.
     final parts = [
@@ -79,6 +90,8 @@ class MikkyPainter extends CustomPainter {
     }
     canvas.restore();
     canvas.restore();
+
+    if (g.magic > .3) _magicStar(canvas, center + Offset(g.translateX, g.translateY), r, g.magic, g.time);
 
     canvas.save();
     canvas.translate(center.dx, center.dy);
@@ -232,6 +245,89 @@ class MikkyPainter extends CustomPainter {
         text.paint(canvas, c - Offset(text.width / 2, text.height / 2));
         text.dispose();
     }
+  }
+
+  /// The star Mikky turns into while he thinks: thin rays of uneven
+  /// lengths around a bright core, that tremble and sway a little (user
+  /// request, 2026-09-30, after a picture of a sparkler star).
+  void _magicStar(Canvas canvas, Offset c, double r, double amount, double t) {
+    // It comes out once he has mostly shrunk into it.
+    final a = ((amount - .3) / .7).clamp(0.0, 1.06);
+    final grow = Curves.easeOut.transform(a.clamp(0.0, 1.0));
+    canvas.save();
+    canvas.translate(c.dx, c.dy);
+    // It stirs: a slow sway, a quicker shiver, a light pulse.
+    canvas.rotate(.12 * math.sin(t * 1.7) + .04 * math.sin(t * 6.3));
+    final pulse = 1 + .05 * math.sin(t * 4.1);
+    final big = r * 1.15 * a * pulse;
+
+    // Glow first, then the rays, then the core on top.
+    canvas.drawCircle(
+      Offset.zero,
+      big * .62,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          _starGlow.withValues(alpha: .75 * grow),
+          _starGlow.withValues(alpha: .22 * grow),
+          _starGlow.withValues(alpha: 0),
+        ], stops: const [0, .45, 1])
+            .createShader(Rect.fromCircle(center: Offset.zero, radius: big * .62)),
+    );
+    const rays = 16;
+    for (var i = 0; i < rays; i++) {
+      // Fixed unevenness per ray, and each one trembles on its own.
+      final h = _hash(i);
+      final angle = i / rays * math.pi * 2 + (h - .5) * .22;
+      final long = (i.isEven ? .78 : .48) + h * .28;
+      final tremble = 1 + .14 * math.sin(t * (6 + h * 5) + h * 20);
+      final length = big * long * tremble;
+      final base = r * (.028 + .02 * h) * grow;
+      final dir = Offset(math.cos(angle), math.sin(angle));
+      final side = Offset(-dir.dy, dir.dx) * base;
+      final from = dir * (big * .08);
+      final tip = dir * length;
+      final ray = Path()
+        ..moveTo(from.dx + side.dx, from.dy + side.dy)
+        ..lineTo(tip.dx, tip.dy)
+        ..lineTo(from.dx - side.dx, from.dy - side.dy)
+        ..close();
+      canvas.drawPath(
+        ray,
+        Paint()
+          ..shader = LinearGradient(colors: [
+            _starCore.withValues(alpha: grow),
+            _rayWarm.withValues(alpha: .95 * grow),
+            (h > .5 ? _rayPink : _rayWarm).withValues(alpha: 0),
+          ], stops: const [0, .35, 1])
+              .createShader(Rect.fromPoints(from, tip)),
+      );
+    }
+    // A few specks around it, twinkling.
+    for (var i = 0; i < 4; i++) {
+      final h = _hash(i + 40);
+      final twinkle = (.5 + .5 * math.sin(t * (2 + h * 3) + i * 1.7)).clamp(0.0, 1.0);
+      final at = Offset(math.cos(h * 6.28), math.sin(h * 6.28)) * big * (.95 + .25 * h);
+      canvas.drawCircle(at, math.max(.6, r * .025), Paint()..color = _starGlow.withValues(alpha: .8 * twinkle * grow));
+    }
+    // The core: a small bright point with its own soft white halo.
+    canvas.drawCircle(
+      Offset.zero,
+      big * .2,
+      Paint()
+        ..shader = RadialGradient(colors: [
+          _starCore.withValues(alpha: grow),
+          _starCore.withValues(alpha: .85 * grow),
+          _starCore.withValues(alpha: 0),
+        ], stops: const [0, .3, 1])
+            .createShader(Rect.fromCircle(center: Offset.zero, radius: big * .2)),
+    );
+    canvas.restore();
+  }
+
+  static double _hash(int i) {
+    var h = i * 374761393 + 668265263;
+    h = (h ^ (h >> 13)) * 1274126177;
+    return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
   }
 
   static Path _heart(double size) {

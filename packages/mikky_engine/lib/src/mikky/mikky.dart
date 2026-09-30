@@ -64,8 +64,12 @@ enum MikkyForm {
   heart,
 
   /// Himself without ears, his fur standing out a little more all around:
-  /// a ball of fur, hopping (thinking).
+  /// a ball of fur. Not used for now (thinking became the star).
   furball,
+
+  /// By magic, a bright star with thin orange and pink rays, that stirs a
+  /// little while he thinks (user request, 2026-09-30).
+  star,
 
   /// The bar of a "!", without eyes; a little fur ball below, well apart,
   /// is the dot (approval).
@@ -195,13 +199,13 @@ class Mikky {
   bool _approvalBang = false;
   int _hopsLeft = 0;
 
-  /// Thinking goes round too: the hopping fur ball for a while, then his
-  /// usual self for a moment (user request, 2026-09-29). Working is the
-  /// mascot himself, hopping like the ball (user request, 2026-09-30).
+  /// Thinking goes round too: the magic star for a while, then his usual
+  /// self for a moment (user requests, 2026-09-29 and 30). Working is the
+  /// mascot himself, hopping (user request, 2026-09-30).
   bool _formOn = false;
   double _formToggleAt = 0;
 
-  /// How long each phase of thinking lasts, seconds: (fur ball, cat).
+  /// How long each phase of thinking lasts, seconds: (star, cat).
   (double, double) _cycle() => (4 + _random.nextDouble() * 2, 2 + _random.nextDouble());
 
   MikkyState _state = MikkyState.idle;
@@ -238,7 +242,7 @@ class Mikky {
     final e = _emote;
     if (e != null) return e == MikkyEmote.love ? MikkyForm.heart : MikkyForm.cat;
     return switch (state) {
-      MikkyState.thinking => _formOn ? MikkyForm.furball : MikkyForm.cat,
+      MikkyState.thinking => _formOn ? MikkyForm.star : MikkyForm.cat,
       MikkyState.approval => _approvalBang ? MikkyForm.bang : MikkyForm.cat,
       _ => MikkyForm.cat,
     };
@@ -639,10 +643,9 @@ class Mikky {
         _nextBeat = _time + .6;
       }
     }
-    // Thinking: the fur ball hops (his own hop, squash and stretch).
-    // Working: the mascot hops the same way, without turning into the ball.
-    final hopping = st == MikkyState.working || (st == MikkyState.thinking && _formOn && _morph.value > .6);
-    if (hopping && _emote == null && _time > _nextBeat) {
+    // Working: the mascot hops (his own hop, squash and stretch). The
+    // thinking star does not hop: it stirs where it is (the painter).
+    if (st == MikkyState.working && _emote == null && _time > _nextBeat) {
       hop(height: .2);
       _nextBeat = _time + .66;
     }
@@ -686,6 +689,8 @@ class Mikky {
     if (want != _form) {
       if (_form == MikkyForm.cat) {
         _form = want;
+        // A little magic when he turns into the star.
+        if (want == MikkyForm.star) _burst(ParticleKind.sparkle, 6);
       } else {
         _morph.target = 0;
         if (_morph.value.abs() < .06 && _morph.velocity.abs() < 1) _form = want;
