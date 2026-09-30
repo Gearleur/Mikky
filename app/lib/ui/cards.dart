@@ -61,19 +61,26 @@ class GroupHeader extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(6, first ? 4 : 12, 6, 8),
+          padding: EdgeInsets.fromLTRB(1, first ? 4 : 12, 6, 8),
           child: Row(
             children: [
-              if (status != null)
-                // Big enough to read the pixels (user request, 2026-09-30).
-                StatusFx(status!, size: 18)
-              else
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              // One slot for every group, so the labels line up and the
+              // firework's center is the grey pixel's (user request,
+              // 2026-09-30).
+              SizedBox(
+                width: 18,
+                height: 18,
+                child: Center(
+                  child: status != null
+                      ? StatusFx(status!, size: 18)
+                      : Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(1)),
+                        ),
                 ),
-              SizedBox(width: status == null ? 7 : 8),
+              ),
+              const SizedBox(width: 8),
               Text(label, style: style),
               const SizedBox(width: 4),
               Text(

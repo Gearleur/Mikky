@@ -663,11 +663,16 @@ class _KitPartsState extends State<KitParts> {
           const TaskSection(
             status: UiStatus.finished,
             title: 'Tâche terminée',
-            meta: '2 étapes · 1 fichier · 2 min',
+            meta: '3 étapes · 1 fichier · 2 min',
             initiallyOpen: true,
             steps: [
               TaskStep(label: 'Lit la spec'),
-              TaskStep(label: 'Crée resume.md', detail: ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md')),
+              TaskStep(
+                label: 'Crée resume.md',
+                color: Color(0xFF34C759),
+                detail: ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md'),
+              ),
+              TaskStep(label: 'Lance une commande', color: Color(0xFFFF9500)),
             ],
             details: [
               NoteLine('Je lis la spec puis j’écris un résumé court.', thought: true),
@@ -675,7 +680,16 @@ class _KitPartsState extends State<KitParts> {
               ToolLine(icon: 'file', title: 'Écrire le résumé', detail: 'docs/resume.md'),
             ],
           ),
-          const ChatMessage(me: false, text: 'C’est fait : le résumé est dans **docs/resume.md**.'),
+          const ChatMessage(
+            me: false,
+            text: 'C’est fait : le résumé est dans **docs/resume.md**.\n\n'
+                '1. Lire la spec de l’étape 1 et relever les décisions qui touchent la petite fenêtre\n'
+                '2. Écrire le résumé\n'
+                '   en français, court\n\n'
+                '- Trois points retenus\n'
+                '- Un point à valider avec toi\n'
+                '  - la position de l’île',
+          ),
           Wrap(spacing: 8, runSpacing: 8, children: [for (final n in iconNames) MikkyIcon(n, size: 20, color: ui.text)]),
         ]),
       ],

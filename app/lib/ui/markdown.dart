@@ -48,7 +48,7 @@ class _AgentTextState extends State<AgentText> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     _disposeLinks();
-    final blocks = <Widget>[];
+    final blocks = <_Block>[];
     final fence = RegExp(r'^```(\w*)\s*$', multiLine: true);
     var rest = widget.text;
     while (true) {
@@ -57,17 +57,96 @@ class _AgentTextState extends State<AgentText> {
       final close = fence.firstMatch(rest.substring(open.end));
       if (close == null) break;
       final before = rest.substring(0, open.start).trim();
-      if (before.isNotEmpty) blocks.add(Text.rich(_inline(before, ui)));
+      if (before.isNotEmpty) blocks.addAll(_blocks(before, ui));
       final code = rest.substring(open.end, open.end + close.start).replaceAll(RegExp(r'^\n|\n$'), '');
-      blocks.add(CodeBlockView(code: code, language: open[1] ?? ''));
+      blocks.add(_Block(CodeBlockView(code: code, language: open[1] ?? '')));
       rest = rest.substring(open.end + close.end);
     }
     final after = rest.trim();
-    if (after.isNotEmpty) blocks.add(Text.rich(_inline(after, ui)));
-    if (blocks.length == 1) return blocks.single;
+    if (after.isNotEmpty) blocks.addAll(_blocks(after, ui));
+    if (blocks.length == 1) return blocks.single.child;
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-      for (var i = 0; i < blocks.length; i++) Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 8), child: blocks[i]),
+      for (var i = 0; i < blocks.length; i++)
+        Padding(
+          // Items of one list close together; everything else a bit apart.
+          padding: EdgeInsets.only(top: i == 0 ? 0 : (blocks[i].item && blocks[i - 1].item && !blocks[i].newList ? 3 : 8)),
+          child: blocks[i].child,
+        ),
     ]);
+  }
+
+  static final _listItem = RegExp(r'^(\s*)([-*•]|\d+[.)])\s+(.*)$');
+
+  /// Paragraphs and list items. A list item is a marker and its text, the
+  /// text in a column of its own so a long item wraps under itself; a line
+  /// that goes on an item (indented, no marker) joins it (user request,
+  /// 2026-09-30).
+  List<_Block> _blocks(String text, MikkyUi ui) {
+    final out = <_Block>[];
+    final para = <String>[];
+    (int, String, StringBuffer)? item;
+    var lastWasItem = false;
+    var blankSince = false;
+    void flushPara() {
+      if (para.isEmpty) return;
+      out.add(_Block(Text.rich(_inline(para.join('\n'), ui))));
+      para.clear();
+      lastWasItem = false;
+    }
+
+    void flushItem() {
+      final it = item;
+      if (it == null) return;
+      final (level, marker, buf) = it;
+      final bullet = !RegExp(r'^\d').hasMatch(marker);
+      out.add(_Block(
+        Padding(
+          padding: EdgeInsets.only(left: 2 + level * 16.0),
+          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            SizedBox(
+              width: bullet ? 14 : 20,
+              child: Text(bullet ? '•' : marker, style: TextStyle(color: ui.text2, fontWeight: bullet ? FontWeight.w700 : FontWeight.w500)),
+            ),
+            Expanded(child: Text.rich(_inline(buf.toString(), ui))),
+          ]),
+        ),
+        item: true,
+        newList: !lastWasItem || blankSince,
+      ));
+      item = null;
+      lastWasItem = true;
+      blankSince = false;
+    }
+
+    for (final line in text.split('\n')) {
+      if (line.trim().isEmpty) {
+        flushPara();
+        flushItem();
+        blankSince = true;
+        continue;
+      }
+      final m = _listItem.firstMatch(line);
+      if (m != null) {
+        flushPara();
+        flushItem();
+        final marker = m[2]!.replaceAll(')', '.');
+        item = ((m[1]!.replaceAll('\t', '  ').length ~/ 2).clamp(0, 3), marker, StringBuffer(m[3]!));
+        continue;
+      }
+      final it = item;
+      if (it != null && RegExp(r'^\s').hasMatch(line)) {
+        // It goes on: same item, no new line.
+        it.$3.write(' ${line.trim()}');
+        continue;
+      }
+      flushItem();
+      if (para.isEmpty) lastWasItem = false;
+      para.add(line.replaceFirst(RegExp(r'^#{1,6} '), ''));
+      blankSince = false;
+    }
+    flushPara();
+    flushItem();
+    return out;
   }
 
   TextSpan _inline(String text, MikkyUi ui) {
@@ -75,10 +154,7 @@ class _AgentTextState extends State<AgentText> {
     final lines = text.split('\n');
     final token = RegExp(r'\*\*(.+?)\*\*|`([^`]+)`|\[([^\]]+)\]\((https?://[^)\s]+)\)|(https?://[^\s)]+)');
     for (var i = 0; i < lines.length; i++) {
-      var line = lines[i];
-      final bullet = RegExp(r'^\s*[-*] ').firstMatch(line);
-      if (bullet != null) line = '•  ${line.substring(bullet.end)}';
-      line = line.replaceFirst(RegExp(r'^#{1,6} '), '');
+      final line = lines[i];
       var at = 0;
       for (final m in token.allMatches(line)) {
         if (m.start > at) spans.add(TextSpan(text: line.substring(at, m.start)));
@@ -170,4 +246,13 @@ class _CodeBlockViewState extends State<CodeBlockView> {
       ]),
     );
   }
+}
+
+/// A block of an answer; [item]: a list item ([newList]: the first of its
+/// list).
+class _Block {
+  const _Block(this.child, {this.item = false, this.newList = false});
+
+  final Widget child;
+  final bool item, newList;
 }

@@ -515,10 +515,14 @@ enum TaskStepState { done, now, todo, failed }
 /// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
 /// tap unfolds [detail], what the agent did for it.
 class TaskStep extends StatefulWidget {
-  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail});
+  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.color});
 
   final String label;
   final TaskStepState state;
+
+  /// The dot's color for what the step does (green creates, blue changes,
+  /// orange runs a command…); grey when not given.
+  final Color? color;
 
   /// In red after the label: « refusé », « échec ».
   final String? note;
@@ -535,15 +539,23 @@ class _TaskStepState extends State<TaskStep> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final (dot, text) = switch (widget.state) {
-      TaskStepState.done => (ui.text3, ui.text2),
+      TaskStepState.done => (widget.color ?? ui.text3, ui.text2),
       TaskStepState.now => (ui.blue, ui.text),
       TaskStepState.todo => (ui.track, ui.text3),
       TaskStepState.failed => (ui.red, ui.text2),
     };
     final row = Row(
       children: [
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: dot, borderRadius: BorderRadius.circular(1.5))),
-        const SizedBox(width: 10),
+        // A pixel of the action's color; the step at work fizzes.
+        SizedBox(
+          width: 10,
+          child: Center(
+            child: widget.state == TaskStepState.now
+                ? const StatusFx(UiStatus.working, size: 10)
+                : Container(width: 7, height: 7, decoration: BoxDecoration(color: dot, borderRadius: BorderRadius.circular(1.5))),
+          ),
+        ),
+        const SizedBox(width: 8),
         Expanded(
           child: Text.rich(
             TextSpan(children: [
