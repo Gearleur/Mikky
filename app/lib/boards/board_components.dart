@@ -244,7 +244,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
                         onTap: () => set(i),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                          child: Text(t, style: uiText(14, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text2)),
+                          child: Text(t, style: uiText(14, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
                         ),
                       ),
                     ),

@@ -179,12 +179,13 @@ class _Sidebar extends StatelessWidget {
                           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             AnimatedDefaultTextStyle(
                               duration: const Duration(milliseconds: 140),
-                              style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: i == selected || hover ? ui.text : ui.text2),
+                              // Light at rest, black under the mouse (user request, 2026-09-30).
+                              style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: i == selected || hover ? ui.text : ui.text3),
                               child: Text(boards[i].name),
                             ),
                             AnimatedDefaultTextStyle(
                               duration: const Duration(milliseconds: 140),
-                              style: uiText(11.5, color: i == selected || hover ? ui.text2 : ui.text3, height: 1.35),
+                              style: uiText(11.5, color: i == selected || hover ? ui.text2 : ui.text3.withValues(alpha: ui.text3.a * .7), height: 1.35),
                               child: Text(boards[i].note, maxLines: 2),
                             ),
                           ]),

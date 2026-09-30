@@ -109,7 +109,16 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
     } else if (_rest == t) {
       _rest = null;
     }
-    if (_hover == null) _goTo(_target);
+    if (_hover != null) return;
+    if (_target == null) {
+      // The old choice may let go before the new one takes over (going
+      // down the list): wait a moment rather than hide, so it slides.
+      _leave?.cancel();
+      _leave = Timer(const Duration(milliseconds: 70), () => _goTo(_target));
+      return;
+    }
+    _leave?.cancel();
+    _goTo(_target);
   }
 
   void _gone(_HoverTargetState t) {
