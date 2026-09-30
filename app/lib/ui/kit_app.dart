@@ -603,13 +603,8 @@ class _KitPartsState extends State<KitParts> {
             ),
             const TypingDots(),
           ]),
-          // Every state as the calm pixel firework, bigger.
-          line([
-            for (final st in UiStatus.values) StatusFx(st, size: 30),
-            Text('États en feu d’artifice', style: uiText(13, color: ui.text2)),
-          ]),
-          // Pixel-art effects to try (2026-09-30): sparkle, firework, galaxy,
-          // in four palettes.
+          // Every state in each pixel-art effect (2026-09-30); the calm
+          // firework is the one in use.
           for (final kind in PixelFxKind.values)
             line([
               SizedBox(
@@ -621,7 +616,7 @@ class _KitPartsState extends State<KitParts> {
                   PixelFxKind.galaxy => 'Galaxie',
                 }, style: uiText(13, color: ui.text2)),
               ),
-              for (final p in PixelFxPalette.all) PixelFx(kind: kind, palette: p),
+              for (final st in UiStatus.values) StatusFx(st, kind: kind, size: 34),
             ]),
           // Set aside (2026-09-30): the star tried on Mikky thinking.
           line([

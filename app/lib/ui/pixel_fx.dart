@@ -62,21 +62,31 @@ class PixelFxPalette {
   };
 }
 
-/// An agent's state as a small pixel firework in its color, the calm one
-/// (user request, 2026-09-30): it opens and closes slowly; asleep, more
-/// slowly still; finished, it stays still, open halfway.
+/// An agent's state as a small pixel effect in its color — by default
+/// the calm firework (user request, 2026-09-30): it opens and closes
+/// slowly; asleep, more slowly still; finished, it stays still, at a
+/// moment where it shows well.
 class StatusFx extends StatelessWidget {
-  const StatusFx(this.status, {super.key, this.size = 16});
+  const StatusFx(this.status, {super.key, this.size = 16, this.kind = PixelFxKind.fireworkSoft});
 
   final UiStatus status;
   final double size;
+  final PixelFxKind kind;
+
+  /// Finished: the moment shown, still (seconds).
+  static double _still(PixelFxKind kind) => switch (kind) {
+    PixelFxKind.sparkle => .72,
+    PixelFxKind.firework => 1.2,
+    PixelFxKind.fireworkSoft => 1.8,
+    PixelFxKind.galaxy => 1,
+  };
 
   @override
   Widget build(BuildContext context) => PixelFx(
-    kind: PixelFxKind.fireworkSoft,
+    kind: kind,
     palette: PixelFxPalette.of(status, MikkyUi.of(context)),
     size: size,
-    at: status == UiStatus.finished ? 1.8 : null,
+    at: status == UiStatus.finished ? _still(kind) : null,
     slow: status == UiStatus.sleeping ? 2 : 1,
   );
 }
