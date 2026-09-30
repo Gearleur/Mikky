@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
 import 'brand_logo.dart';
@@ -334,67 +335,133 @@ class WaitActions extends StatelessWidget {
   }
 }
 
-/// A few answers side by side, in nothing: the last one is the main one,
-/// white with a soft shadow; the others plain text. A press sinks them,
-/// and they pop back (user request, 2026-09-30).
-class AnswerBar extends StatelessWidget {
+/// A few answers side by side, in nothing: the chosen one sits on a white
+/// square with a soft shadow, the main one (the last) at first. Pressing
+/// another slides the square to it, with the selectors' spring, then the
+/// answer goes on release (user request, 2026-09-30).
+class AnswerBar extends StatefulWidget {
   const AnswerBar({super.key, required this.answers});
 
   final List<(String, VoidCallback?)> answers;
 
-  @override
-  Widget build(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      for (var i = 0; i < answers.length; i++) ...[
-        if (i > 0) const SizedBox(width: 2),
-        _Answer(label: answers[i].$1, onTap: answers[i].$2, main: i == answers.length - 1),
-      ],
-    ],
-  );
-}
-
-class _Answer extends StatefulWidget {
-  const _Answer({required this.label, required this.onTap, required this.main});
-
-  final String label;
-  final VoidCallback? onTap;
-  final bool main;
+  static const height = 28.0, padX = 13.0, gap = 2.0;
 
   @override
-  State<_Answer> createState() => _AnswerState();
+  State<AnswerBar> createState() => _AnswerBarState();
 }
 
-class _AnswerState extends State<_Answer> {
-  bool _hover = false;
+class _AnswerBarState extends State<AnswerBar> {
+  late int _on = widget.answers.length - 1;
+  int? _hover;
+
+  @override
+  void didUpdateWidget(AnswerBar old) {
+    super.didUpdateWidget(old);
+    if (old.answers.length != widget.answers.length) _on = widget.answers.length - 1;
+  }
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final main = widget.main;
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hover = true),
-      onExit: (_) => setState(() => _hover = false),
-      child: Opacity(
-        opacity: widget.onTap == null ? .35 : 1,
-        child: JellyPress(
-          onTap: widget.onTap,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 160),
-            height: 28,
-            padding: const EdgeInsets.symmetric(horizontal: 13),
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: main ? ui.thumb : (_hover ? ui.hover : ui.hover.withValues(alpha: 0)),
-              borderRadius: BorderRadius.circular(10),
-              // A hairline, so the white shows on the white window too.
-              border: main ? Border.all(color: ui.line, width: .8) : null,
-              boxShadow: main ? [for (final s in ui.shThumb) if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread)] : null,
+    final scaler = MediaQuery.textScalerOf(context);
+    final style = uiText(13, weight: FontWeight.w600, height: 1);
+    final widths = [for (final (label, _) in widget.answers) _textWidth(label, style, scaler) + AnswerBar.padX * 2];
+    final lefts = <double>[];
+    var x = 0.0;
+    for (final w in widths) {
+      lefts.add(x);
+      x += w + AnswerBar.gap;
+    }
+    final n = widths.length;
+    return SizedBox(
+      width: x - AnswerBar.gap,
+      height: AnswerBar.height,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Positioned.fill(
+            child: RepaintBoundary(
+              child: SpringValue(
+                target: _on.toDouble(),
+                spring: Motion.thumb,
+                builder: (context, at, v) {
+                  // Between two answers: the square takes a bit of both.
+                  final i0 = at.floor().clamp(0, n - 1), i1 = (i0 + 1).clamp(0, n - 1);
+                  final f = (at - i0).clamp(0.0, 1.0);
+                  final left = lefts[i0] + (lefts[i1] - lefts[i0]) * f;
+                  final width = widths[i0] + (widths[i1] - widths[i0]) * f;
+                  // Stretched by its speed, like the selectors' thumb.
+                  final stretch = (v.abs() * 55 * Motion.thumbStretch).clamp(0.0, 8.0);
+                  return Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Positioned(
+                        left: left - (v < 0 ? stretch : 0),
+                        top: 0,
+                        bottom: 0,
+                        width: width + stretch,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: ui.thumb,
+                            borderRadius: BorderRadius.circular(10),
+                            // A hairline, so the white shows on the white window too.
+                            border: Border.all(color: ui.line, width: .8),
+                            boxShadow: [
+                              for (final s in ui.shThumb)
+                                if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
-            child: Text(
-              widget.label,
-              maxLines: 1,
-              style: uiText(13, weight: FontWeight.w600, height: 1, color: main || _hover ? ui.text : ui.text2),
+          ),
+          Row(
+            children: [
+              for (var i = 0; i < n; i++) ...[
+                if (i > 0) const SizedBox(width: AnswerBar.gap),
+                _answer(ui, i, widths[i], style),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _answer(MikkyUi ui, int i, double width, TextStyle style) {
+    final (label, onTap) = widget.answers[i];
+    final on = onTap != null;
+    final hovered = _hover == i && i != _on;
+    return Opacity(
+      opacity: on ? 1 : .35,
+      child: MouseRegion(
+        cursor: on ? SystemMouseCursors.click : MouseCursor.defer,
+        onEnter: (_) => setState(() => _hover = i),
+        onExit: (_) => setState(() => _hover = null),
+        child: Listener(
+          // The square leaves on press; the answer goes on release.
+          onPointerDown: on ? (e) => e.buttons == kPrimaryButton ? setState(() => _on = i) : null : null,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 160),
+              width: width,
+              height: AnswerBar.height,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: hovered ? ui.hover : ui.hover.withValues(alpha: 0),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: AnimatedDefaultTextStyle(
+                duration: const Duration(milliseconds: 180),
+                style: style.copyWith(color: i == _on || hovered ? ui.text : ui.text2),
+                child: Text(label, maxLines: 1),
+              ),
             ),
           ),
         ),
@@ -402,6 +469,15 @@ class _AnswerState extends State<_Answer> {
     );
   }
 }
+
+final Map<(String, double), double> _answerWidths = {};
+
+double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWidths[(text, scaler.scale(1))] ??= () {
+  final tp = TextPainter(text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr, textScaler: scaler)..layout();
+  final w = tp.width.ceilToDouble();
+  tp.dispose();
+  return w;
+}();
 
 /// `.taskcard`: a turn of work in the chat. [live]: the task at work (a
 /// grey card that leads back to Suivi); otherwise « Tâche terminée », an
