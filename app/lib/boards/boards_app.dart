@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 import '../ui/motion.dart';
@@ -177,8 +176,6 @@ class _Sidebar extends StatelessWidget {
               ),
             ),
           const Spacer(),
-          const _BlurPanel(),
-          const SizedBox(height: 14),
           Text(
             'Glisser : déplacer (partout, ou Espace, ou le bouton du milieu) · Molette : défiler · Maj : de côté · Ctrl : zoom',
             style: uiText(11, color: ui.text3, height: 1.4),
@@ -187,129 +184,6 @@ class _Sidebar extends StatelessWidget {
           Segmented(options: const ['Clair', 'Sombre', 'Les deux'], selected: themes, size: SegmentSize.xs, onChanged: onThemes),
         ],
       ),
-    );
-  }
-}
-
-/// Sliders for the top blur of the agent pages, live on every board (user
-/// request, 2026-09-30: « des boutons pour jouer avec, je t'envoie les
-/// valeurs »). « Copier » puts the values on the clipboard.
-class _BlurPanel extends StatelessWidget {
-  const _BlurPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return ValueListenableBuilder(
-      valueListenable: TopBlur.style,
-      builder: (context, s, _) {
-        void set(TopBlurStyle next) => TopBlur.style.value = next;
-        return Container(
-          padding: const EdgeInsets.fromLTRB(10, 10, 10, 8),
-          decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(12)),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Row(children: [
-              Expanded(child: Text('Flou du haut', style: uiText(12.5, weight: FontWeight.w600, color: ui.text))),
-              _Small('Copier', () => Clipboard.setData(ClipboardData(text: s.toString()))),
-              const SizedBox(width: 4),
-              _Small('Remettre', () => set(TopBlurStyle.standard)),
-            ]),
-            const SizedBox(height: 6),
-            _Tune('Hauteur', s.height, 20, 140, (v) => set(s.copyWith(height: v)), digits: 0),
-            _Tune('Couches', s.layers.toDouble(), 1, 24, (v) => set(s.copyWith(layers: v.round())), digits: 0),
-            _Tune('Flou', s.sigma, 0, 4, (v) => set(s.copyWith(sigma: v))),
-            _Tune('Voile', s.veil, 0, 1, (v) => set(s.copyWith(veil: v))),
-            _Tune('Rampe', s.ramp, .15, 2, (v) => set(s.copyWith(ramp: v))),
-            Padding(
-              padding: const EdgeInsets.only(top: 2),
-              child: Text('Au bord : flou ${s.strongest.toStringAsFixed(1)}', style: uiText(10.5, color: ui.text3, tabular: true)),
-            ),
-          ]),
-        );
-      },
-    );
-  }
-}
-
-class _Small extends StatelessWidget {
-  const _Small(this.label, this.onTap);
-
-  final String label;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return HoverBuilder(
-      builder: (context, hover) => MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-            decoration: BoxDecoration(color: hover ? ui.hover : ui.island, borderRadius: BorderRadius.circular(7)),
-            child: Text(label, style: uiText(11, weight: FontWeight.w500, color: ui.text)),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// A slider: its name, the track (drag or click), the value.
-class _Tune extends StatelessWidget {
-  const _Tune(this.label, this.value, this.min, this.max, this.onChanged, {this.digits = 2});
-
-  final String label;
-  final double value, min, max;
-  final ValueChanged<double> onChanged;
-  final int digits;
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final t = ((value - min) / (max - min)).clamp(0.0, 1.0);
-    return SizedBox(
-      height: 26,
-      child: Row(children: [
-        SizedBox(width: 58, child: Text(label, style: uiText(11.5, color: ui.text2))),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, box) {
-              void at(double x) => onChanged(min + (x / box.maxWidth).clamp(0.0, 1.0) * (max - min));
-              return MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTapDown: (d) => at(d.localPosition.dx),
-                  onHorizontalDragUpdate: (d) => at(d.localPosition.dx),
-                  child: Stack(alignment: Alignment.centerLeft, children: [
-                    Container(height: 4, decoration: BoxDecoration(color: ui.track, borderRadius: BorderRadius.circular(2))),
-                    Container(width: box.maxWidth * t, height: 4, decoration: BoxDecoration(color: ui.ink, borderRadius: BorderRadius.circular(2))),
-                    Positioned(
-                      left: (box.maxWidth - 14) * t,
-                      child: Container(
-                        width: 14,
-                        height: 14,
-                        decoration: BoxDecoration(
-                          color: ui.thumb,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: ui.line),
-                          boxShadow: const [BoxShadow(color: Color(0x33000000), blurRadius: 3, offset: Offset(0, 1))],
-                        ),
-                      ),
-                    ),
-                  ]),
-                ),
-              );
-            },
-          ),
-        ),
-        SizedBox(
-          width: 34,
-          child: Text(value.toStringAsFixed(digits), textAlign: TextAlign.right, style: uiText(11, mono: true, color: ui.text)),
-        ),
-      ]),
     );
   }
 }

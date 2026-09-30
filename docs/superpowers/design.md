@@ -8,7 +8,7 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 - **La référence, ce sont les planches** : `mikky.exe --kit` (code : `app/lib/boards/`). Comme Figma : planches Marque, Composants, Accueil, Agent, Messages ; chaque écran dans chacun de ses états, vivant (ça bouge, ça se clique), à partir de fausses sessions (`fake_sessions.dart`). Clair, sombre ou les deux. Glisser pour se déplacer (partout, Espace + glisser, bouton du milieu), molette pour défiler, Maj de côté, Ctrl pour zoomer.
 - **On propose, l'utilisateur choisit** : plusieurs variantes côte à côte sur une planche, il dit laquelle garder (souvent en quelques mots), on retire les autres. Un composant n'apparaît qu'une fois sur la planche Composants (pas de doublons).
-- **Réglages en direct** : quand une valeur se juge à l'œil (le flou du haut, par exemple), des curseurs dans la colonne de gauche des planches ; l'utilisateur envoie ses valeurs (« Copier »), on les met dans l'app.
+- **Réglages en direct** : quand une valeur se juge à l'œil, des curseurs dans la colonne de gauche des planches ; l'utilisateur envoie ses valeurs (« Copier »), on les met dans l'app, puis on retire les curseurs (fait pour le flou du haut).
 - **Vérifier avant de montrer** : images de test des planches (`app/test/boards_test.dart`, `test/goldens/boards/`), les regarder, corriger, puis relancer `--kit`.
 - Les maquettes HTML de `design/prototypes/` sont **dépassées** depuis le 2026-09-30 (abandonnées par l'utilisateur) ; gardées pour l'historique.
 
@@ -78,13 +78,13 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 
 ### Page d'un agent
 - **Pas de titre ni de bandeau** : le fil remplit la page. Les boutons **flottent** dessus : retour à gauche ; à droite **arrêter** (carré, seulement pendant qu'il travaille) et **« ··· »** (menu : ouvrir dans VS Code, ouvrir le dossier, renommer, épingler, archiver, marquer l'erreur comme réglée, supprimer).
-- **Flou en haut** (`TopBlur`) : le fil passe sous les boutons dans un flou progressif avec un voile de la couleur de la fenêtre. Valeurs choisies par l'utilisateur : **hauteur 65 · 3 couches · flou 0,90 · voile 0,38 · rampe 1,05** (`TopBlurStyle.standard`).
+- **Flou en haut** (`TopBlur`) : le fil passe sous les boutons dans un flou progressif avec un voile de la couleur de la fenêtre. Valeurs choisies par l'utilisateur : **hauteur 65 · 3 couches · flou 0,90 · voile 0,38 · rampe 1,05**.
 - **Flou en bas, seulement derrière le champ** (pas au-dessus) ; le champ y est en **verre dépoli**.
-- Deux vues pendant qu'il travaille : **Suivi** (ligne de métro des tâches, code en direct sous l'étape en cours) et **Chat** ; le choix juste sous le champ.
+- Deux vues pendant qu'il travaille : **Suivi** (ligne de métro des tâches, code en direct sous l'étape en cours) et **Chat** ; le choix à moitié dans le champ.
 
 ### Le champ de saisie
-- **Fin, comme celui du dernier iPhone** : 40 px de haut, pilule, 20 px de marge de chaque côté ; micro et flèche d'envoi (noire) à droite, petits ; grandit jusqu'à 5 lignes.
-- Ses options **juste en dessous** (plus à moitié dedans) : Suivi | Chat, ou dossier et modèle pour un nouvel agent.
+- **Fin, comme celui du dernier iPhone** : 40 px de haut, pilule, 20 px de marge de chaque côté, bas dans la fenêtre ; micro et flèche d'envoi (noire) à droite, petits ; grandit jusqu'à 5 lignes.
+- Ses options **à moitié dedans**, en bas à gauche : Suivi | Chat, ou dossier et modèle pour un nouvel agent. Avec des options, le champ prend 8 px de plus en bas (48 px) pour qu'elles ne touchent pas le texte.
 
 ### Le chat
 - **Tes messages** : bulles noires (blanches en sombre) à droite. **Les réponses de l'agent** : sans bulle, **sur toute la largeur**.

@@ -147,47 +147,13 @@ class EdgeBlur extends StatelessWidget {
   }
 }
 
-/// The top blur of an agent's page, as [style] says; the design boards
-/// have sliders to set it live (user request, 2026-09-30).
+/// The top blur of an agent's page, with the values the user set with
+/// sliders in the design boards (2026-09-30).
 class TopBlur extends StatelessWidget {
   const TopBlur({super.key});
 
-  static final style = ValueNotifier(TopBlurStyle.standard);
-
   @override
-  Widget build(BuildContext context) => ValueListenableBuilder(
-    valueListenable: style,
-    builder: (context, s, _) => EdgeBlur(top: true, height: s.height, layers: s.layers, sigma: s.sigma, veil: s.veil, ramp: s.ramp),
-  );
-}
-
-@immutable
-class TopBlurStyle {
-  const TopBlurStyle({required this.height, required this.layers, required this.sigma, required this.veil, required this.ramp});
-
-  /// In use: the user's, set with the boards' sliders (2026-09-30).
-  static const standard = TopBlurStyle(height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
-
-  final double height;
-  final int layers;
-  final double sigma;
-  final double veil;
-  final double ramp;
-
-  /// The blur at the very edge, all layers added up.
-  double get strongest => sigma * math.sqrt(layers.toDouble());
-
-  TopBlurStyle copyWith({double? height, int? layers, double? sigma, double? veil, double? ramp}) => TopBlurStyle(
-    height: height ?? this.height,
-    layers: layers ?? this.layers,
-    sigma: sigma ?? this.sigma,
-    veil: veil ?? this.veil,
-    ramp: ramp ?? this.ramp,
-  );
-
-  @override
-  String toString() =>
-      'hauteur ${height.round()} · couches $layers · flou ${sigma.toStringAsFixed(2)} · voile ${veil.toStringAsFixed(2)} · rampe ${ramp.toStringAsFixed(2)}';
+  Widget build(BuildContext context) => const EdgeBlur(top: true, height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative

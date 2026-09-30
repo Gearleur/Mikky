@@ -132,7 +132,7 @@ class _AgentPageState extends State<AgentPage> {
           child: SingleChildScrollView(
             controller: _scroll,
             // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 104 : 78)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 96 : 78)),
             child: SelectableArea(
               child: AnimatedSwitcher(
                 duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
@@ -165,7 +165,7 @@ class _AgentPageState extends State<AgentPage> {
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 82 : 54))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 74 : 54))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [

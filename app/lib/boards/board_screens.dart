@@ -211,14 +211,14 @@ class _AgentMockState extends State<AgentMock> {
         Positioned.fill(
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : (working ? 104 : 78)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : (working ? 96 : 78)),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
           ),
         ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 82 : 54))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 74 : 54))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
@@ -271,7 +271,7 @@ class NewAgentMock extends StatelessWidget {
         SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour')),
         Positioned.fill(
           top: 68,
-          bottom: 100,
+          bottom: 92,
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             const MiniMikky(size: 64),
             const SizedBox(height: 8),
