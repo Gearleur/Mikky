@@ -209,10 +209,10 @@ class LimitCard extends StatelessWidget {
           Expanded(
             child: Text.rich(
               TextSpan(children: [
-                TextSpan(text: 'Ensorcelé', style: uiText(16, weight: FontWeight.w600, color: ui.text, height: 1.3)),
+                TextSpan(text: 'Ensorcelé', style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, height: 1.3)),
                 TextSpan(
                   text: relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}',
-                  style: uiText(15, color: ui.text2, height: 1.3),
+                  style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
                 ),
               ]),
             ),
@@ -296,15 +296,15 @@ class _QuestionCardState extends State<QuestionCard> {
     final q = widget.question;
     final complete = q.questions.every((x) => (_picked[x.key] ?? const {}).isNotEmpty);
     return Surface(
-      radius: 18,
+      radius: Radii.xl,
       color: ui.well,
-      shadows: [CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
+      shadows: [ui.waitRing],
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         if (q.questions.length > 1 || q.questions.first.text.isEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(q.message, style: uiText(14, weight: FontWeight.w600, color: ui.text))),
+          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(q.message, style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text))),
         for (final x in q.questions) ...[
-          if (x.text.isNotEmpty) Text(x.text, style: uiText(q.questions.length > 1 ? 13 : 14, weight: FontWeight.w600, color: ui.text)),
+          if (x.text.isNotEmpty) Text(x.text, style: uiText(q.questions.length > 1 ? TextSize.label : TextSize.body, weight: FontWeight.w600, color: ui.text)),
           const SizedBox(height: 8),
           Wrap(spacing: 6, runSpacing: 6, children: [
             for (final c in x.choices)

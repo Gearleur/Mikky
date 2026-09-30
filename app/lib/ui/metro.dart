@@ -53,7 +53,7 @@ class MetroStep extends StatelessWidget {
     };
     final weight = kind == StepKind.end || kind == StepKind.now ? FontWeight.w600 : FontWeight.w400;
     Widget content = DefaultTextStyle(
-      style: uiText(13, weight: weight, color: textColor, height: 18 / 13),
+      style: uiText(TextSize.label, weight: weight, color: textColor, height: 18 / TextSize.label),
       child: child,
     );
     if (kind == StepKind.me || kind == StepKind.it) {
@@ -72,7 +72,7 @@ class MetroStep extends StatelessWidget {
           if (meta != null)
             Padding(
               padding: const EdgeInsets.only(top: 4),
-              child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
+              child: Text(meta!, style: uiText(TextSize.caption, color: ui.text3, height: 1.3)),
             ),
         ],
       );
@@ -225,7 +225,7 @@ class _FlowPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     const x = MetroStep._lineX, w = MetroStep._lineW, top = MetroStep._dotY;
     final bottom = top + size.height * reach;
-    final line = RRect.fromLTRBR(x, top, x + w, bottom, const Radius.circular(2));
+    final line = RRect.fromLTRBR(x, top, x + w, bottom, const Radius.circular(Radii.xs));
     canvas.drawRRect(
       line,
       Paint()

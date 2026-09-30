@@ -40,7 +40,7 @@ class BoardSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: Text(note!, style: uiText(13, color: ui.text2, height: 1.45)),
+                child: Text(note!, style: uiText(TextSize.label, color: ui.text2, height: 1.45)),
               ),
             ),
           const SizedBox(height: 22),
@@ -82,8 +82,8 @@ class BoardFrame extends StatelessWidget {
   /// Width of the text above; the child keeps its own size.
   final double? width;
 
-  static TextStyle _labelStyle(MikkyUi ui) => uiText(13, weight: FontWeight.w600, color: ui.text2);
-  static TextStyle _noteStyle(MikkyUi ui) => uiText(11.5, color: ui.text3, height: 1.4);
+  static TextStyle _labelStyle(MikkyUi ui) => uiText(TextSize.label, weight: FontWeight.w600, color: ui.text2);
+  static TextStyle _noteStyle(MikkyUi ui) => uiText(TextSize.caption, color: ui.text3, height: 1.4);
 
   /// The height of the label and the note, laid out.
   double _headHeight(BuildContext context) {
@@ -271,7 +271,7 @@ class ZoomPill extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: hover ? ui.hover : null, borderRadius: BorderRadius.circular(8)),
-            child: Text(label, style: uiText(12.5, weight: FontWeight.w600, color: ui.text, tabular: true)),
+            child: Text(label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, tabular: true)),
           ),
         ),
       ),

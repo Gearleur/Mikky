@@ -60,7 +60,7 @@ class _CopyMenu extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         child: Text(
           label,
-          style: uiText(12.5, weight: FontWeight.w600, color: ui.text, height: 1.2),
+          style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.2),
         ),
       ),
     );
@@ -70,7 +70,7 @@ class _CopyMenu extends StatelessWidget {
           left: at.dx,
           top: at.dy + 4,
           child: Surface(
-            radius: 14,
+            radius: Radii.lg,
             color: ui.thumb,
             shadows: [CssShadow(0, 0, 0, ui.line, spread: 1, inset: true), ...ui.shBar],
             padding: const EdgeInsets.all(3),

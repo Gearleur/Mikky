@@ -51,7 +51,7 @@ class MButton extends StatelessWidget {
       ButtonKind.ghost => (null, null, ui.text2, const <CssShadow>[]),
     };
     final enabled = onPressed != null && !loading;
-    final text = uiText(small ? 13 : 15, weight: FontWeight.w600, color: fg, height: 1, tracking: small ? 0 : -.005);
+    final text = uiText(small ? TextSize.label : TextSize.lead, weight: FontWeight.w600, color: fg, height: 1, tracking: small ? 0 : -.005);
     Widget content = Row(
       mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -143,7 +143,7 @@ class ActionBar extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Surface(
       color: ui.raise,
-      shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
+      shadows: ui.floating,
       padding: const EdgeInsets.all(8),
       child: Row(
         mainAxisSize: MainAxisSize.min,

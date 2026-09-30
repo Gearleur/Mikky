@@ -23,11 +23,11 @@ class CodeCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final mono = uiText(10.5, mono: true, color: ui.text, height: 18 / 10.5);
+    final mono = uiText(TextSize.code, mono: true, color: ui.text, height: 18 / TextSize.code);
     return Container(
       decoration: BoxDecoration(
         color: ui.well,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(Radii.lg),
         border: Border.all(color: ui.line, strokeAlign: BorderSide.strokeAlignInside),
       ),
       clipBehavior: Clip.antiAlias,
@@ -49,7 +49,7 @@ class CodeCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Text(
                   file,
-                  style: uiText(10.5, mono: true, weight: FontWeight.w500, color: ui.text2, height: 1.2),
+                  style: uiText(TextSize.code, mono: true, weight: FontWeight.w500, color: ui.text2, height: 1.2),
                 ),
               ],
             ),

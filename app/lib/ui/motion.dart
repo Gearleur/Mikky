@@ -18,6 +18,21 @@ abstract final class Motion {
   /// `cubic-bezier(.4,0,.2,1)`: things that fold away.
   static const leave = Cubic(.4, 0, .2, 1);
 
+  /// A light grey coming under the mouse, a small sign showing up.
+  static const hover = Duration(milliseconds: 140);
+
+  /// A text changing color.
+  static const fade = Duration(milliseconds: 180);
+
+  /// Something that opens or folds, a chevron that turns.
+  static const fold = Duration(milliseconds: 300);
+
+  /// Something that slides: a page coming in, a switch's knob.
+  static const slide = Duration(milliseconds: 380);
+
+  /// [d], or at once when Windows asks for fewer animations.
+  static Duration of(BuildContext context, Duration d) => reduced(context) ? const Duration(milliseconds: 1) : d;
+
   static const pressDown = Duration(milliseconds: 80);
   static const pressUp = Duration(milliseconds: 340);
 

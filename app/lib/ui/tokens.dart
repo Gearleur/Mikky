@@ -25,6 +25,68 @@ class CssShadow {
 
   @override
   int get hashCode => Object.hash(dx, dy, blur, spread, color, inset);
+
+  /// The same for a [BoxDecoration] (outer shadows only).
+  BoxShadow get box => BoxShadow(color: color, offset: Offset(dx, dy), blurRadius: blur, spreadRadius: spread);
+}
+
+/// The window's type scale (Geist; design.md §4): every text takes one of
+/// these sizes. Line height and weight stay with each component.
+abstract final class TextSize {
+  /// A number on a badge.
+  static const badge = 10.0;
+
+  /// Code in a block, in mono: a changed file, what a command printed.
+  static const code = 10.5;
+
+  /// Times, meta lines, the labels under icons.
+  static const caption = 11.5;
+
+  /// Secondary lines: a row's subtitle, a description, a task's figures.
+  static const small = 12.5;
+
+  /// Controls and short lines: buttons, menus, steps, answers.
+  static const label = 13.0;
+
+  /// Reading text: messages, a row's title, the field.
+  static const body = 14.0;
+
+  /// A big button, a card's heading.
+  static const lead = 15.0;
+
+  /// A small page's title, what stands out in a card (« Ensorcelé »).
+  static const heading = 16.0;
+
+  /// A page's title.
+  static const title = 20.0;
+
+  /// A code to type, big.
+  static const display = 24.0;
+}
+
+/// The window's corner radii (design.md §4): every rounded shape takes one
+/// of these; a [Surface] without a radius is a pill.
+abstract final class Radii {
+  /// Thin bars: a progress bar, the line of Suivi.
+  static const xs = 2.0;
+
+  /// A bubble's corner towards its speaker.
+  static const sm = 8.0;
+
+  /// Rows, hovers, small hollows (a command, an answer).
+  static const md = 10.0;
+
+  /// Cards and blocks: a finished agent's row, a code block.
+  static const lg = 14.0;
+
+  /// Big cards, popovers, menus, bubbles.
+  static const xl = 18.0;
+
+  /// Floating panels, the field.
+  static const xxl = 24.0;
+
+  /// The small window itself.
+  static const window = 38.0;
 }
 
 /// The UI tokens of the small window (`mikky-ui.css`, `.t-light` and
@@ -57,6 +119,7 @@ class MikkyUi {
     required this.shInk,
     required this.inset,
     required this.islandShadow,
+    required this.shMenu,
     required this.blue,
     required this.purple,
     required this.amber,
@@ -97,6 +160,7 @@ class MikkyUi {
       CssShadow(0, 24, 60, Color(0x1F141218)),
       CssShadow(0, 4, 14, Color(0x0F141218)),
     ],
+    shMenu: [CssShadow(0, 6, 18, Color(0x14000000)), CssShadow(0, 1, 3, Color(0x0D000000))],
     blue: Color(0xFF007AFF),
     purple: Color(0xFFAF52DE),
     amber: Color(0xFFFF9500),
@@ -133,6 +197,8 @@ class MikkyUi {
     shInk: [CssShadow(0, 6, 18, Color(0x80000000)), CssShadow(0, 1, 2, Color(0x80000000))],
     inset: [CssShadow(0, 1, 2, Color(0x80000000), inset: true)],
     islandShadow: [CssShadow(0, 0, 0, Color(0x14FFFFFF), spread: 1.3, inset: true), CssShadow(0, 24, 60, Color(0x99000000))],
+    // The same as in light for now: it hardly shows on black.
+    shMenu: [CssShadow(0, 6, 18, Color(0x14000000)), CssShadow(0, 1, 3, Color(0x0D000000))],
     blue: Color(0xFF3B9EFF),
     purple: Color(0xFFA78BFA),
     amber: Color(0xFFF5A524),
@@ -146,6 +212,9 @@ class MikkyUi {
   final Color board, island, well, raise, track, thumb, ctlA, ctlB, ink, inkHover, onInk;
   final Color text, text2, text3, line, hover, hl, hlEdge, knob;
   final List<CssShadow> shCtl, shThumb, shBar, shInk, inset, islandShadow;
+
+  /// Our floating menu, open.
+  final List<CssShadow> shMenu;
   final Color blue, purple, amber, green, red, yellow, grey;
 
   /// Raised control: `linear-gradient(--ctl-a, --ctl-b)`.
@@ -153,6 +222,17 @@ class MikkyUi {
 
   /// `inset 0 1px 0 var(--hl)`: the light edge on top of raised controls.
   CssShadow get highlight => CssShadow(0, 1, 0, hl, inset: true);
+
+  /// Something that floats over the window (a toast, the tab bar, a big
+  /// bar): a light inner edge, then the bar's shadow.
+  List<CssShadow> get floating => [CssShadow(0, 0, 0, hlEdge, spread: 1, inset: true), ...shBar];
+
+  /// An agent that waits for the user: a thin amber outline inside.
+  CssShadow get waitRing => CssShadow(0, 0, 0, amber.withValues(alpha: .55), spread: 1.5, inset: true);
+
+  /// A 3 px ring of the window's color: detaches a small control from what
+  /// it sits on (a chip half inside the field).
+  CssShadow get cutout => CssShadow(0, 0, 0, island, spread: 3);
 
   /// `0 0 0 1.5px var(--ink)` + thumb shadow: a focused field.
   List<CssShadow> get focusRing => [CssShadow(0, 0, 0, ink, spread: 1.5), ...shThumb];

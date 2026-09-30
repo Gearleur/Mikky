@@ -23,7 +23,7 @@ class CodePill extends StatelessWidget {
     final ui = MikkyUi.of(context);
     // In a hollow, so it shows on the raised grey cards too.
     return Surface(
-      radius: 9,
+      radius: Radii.md,
       color: ui.track,
       shadows: ui.inset,
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -31,7 +31,7 @@ class CodePill extends StatelessWidget {
         code,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: uiText(12, weight: FontWeight.w500, mono: true, height: maxLines > 1 ? 1.35 : 1, color: ui.text),
+        style: uiText(TextSize.small, weight: FontWeight.w500, mono: true, height: maxLines > 1 ? 1.35 : 1, color: ui.text),
       ),
     );
   }
@@ -72,7 +72,7 @@ class GroupHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     if (quiet) return _quiet(ui);
-    final style = uiText(12.5, weight: FontWeight.w600, color: ui.text2, height: 1.2);
+    final style = uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2, height: 1.2);
     return MouseRegion(
       cursor: onTap == null ? MouseCursor.defer : SystemMouseCursors.click,
       child: GestureDetector(
@@ -106,7 +106,7 @@ class GroupHeader extends StatelessWidget {
               const Spacer(),
               AnimatedRotation(
                 turns: open ? 0 : -.25,
-                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+                duration: Motion.of(context, Motion.fold),
                 curve: const Cubic(.34, 1.4, .64, 1),
                 child: MikkyIcon('down', size: 14, color: ui.text3),
               ),
@@ -135,16 +135,16 @@ extension on GroupHeader {
               child: status == UiStatus.approval || status == UiStatus.working ? Center(child: StatusFx(status!, size: 15)) : null,
             ),
             const SizedBox(width: 6),
-            Text(label, style: uiText(12, weight: FontWeight.w600, color: ui.text3, height: 1.2)),
+            Text(label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text3, height: 1.2)),
             const SizedBox(width: 5),
-            Text('$count', style: uiText(12, weight: FontWeight.w500, color: ui.text3, height: 1.2, tabular: true)),
+            Text('$count', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, height: 1.2, tabular: true)),
             const Spacer(),
             AnimatedOpacity(
               opacity: hover || !open ? 1 : 0,
-              duration: const Duration(milliseconds: 140),
+              duration: Motion.hover,
               child: AnimatedRotation(
                 turns: open ? 0 : -.25,
-                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+                duration: Motion.of(context, Motion.fold),
                 curve: const Cubic(.34, 1.4, .64, 1),
                 child: MikkyIcon('down', size: 13, color: ui.text3),
               ),
@@ -232,7 +232,7 @@ class AgentCard extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: uiText(14, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
+                  style: uiText(TextSize.body, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
                 ),
               ),
               if (mark != null) ...[const SizedBox(width: 6), mark!],
@@ -244,7 +244,7 @@ class AgentCard extends StatelessWidget {
           if (who.isNotEmpty)
             Text(
               who,
-              style: uiText(11, weight: FontWeight.w500, color: ui.text3, height: 1.2),
+              style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.text3, height: 1.2),
             ),
           if (!live) ?_menuStar(),
         ],
@@ -258,7 +258,7 @@ class AgentCard extends StatelessWidget {
               subtitle!,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: uiText(12.5, color: ui.text2),
+              style: uiText(TextSize.small, color: ui.text2),
             ),
           );
     final Widget body;
@@ -323,10 +323,10 @@ class AgentCard extends StatelessWidget {
     // grey card with the orange outline, as before.
     final waiting = style == AgentCardStyle.waiting;
     final card = Surface(
-      radius: old ? 14 : 18,
+      radius: old ? Radii.lg : Radii.xl,
       color: plain || live ? null : ui.well,
       shadows: [
-        if (waiting && !live) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
+        if (waiting && !live) ui.waitRing,
       ],
       padding: old
           ? const EdgeInsets.fromLTRB(8, 8, 14, 8)
@@ -349,8 +349,8 @@ class AgentCard extends StatelessWidget {
               builder: (context, hover) {
                 final ui = MikkyUi.of(context);
                 return AnimatedContainer(
-                  duration: const Duration(milliseconds: 140),
-                  decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(14)),
+                  duration: Motion.hover,
+                  decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(Radii.lg)),
                   child: card,
                 );
               },
@@ -366,7 +366,7 @@ class AgentCard extends StatelessWidget {
     final ui = MikkyUi.of(context);
     final side = [if (subtitle != null && subtitle!.isNotEmpty) subtitle!, if (who.isNotEmpty) who].join(' · ');
     return _pressable(Surface(
-      radius: 14,
+      radius: Radii.lg,
       padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
       child: Row(
         children: [
@@ -381,12 +381,12 @@ class AgentCard extends StatelessWidget {
               title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: uiText(14, weight: FontWeight.w500, color: ui.text, height: 1.3),
+              style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text, height: 1.3),
             ),
           ),
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
-          Text(side, style: uiText(11.5, color: ui.text3, height: 1.2, tabular: true)),
+          Text(side, style: uiText(TextSize.caption, color: ui.text3, height: 1.2, tabular: true)),
           ?_menuStar(),
         ],
       ),
@@ -468,7 +468,7 @@ class _AnswerBarState extends State<AnswerBar> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final scaler = MediaQuery.textScalerOf(context);
-    final style = uiText(13, weight: FontWeight.w600, height: 1);
+    final style = uiText(TextSize.label, weight: FontWeight.w600, height: 1);
     final widths = [for (final (label, _) in widget.answers) _textWidth(label, style, scaler) + AnswerBar.padX * 2];
     final lefts = <double>[];
     var x = 0.0;
@@ -507,12 +507,12 @@ class _AnswerBarState extends State<AnswerBar> {
                         child: DecoratedBox(
                           decoration: BoxDecoration(
                             color: ui.thumb,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(Radii.md),
                             // A hairline, so the white shows on the white window too.
                             border: Border.all(color: ui.line, width: .8),
                             boxShadow: [
                               for (final s in ui.shThumb)
-                                if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread),
+                                if (!s.inset) s.box,
                             ],
                           ),
                         ),
@@ -553,16 +553,16 @@ class _AnswerBarState extends State<AnswerBar> {
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 160),
+              duration: Motion.hover,
               width: width,
               height: AnswerBar.height,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: hovered ? ui.hover : ui.hover.withValues(alpha: 0),
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(Radii.md),
               ),
               child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
+                duration: Motion.fade,
                 style: style.copyWith(color: i == _on || hovered ? ui.text : ui.text2),
                 child: Text(label, maxLines: 1),
               ),
@@ -602,7 +602,7 @@ class MenuStar extends StatelessWidget {
               dimension: 24,
               child: Center(
                 child: AnimatedOpacity(
-                  duration: const Duration(milliseconds: 140),
+                  duration: Motion.hover,
                   opacity: hover ? 1 : 0,
                   child: const PixelStar(PixelFxPalette.grey, size: 10),
                 ),

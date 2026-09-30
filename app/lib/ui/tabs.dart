@@ -100,7 +100,7 @@ class MTabBar extends StatelessWidget {
           radius: radius,
           height: height,
           color: ui.raise,
-          shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
+          shadows: ui.floating,
           padding: const EdgeInsets.all(5),
           child: content,
         ),
@@ -172,8 +172,8 @@ class _TabState extends State<_Tab> with SingleTickerProviderStateMixin {
             if (!widget.mini && item.label != null) ...[
               const SizedBox(height: 2),
               AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 180),
-                style: uiText(11, weight: FontWeight.w600, color: color, height: 1.2),
+                duration: Motion.fade,
+                style: uiText(TextSize.caption, weight: FontWeight.w600, color: color, height: 1.2),
                 child: Text(item.label!),
               ),
             ],

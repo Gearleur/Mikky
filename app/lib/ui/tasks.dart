@@ -51,7 +51,7 @@ class _TaskSectionState extends State<TaskSection> {
   late bool _details = widget.initiallyDetails;
 
   Widget _fold(BuildContext context, bool open, Widget child) => AnimatedSize(
-    duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 320),
+    duration: Motion.of(context, Motion.fold),
     curve: Motion.enter,
     alignment: Alignment.topCenter,
     child: open ? child : const SizedBox(width: double.infinity),
@@ -68,8 +68,8 @@ class _TaskSectionState extends State<TaskSection> {
         Expanded(
           child: Text.rich(
             TextSpan(children: [
-              TextSpan(text: widget.title, style: uiText(13.5, weight: FontWeight.w600, color: ui.text)),
-              if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(12.5, color: ui.text3, tabular: true)),
+              TextSpan(text: widget.title, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+              if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(TextSize.small, color: ui.text3, tabular: true)),
             ]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -79,13 +79,13 @@ class _TaskSectionState extends State<TaskSection> {
           HoverRow(
             onTap: widget.onAction,
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            child: Text(widget.action!, style: uiText(12.5, weight: FontWeight.w500, color: ui.blue)),
+            child: Text(widget.action!, style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.blue)),
           ),
         if (foldable) ...[
           const SizedBox(width: 4),
           AnimatedRotation(
             turns: _open ? .5 : 0,
-            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 300),
+            duration: Motion.of(context, Motion.fold),
             curve: const Cubic(.34, 1.4, .64, 1),
             child: MikkyIcon('down', size: 14, color: ui.text3),
           ),
@@ -95,7 +95,7 @@ class _TaskSectionState extends State<TaskSection> {
     // The sliding square of the Oui / Non answers as hover (user request,
     // 2026-09-30).
     return SlidingHover(
-      radius: 9,
+      radius: Radii.md,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -139,7 +139,7 @@ class _TaskSectionState extends State<TaskSection> {
                       alignment: Alignment.centerLeft,
                       child: HoverRow(
                         onTap: () => setState(() => _details = !_details),
-                        child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(12, weight: FontWeight.w500, color: ui.text3)),
+                        child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3)),
                       ),
                     ),
                   ],
@@ -212,13 +212,13 @@ class _TaskStepState extends State<TaskStep> {
             ]),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: uiText(13, weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400, color: text, height: 1.35),
+            style: uiText(TextSize.label, weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400, color: text, height: 1.35),
           ),
         ),
         if (widget.detail != null)
           AnimatedRotation(
             turns: _open ? .5 : 0,
-            duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
+            duration: Motion.of(context, Motion.fold),
             child: MikkyIcon('down', size: 12, color: ui.text3),
           ),
       ],
@@ -228,7 +228,7 @@ class _TaskStepState extends State<TaskStep> {
       children: [
         HoverRow(onTap: widget.detail == null ? null : () => setState(() => _open = !_open), child: row),
         AnimatedSize(
-          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
+          duration: Motion.of(context, Motion.fold),
           curve: Motion.enter,
           alignment: Alignment.topCenter,
           child: _open && widget.detail != null
@@ -273,11 +273,11 @@ class _ToolLineState extends State<ToolLine> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(12.5, color: ui.text, height: 1.35)),
+              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.text, height: 1.35)),
               if (widget.detail != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
-                  child: Text(widget.detail!, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(11, mono: true, color: ui.text3, height: 1.4)),
+                  child: Text(widget.detail!, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, mono: true, color: ui.text3, height: 1.4)),
                 ),
             ],
           ),
@@ -290,7 +290,7 @@ class _ToolLineState extends State<ToolLine> {
       children: [
         HoverRow(onTap: widget.body == null ? null : () => setState(() => _open = !_open), child: row),
         AnimatedSize(
-          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 260),
+          duration: Motion.of(context, Motion.fold),
           curve: Motion.enter,
           alignment: Alignment.topCenter,
           child: _open && widget.body != null
@@ -318,7 +318,7 @@ class NoteLine extends StatelessWidget {
       text.replaceAll(RegExp(r'\*\*|__|`'), ''),
       maxLines: thought ? 2 : 4,
       overflow: TextOverflow.ellipsis,
-      style: uiText(thought ? 12.5 : 13, color: thought ? ui.text3 : ui.text2, height: 1.4),
+      style: uiText(thought ? TextSize.small : TextSize.label, color: thought ? ui.text3 : ui.text2, height: 1.4),
     );
   }
 }
@@ -337,10 +337,10 @@ class OutputBox extends StatelessWidget {
     final shown = all.length > lines ? all.sublist(all.length - lines) : all;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(Radii.md)),
       child: Text(
         [if (all.length > lines) '…', ...shown].join('\n'),
-        style: uiText(10.5, mono: true, color: ui.text2, height: 1.45),
+        style: uiText(TextSize.code, mono: true, color: ui.text2, height: 1.45),
       ),
     );
   }

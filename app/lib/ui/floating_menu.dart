@@ -196,7 +196,7 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     final growsUp = target.top < o.top;
     final rect = Rect.fromLTRB(lerp(o.left, target.left, w), lerp(o.top, target.top, h), lerp(o.right, target.right, w), lerp(o.bottom, target.bottom, h));
     final f = t.clamp(0.0, 1.0);
-    final radius = lerp(o.shortestSide / 2, 16, f);
+    final radius = lerp(o.shortestSide / 2, Radii.xl, f);
     final color = Color.lerp(ui.ctlA, ui.well, (f * 1.8).clamp(0.0, 1.0))!;
     final content = ((t - .45) / .4).clamp(0.0, 1.0);
     final dots = (1 - t / .25).clamp(0.0, 1.0);
@@ -207,9 +207,11 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
           color: color,
           borderRadius: BorderRadius.circular(radius),
           border: Border.all(color: ui.line.withValues(alpha: ui.line.a * f)),
+          // The menu's shadow grows with it; the button's own soft contact
+          // shadow is already there (70 %).
           boxShadow: [
-            BoxShadow(color: Color.fromRGBO(0, 0, 0, .08 * f), blurRadius: 18, offset: const Offset(0, 6)),
-            BoxShadow(color: Color.fromRGBO(0, 0, 0, .05 + .02 * f), blurRadius: 3, offset: const Offset(0, 1)),
+            for (final (i, s) in ui.shMenu.indexed)
+              s.box.copyWith(color: s.color.withValues(alpha: s.color.a * (i == ui.shMenu.length - 1 ? .7 + .3 * f : f))),
           ],
         ),
         child: ClipRRect(
@@ -265,12 +267,9 @@ class _PanelBox extends StatelessWidget {
       padding: const EdgeInsets.all(5),
       decoration: BoxDecoration(
         color: ui.well,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(Radii.xl),
         border: Border.all(color: ui.line),
-        boxShadow: const [
-          BoxShadow(color: Color(0x14000000), blurRadius: 18, offset: Offset(0, 6)),
-          BoxShadow(color: Color(0x0D000000), blurRadius: 3, offset: Offset(0, 1)),
-        ],
+        boxShadow: [for (final s in ui.shMenu) s.box],
       ),
       child: child,
     );
@@ -300,7 +299,7 @@ class _MenuList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return SlidingHover(
-      radius: 11,
+      radius: Radii.md,
       hairline: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -342,7 +341,7 @@ class _Item extends StatelessWidget {
                   entry.label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: uiText(13.5, weight: FontWeight.w500, color: danger ? ui.red : ui.text, height: 1.25),
+                  style: uiText(TextSize.label, weight: FontWeight.w500, color: danger ? ui.red : ui.text, height: 1.25),
                 ),
               ),
               if (entry.checked) ...[const SizedBox(width: 8), MikkyIcon('check', size: 15, color: ui.text)],

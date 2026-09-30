@@ -82,10 +82,10 @@ List<Widget> suiviOf(BuildContext context, SessionLog log) {
       child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
         Expanded(
           child: Text(log.detail.isEmpty ? 'Réfléchit…' : log.detail,
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(14.5, weight: FontWeight.w600, color: ui.text)),
+              maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text)),
         ),
         const SizedBox(width: 10),
-        Text(suiviCount(turn, steps), style: uiText(12, color: ui.text2, tabular: true)),
+        Text(suiviCount(turn, steps), style: uiText(TextSize.small, color: ui.text2, tabular: true)),
       ]),
     ),
     ..._metro([...steps, if (turn.running) const SuiviStep(StepKind.todo, 'Terminé')], ui, slipped: slipped),
@@ -124,7 +124,7 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
   if (t.active) {
     trailing = const StatusFx(UiStatus.working, size: 12);
   } else if (note != null) {
-    trailing = Text(note, style: uiText(11.5, weight: FontWeight.w500, color: ui.red));
+    trailing = Text(note, style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.red));
   } else if (diff != null) {
     final (:added, :removed) = diffCounts(diff);
     trailing = Text.rich(
@@ -132,7 +132,7 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
         TextSpan(text: '+$added', style: TextStyle(color: ui.green)),
         if (removed > 0) TextSpan(text: ' −$removed', style: TextStyle(color: ui.red)),
       ]),
-      style: uiText(11.5, weight: FontWeight.w500, mono: true),
+      style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true),
     );
   }
   final output = t.output?.trim();

@@ -161,7 +161,7 @@ class _HomeMockState extends State<HomeMock> {
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const Padding(padding: EdgeInsets.only(top: 1), child: BrandLogo(Brand.codex, size: 12)),
           const SizedBox(width: 6),
-          Expanded(child: Text(widget.limits!, style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
+          Expanded(child: Text(widget.limits!, style: uiText(TextSize.caption, color: ui.text3, height: 1.3, tabular: true))),
         ]),
       ));
     }
@@ -179,9 +179,9 @@ class _HomeMockState extends State<HomeMock> {
               ? Padding(
                   padding: const EdgeInsets.fromLTRB(32, 120, 32, 0),
                   child: Column(children: [
-                    Text('Aucun agent pour l’instant', textAlign: TextAlign.center, style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
+                    Text('Aucun agent pour l’instant', textAlign: TextAlign.center, style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
                     const SizedBox(height: 6),
-                    Text('La flèche en bas lance Claude ou Codex.', textAlign: TextAlign.center, style: uiText(12.5, color: ui.text3)),
+                    Text('La flèche en bas lance Claude ou Codex.', textAlign: TextAlign.center, style: uiText(TextSize.small, color: ui.text3)),
                   ]),
                 )
               : SingleChildScrollView(
@@ -323,7 +323,7 @@ class _AgentMockState extends State<AgentMock> {
     final usage = usageLine(log);
     final content = <Widget>[
       if (usage.isNotEmpty)
-        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true))),
+        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(TextSize.caption, color: ui.text3, tabular: true))),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: _limit)),
       if (widget.paused)
         Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
@@ -375,7 +375,7 @@ class _AgentMockState extends State<AgentMock> {
             child: Row(children: [
               MikkyIcon('lock', size: 13, color: ui.text3),
               const SizedBox(width: 6),
-              Expanded(child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.', style: uiText(11.5, color: ui.text3, height: 1.35))),
+              Expanded(child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
             ]),
           ),
       ]),
@@ -403,19 +403,19 @@ class NewAgentMock extends StatelessWidget {
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             const MiniMikky(size: 64),
             const SizedBox(height: 8),
-            Text('Qu’est-ce qu’on lance ?', style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
+            Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
             if (starting) ...[
               const SizedBox(height: 14),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 const Spinner(size: 14),
                 const SizedBox(width: 8),
-                Text('Démarrage…', style: uiText(12.5, color: ui.text2)),
+                Text('Démarrage…', style: uiText(TextSize.small, color: ui.text2)),
               ]),
             ],
             if (error != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-                child: Text(error!, textAlign: TextAlign.center, style: uiText(12, color: ui.red)),
+                child: Text(error!, textAlign: TextAlign.center, style: uiText(TextSize.small, color: ui.red)),
               ),
           ]),
         ),
@@ -642,7 +642,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                   icon: 'file',
                   title: 'Écrire le résumé',
                   detail: 'docs/resume.md',
-                  trailing: Text('+12', style: uiText(11.5, weight: FontWeight.w500, mono: true, color: ui.green)),
+                  trailing: Text('+12', style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true, color: ui.green)),
                 ),
                 const NoteLine('Résumé écrit, 12 lignes.'),
               ],

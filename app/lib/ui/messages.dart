@@ -17,7 +17,7 @@ class Bubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    const big = Radius.circular(20), small = Radius.circular(8);
+    const big = Radius.circular(Radii.xl), small = Radius.circular(Radii.sm);
     final radius = me
         ? const BorderRadius.only(topLeft: big, topRight: big, bottomLeft: big, bottomRight: small)
         : (thread
@@ -27,7 +27,7 @@ class Bubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 9),
       decoration: BoxDecoration(color: me ? ui.ink : ui.well, borderRadius: radius),
       child: DefaultTextStyle(
-        style: uiText(14, color: me ? ui.onInk : ui.text, height: 1.4),
+        style: uiText(TextSize.body, color: me ? ui.onInk : ui.text, height: 1.4),
         child: child,
       ),
     );
@@ -51,7 +51,7 @@ class ChatMessage extends StatelessWidget {
         ? null
         : Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
-            child: Text(meta!, style: uiText(11, color: ui.text3, height: 1.3)),
+            child: Text(meta!, style: uiText(TextSize.caption, color: ui.text3, height: 1.3)),
           );
     if (!me) {
       return Column(
@@ -59,7 +59,7 @@ class ChatMessage extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 2, 2, 2),
-            child: DefaultTextStyle(style: uiText(14, color: ui.text, height: 1.5), child: AgentText(text)),
+            child: DefaultTextStyle(style: uiText(TextSize.body, color: ui.text, height: 1.5), child: AgentText(text)),
           ),
           ?metaLine,
         ],

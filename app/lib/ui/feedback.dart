@@ -58,14 +58,14 @@ class ProgressBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(2),
+      borderRadius: BorderRadius.circular(Radii.xs),
       child: Container(
         height: 4,
         color: ui.track,
         child: LayoutBuilder(
           builder: (context, box) {
             final bar = DecoratedBox(
-              decoration: BoxDecoration(color: ui.ink, borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: ui.ink, borderRadius: BorderRadius.circular(Radii.xs)),
             );
             final v = value;
             if (v != null) {
@@ -110,7 +110,7 @@ class CountBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 5),
       decoration: BoxDecoration(
         color: ui.ink,
-        borderRadius: BorderRadius.circular(9),
+        borderRadius: BorderRadius.circular(Radii.md),
         boxShadow: [BoxShadow(color: ring ?? ui.island, spreadRadius: 2)],
       ),
       // Shrink-wrapped: a Container with an alignment would fill the width
@@ -119,7 +119,7 @@ class CountBadge extends StatelessWidget {
         widthFactor: 1,
         child: Text(
           '$count',
-          style: uiText(10, weight: FontWeight.w600, color: ui.onInk, height: 1),
+          style: uiText(TextSize.badge, weight: FontWeight.w600, color: ui.onInk, height: 1),
         ),
       ),
     );
@@ -137,7 +137,7 @@ class DotBadge extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return AnimatedScale(
       scale: show ? 1 : 0,
-      duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 350),
+      duration: Motion.of(context, const Duration(milliseconds: 350)),
       curve: const Cubic(.34, 1.8, .64, 1),
       child: Container(
         width: 9,
@@ -212,9 +212,9 @@ class Toast extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Surface(
-      radius: 24,
+      radius: Radii.xxl,
       color: ui.raise,
-      shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
+      shadows: ui.floating,
       padding: const EdgeInsets.fromLTRB(10, 9, 9, 9),
       child: Row(
         children: [
@@ -235,13 +235,13 @@ class Toast extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: uiText(13, weight: FontWeight.w600, color: ui.text, height: 1.35),
+                  style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text, height: 1.35),
                 ),
                 Text(
                   subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: uiText(12, color: ui.text2, height: 1.35),
+                  style: uiText(TextSize.small, color: ui.text2, height: 1.35),
                 ),
               ],
             ),

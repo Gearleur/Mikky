@@ -13,7 +13,7 @@ import 'tokens.dart';
 /// themselves with [HoverTarget] — [AgentCard] and [HoverRow] do it on
 /// their own when they sit in a [SlidingHover].
 class SlidingHover extends StatefulWidget {
-  const SlidingHover({super.key, required this.child, this.radius = 10, this.followHover = true, this.hairline = true});
+  const SlidingHover({super.key, required this.child, this.radius = Radii.md, this.followHover = true, this.hairline = true});
 
   final Widget child;
   final double radius;
@@ -158,7 +158,7 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
                       border: widget.hairline ? Border.all(color: ui.line, width: .8) : null,
                       boxShadow: [
                         for (final s in ui.shThumb)
-                          if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread),
+                          if (!s.inset) s.box,
                       ],
                     ),
                   ),
@@ -269,9 +269,9 @@ class _HoverRowState extends State<HoverRow> {
         behavior: HitTestBehavior.opaque,
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 140),
+          duration: Motion.hover,
           padding: widget.padding,
-          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(9)),
+          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(Radii.md)),
           child: widget.child,
         ),
       ),

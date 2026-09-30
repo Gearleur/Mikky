@@ -214,19 +214,19 @@ class _NewAgentPageState extends State<NewAgentPage> {
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           const MiniMikky(size: 64),
           const SizedBox(height: 8),
-          Text('Qu’est-ce qu’on lance ?', style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
+          Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
           if (_starting || installing) ...[
             const SizedBox(height: 14),
             Row(mainAxisSize: MainAxisSize.min, children: [
               const Spinner(size: 14),
               const SizedBox(width: 8),
-              Text(installing ? 'Mikky installe ses adaptateurs…' : 'Démarrage…', style: uiText(12.5, color: ui.text2)),
+              Text(installing ? 'Mikky installe ses adaptateurs…' : 'Démarrage…', style: uiText(TextSize.small, color: ui.text2)),
             ]),
           ],
           if (_error != null)
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-              child: Text(_error!, textAlign: TextAlign.center, maxLines: 4, overflow: TextOverflow.ellipsis, style: uiText(12, color: ui.red)),
+              child: Text(_error!, textAlign: TextAlign.center, maxLines: 4, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.red)),
             ),
         ]),
       ),
@@ -331,7 +331,7 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Text(
               installed ? '$_tool n’est pas connecté $_where.' : '$_tool n’est pas installé $_where.',
-              style: uiText(15, weight: FontWeight.w600, color: ui.text),
+              style: uiText(TextSize.lead, weight: FontWeight.w600, color: ui.text),
             ),
             const SizedBox(height: 6),
             Text(
@@ -340,20 +340,20 @@ class _LoginPageState extends State<LoginPage> {
                   : widget.provider == AgentProvider.claude
                       ? 'Installe Claude Code (claude.ai/install), puis reviens ici.'
                       : 'Installe Codex (npm install -g @openai/codex), puis reviens ici.',
-              style: uiText(13, color: ui.text2),
+              style: uiText(TextSize.label, color: ui.text2),
             ),
             const SizedBox(height: 20),
             if (prompt?.code != null) ...[
-              Text('Ton code, à taper sur la page qui s’ouvre :', style: uiText(12.5, color: ui.text2)),
+              Text('Ton code, à taper sur la page qui s’ouvre :', style: uiText(TextSize.small, color: ui.text2)),
               const SizedBox(height: 8),
-              Center(child: Text(prompt!.code!, style: uiText(24, weight: FontWeight.w600, mono: true, color: ui.text, tracking: .06))),
+              Center(child: Text(prompt!.code!, style: uiText(TextSize.display, weight: FontWeight.w600, mono: true, color: ui.text, tracking: .06))),
               const SizedBox(height: 12),
             ],
             if (prompt != null) ...[
               Row(children: [
                 const Spinner(size: 14),
                 const SizedBox(width: 8),
-                Expanded(child: Text(_checking ? 'Vérification…' : 'En attente de ta connexion…', style: uiText(12.5, color: ui.text2))),
+                Expanded(child: Text(_checking ? 'Vérification…' : 'En attente de ta connexion…', style: uiText(TextSize.small, color: ui.text2))),
                 MButton('Ouvrir le lien', small: true, onPressed: () => _openLink(prompt.url)),
               ]),
             ] else if (installed)
@@ -369,7 +369,7 @@ class _LoginPageState extends State<LoginPage> {
               }),
             if (_failed != null) ...[
               const SizedBox(height: 14),
-              Text(_failed!, style: uiText(12.5, color: ui.red)),
+              Text(_failed!, style: uiText(TextSize.small, color: ui.red)),
               const SizedBox(height: 8),
               Align(alignment: Alignment.centerLeft, child: MButton('Réessayer', small: true, onPressed: _start)),
             ],

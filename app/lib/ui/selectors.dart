@@ -37,7 +37,7 @@ class Segmented extends StatelessWidget {
     };
     var col = _widest(options, font, MediaQuery.textScalerOf(context)) + padX * 2;
     if (col * options.length < minWidth - pad * 2) col = (minWidth - pad * 2) / options.length;
-    final shadows = size == SegmentSize.field ? [CssShadow(0, 0, 0, ui.island, spread: 3)] : ui.inset;
+    final shadows = size == SegmentSize.field ? [ui.cutout] : ui.inset;
     return Surface(
       color: ui.track,
       shadows: shadows,
@@ -87,7 +87,7 @@ class Segmented extends StatelessWidget {
                         enabled: onChanged != null && i != selected,
                         builder: (context, hover) => Center(
                           child: AnimatedDefaultTextStyle(
-                            duration: const Duration(milliseconds: 180),
+                            duration: Motion.fade,
                             style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected || hover ? ui.text : ui.text2),
                             child: Text(options[i], maxLines: 1),
                           ),
@@ -148,7 +148,6 @@ class _MSwitchState extends State<MSwitch> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final on = widget.value;
-    final reduced = Motion.reduced(context);
     final knobW = _pressed ? 30.0 : 24.0;
     final left = on ? (_pressed ? 17.0 : 23.0) : 3.0;
     return MouseRegion(
@@ -161,7 +160,7 @@ class _MSwitchState extends State<MSwitch> {
           onTap: widget.onChanged == null ? null : () => widget.onChanged!(!on),
           child: TweenAnimationBuilder<Color?>(
             tween: ColorTween(end: on ? ui.ink : ui.track),
-            duration: Duration(milliseconds: reduced ? 1 : 250),
+            duration: Motion.of(context, Motion.fold),
             builder: (context, track, _) => Surface(
               width: 50,
               height: 30,
@@ -171,7 +170,7 @@ class _MSwitchState extends State<MSwitch> {
                 clipBehavior: Clip.none,
                 children: [
                   AnimatedPositioned(
-                    duration: Duration(milliseconds: reduced ? 1 : 380),
+                    duration: Motion.of(context, Motion.slide),
                     curve: const Cubic(.34, 1.5, .64, 1),
                     left: left,
                     top: 3,
@@ -179,7 +178,7 @@ class _MSwitchState extends State<MSwitch> {
                     height: 24,
                     child: TweenAnimationBuilder<Color?>(
                       tween: ColorTween(end: on ? ui.onInk : ui.knob),
-                      duration: Duration(milliseconds: reduced ? 1 : 250),
+                      duration: Motion.of(context, Motion.fold),
                       builder: (context, knob, _) => Surface(color: knob, shadows: ui.shThumb),
                     ),
                   ),
@@ -210,7 +209,7 @@ class MChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final fg = on ? ui.onInk : ui.text;
-    final style = uiText(13, weight: soft ? FontWeight.w500 : FontWeight.w600, color: fg, height: 1);
+    final style = uiText(TextSize.label, weight: soft ? FontWeight.w500 : FontWeight.w600, color: fg, height: 1);
     return Pressable(
       onTap: onTap,
       pressedScale: .95,
@@ -229,7 +228,7 @@ class MChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$count',
-                style: uiText(13, weight: FontWeight.w600, height: 1, tabular: true, color: on ? fg.withValues(alpha: .6) : ui.text2),
+                style: uiText(TextSize.label, weight: FontWeight.w600, height: 1, tabular: true, color: on ? fg.withValues(alpha: .6) : ui.text2),
               ),
             ],
             if (trailingIcon != null) ...[const SizedBox(width: 4), MikkyIcon(trailingIcon!, size: 13, color: ui.text2)],

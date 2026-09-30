@@ -161,7 +161,7 @@ class _AgentTextState extends State<AgentText> {
         if (m[1] != null) {
           spans.add(TextSpan(text: m[1], style: const TextStyle(fontWeight: FontWeight.w600)));
         } else if (m[2] != null) {
-          spans.add(TextSpan(text: m[2], style: TextStyle(fontFamily: 'Geist Mono', fontSize: 12.5, backgroundColor: ui.track)));
+          spans.add(TextSpan(text: m[2], style: TextStyle(fontFamily: 'Geist Mono', fontSize: TextSize.small, backgroundColor: ui.track)));
         } else {
           final url = m[4] ?? m[5]!;
           final tap = TapGestureRecognizer()..onTap = () => openUrl(url);
@@ -217,14 +217,14 @@ class _CodeBlockViewState extends State<CodeBlockView> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Container(
-      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(12), border: Border.all(color: ui.line)),
+      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: ui.line)),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Container(
           padding: const EdgeInsets.fromLTRB(10, 4, 4, 4),
           decoration: BoxDecoration(border: Border(bottom: BorderSide(color: ui.line))),
           child: Row(children: [
-            Expanded(child: Text(widget.language, style: uiText(10.5, mono: true, color: ui.text3, height: 1.2))),
+            Expanded(child: Text(widget.language, style: uiText(TextSize.code, mono: true, color: ui.text3, height: 1.2))),
             Pressable(
               onTap: _copy,
               child: Padding(
@@ -232,7 +232,7 @@ class _CodeBlockViewState extends State<CodeBlockView> {
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   MikkyIcon(_copied ? 'check' : 'file', size: 12, color: ui.text2),
                   const SizedBox(width: 4),
-                  Text(_copied ? 'Copié' : 'Copier', style: uiText(11, weight: FontWeight.w600, color: ui.text2, height: 1.2)),
+                  Text(_copied ? 'Copié' : 'Copier', style: uiText(TextSize.caption, weight: FontWeight.w600, color: ui.text2, height: 1.2)),
                 ]),
               ),
             ),
@@ -241,7 +241,7 @@ class _CodeBlockViewState extends State<CodeBlockView> {
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.fromLTRB(10, 7, 10, 8),
-          child: Text(widget.code, softWrap: false, style: uiText(11.5, mono: true, color: ui.text, height: 1.45)),
+          child: Text(widget.code, softWrap: false, style: uiText(TextSize.caption, mono: true, color: ui.text, height: 1.45)),
         ),
       ]),
     );

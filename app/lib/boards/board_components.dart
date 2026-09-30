@@ -257,7 +257,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
                         onTap: () => set(i),
                         child: Padding(
                           padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                          child: Text(t, style: uiText(14, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
+                          child: Text(t, style: uiText(TextSize.body, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
                         ),
                       ),
                     ),
@@ -275,7 +275,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               const SizedBox(width: 40),
               const SizedBox(width: 34, child: Center(child: ClaudeSpinner(size: 30))),
               const SizedBox(width: 12),
-              Text('Pondering…', style: uiText(13, color: const Color(0xFFD97757), weight: FontWeight.w500)),
+              Text('Pondering…', style: uiText(TextSize.label, color: const Color(0xFFD97757), weight: FontWeight.w500)),
             ]),
           ], width: 300),
         ),
@@ -324,7 +324,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               ])
                 SizedBox(
                   width: 140,
-                  child: Row(children: [StatusDot(s), const SizedBox(width: 6), Text(name, style: uiText(13, weight: FontWeight.w500, color: ui.text))]),
+                  child: Row(children: [StatusDot(s), const SizedBox(width: 6), Text(name, style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text))]),
                 ),
             ]),
           ]),
@@ -370,7 +370,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               '• La barre de titre flottante « Réglages » : c’est l’en-tête des pages.\n'
               '• La barre d’actions « Envoyer à Téléphone » : pour LocalSend, plus tard.\n'
               '• Les carrés d’état, le lanceur, les points d’état ronds : remplacés par les feux d’artifice.',
-              style: uiText(13, color: ui.text2, height: 1.55),
+              style: uiText(TextSize.label, color: ui.text2, height: 1.55),
             ),
           ),
         ),
@@ -385,7 +385,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               '• Boîte de confirmation (supprimer une session) : aujourd’hui celle de Windows.\n'
               '• Notification d’erreur (toast rouge) et état vide d’une page.\n'
               '• Écran de connexion et écran de réglages sur les planches.',
-              style: uiText(13, color: ui.text2, height: 1.55),
+              style: uiText(TextSize.label, color: ui.text2, height: 1.55),
             ),
           ),
         ),
@@ -462,7 +462,7 @@ class _MenuTryState extends State<_MenuTry> {
         left: 18,
         bottom: 16,
         right: 18,
-        child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(12.5, color: ui.text3)),
+        child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(TextSize.small, color: ui.text3)),
       ),
     ]);
   }
