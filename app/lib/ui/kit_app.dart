@@ -389,7 +389,7 @@ class _KitPartsState extends State<KitParts> {
       children: [
         section(
           'Boutons',
-          caption: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Rond : une action en icône. Barre : un groupe d’actions posé sur une capsule.',
+          caption: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Rond : une action en icône. Barre : un groupe d’actions posé sur une capsule. Réponses : petits boutons à plat, le carré blanc glisse vers la réponse appuyée.',
           [
             line([
               MButton('Lancer', kind: ButtonKind.primary, onPressed: () {}),
@@ -402,6 +402,12 @@ class _KitPartsState extends State<KitParts> {
               sep,
               const MButton('Lancer', kind: ButtonKind.primary),
               MButton(_sending ? 'Envoi…' : 'Envoyer', kind: ButtonKind.primary, loading: _sending, onPressed: _send),
+            ]),
+            // Oui / Non of a waiting agent (validated 2026-09-30).
+            line([
+              AnswerBar(answers: [('Non', () {}), ('Oui', () {})]),
+              sep,
+              AnswerBar(answers: [('Toujours', () {}), ('Non', () {}), ('Oui', () {})]),
             ]),
             line([
               for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
