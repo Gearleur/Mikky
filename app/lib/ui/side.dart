@@ -34,9 +34,11 @@ class SideFrame extends StatelessWidget {
 /// `.side-head`: 68 px — Mikky small (or a back button), the title, and
 /// round buttons on the right.
 class SideHead extends StatelessWidget {
-  const SideHead({super.key, required this.title, this.leading, this.actions = const [], this.small = false});
+  const SideHead({super.key, this.title, this.leading, this.actions = const [], this.small = false});
 
-  final String title;
+  /// None on an agent's page: its buttons float over the thread (user
+  /// request, 2026-09-30).
+  final String? title;
   final Widget? leading;
   final List<Widget> actions;
 
@@ -55,8 +57,10 @@ class SideHead extends StatelessWidget {
             if (leading case final l?) small ? Padding(padding: const EdgeInsets.only(left: 4), child: l) : l,
             SizedBox(width: small ? 14 : 8),
             Expanded(
-              child: Text(
-                title,
+              child: title == null
+                  ? const SizedBox.shrink()
+                  : Text(
+                title!,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
@@ -68,6 +72,28 @@ class SideHead extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The thread fading out at the very top, under the floating buttons of
+/// an agent's page: no band, it still goes up to the top (user request,
+/// 2026-09-30).
+class TopFade extends StatelessWidget {
+  const TopFade({super.key, required this.child, this.height = 60});
+
+  final Widget child;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) => ShaderMask(
+    blendMode: BlendMode.dstIn,
+    shaderCallback: (bounds) => LinearGradient(
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+      colors: const [Color(0x00000000), Color(0xFF000000)],
+      stops: [0, (height / bounds.height).clamp(0.0, 1.0)],
+    ).createShader(bounds),
+    child: child,
+  );
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative

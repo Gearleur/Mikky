@@ -178,7 +178,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
       frames: [
         BoardFrame(
           label: 'En-têtes',
-          note: 'L’accueil avec Mikky ; une page de détail avec retour et actions.',
+          note: 'L’accueil avec Mikky ; une page d’agent : sans titre, les boutons flottent sur le fil.',
           child: _Tray([
             SizedBox(
               height: 60,
@@ -188,8 +188,6 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               height: 60,
               child: Stack(children: [
                 SideHead(
-                  title: 'Corrige les tests du moteur',
-                  small: true,
                   leading: RoundButton('left', size: 34, onPressed: () {}),
                   actions: [RoundButton('stop', size: 34, onPressed: () {}), RoundButton('more', size: 34, onPressed: () {})],
                 ),

@@ -121,11 +121,48 @@ class _AgentPageState extends State<AgentPage> {
             onSend: _send,
           );
 
+    // No title, no band on top: the thread goes up to the top as it
+    // scrolls, the buttons float over it (user request, 2026-09-30).
     return Stack(
       children: [
+        Positioned.fill(
+          // Room for the field, or for the read-only note of outside sessions.
+          bottom: composer == null ? 44 : (working ? 90 : 78),
+          child: TopFade(
+            child: SingleChildScrollView(
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(16, 62, 16, 16),
+              child: SelectableArea(
+                child: AnimatedSwitcher(
+                  duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
+                  switchInCurve: Motion.enter,
+                  transitionBuilder: (child, a) => FadeTransition(
+                    opacity: a,
+                    child: SlideTransition(
+                      position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
+                      child: child,
+                    ),
+                  ),
+                  child: Column(
+                    key: ValueKey(suivi),
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      if (content.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 60),
+                          child: Center(
+                            child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
+                          ),
+                        ),
+                      ...content,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         SideHead(
-          title: e.name,
-          small: true,
           leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
           actions: [
             if (e.live && working) RoundButton('stop', size: 34, onPressed: () => _source.cancel(e.id), tooltip: 'Arrêter l’agent'),
@@ -137,43 +174,7 @@ class _AgentPageState extends State<AgentPage> {
             ),
           ],
         ),
-        Positioned.fill(
-          top: 68,
-          // Room for the field, or for the read-only note of outside sessions.
-          bottom: composer == null ? 44 : (working ? 90 : 78),
-          child: SingleChildScrollView(
-            controller: _scroll,
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-            child: SelectableArea(
-              child: AnimatedSwitcher(
-                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
-                switchInCurve: Motion.enter,
-                transitionBuilder: (child, a) => FadeTransition(
-                  opacity: a,
-                  child: SlideTransition(
-                    position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
-                    child: child,
-                  ),
-                ),
-                child: Column(
-                  key: ValueKey(suivi),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (content.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 60),
-                        child: Center(
-                          child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
-                        ),
-                      ),
-                    ...content,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        if (composer != null) Positioned(left: 12, right: 12, bottom: working ? 14 : 14, child: composer),
+        if (composer != null) Positioned(left: 12, right: 12, bottom: 14, child: composer),
         if (composer == null)
           Positioned(
             left: 16,

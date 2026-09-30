@@ -56,7 +56,7 @@ class _Missing extends StatelessWidget {
     ('Logo', 'C, Mikky qui dépasse, est retenue ; C2, C3, C4 à côté. Un petit quelque chose de magique à ajouter. Puis l’icône de l’app et de la zone de notification.'),
     ('Couleurs signature', 'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).'),
     ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
-    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Jacquard 12 en tête, puis Tiny5, Jersey 10, Jersey 15, Workbench. Puis une échelle nommée (titre, corps, légende, code).'),
+    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Jacquard 24, puis Jersey 10. Puis une échelle nommée (titre, corps, légende, code).'),
     ('Mikky en pixels', 'Une première tête en pixels (le feu d’artifice « Mikky »). À voir.'),
     ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
     ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),
@@ -212,10 +212,8 @@ class _LogoProposal extends StatelessWidget {
 }
 
 /// Pixel fonts for the app's name (user requests, 2026-09-30: Geist for
-/// the text; for the name Tiny5 and Jersey 10, to try Jersey 15,
-/// Workbench, and Jacquard 12 — « petite préférence, ça change, c'est
-/// osé » — with its two sisters).
-const _nameFonts = ['Jacquard 12', 'Tiny5', 'Jersey 10', 'Jersey 15', 'Workbench', 'Jacquard 24', 'Jacquarda Bastarda 9'];
+/// the text; for the name Jacquard 24, then Jersey 10).
+const _nameFonts = ['Jacquard 24', 'Jersey 10'];
 
 /// The app's name in one font: with the logo, then capitals, small
 /// letters, and as a title.
@@ -289,10 +287,10 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
     ),
     BoardSection(
       title: 'Nom de l’app',
-      note: 'Geist pour tout le texte ; pour le nom, une police pixel. Jacquard 12 en premier (ta préférence : osée), puis Tiny5, Jersey 10, les essais Jersey 15 et Workbench, et les deux sœurs de Jacquard.',
+      note: 'Geist pour tout le texte ; pour le nom, une police pixel : Jacquard 24, ta préférée, puis Jersey 10.',
       frames: [
         for (final (i, f) in _nameFonts.indexed)
-          BoardFrame(label: i == 0 ? '$f (préférée)' : f, width: 340, child: _NameSample(f)),
+          BoardFrame(label: i == 0 ? '$f (préférée)' : '$f (ensuite)', width: 340, child: _NameSample(f)),
       ],
     ),
     BoardSection(

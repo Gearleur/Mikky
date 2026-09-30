@@ -39,26 +39,11 @@ flutter:
         - asset: assets/fonts/GeistMono-Regular.ttf
         - asset: assets/fonts/GeistMono-Medium.ttf
           weight: 500
-    # Pixel fonts on trial for the app's name in the boards (user request,
-    # 2026-09-30); keep the chosen one, delete the rest.
-    - family: Jacquard 12
-      fonts:
-        - asset: assets/fonts/trial/Jacquard12-400.ttf
+    # Pixel fonts for the app's name (user request, 2026-09-30): Jacquard
+    # 24 preferred, then Jersey 10. SIL Open Font License.
     - family: Jacquard 24
       fonts:
         - asset: assets/fonts/trial/Jacquard24-400.ttf
-    - family: Jacquarda Bastarda 9
-      fonts:
-        - asset: assets/fonts/trial/JacquardaBastarda9-400.ttf
     - family: Jersey 10
       fonts:
         - asset: assets/fonts/trial/Jersey10-400.ttf
-    - family: Jersey 15
-      fonts:
-        - asset: assets/fonts/trial/Jersey15-400.ttf
-    - family: Tiny5
-      fonts:
-        - asset: assets/fonts/trial/Tiny5-400.ttf
-    - family: Workbench
-      fonts:
-        - asset: assets/fonts/trial/Workbench-400.ttf

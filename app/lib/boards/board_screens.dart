@@ -158,10 +158,15 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
 /// An agent's page in its window, fed by a made-up session (the same
 /// Suivi and Chat as the app's).
 class AgentMock extends StatefulWidget {
-  const AgentMock({super.key, required this.title, required this.log, this.chat = false, this.external = false});
+  const AgentMock({super.key, required this.title, required this.log, this.chat = false, this.external = false, this.scrolled = false});
 
+  /// Its name (the page does not show it any more; kept to tell the
+  /// frames apart in the code).
   final String title;
   final SessionLog log;
+
+  /// Scrolled down a little: the thread passes under the buttons.
+  final bool scrolled;
 
   /// Starts on Chat (else Suivi, while it works).
   final bool chat;
@@ -175,6 +180,13 @@ class AgentMock extends StatefulWidget {
 
 class _AgentMockState extends State<AgentMock> {
   late int _view = widget.chat ? 1 : 0;
+  late final _scroll = ScrollController(initialScrollOffset: widget.scrolled ? 150 : 0);
+
+  @override
+  void dispose() {
+    _scroll.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,22 +207,23 @@ class _AgentMockState extends State<AgentMock> {
     final readOnly = widget.external && working;
     return SideFrame(
       child: Stack(children: [
+        // As the app: no title, the thread up to the top, the buttons over it.
+        Positioned.fill(
+          bottom: readOnly ? 44 : (working ? 90 : 78),
+          child: TopFade(
+            child: SingleChildScrollView(
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(16, 62, 16, 16),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
+            ),
+          ),
+        ),
         SideHead(
-          title: widget.title,
-          small: true,
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
             if (working && !widget.external) RoundButton('stop', size: 34, onPressed: () {}, tooltip: 'Arrêter l’agent'),
             RoundButton('more', size: 34, onPressed: () {}, tooltip: 'Plus'),
           ],
-        ),
-        Positioned.fill(
-          top: 68,
-          bottom: readOnly ? 44 : (working ? 90 : 78),
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
-          ),
         ),
         if (!readOnly)
           Positioned(
@@ -297,7 +310,7 @@ class NewAgentMock extends StatelessWidget {
 final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, attentes, fins', (context) => [
   BoardSection(
     title: 'Au travail',
-    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Le carré « Suivi » dans le chat ramène au suivi.',
+    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; arrêter, pendant qu’il travaille ; « ··· », le menu : VS Code, dossier, renommer, épingler, archiver, supprimer).',
     frames: [
       BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working())),
       BoardFrame(label: 'Chat, avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true)),
@@ -324,6 +337,11 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
     title: 'Fini',
     frames: [
       BoardFrame(label: 'Terminé, la conversation continue', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done())),
+      BoardFrame(
+        label: 'Défilé',
+        note: 'Le fil monte jusqu’en haut, sous les boutons.',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), scrolled: true),
+      ),
       BoardFrame(label: 'Erreur (limite)', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
       BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
     ],
