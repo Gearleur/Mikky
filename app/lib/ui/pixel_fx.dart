@@ -18,9 +18,9 @@ enum PixelFxKind {
   /// up and closes again, over and over; the tips cool as it opens.
   firework,
 
-  /// The same, calmer: only its last two steps, a middle star and a big
-  /// one, back and forth, slowly, in the eight directions, keeping its
-  /// colors (user request, 2026-09-30).
+  /// The same, calmer: in the eight directions, frame by frame — a middle
+  /// star, a big one, a burst, the big one again — keeping its colors
+  /// (user requests, 2026-09-30).
   fireworkSoft,
 
   /// Spiral arms around a white core, turning slowly, scattered pixels on
@@ -230,22 +230,32 @@ class _FxPainter extends CustomPainter {
     return math.max(0, math.max(head, trail)) * cool * (between ? .75 : 1);
   }
 
+  /// Frame by frame, like a sprite: middle star, big star, burst (the
+  /// tips come off as bright dots), big star again (user request,
+  /// 2026-09-30: two steps looked poor).
   double _fireworkSoft(int dx, int dy) {
-    final e = (1 - math.cos((t / 3.6) * math.pi * 2)) / 2;
-    // Middle star (diagonals two steps out) ⇄ big star (axes three out).
-    final r = 2.4 + e * .6;
-    if (dx == 0 && dy == 0) return 1;
-    final d = math.sqrt((dx * dx + dy * dy).toDouble());
-    // On one of the eight rays when close enough to its line.
-    final a = math.atan2(dy.toDouble(), dx.toDouble());
-    final k = (a / (math.pi / 4)).roundToDouble();
-    final off = a - k * math.pi / 4;
-    if ((d * math.sin(off)).abs() > .5) return 0;
-    final along = d * math.cos(off);
-    // Diagonal steps are longer: the star stays round.
-    if (along > r + .45) return 0;
-    // Bright near the heart, softer toward the tip.
-    return .85 - (along / (r + .6)) * .5;
+    const frames = [0, 1, 2, 1];
+    final frame = frames[((t / 3.6) % 1 * frames.length).floor()];
+    final ax = dx.abs(), ay = dy.abs();
+    // The eight directions only: straight or diagonal.
+    if (!(ax == 0 || ay == 0 || ax == ay)) return 0;
+    final straight = ax == 0 || ay == 0;
+    final step = math.max(ax, ay);
+    if (step == 0) return frame == 2 ? .9 : 1;
+    switch (frame) {
+      case 0: // Middle star.
+        if (step == 1) return straight ? .72 : .6;
+        if (step == 2) return straight ? .45 : .3;
+        return 0;
+      case 1: // Big star.
+        if (step == 1) return straight ? .75 : .62;
+        if (step == 2) return straight ? .55 : .35;
+        return straight ? .3 : 0;
+      default: // Burst: a gap, then bright tips.
+        if (step == 1) return .5;
+        if (step == 2) return straight ? 0 : .6;
+        return straight ? .72 : .3;
+    }
   }
 
   // ------------------------------------------------------------- galaxy
