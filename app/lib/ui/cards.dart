@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
 import 'brand_logo.dart';
-import 'buttons.dart';
 import 'feedback.dart';
 import 'icons.dart';
 import 'motion.dart';
@@ -231,17 +230,15 @@ class AgentCard extends StatelessWidget {
         ],
       );
     }
-    // At work: no card, a plain row. Waiting: a raised card with the
-    // orange outline (it holds Oui / Non). Without a logo (the Oui / Non
-    // of an agent's page): the grey card as before.
+    // At work or waiting: no card, a plain row (user request,
+    // 2026-09-30). Without a logo (the Oui / Non of an agent's page): the
+    // grey card with the orange outline, as before.
     final waiting = style == AgentCardStyle.waiting;
     final card = Surface(
       radius: old ? 14 : 18,
       color: plain || live ? null : ui.well,
-      gradient: live && waiting ? ui.control : null,
       shadows: [
-        if (live && waiting) ...[ui.highlight, ...ui.shCtl],
-        if (waiting) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
+        if (waiting && !live) CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true),
       ],
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
@@ -287,9 +284,9 @@ class AgentCard extends StatelessWidget {
   }
 }
 
-/// The Oui / Non of a waiting agent: the command, then the buttons.
-/// [onAlways]: « Toujours », when the agent offers to allow this kind of
-/// action from now on.
+/// The Oui / Non of a waiting agent: the command, then the answers in a
+/// small flat bar (user request, 2026-09-30: the raised buttons stood out
+/// too much and took too much room).
 class WaitActions extends StatelessWidget {
   const WaitActions({super.key, required this.command, this.onYes, this.onNo, this.onAlways});
 
@@ -297,22 +294,22 @@ class WaitActions extends StatelessWidget {
   final VoidCallback? onYes, onNo, onAlways;
 
   /// Longer than this, the command gets a line of its own (up to three),
-  /// above the buttons: the user must read what they say yes to.
-  static const shortCommand = 14;
+  /// above the answers: the user must read what they say yes to.
+  static const shortCommand = 18;
 
   @override
   Widget build(BuildContext context) {
-    final buttons = [
-      MButton('Non', small: true, onPressed: onNo),
-      const SizedBox(width: 6),
-      MButton('Oui', small: true, kind: ButtonKind.primary, onPressed: onYes),
-    ];
+    final bar = AnswerBar(answers: [
+      if (onAlways != null) ('Toujours', onAlways),
+      ('Non', onNo),
+      ('Oui', onYes),
+    ]);
     if (command.length <= shortCommand && onAlways == null) {
       return Row(
         children: [
           Expanded(child: Align(alignment: Alignment.centerLeft, child: CodePill(command))),
-          const SizedBox(width: 6),
-          ...buttons,
+          const SizedBox(width: 8),
+          bar,
         ],
       );
     }
@@ -321,12 +318,82 @@ class WaitActions extends StatelessWidget {
       children: [
         CodePill(command, maxLines: 3),
         const SizedBox(height: 8),
-        Row(children: [
-          if (onAlways != null) MButton('Toujours', small: true, kind: ButtonKind.ghost, onPressed: onAlways),
-          const Spacer(),
-          ...buttons,
-        ]),
+        Align(alignment: Alignment.centerRight, child: bar),
       ],
+    );
+  }
+}
+
+/// A few answers side by side in a light hollow; the last one is the
+/// main one, a white rounded square with a soft shadow, the others plain
+/// text (after a toolbar the user liked, 2026-09-30).
+class AnswerBar extends StatelessWidget {
+  const AnswerBar({super.key, required this.answers});
+
+  final List<(String, VoidCallback?)> answers;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Surface(
+      radius: 12,
+      color: ui.track,
+      shadows: ui.inset,
+      padding: const EdgeInsets.all(3),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < answers.length; i++)
+            _Answer(label: answers[i].$1, onTap: answers[i].$2, main: i == answers.length - 1),
+        ],
+      ),
+    );
+  }
+}
+
+class _Answer extends StatefulWidget {
+  const _Answer({required this.label, required this.onTap, required this.main});
+
+  final String label;
+  final VoidCallback? onTap;
+  final bool main;
+
+  @override
+  State<_Answer> createState() => _AnswerState();
+}
+
+class _AnswerState extends State<_Answer> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final main = widget.main;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: Opacity(
+        opacity: widget.onTap == null ? .35 : 1,
+        child: Pressable(
+          onTap: widget.onTap,
+          enabled: widget.onTap != null,
+          child: Surface(
+            radius: 9,
+            height: 26,
+            color: main ? ui.thumb : (_hover ? ui.hover : null),
+            shadows: main ? ui.shThumb : const [],
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Center(
+              widthFactor: 1,
+              child: Text(
+                widget.label,
+                maxLines: 1,
+                style: uiText(12.5, weight: FontWeight.w600, height: 1, color: main || _hover ? ui.text : ui.text2),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
