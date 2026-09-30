@@ -13,10 +13,20 @@ import 'tokens.dart';
 /// themselves with [HoverTarget] — [AgentCard] and [HoverRow] do it on
 /// their own when they sit in a [SlidingHover].
 class SlidingHover extends StatefulWidget {
-  const SlidingHover({super.key, required this.child, this.radius = 10});
+  const SlidingHover({super.key, required this.child, this.radius = 10, this.followHover = true, this.hairline = true});
 
   final Widget child;
   final double radius;
+
+  /// False: the square only shows the chosen row and slides when the
+  /// choice changes; the hover is left to the rows (a list where the
+  /// square is the indicator, like the boards' sidebar: user request,
+  /// 2026-09-30).
+  final bool followHover;
+
+  /// A thin line around the square, for a white square on a white
+  /// window; none on a grey background, like the Oui / Non picture.
+  final bool hairline;
 
   static SlidingHoverState? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_Scope>()?.state;
 
@@ -79,6 +89,7 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
   }
 
   void _enter(_HoverTargetState t) {
+    if (!widget.followHover) return;
     _leave?.cancel();
     _hover = t;
     _goTo(t);
@@ -135,7 +146,7 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
                       color: ui.thumb,
                       borderRadius: BorderRadius.circular(widget.radius),
                       // A hairline, so the white shows on the white window.
-                      border: Border.all(color: ui.line, width: .8),
+                      border: widget.hairline ? Border.all(color: ui.line, width: .8) : null,
                       boxShadow: [
                         for (final s in ui.shThumb)
                           if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread),

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../ui/selectors.dart';
+import '../ui/motion.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
 import '../ui/tokens.dart';
@@ -143,7 +144,8 @@ class _Sidebar extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Container(
       width: 260,
-      color: ui.island,
+      // Grey, so the white square stands out (the Oui / Non picture).
+      color: ui.well,
       padding: const EdgeInsets.fromLTRB(12, 16, 12, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -155,23 +157,38 @@ class _Sidebar extends StatelessWidget {
           const SizedBox(height: 18),
           // The hover and the choice: the sliding square of Oui / Non (user
           // request, 2026-09-30).
+          // The white square marks the open board and slides to the next
+          // one; the hover only lights the name up (user requests,
+          // 2026-09-30).
           SlidingHover(
-            radius: 10,
+            radius: 12,
+            followHover: false,
+            hairline: false,
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
               for (var i = 0; i < boards.length; i++)
                 HoverTarget(
                   selected: i == selected,
-                  child: MouseRegion(
-                    cursor: SystemMouseCursors.click,
-                    child: GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      onTap: () => onSelect(i),
-                      child: Padding(
-                        padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(boards[i].name, style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: ui.text)),
-                          Text(boards[i].note, maxLines: 2, style: uiText(11.5, color: ui.text3, height: 1.35)),
-                        ]),
+                  child: HoverBuilder(
+                    builder: (context, hover) => MouseRegion(
+                      cursor: SystemMouseCursors.click,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => onSelect(i),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 140),
+                              style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: i == selected || hover ? ui.text : ui.text2),
+                              child: Text(boards[i].name),
+                            ),
+                            AnimatedDefaultTextStyle(
+                              duration: const Duration(milliseconds: 140),
+                              style: uiText(11.5, color: i == selected || hover ? ui.text2 : ui.text3, height: 1.35),
+                              child: Text(boards[i].note, maxLines: 2),
+                            ),
+                          ]),
+                        ),
                       ),
                     ),
                   ),

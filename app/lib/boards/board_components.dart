@@ -5,6 +5,7 @@ import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
+import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
@@ -223,22 +224,34 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           ]),
         ),
         BoardFrame(
-          label: 'Survol : le carré qui glisse',
-          note: 'Le survol de base, partout où il y a une liste : accueil, étapes du chat, colonne des planches. Posé sur la ligne choisie.',
-          child: _Tray([
-            SlidingHover(
+          label: 'Indicateur : le carré qui glisse',
+          note: 'Sur fond gris, le carré blanc marque le choix et glisse au clic ; au survol, le nom s’éclaire (colonne des planches). Dans une liste sans choix (accueil, étapes), le carré suit la souris.',
+          child: Container(
+            width: 260,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
+            child: Local(1, (picked, set) => SlidingHover(
+              radius: 12,
+              followHover: false,
+              hairline: false,
               child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                 for (final (i, t) in ['Marque', 'Composants', 'Accueil', 'Agent'].indexed)
                   HoverTarget(
-                    selected: i == 1,
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                      child: Text(t, style: uiText(14, weight: i == 1 ? FontWeight.w600 : FontWeight.w500, color: ui.text)),
+                    selected: i == picked,
+                    child: HoverBuilder(
+                      builder: (context, hover) => GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => set(i),
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                          child: Text(t, style: uiText(14, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text2)),
+                        ),
+                      ),
                     ),
                   ),
               ]),
-            ),
-          ], width: 260),
+            )),
+          ),
         ),
         BoardFrame(
           label: 'Agents',
