@@ -7,8 +7,9 @@ import 'package:mikky/ui/tokens.dart';
 
 import 'load_fonts.dart';
 
-/// Our floating menu: opens where the mouse was pressed, inside the small
-/// window; a choice, Échap or a click outside close it.
+/// Our floating menu: the button grows into it where the mouse was
+/// pressed, inside the small window; a choice, Échap or a click outside
+/// shrink it back.
 void main() {
   setUpAll(loadAppFonts);
 
@@ -47,10 +48,11 @@ void main() {
     final chosen = open();
     await tester.pumpAndSettle();
     expect(find.text('Renommer…'), findsOneWidget);
-    // Inside the window, below the press.
-    final menu = tester.getRect(find.byType(FloatingMenuPanel));
-    expect(menu.right, lessThanOrEqualTo(360));
-    expect(menu.top, greaterThan(40));
+    // Grown out of the button around the press, inside the window.
+    final item = tester.getRect(find.text('Renommer…'));
+    expect(item.right, lessThanOrEqualTo(360));
+    expect(item.top, greaterThan(20));
+    expect(item.left, lessThan(320));
     await tester.tap(find.text('Supprimer…'));
     await tester.pumpAndSettle();
     expect(await chosen, 2);
@@ -69,6 +71,6 @@ void main() {
     await tester.tapAt(const Offset(20, 560));
     await tester.pumpAndSettle();
     expect(await chosen, isNull);
-    expect(find.byType(FloatingMenuPanel), findsNothing);
+    expect(find.text('Renommer…'), findsNothing);
   });
 }

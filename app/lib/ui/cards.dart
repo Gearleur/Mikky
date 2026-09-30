@@ -52,9 +52,9 @@ class GroupHeader extends StatelessWidget {
     this.quiet = false,
   });
 
-  /// Pared down (trial, user request 2026-09-30: « trop d'information »):
-  /// no firework, the name and the count in grey, the chevron only under
-  /// the mouse.
+  /// Pared down (trial, user requests 2026-09-30: « trop d'information »):
+  /// the firework only for « En attente » and « Travaillent », the name
+  /// and the count in grey, the chevron only under the mouse.
   final bool quiet;
 
   final String label;
@@ -125,8 +125,15 @@ extension on GroupHeader {
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Padding(
-          padding: EdgeInsets.fromLTRB(7, first ? 6 : 16, 6, 6),
+          padding: EdgeInsets.fromLTRB(3, first ? 6 : 16, 6, 6),
           child: Row(children: [
+            // One slot for every group, so the names line up.
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: status == UiStatus.approval || status == UiStatus.working ? Center(child: StatusFx(status!, size: 15)) : null,
+            ),
+            const SizedBox(width: 6),
             Text(label, style: uiText(12, weight: FontWeight.w600, color: ui.text3, height: 1.2)),
             const SizedBox(width: 5),
             Text('$count', style: uiText(12, weight: FontWeight.w500, color: ui.text3, height: 1.2, tabular: true)),

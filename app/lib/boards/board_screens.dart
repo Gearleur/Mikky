@@ -238,7 +238,7 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
   ),
   const BoardSection(
     title: 'Accueil épuré (essai)',
-    note: 'Un peu moins d’information : les titres de groupes sans feu d’artifice, en gris, le chevron au survol ; l’état se lit aux logos (il tourne quand l’agent travaille, sautille quand il attend). Plus de « WSL », des heures courtes.',
+    note: 'Un peu moins d’information : le feu d’artifice seulement pour « En attente » et « Travaillent », les titres en gris, le chevron au survol ; les logos tournent quand l’agent travaille, sautillent quand il attend. Plus de « WSL », des heures courtes.',
     frames: [
       BoardFrame(label: 'Tout à la fois, actuel', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(label: 'Tout à la fois, épuré', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12, calm: true)),

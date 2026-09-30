@@ -430,6 +430,11 @@ class _MenuTry extends StatefulWidget {
 
 class _MenuTryState extends State<_MenuTry> {
   String? _chosen;
+  final _button = GlobalKey();
+
+  // The boards have no overlay of their own: this little window brings one
+  // (the app's has it).
+  late final _layer = OverlayEntry(builder: _window);
 
   @override
   void initState() {
@@ -437,32 +442,38 @@ class _MenuTryState extends State<_MenuTry> {
     FloatingMenu.track();
   }
 
+  Widget _window(BuildContext inner) {
+    final ui = MikkyUi.of(inner);
+    return Stack(children: [
+      Positioned(
+        top: 14,
+        right: 14,
+        child: RoundButton('more', key: _button, size: 34, onPressed: () async {
+          final box = _button.currentContext!.findRenderObject() as RenderBox;
+          final id = await showFloatingMenu(inner, _homeMenu, from: box.localToGlobal(Offset.zero) & box.size);
+          if (!mounted) return;
+          setState(() => _chosen = id == null ? 'rien' : _homeMenu.firstWhere((e) => e.id == id).label);
+          _layer.markNeedsBuild();
+        }),
+      ),
+      Positioned(
+        left: 18,
+        bottom: 16,
+        right: 18,
+        child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(12.5, color: ui.text3)),
+      ),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Container(
       width: 300,
-      height: 420,
+      height: 460,
+      clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
-      child: Builder(
-        builder: (inner) => Stack(children: [
-          Positioned(
-            top: 14,
-            right: 14,
-            child: RoundButton('more', size: 34, onPressed: () async {
-              final id = await showFloatingMenu(inner, _homeMenu);
-              if (!mounted) return;
-              setState(() => _chosen = id == null ? 'rien' : _homeMenu.firstWhere((e) => e.id == id).label);
-            }),
-          ),
-          Positioned(
-            left: 18,
-            bottom: 16,
-            right: 18,
-            child: Text(_chosen == null ? 'Rien choisi' : 'Choisi : $_chosen', style: uiText(12.5, color: ui.text3)),
-          ),
-        ]),
-      ),
+      child: Overlay(initialEntries: [_layer]),
     );
   }
 }
