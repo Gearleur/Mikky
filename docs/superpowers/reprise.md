@@ -2,7 +2,7 @@
 
 Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github.com/Gearleur/Mikky (branche `main`)
 
-À lire en premier dans une nouvelle conversation, avec `CLAUDE.md` et `idees.md` (toutes les idées et le MVP choisi). Spec et plan de l'étape 1 : `specs/2026-09-28-etape-1-design.md`, `plans/2026-09-28-etape-1-plan.md`.
+À lire en premier dans une nouvelle conversation, avec `CLAUDE.md` et `idees.md` (toutes les idées et le MVP choisi). **Tout le design** (direction artistique, marque, couleurs, pixels, écrans, mouvement, ce qui est écarté) est dans **`design.md`** : ce fichier-ci parle de la construction de l'app. Spec et plan de l'étape 1 : `specs/2026-09-28-etape-1-design.md`, `plans/2026-09-28-etape-1-plan.md`.
 
 ## 0. En bref
 
@@ -31,7 +31,7 @@ Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github
 - **Overlay** : fenêtre transparente, toujours au premier plan, absente de la barre des tâches, clics traversants sauf sur l'île, hook souris global (`WH_MOUSE_LL`, 60 Hz max), 0 % de CPU île cachée. Code natif dans `app/windows/runner/flutter_window.cpp` (canal `mikky/overlay` : `setHitRect`, `setPlacement`, `showMenu`, `activate`, `quit`).
 - **Île** : shader SDF (`app/shaders/island.frag`), thèmes noir « A » et blanc « pur », deux positions (en haut ; à droite en format téléphone), bulle séparée, trait de compte à rebours, contenu Focus.
 - **Cerveau de l'île** : `IslandMachine` (règles 1 à 10 de la spec, sans timer, réveillée à `nextDeadline`) + `DemoAgentSource` (faux agents), lancé au démarrage. `AgentSource` est l'interface prévue pour les vrais agents.
-- **Mikky** : 11 états, 7 émotes, particules, badges, interactions, et ses **transformations** (§6). Il prend l'état de l'agent en focus.
+- **Mikky** : 11 états, 7 émotes, particules, badges, interactions, et ses **transformations** (`design.md` §6). Il prend l'état de l'agent en focus.
 - **Menu** (clic droit sur l'île) : thème, position, Démo, Réglage de Mikky…, Quitter. Choix gardés dans `%APPDATA%\Mikky\settings.json`.
 - **Écran de réglage** : `mikky.exe --tuning`, curseurs enregistrés dans `%APPDATA%\Mikky\tuning.json`.
 - **Tests** : 75 dans `packages/mikky_engine` ; goldens dans `app/test/goldens/`.
@@ -47,17 +47,9 @@ Reste de l'étape 1, pas urgent : valider les expressions sans transformation (q
 
 Ensuite, dans l'ordre voulu par l'utilisateur : gérer Claude et Codex, **planifier des tâches**, puis les apps tierces (mini-apps, communauté, plugins).
 
-## 3. Design validé
+## 3. Design
 
-**Depuis le 2026-09-30, la référence visuelle, ce sont les planches (`mikky.exe --kit`)** ; les maquettes HTML ci-dessous sont dépassées (l'utilisateur les a abandonnées), gardées pour l'historique.
-
-- **UI** : `design/prototypes/composants.html` — boutons, sélecteurs, interrupteurs, champs, navigation, états d'un agent, notifications, et le tableau des animations (valeurs à reprendre dans Flutter). Couleurs et formes tirées de `design/references/boutons-lanceur.png` (gris, blanc, noir ; capsules, boutons ronds ; **pas** la mise en page « lecteur »). Style commun : `design/prototypes/mikky-ui.css` (jetons clair / sombre). Quelques petits bugs à corriger plus tard.
-- **UX** : `design/prototypes/ux-a.html` (piste A, en simple) :
-  - **Accueil** : les agents en groupes repliables **En attente / Travaillent / Terminés / Historique** ; un bouton rond noir avec une flèche → vers la droite, en bas à droite, qui ouvre le chat d'un **nouvel agent**. Pas de résumé, pas de barre horizontale.
-  - **Page d'un agent au travail** : deux vues, **Suivi** (la ligne de métro de ses tâches, trait bleu qui avance avec un halo très léger et lent, code en direct sous l'étape en cours, messages glissés entre les tâches) et **Chat** (l'historique complet, chat normal). **Quand la tâche est finie**, retour au chat normal, la tâche devient une carte « Tâche terminée » qui se déplie.
-  - **Le champ de saisie** : style « Champ » des composants (gris en creux), micro + flèche d'envoi à droite, grandit jusqu'à 5 lignes ; options **à moitié dans le champ** en bas à gauche : dossier + modèle (nouvel agent) ou Suivi | Chat (agent au travail).
-- Mikky en petit en haut à gauche de l'accueil (images `design/references/mikky-idle-{light,dark}.png`, rendues par le vrai painter).
-- Captures des maquettes : Chrome headless avec `#calme` dans l'URL (animations figées) ; `#sombre` pour le thème sombre ; `#grand` pour des fenêtres plus hautes.
+Tout est dans **`design.md`** (la référence visuelle : les planches, `mikky.exe --kit`).
 
 ## 4. Comment le code est rangé (partie A du MVP)
 
@@ -95,34 +87,17 @@ Tout est dans la spec du MVP (§3) et dans le résultat d'A0 (plan). L'essentiel
 - Sessions lancées ailleurs : fichiers de Claude (`~/.claude/projects`) et de Codex (`~/.codex/sessions`) surveillés, des deux côtés (dans WSL par une petite sonde, Windows ne voyant pas les changements de WSL).
 - App sous Linux (plus tard) : seul l'overlay natif (`app/windows/runner/`) est à refaire.
 
-## 6. Direction artistique de Mikky (validée, ne pas revenir dessus)
+## 6. Direction artistique
 
-Les transformations : **c'est Mikky lui-même qui se transforme**, de façon organique et imparfaite, en gardant sa couleur, ses poils, et **le plus possible sa forme de base**. Tentatives rejetées : un vrai cœur (« trop cœur »), des boules bosselées, des piques, des brins fins, des touffes épaisses, trois boules pour « ••• ».
-
-| Quoi | Ce qui a été validé |
-|---|---|
-| Amour | la mascotte **à peine** déformée en cœur (oreilles arrondies en lobes, bas en pointe douce), yeux contents, petits cœurs au-dessus des oreilles |
-| Travaille | boule de poils = **la mascotte sans oreilles**, ses poils de base ressortant un peu plus tout autour ; pas de secousse ; redevient le chat de temps en temps (boule 6-9 s, chat 2,5-4 s) |
-| Réfléchit | la même boule de poils, qui sautille ; redevient le chat de temps en temps (4-6 s / 2-3 s) |
-| Attend ton feu vert | en boucle : 2 sauts en chat → « ! » sans yeux (barre large en haut, fine en bas, point bien séparé) pour 3-4 sauts → chat… ; pas de badge |
-| Terminé | pas de roulade : petit saut un peu plus haut, yeux contents, une oreille plus grande, étincelles |
-| Surpris | grands yeux ronds, oreilles très hautes |
-
-Changement d'une forme à l'autre : mou comme de la gelée (ressort 95 / 0,38), toujours en repassant par le chat. Code : `packages/mikky_engine/lib/src/mikky/` (`mikky.dart`, `mikky_geometry.dart`).
-
-**Direction artistique retenue le 2026-09-30 : « Mikky, le chat magique, avec de l'informatique et des pixels ».** Les indicateurs de la petite fenêtre sont en pixel art (`app/lib/ui/pixel_fx.dart`) : chaque état est un petit feu d'artifice calme (7 × 7, `StatusFx`) qui s'ouvre et se referme sur place dans sa couleur (terminé : vert, figé ; dort : plus lent) ; étincelle, feu d'artifice complet et galaxie restent en essai dans le kit (les carrés d'état et le lanceur ont été abandonnés), palettes violet / blanc, bleu clair / foncé, orange / rouge, rouge / rouge foncé. Mikky « Travaille » saute (sans devenir la boule) ; « Réfléchit » : le chat qui regarde en l'air avec la bulle « ••• » (première version). Mis de côté dans le kit : l'étoile qui réfléchit. Dans le chat, chaque étape a une petite étoile fixe (5 × 5, `PixelStar`) de la couleur de son action ; les groupes gris de l'accueil (Historique, Archives) ont l'étoile grise, figée.
-
-**Marque (2026-09-30)** : le nom **Mikky** est validé. **Couleurs signature** validées : l'orange de la capture de l'utilisateur (`#FF8204`, `#FA500F`, `#E51300`, `#C4001D`) et le même en bleu (`#04BCFF`, `#0F84FA`, `#0045E5`, `#000DC4`), `PixelFxPalette.signatureOrange` / `signatureBlue`. Ces couleurs sont gardées pour plus tard (en essai sur les feux d'artifice, section Pixels). **Le logo, c'est Mikky lui-même** : la **C, Mikky qui dépasse du bas du carré**, est retenue (« de loin la mieux ») ; restent à côté C2 (plus près), C3 (penché), C4 (par le côté) ; un petit quelque chose de magique à ajouter plus tard. Puis l'icône de l'app et de la zone de notification. Feux d'artifice aux deux couleurs : dix formes en essai (`SignatureFx` : pivoine, deux temps, saule, anneau, spirale, crossette, Mikky, paillettes, comète, ondes). **Police** : **Geist** (et Geist Mono) pour tout le texte, choisie. Pour le **nom** de l'app, une police pixel : **Jacquard 24** préférée, puis **Jersey 10** (`app/assets/fonts/trial/`, garder la choisie, supprimer les autres). À voir plus tard : palettes pixel nommées, Mikky en pixels.
-
-**Page d'un agent (2026-09-30)** : plus de titre ni de bandeau en haut ; le fil remplit la page et passe sous les boutons en haut et sous le champ en bas, dans un flou progressif avec un voile de la couleur de la fenêtre (`EdgeBlur` : 12 couches de flou léger qui s'additionnent vers le bord) ; le champ y est en verre dépoli (`Composer(glass: true)`) ; **le champ** est fin comme celui du dernier iPhone (40 px de haut, pilule, marges de 20 px), ses options (Suivi | Chat, dossier, modèle) juste **en dessous** et non plus à moitié dedans ; flou du haut réglé par l'utilisateur avec les curseurs des planches (`TopBlurStyle.standard` : hauteur 65, 3 couches, flou 0,9, voile 0,38, rampe 1,05) ; les boutons flottent dessus : retour, arrêter (pendant qu'il travaille), « ··· » (menu : VS Code, dossier, renommer, épingler, archiver, supprimer).
+Dans **`design.md`** (Mikky, ses transformations, les pixels, la marque, les écrans).
 
 ## 7. Lancer, tester, vérifier
 
 - App : `C:\dev\flutter\bin\flutter.bat run -d windows` dans `app/`, ou `app\build\windows\x64\runner\Release\mikky.exe` après `flutter.bat build windows --release`. Écran de réglage : ajouter `--tuning`.
 - Moteur : `C:\dev\flutter\bin\dart.bat test` dans `packages/mikky_engine`.
 - Goldens : `C:\dev\flutter\bin\flutter.bat test --update-goldens test/mikky_expressions_test.dart` dans `app/`, puis **regarder les images**.
-- Vérif à l'écran : captures GDI avec `CAPTUREBLT`, souris simulée avec `SendInput` (pas `SetCursorPos`), prototypes rendus avec Chrome headless (voir `CLAUDE.md`).
-- **Planches** (comme Figma, pour valider avec l'utilisateur avant l'app) : `mikky.exe --kit` (`--perf` pour les temps d'image) — `app/lib/boards/` : Marque, Composants, Accueil, Agent, Messages ; chaque état d'écran vient de fausses sessions (`fake_sessions.dart`) ; glisser = déplacer (partout, ou Espace + glisser, ou bouton du milieu), molette = défiler, Maj = de côté, Ctrl = zoom ; clair, sombre ou les deux. Les écrans d'une rangée commencent à la même hauteur. Images : `app/test/boards_test.dart`. Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
+- Vérif à l'écran : captures GDI avec `CAPTUREBLT` (ou `PrintWindow` pour une fenêtre), souris simulée avec `SendInput` (pas `SetCursorPos`).
+- **Planches** (comme Figma, pour valider le design avec l'utilisateur avant l'app, voir `design.md` §1) : `mikky.exe --kit` (`--perf` pour les temps d'image), `app/lib/boards/`. Images : `app/test/boards_test.dart`. Essai des vrais agents sans l'app : `dart run tool/smoke.dart <dossier Windows> <dossier WSL>` dans `packages/mikky_agents` (deux tout petits messages).
 - Essais à l'écran de la petite fenêtre : souris simulée par `SendInput` (structure `INPUT` de 40 octets en x64 !), clavier par `SendKeys`, capture avec `CAPTUREBLT`.
 
 ## 8. Pièges déjà rencontrés

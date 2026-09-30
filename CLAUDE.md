@@ -3,7 +3,8 @@
 Mikky is a small black cat mascot with big white eyes living in an "island" at the top of the screen. Since 2026-09-29 the goal is wider: a simple Paperclip-like companion that runs and tracks Claude Code and Codex agents (see `docs/superpowers/idees.md`). Step 1: Mikky + island on Windows with fake agents (demo mode). Later: real Claude Code agents (step 2), Flutter mobile (step 3), a Rust daemon `mikkyd` on PC + VPS where agents talk on a shared channel (step 4). Inspired by the Coucou macOS app (`~/projects/coucou`, see `NotchBuddy/Sources/App/BotEngine.swift` for the animation technique).
 
 ## Where things are
-- **`docs/superpowers/reprise.md` — read first: where we are, the art direction the user validated, what is left, known pitfalls.**
+- **`docs/superpowers/reprise.md` — read first: where we are in building the app, what is left, known pitfalls.**
+- **`docs/superpowers/design.md` — all the design (art direction, brand, colours, pixels, screens, motion, what was rejected, what is left to decide). Read it before any visual change; write every design decision there, not in `reprise.md`.**
 - `docs/superpowers/idees.md` — all feature ideas (Paperclip-like companion, loops, LocalSend, VPS, mails, mini-apps) and the chosen MVP (2026-09-29). Nothing there is decided beyond the MVP and the validated design.
 - `docs/superpowers/specs/2026-09-28-etape-1-design.md` — step 1 spec (in French). **Status: approved by the user on 2026-09-28.**
 - `docs/superpowers/plans/2026-09-28-etape-1-plan.md` — step 1 plan and progress. J0, J1, J2 done (J2 still to validate with the user); J3 partly. See its "Avancement" section.
@@ -20,7 +21,7 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - Island = SDF fragment shader (squircle, smooth-min drop and split bubble). Values are in the spec §3.
 - Mikky: no mouth, no feet, no pupils; tail only in some states later. Ears carry emotion.
 - Dots grid: dark theme only, only while an agent works. Light theme: Apple system colors, no glow, no dots.
-- Mikky's transformations are Mikky himself, organic and imperfect, keeping his base shape as much as possible (details in `docs/superpowers/reprise.md` §3).
+- Mikky's transformations are Mikky himself, organic and imperfect, keeping his base shape as much as possible (details in `docs/superpowers/design.md` §6).
 - Agents (MVP spec `docs/superpowers/specs/2026-09-29-mvp-design.md`): Claude Code and Codex through ACP like Paperclip (`claude-agent-acp`, `codex-acp`), CLI as fallback; subscriptions only, no API keys; Mikky is not an agent harness (no model or agent loop of its own, unlike Hermes or OpenClaw), it launches and follows the official tools.
 - Two placements, chosen in the menu: "en haut" (wide island, top center) and "à droite" (right edge, tall like a phone in portrait, text laid out like a phone app, never rotated). Sizes in `IslandMetrics` (engine).
 
@@ -32,4 +33,4 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 - No telemetry. Secrets in the OS credential store, never on disk or in git.
 - Never block Claude Code. Permissions: by default every request goes to the user (Oui / Non in Mikky); an auto-permission mode is allowed only when the user picked it for that launch.
 - 0 % CPU when the island is hidden.
-- Visual changes are shown and validated on the design boards (`mikky.exe --kit`) first; `design/prototypes/` is out of date.
+- Visual changes are shown and validated on the design boards (`mikky.exe --kit`) first, and recorded in `docs/superpowers/design.md`; `design/prototypes/` is out of date.
