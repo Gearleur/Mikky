@@ -92,9 +92,8 @@ enum AgentCardStyle {
   /// Waits for the user: an orange outline, and the question on the card.
   waiting,
 
-  /// Done: a plain row, like a directory listing — the tool's logo in a
-  /// green ring, the title, and when on the right (user request,
-  /// 2026-09-30).
+  /// Done: a plain row, like a directory listing — the tool's logo, the
+  /// title, and when on the right (user request, 2026-09-30).
   done,
 
   /// History: text only, smaller.
@@ -208,7 +207,7 @@ class AgentCard extends StatelessWidget {
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
   }
 
-  /// One line: logo in its ring, title, then pin, [subtitle] (when) and
+  /// One line: logo, title, then pin, [subtitle] (when) and
   /// [who] (where) on the right.
   Widget _doneRow(BuildContext context) {
     final ui = MikkyUi.of(context);
@@ -218,9 +217,11 @@ class AgentCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
       child: Row(
         children: [
-          brand == null
-              ? SizedBox(width: 26, height: 26, child: Center(child: StatusDot(status)))
-              : BrandRing(brand!, color: status == UiStatus.finished ? ui.green : ui.grey),
+          SizedBox(
+            width: 26,
+            height: 26,
+            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 22)),
+          ),
           const SizedBox(width: 9),
           Expanded(
             child: Text(
@@ -236,31 +237,6 @@ class AgentCard extends StatelessWidget {
         ],
       ),
     ));
-  }
-}
-
-/// A tool's logo in a small round, ringed with [color] (green: done).
-class BrandRing extends StatelessWidget {
-  const BrandRing(this.brand, {super.key, required this.color, this.size = 26});
-
-  final Brand brand;
-  final Color color;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return Container(
-      width: size,
-      height: size,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: ui.well,
-        shape: BoxShape.circle,
-        border: Border.all(color: color, width: 1.5),
-      ),
-      child: BrandLogo(brand, size: size * .54),
-    );
   }
 }
 
