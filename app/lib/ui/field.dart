@@ -1,5 +1,6 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 import 'buttons.dart';
 import 'icons.dart';
@@ -118,7 +119,9 @@ class _SearchFieldState extends State<SearchField> {
 /// grows from one line to five, then scrolls. On the right, a small mic
 /// and the send arrow. [options] sit half inside, bottom left: folder and
 /// model (new agent) or Suivi | Chat (agent at work). Enter sends,
-/// Shift + Enter goes to the next line.
+/// Shift + Enter goes to the next line. A « / » at the start shows the
+/// agent's [commands] above the field: ↑ ↓ to choose, Tab or Enter to
+/// take one.
 class Composer extends StatefulWidget {
   const Composer({
     super.key,
@@ -130,6 +133,7 @@ class Composer extends StatefulWidget {
     this.onMic,
     this.autofocus = false,
     this.onEmptySend,
+    this.commands = const [],
   });
 
   final TextEditingController? controller;
@@ -143,6 +147,9 @@ class Composer extends StatefulWidget {
   final VoidCallback? onEmptySend;
   final bool autofocus;
 
+  /// The agent's « / » commands.
+  final List<AgentCommand> commands;
+
   /// How far the options hang below the field.
   static const optionsOverhang = 12.0;
 
@@ -154,18 +161,63 @@ class _ComposerState extends State<Composer> {
   late final TextEditingController _controller = widget.controller ?? TextEditingController();
   late final FocusNode _focus = widget.focusNode ?? FocusNode();
 
+  /// The command picked in the list above the field.
+  final _pick = ValueNotifier(0);
+  String _lastText = '';
+
   @override
   void initState() {
     super.initState();
     _focus.addListener(_changed);
+    _controller.addListener(_textChanged);
     _focus.onKeyEvent = _onKey;
     if (widget.autofocus) WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
   }
 
   void _changed() => setState(() {});
 
+  void _textChanged() {
+    if (_controller.text == _lastText) return;
+    _lastText = _controller.text;
+    _pick.value = 0;
+  }
+
+  /// The commands that match what is typed (« /co » → compact…), while
+  /// the text is a « / » and one word.
+  List<AgentCommand> get _matches {
+    final text = _controller.text;
+    if (widget.commands.isEmpty || !text.startsWith('/') || text.contains(RegExp(r'\s'))) return const [];
+    final q = text.substring(1).toLowerCase();
+    final starts = [for (final c in widget.commands) if (c.name.toLowerCase().startsWith(q)) c];
+    final inside = [for (final c in widget.commands) if (!c.name.toLowerCase().startsWith(q) && c.name.toLowerCase().contains(q)) c];
+    final all = [...starts, ...inside];
+    // Typed in full: Enter sends it.
+    if (all.length == 1 && all.single.name.toLowerCase() == q) return const [];
+    return all.take(6).toList();
+  }
+
+  void _take(AgentCommand c) {
+    final text = '/${c.name} ';
+    _controller.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    _focus.requestFocus();
+  }
+
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {
-    if (e is! KeyDownEvent || e.logicalKey != LogicalKeyboardKey.enter) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent && e is! KeyRepeatEvent) return KeyEventResult.ignored;
+    final key = e.logicalKey;
+    final matches = _matches;
+    if (matches.isNotEmpty) {
+      if (key == LogicalKeyboardKey.arrowDown || key == LogicalKeyboardKey.arrowUp) {
+        _pick.value = (_pick.value + (key == LogicalKeyboardKey.arrowDown ? 1 : -1)) % matches.length;
+        return KeyEventResult.handled;
+      }
+      final enter = key == LogicalKeyboardKey.enter && !HardwareKeyboard.instance.isShiftPressed;
+      if (e is KeyDownEvent && (key == LogicalKeyboardKey.tab || enter)) {
+        _take(matches[_pick.value.clamp(0, matches.length - 1)]);
+        return KeyEventResult.handled;
+      }
+    }
+    if (e is! KeyDownEvent || key != LogicalKeyboardKey.enter) return KeyEventResult.ignored;
     if (HardwareKeyboard.instance.isShiftPressed) return KeyEventResult.ignored;
     _send();
     return KeyEventResult.handled;
@@ -181,6 +233,8 @@ class _ComposerState extends State<Composer> {
   @override
   void dispose() {
     _focus.removeListener(_changed);
+    _controller.removeListener(_textChanged);
+    _pick.dispose();
     if (widget.focusNode == null) _focus.dispose();
     if (widget.controller == null) _controller.dispose();
     super.dispose();
@@ -227,16 +281,77 @@ class _ComposerState extends State<Composer> {
       ),
     );
     final options = widget.options;
-    if (options == null) return field;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: Composer.optionsOverhang),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          field,
-          Positioned(left: 14, bottom: -Composer.optionsOverhang, child: options),
-        ],
+    final withOptions = options == null
+        ? field
+        : Padding(
+            padding: const EdgeInsets.only(bottom: Composer.optionsOverhang),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                field,
+                Positioned(left: 14, bottom: -Composer.optionsOverhang, child: options),
+              ],
+            ),
+          );
+    if (widget.commands.isEmpty) return withOptions;
+    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+      ListenableBuilder(
+        listenable: Listenable.merge([_controller, _pick]),
+        builder: (context, _) {
+          final matches = _matches;
+          if (matches.isEmpty) return const SizedBox.shrink();
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _CommandList(commands: matches, picked: _pick.value.clamp(0, matches.length - 1), onTake: _take),
+          );
+        },
       ),
+      withOptions,
+    ]);
+  }
+}
+
+/// The agent's commands that match, above the field.
+class _CommandList extends StatelessWidget {
+  const _CommandList({required this.commands, required this.picked, required this.onTake});
+
+  final List<AgentCommand> commands;
+  final int picked;
+  final ValueChanged<AgentCommand> onTake;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Surface(
+      radius: 18,
+      color: ui.thumb,
+      shadows: ui.shThumb,
+      padding: const EdgeInsets.all(5),
+      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        for (var i = 0; i < commands.length; i++)
+          GestureDetector(
+            onTap: () => onTake(commands[i]),
+            child: MouseRegion(
+              cursor: SystemMouseCursors.click,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(color: i == picked ? ui.hover : null, borderRadius: BorderRadius.circular(13)),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
+                  Text('/${commands[i].name}', style: uiText(12.5, mono: true, weight: FontWeight.w500, color: ui.text, height: 1.3)),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      commands[i].hint ?? commands[i].description,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: uiText(12, color: ui.text3, height: 1.3),
+                    ),
+                  ),
+                ]),
+              ),
+            ),
+          ),
+      ]),
     );
   }
 }

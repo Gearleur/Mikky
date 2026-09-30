@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -9,7 +11,7 @@ import '../ui/side.dart';
 import '../ui/tokens.dart';
 import 'side_app.dart';
 
-const _rename = 1, _pin = 2, _archive = 3, _settle = 4, _delete = 5;
+const _rename = 1, _pin = 2, _archive = 3, _settle = 4, _delete = 5, _code = 6, _folder = 7;
 const _forget = 10, _forgetAndFile = 11, _cancel = 12;
 
 /// What to do with a session (a right click on its card, or ⋯ on its
@@ -19,7 +21,13 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
   final source = host.service.source;
   final m = e.mark;
   final busy = e.live && e.log.working;
+  final folder = e.cwd ?? e.log.cwd;
   final chosen = await host.showMenu([
+    if (folder != null) ...[
+      const MenuEntry(_code, 'Ouvrir dans VS Code'),
+      const MenuEntry(_folder, 'Ouvrir le dossier'),
+      const MenuEntry.separator(),
+    ],
     const MenuEntry(_rename, 'Renommer…'),
     MenuEntry(_pin, m.pinned ? 'Désépingler' : 'Épingler'),
     MenuEntry(_archive, m.archived ? 'Sortir des archives' : 'Archiver'),
@@ -27,6 +35,10 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
     if (!busy) ...[const MenuEntry.separator(), const MenuEntry(_delete, 'Supprimer…')],
   ]);
   switch (chosen) {
+    case _code:
+      openInVsCode(folder!, e.host);
+    case _folder:
+      openFolder(folder!, e.host);
     case _rename:
       rename();
     case _pin:
@@ -46,6 +58,23 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
         await source.forget(e.id, deleteFile: how == _forgetAndFile);
         deleted?.call();
       }
+  }
+}
+
+/// The folder in the Windows file explorer (a WSL folder through
+/// `\\wsl.localhost`).
+void openFolder(String folder, AgentHost host) {
+  final path = host == AgentHost.wsl ? WslTarget().windowsPath(folder) : folder;
+  Process.run('explorer.exe', [path]);
+}
+
+/// The folder in VS Code; in WSL, through VS Code's WSL extension.
+void openInVsCode(String folder, AgentHost host) {
+  if (host == AgentHost.wsl) {
+    final linux = WslTarget().linuxPath(folder);
+    Process.run('cmd', ['/c', 'code', '--folder-uri', 'vscode-remote://wsl+Ubuntu$linux']);
+  } else {
+    Process.run('cmd', ['/c', 'code', folder]);
   }
 }
 

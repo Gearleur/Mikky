@@ -229,6 +229,18 @@ class AcpReader {
       case 'current_mode_update':
         _modeReported = true;
         return [ModeChanged(u['currentModeId'] as String, at: at)];
+      case 'available_commands_update':
+        return [
+          CommandsChanged([
+            for (final c in (u['availableCommands'] as List?) ?? const [])
+              if (c is Map && c['name'] is String)
+                AgentCommand(
+                  c['name'] as String,
+                  description: c['description'] as String? ?? '',
+                  hint: (c['input'] as Map?)?['hint'] as String?,
+                ),
+          ], at: at),
+        ];
       case 'session_info_update':
         final title = u['title'] as String?;
         return [if (title != null && title.isNotEmpty) TitleChanged(title, at: at)];

@@ -117,6 +117,7 @@ class _AgentPageState extends State<AgentPage> {
             options: working
                 ? Segmented(options: const ['Suivi', 'Chat'], selected: _view, size: SegmentSize.field, onChanged: (i) => setState(() => _view = i))
                 : null,
+            commands: e.live ? log.commands : const [],
             onSend: _send,
           );
 

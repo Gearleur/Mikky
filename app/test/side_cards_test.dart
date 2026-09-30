@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_views.dart';
+import 'package:mikky/ui/thread.dart';
 import 'package:mikky/ui/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -28,7 +29,7 @@ void main() {
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
     testWidgets('waiting cards, $name', (tester) async {
-      const size = Size(340, 420);
+      const size = Size(340, 640);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -61,6 +62,11 @@ void main() {
                     AskCard(log: log, onAnswer: (_) {}),
                     const SizedBox(height: 16),
                     QuestionCard(question: question, onAnswer: (_) {}),
+                    const SizedBox(height: 16),
+                    const ChatMessage(
+                      me: false,
+                      text: 'C’est fait, voir la [doc](https://docs.flutter.dev). Pour relancer :\n```bash\nflutter test --update-goldens test/side_cards_test.dart\n```\n- **1** fichier modifié',
+                    ),
                   ]),
                 ),
               ),

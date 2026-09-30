@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 
 import 'feedback.dart';
 import 'icons.dart';
+import 'markdown.dart';
 import 'motion.dart';
 import 'tokens.dart';
 
@@ -307,7 +308,7 @@ class ChatMessage extends StatelessWidget {
           alignment: me ? Alignment.centerRight : Alignment.centerLeft,
           child: Align(
             alignment: me ? Alignment.centerRight : Alignment.centerLeft,
-            child: Bubble(me: me, child: me ? Text(text) : Text.rich(inlineMarkdown(text, MikkyUi.of(context)))),
+            child: Bubble(me: me, child: me ? Text(text) : AgentText(text)),
           ),
         ),
         if (meta != null)
@@ -318,34 +319,6 @@ class ChatMessage extends StatelessWidget {
       ],
     );
   }
-}
-
-/// The little Markdown agents write in their answers: **bold** and
-/// `code` (in mono, on a hollow), and « - » lists as bullets. Nothing else
-/// is interpreted.
-TextSpan inlineMarkdown(String text, MikkyUi ui) {
-  final spans = <InlineSpan>[];
-  final lines = text.split('\n');
-  final token = RegExp(r'\*\*(.+?)\*\*|`([^`]+)`');
-  for (var i = 0; i < lines.length; i++) {
-    var line = lines[i];
-    final bullet = RegExp(r'^\s*[-*] ').firstMatch(line);
-    if (bullet != null) line = '•  ${line.substring(bullet.end)}';
-    line = line.replaceFirst(RegExp(r'^#{1,6} '), '');
-    var at = 0;
-    for (final m in token.allMatches(line)) {
-      if (m.start > at) spans.add(TextSpan(text: line.substring(at, m.start)));
-      if (m[1] != null) {
-        spans.add(TextSpan(text: m[1], style: const TextStyle(fontWeight: FontWeight.w600)));
-      } else {
-        spans.add(TextSpan(text: m[2], style: TextStyle(fontFamily: 'Geist Mono', fontSize: 12.5, backgroundColor: ui.track)));
-      }
-      at = m.end;
-    }
-    if (at < line.length) spans.add(TextSpan(text: line.substring(at)));
-    if (i < lines.length - 1) spans.add(const TextSpan(text: '\n'));
-  }
-  return TextSpan(children: spans);
 }
 
 /// One line of a [CodeCard]: its number, its text (spans for colors), and

@@ -72,6 +72,25 @@ class TitleChanged extends SessionEvent {
   final String title;
 }
 
+/// A « / » command the agent offers (`/compact`, `/review`…): typed at
+/// the start of a message, it goes to the agent as is.
+class AgentCommand {
+  const AgentCommand(this.name, {this.description = '', this.hint});
+
+  final String name;
+  final String description;
+
+  /// What to type after the command, when it takes something.
+  final String? hint;
+}
+
+/// The agent's « / » commands, the whole list each time.
+class CommandsChanged extends SessionEvent {
+  const CommandsChanged(this.commands, {super.at});
+
+  final List<AgentCommand> commands;
+}
+
 /// A turn begins: the agent works until [TurnEnded].
 class TurnStarted extends SessionEvent {
   const TurnStarted({super.at});

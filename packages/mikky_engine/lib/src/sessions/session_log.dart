@@ -116,6 +116,9 @@ class SessionLog {
   /// The subscription's limits, as last seen.
   LimitsSeen? limits;
 
+  /// The « / » commands the agent offers.
+  List<AgentCommand> commands = const [];
+
   /// Time of the first and of the latest event that had one.
   DateTime? startedAt;
   DateTime? lastEventAt;
@@ -213,6 +216,8 @@ class SessionLog {
         tokens += e.total;
       case LimitsSeen():
         limits = e;
+      case CommandsChanged():
+        commands = e.commands;
       case QuestionAsked():
         _question = e;
       case QuestionAnswered():

@@ -1,3 +1,4 @@
+import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
 import 'fixtures.dart';
@@ -23,5 +24,25 @@ void main() {
     expect(log.contextSize, greaterThan(0));
     expect(log.contextUsed, greaterThan(0));
     expect(log.tokens, greaterThan(0));
+  });
+
+  test('the agent\'s « / » commands', () {
+    final log = SessionLog()
+      ..applyAll(AcpReader().read({
+        'jsonrpc': '2.0',
+        'method': 'session/update',
+        'params': {
+          'sessionId': 's1',
+          'update': {
+            'sessionUpdate': 'available_commands_update',
+            'availableCommands': [
+              {'name': 'compact', 'description': 'Clear conversation history but keep a summary', 'input': null},
+              {'name': 'review', 'description': 'Review a pull request', 'input': {'hint': 'PR number'}},
+            ],
+          },
+        },
+      }, outgoing: false));
+    expect(log.commands.map((c) => c.name), ['compact', 'review']);
+    expect(log.commands[1].hint, 'PR number');
   });
 }
