@@ -159,15 +159,13 @@ class _KitHomeState extends State<KitHome> {
                       onTap: () {},
                     ),
                   ]),
-                  group('done', 'Terminés', ui.green, 1, [
-                    AgentCard(
-                      status: UiStatus.finished,
-                      title: 'Résume la spec',
-                      who: 'Claude',
-                      subtitle: 'Il y a 2 min',
-                      style: AgentCardStyle.done,
-                      onTap: () {},
-                    ),
+                  group('done', 'Terminés', ui.green, 3, [
+                    for (final (t, b, ago, w) in [
+                      ('Résume la spec', Brand.claude, 'Il y a 2 min', ''),
+                      ('Ajoute les tests du lecteur Codex', Brand.codex, 'Il y a 14 min', 'WSL'),
+                      ('Corrige le clic en dehors', Brand.claude, 'Il y a 1 h', ''),
+                    ])
+                      AgentCard(status: UiStatus.finished, title: t, who: w, brand: b, subtitle: ago, style: AgentCardStyle.done, onTap: () {}),
                   ]),
                   group('old', 'Historique', ui.grey, 12, [
                     for (final (t, w) in [

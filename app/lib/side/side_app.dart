@@ -224,7 +224,7 @@ class HomePage extends StatelessWidget {
 
     for (final g in HomeGroup.values) {
       final (label, color) = labels[g]!;
-      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history);
+      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: g == HomeGroup.history || g == HomeGroup.done);
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     // What is left of the subscriptions (Codex tells it; Claude does not,
@@ -331,7 +331,8 @@ class HomePage extends StatelessWidget {
       HomeGroup.done => AgentCard(
           status: UiStatus.of(e.status),
           title: e.name,
-          who: whoOf(e),
+          // The logo says Claude or Codex; only where it ran is left.
+          who: e.host == AgentHost.wsl ? 'WSL' : '',
           pinned: e.mark.pinned,
           brand: Brand.of(e.provider),
           subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',

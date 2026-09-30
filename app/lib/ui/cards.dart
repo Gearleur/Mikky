@@ -92,7 +92,9 @@ enum AgentCardStyle {
   /// Waits for the user: an orange outline, and the question on the card.
   waiting,
 
-  /// Done: a simple outline.
+  /// Done: a plain row, like a directory listing — the tool's logo in a
+  /// green ring, the title, and when on the right (user request,
+  /// 2026-09-30).
   done,
 
   /// History: text only, smaller.
@@ -137,6 +139,7 @@ class AgentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (style == AgentCardStyle.done) return _doneRow(context);
     final ui = MikkyUi.of(context);
     final old = style == AgentCardStyle.old;
     final plain = style == AgentCardStyle.done || old;
@@ -192,14 +195,72 @@ class AgentCard extends StatelessWidget {
       color: plain ? null : ui.well,
       shadows: switch (style) {
         AgentCardStyle.waiting => [CssShadow(0, 0, 0, ui.amber.withValues(alpha: .55), spread: 1.5, inset: true)],
-        AgentCardStyle.done => [CssShadow(0, 0, 0, ui.line, spread: 1, inset: true)],
         _ => const [],
       },
       padding: old ? const EdgeInsets.fromLTRB(8, 8, 14, 8) : const EdgeInsets.fromLTRB(8, 12, 14, 12),
       child: body,
     );
+    return _pressable(card);
+  }
+
+  Widget _pressable(Widget card) {
     final pressable = Pressable(onTap: onTap, pressedScale: .98, child: card);
     return onMenu == null ? pressable : GestureDetector(onSecondaryTap: onMenu, child: pressable);
+  }
+
+  /// One line: logo in its ring, title, then pin, [subtitle] (when) and
+  /// [who] (where) on the right.
+  Widget _doneRow(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final side = [if (subtitle != null && subtitle!.isNotEmpty) subtitle!, if (who.isNotEmpty) who].join(' · ');
+    return _pressable(Surface(
+      radius: 14,
+      padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
+      child: Row(
+        children: [
+          brand == null
+              ? SizedBox(width: 26, height: 26, child: Center(child: StatusDot(status)))
+              : BrandRing(brand!, color: status == UiStatus.finished ? ui.green : ui.grey),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Text(
+              title,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: uiText(14, weight: FontWeight.w500, color: ui.text, height: 1.3),
+            ),
+          ),
+          const SizedBox(width: 8),
+          if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
+          Text(side, style: uiText(11.5, color: ui.text3, height: 1.2, tabular: true)),
+        ],
+      ),
+    ));
+  }
+}
+
+/// A tool's logo in a small round, ringed with [color] (green: done).
+class BrandRing extends StatelessWidget {
+  const BrandRing(this.brand, {super.key, required this.color, this.size = 26});
+
+  final Brand brand;
+  final Color color;
+  final double size;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Container(
+      width: size,
+      height: size,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: ui.well,
+        shape: BoxShape.circle,
+        border: Border.all(color: color, width: 1.5),
+      ),
+      child: BrandLogo(brand, size: size * .54),
+    );
   }
 }
 
