@@ -318,10 +318,13 @@ class HomePage extends StatelessWidget {
       for (final p in AgentProvider.values)
         if (host.service.source.limitsOf(p) case final l?) (p, l),
     ];
+    // At the top: whether there is room for more work (user request,
+    // 2026-10-01).
     if (limits.isNotEmpty) {
-      body.add(
+      body.insert(
+        0,
         Padding(
-          padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
+          padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

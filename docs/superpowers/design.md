@@ -91,6 +91,7 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
   - survol : le carré blanc qui glisse (voir Mouvement).
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.
 - Mikky en petit en haut à gauche ; bouton rond noir → en bas à droite pour un nouvel agent.
+- **Limites de l'abonnement Codex en haut** de l'accueil, avant les groupes (demande de l'utilisateur, 2026-10-01 ; avant : tout en bas, sous Archives) : petit logo (12 px) et « 69 % des 5 h, repart à 17 h 10 · 70 % de la semaine », en gris. Pas encore sur les planches.
 - Claude au travail : son logo tourne et respire ; **en essai** sur la planche Composants, l'étoile de Claude Code (point, croix, astérisque, étoile, fleur, et retour, en orange), à choisir.
 - **Petite étoile grise à droite de chaque ligne** (demande de l'utilisateur, 2026-09-30) : l'étoile en pixels (`MenuStar`, 10 px, un peu pâle, plus nette au survol) ouvre le menu de l'agent (pause, reprendre, arrêter, VS Code, renommer, ranger…) sans ouvrir sa page ; le clic droit sur la ligne fait pareil.
 - **Agent en pause** (2026-09-30, proposé sur les planches) : dans « Travaillent », même s'il est en pause depuis longtemps ; étoile grise, « En pause », **Reprendre** à plat sous la ligne (même barre que Oui / Non).

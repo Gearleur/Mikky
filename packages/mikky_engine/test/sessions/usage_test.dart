@@ -20,6 +20,14 @@ void main() {
     expect(log.contextUsed, greaterThan(0));
   });
 
+  test('a counter with no window (Codex « premium ») keeps the last real one', () {
+    final log = SessionLog()
+      ..apply(const LimitsSeen(short: LimitWindow(69, minutes: 300), long: LimitWindow(70, minutes: 10080), plan: 'plus'))
+      ..apply(const LimitsSeen(plan: 'plus'));
+    expect(log.limits!.short!.usedPercent, 69);
+    expect(log.limits!.long!.usedPercent, 70);
+  });
+
   test('through ACP: the context filling and the tokens of each turn', () {
     final log = replayAcp('claude_wsl_plan.jsonl');
     expect(log.contextSize, greaterThan(0));
