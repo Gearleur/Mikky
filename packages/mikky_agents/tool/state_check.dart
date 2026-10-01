@@ -23,8 +23,12 @@ Future<void> main() async {
     source.advance(clock());
     final island = source.agents;
     final now = DateTime.now();
+    final codex = source.limitsOf(AgentProvider.codex);
     print(jsonEncode({
       'sessions': source.homeEntries.length,
+      'codexLimits': codex == null
+          ? null
+          : {'short': codex.short?.usedPercent, 'long': codex.long?.usedPercent, 'resets': codex.short?.resetsAt?.toIso8601String()},
       'island': [for (final a in island) {
         'id': a.id, 'status': a.status.name, 'origin': a.origin.name,
         'homeGroup': homeGroupOf(source.entry(a.id)!.homeStatus, source.entry(a.id)!.lastActivity, now).name,
