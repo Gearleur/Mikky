@@ -71,9 +71,16 @@ Les routines, déclencheurs, téléphone et web restent des perspectives après 
 
 ### Correction fonctionnelle de l'île
 
-- Clic extérieur : les alertes ne bloquent plus la fermeture de l'écran. L'île se réduit pendant deux secondes puis se masque, même si la souris bouge ailleurs. Les permissions restent en attente dans le moteur ; une nouvelle alerte peut faire revenir l'île. Le bord de l'écran et l'icône de notification permettent de la rouvrir.
+- Clic extérieur : l'île se réduit puis se masque après deux secondes lorsqu'aucune alerte n'attend. **Ajustement demandé ensuite : une erreur, permission ou question en attente conserve l'île compacte et sa bulle visible**, sans forcer la grande ouverture. Les permissions restent dans le moteur ; une nouvelle alerte peut rouvrir l'île.
 - État compact de Mikky : attente d'intervention avant quota, puis activité, fin et repos ; à priorité égale, l'état le plus récent est choisi. La file des alertes ouvertes conserve son ordre pour ne pas changer la demande en cours de réponse. Les changements d'horodatage sont désormais transmis à l'île.
 - Validation : 114 tests du moteur, dont trois régressions ajoutées pour le masquage avec alertes, le masquage sans agent et le choix de l'état prioritaire/récent.
+
+### Bulle et proportions — ajustement du 1 octobre
+
+- La gommette de la bulle est remplacée par le feu d'artifice d'état existant. Un clic dessus ouvre la session correspondante ; une ouverture automatique sur alerte affiche également cette session. Le rouge signifie une erreur. L'indicateur utilise le même agent que Mikky, au lieu d'une seconde sélection indépendante ; l'étoile sous Mikky ne fait plus doublon quand la bulle est visible.
+- Sortie de bulle ralentie : ressort 55 / 0,65 au lieu de 150 / 0,5 ; délai avant ouverture automatique 1,8 s au lieu de 0,9 s. Le rythme des feux d'artifice ailleurs ne change pas.
+- Île latérale compacte : 74 × 82 au lieu de 64 × 92, Mikky de rayon 15 au lieu de 13. Petite fenêtre ouverte : 344 × 520 au lieu de 320 × 560, rayon de Mikky 16 au lieu de 15. Position supérieure inchangée.
+- Validation ciblée : 28 tests de transitions et de géométrie passent ; analyse Flutter sans problème signalé. Ces proportions sont une première proposition ajustable à l'usage.
 
 - Retrait des lanceurs et lecteurs Dart de production ; conservation explicite des références pour les tests de parité.
 - Suppression du mode de secours local silencieux ; états de connexion visibles et reconnexion automatique.

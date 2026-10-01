@@ -234,6 +234,17 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final prev = _snap;
     final s = _machine.snapshot;
     _snap = s;
+    if (_edge == IslandEdge.right && s.openReason == OpenReason.alert &&
+        (prev.shape != IslandShape.open || prev.focus?.id != s.focus?.id)) {
+      final id = s.focus?.id;
+      if (id != null && !_demo) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && _snap.shape == IslandShape.open && _snap.focus?.id == id) {
+            _sideKey.currentState?.openAgent(id);
+          }
+        });
+      }
+    }
     if (s.shape != _motion.shape) {
       _motion.setShape(s.shape);
       if (s.shape == IslandShape.open) _mikky.blink();
@@ -685,18 +696,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     return count;
   }
 
-  /// The state that matters most among [agents]: waiting for you, then an
-  /// error, a limit, work, done; null when there are none.
-  static UiStatus? _mostPressing(List<Agent> agents) {
-    const order = [UiStatus.approval, UiStatus.error, UiStatus.limited, UiStatus.working, UiStatus.thinking, UiStatus.finished, UiStatus.sleeping];
-    UiStatus? best;
-    for (final a in agents) {
-      final st = UiStatus.of(a.status);
-      if (best == null || order.indexOf(st) < order.indexOf(best)) best = st;
-    }
-    return best;
-  }
-
   List<Widget> _compactContent(MikkyTheme theme, Rect rect) {
     final opacity = _motion.compactContentOpacity;
     if (opacity <= 0) return const [];
@@ -719,17 +718,17 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       case IslandEdge.right:
         // Under Mikky, the firework of the most pressing state among the
         // agents (user request, 2026-09-30); his name when there are none.
-        final top = _mostPressing(_snap.agents);
+        final top = _snap.focus == null ? null : UiStatus.of(_snap.focus!.status);
         return [
           Positioned(
             left: rect.left,
-            top: rect.top + 62,
+            top: rect.top + 57,
             width: _motion.metrics.compact.width,
             height: 18,
             child: Opacity(
               opacity: opacity,
               child: Center(
-                child: top == null
+                child: top == null || _snap.bubble
                     ? name
                     : MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(top, size: 18)),
               ),
@@ -803,8 +802,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final rect = _islandRect;
     final openOpacity = _motion.openContentOpacity;
     final side = _sideBubble;
-    final bubbleColor = theme.status(_snap.focus?.status ?? AgentStatus.approval);
-    final pulse = _snap.focus?.status == AgentStatus.approval ? .75 + .25 * math.sin(_clock.now * 4) : 1.0;
     final countdown = _countdown(theme, rect);
     return Focus(
       focusNode: _keys,
@@ -833,14 +830,25 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
               ),
             ),
             if (side != null && _bubbleOut > .45)
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: BubbleDotPainter(
-                    center: side.center + (_edge == IslandEdge.top ? const Offset(2, 0) : const Offset(0, 2)),
-                    radius: 4.2 * pulse + 1,
-                    color: bubbleColor,
+              Positioned(
+                left: side.center.dx - 10,
+                top: side.center.dy - 10,
+                width: 20,
+                height: 20,
+                child: GestureDetector(
+                  onTap: () {
+                    final id = _snap.focus?.id;
+                    _machine.click(_clock.now);
+                    _apply();
+                    _overlay.activate();
+                    if (id != null && !_demo && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
+                  },
+                  child: Opacity(
                     opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
-                    glow: theme.glow,
+                    child: MikkyUiTheme(
+                      ui: theme.isLight ? MikkyUi.light : MikkyUi.dark,
+                      child: StatusFx(UiStatus.of(_snap.focus?.status ?? AgentStatus.approval), size: 20),
+                    ),
                   ),
                 ),
               ),

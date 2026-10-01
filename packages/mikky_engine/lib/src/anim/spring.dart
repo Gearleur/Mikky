@@ -14,7 +14,7 @@ class SpringSpec {
   static const drop = SpringSpec(120, .42);
 
   /// The split bubble.
-  static const sideBubble = SpringSpec(150, .5);
+  static const sideBubble = SpringSpec(55, .65);
 
   /// Open / close progress of the island content.
   static const progress = SpringSpec(170, .8);

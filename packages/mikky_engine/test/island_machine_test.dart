@@ -42,17 +42,17 @@ class Harness {
 }
 
 void main() {
-  test('explicit close shrinks then hides despite desktop activity and pending alerts', () {
+  test('explicit close keeps pending alerts compact despite desktop activity', () {
     final h = Harness();
     h.set('a', AgentStatus.approval);
     h.set('b', AgentStatus.question);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     h.m.close(h.now);
     expect(h.shape, IslandShape.compact);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     h.pointer();
     h.wait(1.1);
-    expect(h.shape, IslandShape.hidden);
+    expect(h.shape, IslandShape.compact);
     expect(h.s.pendingAlerts, 2);
     h.pointer(edge: true);
     h.wait(.7);
@@ -62,12 +62,12 @@ void main() {
   test('compact focus follows priority then newest state, not insertion order', () {
     final h = Harness();
     h.set('old', AgentStatus.working);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     h.set('new', AgentStatus.searching);
     expect(h.s.focus?.id, 'new');
     h.set('limited', AgentStatus.rateLimited);
     expect(h.s.focus?.id, 'limited');
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     h.set('new', AgentStatus.thinking);
     expect(h.s.focus?.id, 'limited');
     h.set('limited', AgentStatus.idle);
@@ -183,7 +183,7 @@ void main() {
     h.set('a', AgentStatus.approval);
     expect(h.shape, IslandShape.compact);
     expect(h.s.bubble, isTrue);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     expect(h.shape, IslandShape.open);
     expect(h.s.openReason, OpenReason.alert);
     expect(h.s.focus?.id, 'a');
@@ -203,7 +203,7 @@ void main() {
     h.wait(400);
     expect(h.shape, IslandShape.hidden);
     h.set('a', AgentStatus.error);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     expect(h.shape, IslandShape.open);
   });
 
@@ -215,16 +215,16 @@ void main() {
     expect(h.s.openReason, OpenReason.alert);
   });
 
-  test('Escape hides an alert after the compact delay; a new alert opens again', () {
+  test('Escape keeps the alert compact; a new alert opens again', () {
     final h = Harness();
     h.set('a', AgentStatus.approval);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     h.m.close(h.now);
     h.wait(5);
-    expect(h.shape, IslandShape.hidden);
+    expect(h.shape, IslandShape.compact);
     expect(h.s.pendingAlerts, 1);
     h.set('b', AgentStatus.error);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     expect(h.shape, IslandShape.open);
     expect(h.s.focus?.id, 'b');
   });
@@ -247,7 +247,7 @@ void main() {
     final h = Harness();
     h.set('a', AgentStatus.approval);
     h.set('b', AgentStatus.error);
-    h.wait(1);
+    h.wait(IslandTimings.bubbleLead + .1);
     expect(h.s.focus?.id, 'a');
     expect(h.s.pendingAlerts, 2);
     h.set('a', AgentStatus.working);

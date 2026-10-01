@@ -32,7 +32,7 @@ abstract final class IslandTimings {
   static const dismissedLinger = 2.0;
 
   /// The split bubble shows alone for this long before the island opens.
-  static const bubbleLead = .9;
+  static const bubbleLead = 1.8;
 }
 
 /// Everything the app needs to draw the island at one instant.
@@ -183,8 +183,8 @@ class IslandMachine {
     }
   }
 
-  /// Explicit dismissal: compact briefly, then hidden. Pending alerts remain
-  /// unanswered and a new alert can reveal the island again.
+  /// Explicit dismissal: compact briefly, then hidden unless an alert still
+  /// needs attention. A new alert can open the island again.
   void close(double now) {
     advance(now);
     _lastActivity = now;
@@ -338,6 +338,7 @@ class IslandMachine {
   IslandShape _shapeAt(double now) {
     final dismissed = _dismissedAt;
     if (dismissed != null && _userOpen == null && _previewSince == null) {
+      if (_alerts.isNotEmpty) return IslandShape.compact;
       return now < dismissed + IslandTimings.dismissedLinger ? IslandShape.compact : IslandShape.hidden;
     }
     if (_openReasonAt(now) != null) return IslandShape.open;
