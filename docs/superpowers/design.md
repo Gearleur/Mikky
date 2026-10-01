@@ -107,11 +107,13 @@ Sous Mikky, **l'état de l'agent qu'il suit** (le plus pressant : attend « ! »
 ### Limite de l'abonnement
 Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 10 » (l'heure lue dans le message de Claude ou de Codex) ; dans le chat, la tâche « Limite atteinte » et une carte jaune « Limite de l'abonnement atteinte · Reprend à 17 h 10 ».
 
-**Ensorcelé** (le mode magique, 2026-09-30). Le bouton s'appelle **« Relance auto »**, l'état garde son nom **« Ensorcelé »**.
-- Limite atteinte : **étoile jaune en haut au milieu** de la page de l'agent ; dans le chat, la carte « Limite de l'abonnement atteinte · Reprend à 17 h 10 » avec « Relancer » (tout de suite) et « Relance auto ».
+**Un seul bouton : « Annuler »** (2026-10-01, à la place de « Relancer » et « Relance auto ») : on n'attend plus la reprise ; l'agent compte comme fini, quitte « Travaillent » et l'île, et reste dans « Terminés » puis l'historique. Il revient s'il se passe de nouveau quelque chose dans sa session.
+
+**Ensorcelé** (le mode magique, 2026-09-30) : la relance auto, seulement par le menu **···** de l'agent (« Relance auto ») ou pour tous (réglage « Relance automatique ») ; l'état garde son nom **« Ensorcelé »**.
+- Limite atteinte : **étoile jaune en haut au milieu** de la page de l'agent ; dans le chat, la carte « Limite de l'abonnement atteinte · Reprend à 17 h 10 » avec « Annuler ».
 - Une fois ensorcelé, **c'est mis** : plus de carte grise ni de bouton, juste « **Ensorcelé** · se relance à 17 h 11 », en gros, avec l'étoile violette ; **étoile violette en haut au milieu**. Pour l'enlever : le menu **···** de l'agent, « Arrêter la relance auto » (le même menu propose « Relance auto » sur un agent limité).
 - Mikky relance une minute après la reprise, par un message à l'agent (« La limite de l'abonnement est levée : reprends la tâche là où tu t'étais arrêté. ») ; heure inconnue : 30 min plus tard ; si la limite retombe, il attend la reprise suivante.
-- Sur l'**accueil** : ligne limitée avec l'étoile jaune après le titre, « Limite atteinte · reprend à 17 h 10 », « Relancer / Relance auto » ; ensorcelé (par la relance pour tous ou agent par agent) : **une ligne normale**, sans étoile ni bouton, « Ensorcelé · se relance à 17 h 11 ». L'**étoile jaune** seulement sur un agent limité qu'on ne relance pas.
+- Sur l'**accueil** : ligne limitée avec l'étoile jaune après le titre, « Limite atteinte · reprend à 17 h 10 », « Annuler » ; ensorcelé (par la relance pour tous ou agent par agent) : **une ligne normale**, sans étoile ni bouton, « Ensorcelé · se relance à 17 h 11 ». L'**étoile jaune** seulement sur un agent limité qu'on ne relance pas.
 - **Relance automatique pour tous** : un réglage (menu ··· de l'accueil, « Relance automatique », gardé d'un démarrage à l'autre), pas un interrupteur au-dessus des agents ; activée, une **petite étoile violette après « Agents »**, à côté de Mikky. Tout agent qui bute sur une limite est alors ensorcelé tout seul (jamais une vieille session au démarrage).
 - Les sorts sont en mémoire : un redémarrage de Mikky les lève (le réglage global, lui, reste).
 

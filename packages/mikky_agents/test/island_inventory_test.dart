@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -94,6 +95,36 @@ void main() {
     // Once it lifts, the reading stands as it was.
     wall = DateTime(2026, 10, 1, 14, 11);
     expect(source.limitsOf(AgentProvider.codex)!.short!.usedPercent, 99);
+  });
+
+  test('a limit cancelled by the user counts as done, and leaves the island', () async {
+    final tmp = await Directory.systemTemp.createTemp('mikky_cancel');
+    addTearDown(() => tmp.delete(recursive: true));
+    final watcher = _InventoryWatcher();
+    addTearDown(watcher.stop);
+    final source = RealAgentSource(
+      clock: () => clock,
+      now: () => wall,
+      store: AgentStore(File('${tmp.path}/agents.json')),
+      spawn: (p, h, c) async => throw StateError('no'),
+    )..follow(watcher);
+    final s = WatchedSession('/l.jsonl', AgentProvider.codex, AgentHost.windows)..modified = wall;
+    s.log
+      ..apply(SessionStarted('l', cwd: '/p', at: wall))
+      ..apply(TurnStarted(at: wall))
+      ..apply(TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall));
+    watcher.send(s);
+    await flush();
+    source.advance(clock);
+    final e = source.entries.single;
+    expect(source.agents.single.status, AgentStatus.rateLimited);
+    expect(homeGroupOf(e.homeStatus, e.lastActivity, wall), HomeGroup.working);
+
+    source.settle(e.id);
+    source.advance(clock);
+    expect(e.homeStatus, AgentStatus.finished);
+    expect(homeGroupOf(e.homeStatus, e.lastActivity, wall), HomeGroup.done);
+    expect(source.agents, isEmpty);
   });
 
   test('watched sessions get ids no kept agent can share', () async {

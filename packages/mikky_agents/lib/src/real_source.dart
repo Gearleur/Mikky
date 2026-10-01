@@ -78,11 +78,12 @@ class AgentEntry {
   /// none yet.
   String get key => sessionId == null ? id : '${provider.name}:$sessionId';
 
-  /// The state the home sorts it by: an error settled by the user, with
-  /// nothing new since, counts as done.
+  /// The state the home sorts it by: an error settled, or a limit
+  /// cancelled, by the user, with nothing new since, counts as done.
   AgentStatus get homeStatus {
     final settled = mark.settledAt;
-    if (status == AgentStatus.error && settled != null && !lastActivity.isAfter(settled)) return AgentStatus.finished;
+    final settles = status == AgentStatus.error || status == AgentStatus.rateLimited;
+    if (settles && settled != null && !lastActivity.isAfter(settled)) return AgentStatus.finished;
     return status;
   }
 

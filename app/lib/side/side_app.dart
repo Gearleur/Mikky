@@ -3,6 +3,7 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
+import '../agents/enchant.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/backend_status.dart';
 import '../ui/brand_logo.dart';
@@ -427,13 +428,13 @@ class HomePage extends StatelessWidget {
           child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))]),
         ),
       ),
-      // Stopped by its subscription's limit: when it lifts, « Relancer » or
-      // « Ensorceler »; the violet star under the spell (2026-09-30).
+      // Stopped by its subscription's limit: when it lifts, « Annuler »;
+      // the violet star under the spell.
       HomeGroup.working when e.status == AgentStatus.rateLimited => LimitedAgentCard(
         id: e.id,
         title: e.name,
         log: log,
-        send: (t) => host.service.source.send(e.id, t),
+        onCancel: () => cancelLimit(host, e.id),
         who: e.host == AgentHost.wsl ? 'WSL' : '',
         brand: Brand.of(e.provider),
         pinned: e.mark.pinned,
@@ -503,4 +504,11 @@ class _Empty extends StatelessWidget {
       ),
     );
   }
+}
+
+/// « Annuler » on an agent stopped by its limit: no relaunch, no more
+/// waiting; it leaves « Travaillent » and the island, and stays as done.
+void cancelLimit(SideHost host, String id) {
+  Enchantments.instance.cancel(id);
+  host.service.source.settle(id);
 }

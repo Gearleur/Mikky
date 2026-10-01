@@ -134,7 +134,7 @@ class _HomeMockState extends State<HomeMock> {
     group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length + widget.limited.length, [
       for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: _who(w), brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
       for (final (i, ((t, b, _, w), _)) in widget.limited.indexed)
-        LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}),
+        LimitedAgentCard(id: _ids[i], title: t, log: _log, who: w, brand: b, onTap: () {}, onMenu: () {}, onCancel: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
           status: UiStatus.paused,
@@ -216,7 +216,7 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Limite atteinte, ensorcelé',
-        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Relance auto. Ensorcelé : une ligne normale, qui dit quand il se relance (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; « Annuler » : on n’attend plus, l’agent passe dans Terminés. Ensorcelé : une ligne normale, qui dit quand il se relance (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
         child: HomeMock(
           autoRelaunch: true,
           working: [_workingOne],
@@ -298,7 +298,7 @@ class _AgentMockState extends State<AgentMock> {
 
   // Its own agent id for the spell, as the app's page would have.
   late final _id = 'board-${identityHashCode(this)}';
-  late final _limit = LimitHooks(_id, (_) async {});
+  late final _limit = LimitHooks(_id, (_) async {}, cancel: () {});
 
   @override
   void initState() {
@@ -476,7 +476,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Relancer » tout de suite, ou « Relance auto ».',
+        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Annuler » : on n’attend plus la reprise (la relance auto reste dans le menu ···).',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
       ),
       BoardFrame(

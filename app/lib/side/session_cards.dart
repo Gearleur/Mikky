@@ -19,15 +19,18 @@ import 'session_text.dart';
 /// What an agent's page lends the thread to act on a limit: which agent,
 /// and how to write to it.
 class LimitHooks {
-  const LimitHooks(this.id, this.send);
+  const LimitHooks(this.id, this.send, {this.cancel});
 
   final String id;
   final Future<void> Function(String text) send;
+
+  /// « Annuler »: no more waiting for the limit; the session counts as done.
+  final VoidCallback? cancel;
 }
 
 
-/// The limit card, tied to the spell of its agent: « Ensorceler » makes
-/// Mikky relaunch the task by itself when the limit lifts.
+/// The limit card, tied to the spell of its agent (relaunched by itself
+/// when the limit lifts, set in its ··· menu).
 class LimitBlock extends StatefulWidget {
   const LimitBlock({super.key, required this.log, this.message, this.hooks});
 
@@ -65,14 +68,13 @@ class _LimitBlockState extends State<LimitBlock> {
       message: widget.message,
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
       relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
-      onEnchant: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
-      onNow: h == null ? null : () => h.send(Enchantments.resumeMessage),
+      onCancel: h?.cancel,
     );
   }
 }
 
 /// An agent stopped by its limit, on the home: its logo, the yellow star,
-/// when it lifts, « Relancer » / « Relance auto »; under the spell a plain
+/// when it lifts, « Annuler »; under the spell a plain
 /// row, « Ensorcelé · se relance à 17 h 11 », nothing to press — the
 /// spell comes off in its ··· menu (user requests, 2026-09-30).
 class LimitedAgentCard extends StatelessWidget {
@@ -81,22 +83,24 @@ class LimitedAgentCard extends StatelessWidget {
     required this.id,
     required this.title,
     required this.log,
-    required this.send,
     this.who = '',
     this.brand,
     this.pinned = false,
     this.onTap,
     this.onMenu,
+    this.onCancel,
   });
 
   final String id;
   final String title;
   final SessionLog log;
-  final Future<void> Function(String text) send;
   final String who;
   final Brand? brand;
   final bool pinned;
   final VoidCallback? onTap, onMenu;
+
+  /// « Annuler »: no more waiting for the limit; the session counts as done.
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -124,14 +128,11 @@ class LimitedAgentCard extends StatelessWidget {
             : limitLine(resets),
         onTap: onTap,
         onMenu: onMenu,
-        actions: spell
+        // One way out (user request, 2026-10-01): « Annuler ». Relaunching
+        // by itself stays in the ··· menu.
+        actions: spell || onCancel == null
             ? null
-            : Align(
-                alignment: Alignment.centerRight,
-                child: AnswerBar(
-                  answers: [('Relancer', () => send(Enchantments.resumeMessage)), ('Relance auto', () => spells.enchant(id, resets, send))],
-                ),
-              ),
+            : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Annuler', onCancel)])),
       );
     },
   );
@@ -180,12 +181,12 @@ class AutoRelaunchMark extends StatelessWidget {
 }
 
 /// A subscription's limit reached: the yellow state and when it lifts
-/// (user request, 2026-09-30), « Relancer » now or « Relance auto ». Once
+/// (user request, 2026-09-30), « Annuler ». Once
 /// under the spell there is no card any more, only « Ensorcelé · se
 /// relance à 17 h 11 », big, with the violet star; the spell comes off in
 /// the agent's ··· menu.
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onEnchant, this.onNow});
+  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onCancel});
 
   final DateTime? resetsAt;
   final String? message;
@@ -195,7 +196,8 @@ class LimitCard extends StatelessWidget {
 
   /// Under the spell, the relaunch sent.
   final bool relaunched;
-  final VoidCallback? onEnchant, onNow;
+  /// « Annuler »: no more waiting for the limit.
+  final VoidCallback? onCancel;
 
   @override
   Widget build(BuildContext context) {
@@ -220,13 +222,12 @@ class LimitCard extends StatelessWidget {
         ]),
       );
     }
-    final actions = [if (onNow != null) ('Relancer', onNow), if (onEnchant != null) ('Relance auto', onEnchant)];
     return AgentCard(
       status: UiStatus.limited,
       title: 'Limite de l’abonnement atteinte',
       who: '',
       subtitle: resetsAt == null ? (message ?? 'Réessaie plus tard') : 'Reprend à ${hourText(resetsAt!)}',
-      actions: actions.isEmpty ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: actions)),
+      actions: onCancel == null ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Annuler', onCancel)])),
     );
   }
 }
