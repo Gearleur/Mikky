@@ -1,6 +1,7 @@
 import 'dart:io';
 
-import 'package:mikky_agents/mikky_agents.dart';
+import '../tool/legacy/legacy.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -20,7 +21,8 @@ void main() {
   });
   tearDown(() async => home.delete(recursive: true));
 
-  SessionWatcher watcher() => SessionWatcher(target: WindowsTarget(), claudeProjects: claude, codexSessions: codex, since: const Duration(days: 30000));
+  SessionWatcher watcher() =>
+      SessionWatcher(target: WindowsTarget(), claudeProjects: claude, codexSessions: codex, since: const Duration(days: 30000));
 
   test('reads recent session files at start', () async {
     File('$claude/C--p/1735f552.jsonl').writeAsStringSync('${fixtureLines('claude/wsl_plan.jsonl').join('\n')}\n');

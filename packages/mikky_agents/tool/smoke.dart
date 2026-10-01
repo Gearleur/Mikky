@@ -6,13 +6,19 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:mikky_agents/mikky_agents.dart';
+import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
+
+import 'legacy/legacy.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 
 Future<void> main(List<String> all) async {
   final watch = Stopwatch()..start();
   void say(String s) => stdout.writeln('[${(watch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $s');
-  final args = [for (final a in all) if (!a.startsWith('--')) a];
+  final args = [
+    for (final a in all)
+      if (!a.startsWith('--')) a,
+  ];
   DaemonClient? daemon;
   if (all.contains('--daemon')) {
     daemon = await DaemonClient.ensure(File('../../daemon/target/debug/mikkyd.exe').absolute.path);
@@ -58,20 +64,36 @@ Future<void> main(List<String> all) async {
   source.changes.listen((_) {});
 
   final ids = [
-    await source.launch(LaunchRequest(provider: AgentProvider.claude, host: AgentHost.wsl, cwd: args[1], prompt: 'Essai de Mikky : réponds juste « ok ».', model: 'sonnet')),
-    await source.launch(LaunchRequest(provider: AgentProvider.codex, host: AgentHost.windows, cwd: args[0], prompt: 'Essai de Mikky : réponds juste « ok ».')),
+    await source.launch(
+      LaunchRequest(
+        provider: AgentProvider.claude,
+        host: AgentHost.wsl,
+        cwd: args[1],
+        prompt: 'Essai de Mikky : réponds juste « ok ».',
+        model: 'sonnet',
+      ),
+    ),
+    await source.launch(
+      LaunchRequest(provider: AgentProvider.codex, host: AgentHost.windows, cwd: args[0], prompt: 'Essai de Mikky : réponds juste « ok ».'),
+    ),
   ];
   for (final id in ids) {
     final e = source.entry(id)!;
     for (var i = 0; i < 240 && e.status != AgentStatus.finished && e.status != AgentStatus.error; i++) {
       await Future<void>.delayed(const Duration(milliseconds: 500));
     }
-    say('${e.provider.name} ${e.host.name} : ${e.status.name} « ${e.log.detail} » session ${e.sessionId} mode ${e.log.modeId} modèle ${e.log.modelId} ; proposés ${offeredModels(e.log.models).map((m) => m.id).take(6).join(', ')}');
+    say(
+      '${e.provider.name} ${e.host.name} : ${e.status.name} « ${e.log.detail} » session ${e.sessionId} mode ${e.log.modeId} modèle ${e.log.modelId} ; proposés ${offeredModels(e.log.models).map((m) => m.id).take(6).join(', ')}',
+    );
   }
   // Give the watchers time to see the two new session files.
   await Future<void>.delayed(const Duration(seconds: 3));
-  final external = source.entries.where((e) => e.origin == AgentOrigin.external && ids.every((id) => e.sessionId != source.entry(id)!.sessionId));
-  say('entrées : ${source.entries.length} (avant les lancements : $before) ; doublons des deux lancements : ${source.entries.length - before - 2}');
+  final external = source.entries.where(
+    (e) => e.origin == AgentOrigin.external && ids.every((id) => e.sessionId != source.entry(id)!.sessionId),
+  );
+  say(
+    'entrées : ${source.entries.length} (avant les lancements : $before) ; doublons des deux lancements : ${source.entries.length - before - 2}',
+  );
   say('sessions extérieures suivies : ${external.length} ; événements de fichiers : $events');
   if (daemon != null) say('mikkyd, avant l’arrêt : ${await daemon.request('runs.list')}');
   await source.stopAll();

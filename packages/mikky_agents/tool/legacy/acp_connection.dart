@@ -37,6 +37,7 @@ class AcpConnection {
   }
 
   final StreamSink<List<int>> _output;
+
   /// Answers the agent's requests; none: every request gets an error.
   AcpRequestHandler? onRequest;
   final DateTime Function() _now;
@@ -124,7 +125,13 @@ class AcpConnection {
       final result = await handler(id, method, params);
       if (!isClosed) _send({'jsonrpc': '2.0', 'id': id, 'result': result ?? const {}});
     } on AcpError catch (e) {
-      if (!isClosed) _send({'jsonrpc': '2.0', 'id': id, 'error': {'code': e.code, 'message': e.message}});
+      if (!isClosed) {
+        _send({
+          'jsonrpc': '2.0',
+          'id': id,
+          'error': {'code': e.code, 'message': e.message},
+        });
+      }
     }
   }
 

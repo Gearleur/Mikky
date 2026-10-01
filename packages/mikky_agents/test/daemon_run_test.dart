@@ -48,10 +48,13 @@ void main() {
 
   tearDownAll(() async {
     await _daemon.stdin.close();
-    await _daemon.exitCode.timeout(const Duration(seconds: 10), onTimeout: () {
-      _daemon.kill();
-      return -1;
-    });
+    await _daemon.exitCode.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () {
+        _daemon.kill();
+        return -1;
+      },
+    );
   });
 
   late DaemonClient client;
@@ -60,6 +63,30 @@ void main() {
 
   test('a wrong token is turned away', () async {
     await expectLater(DaemonClient.connect(DaemonEndpoint(_endpoint.port, 'nope')), throwsA(isA<WebSocketException>()));
+  });
+
+  test('two screens receive metadata changes without erasing local pending edits', () async {
+    final other = await DaemonClient.connect(_endpoint);
+    final first = AgentStore(File('unused-a'))..requireRemote = true;
+    final second = AgentStore(File('unused-b'))..requireRemote = true;
+    try {
+      await first.attach(client);
+      await second.attach(other);
+      second.setMark('pending', const SessionMark(pinned: true));
+      final notice = other.notifications.firstWhere((n) => n.method == 'state.changed');
+      first.setMark('shared', const SessionMark(archived: true));
+      await first.save();
+      await notice.timeout(const Duration(seconds: 5));
+      await second.refresh();
+      expect(second.mark('shared').archived, isTrue);
+      expect(second.mark('pending').pinned, isTrue);
+      await second.save();
+      await first.refresh();
+      expect(first.mark('pending').pinned, isTrue);
+      expect(first.mark('shared').archived, isTrue);
+    } finally {
+      await other.close();
+    }
   });
 
   test('open, prompt: the session fills its log from mikkyd\'s traffic', () async {
@@ -142,5 +169,46 @@ void main() {
     await again.stop();
     await until(run, (_) => !run.alive);
     await other.close();
+  });
+
+  test('closing every screen preserves a pending permission; reconnect is incremental', () async {
+    final run = await opened(client);
+    final prompt = run.prompt('write');
+    await until(run, (log) => log.pending.isNotEmpty);
+    final before = run.log.items.length;
+    final turns = run.log.turns.length;
+    await client.close();
+    await prompt;
+    expect(run.disconnected, isTrue);
+    expect(run.log.working, isTrue);
+    expect(run.log.pending, isNotEmpty);
+    expect(run.answer(allow: true), isFalse);
+
+    await expectLater(run.stop(), throwsA(isA<DaemonError>()));
+    expect(run.stopped, isFalse);
+
+    client = await DaemonClient.connect(_endpoint);
+    await run.reconnect(client);
+    expect(run.log.items.length, before);
+    expect(run.log.turns.length, turns);
+    expect(run.log.pending, isNotEmpty);
+    expect(run.answer(allow: false), isTrue);
+    await until(run, (log) => !log.working);
+    expect(run.log.items.whereType<ToolItem>().last.status, ToolStatus.failed);
+    await run.stop();
+  });
+
+  test('questions survive without a screen and an explicit stopAll clears them', () async {
+    final run = await opened(client);
+    final prompt = run.prompt('ask');
+    await until(run, (log) => log.question != null);
+    await client.close();
+    await prompt;
+    client = await DaemonClient.connect(_endpoint);
+    final again = await DaemonAgentRun.attach(client, run.runId);
+    expect(again.log.question, isNotNull);
+    await client.request('runs.stopAll');
+    await until(again, (_) => !again.alive);
+    expect(again.log.question, isNull);
   });
 }
