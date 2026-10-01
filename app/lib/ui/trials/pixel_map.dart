@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 
 // Trials, shown on the design boards only: pictures drawn pixel by pixel
-// (Mikky in pixels, to try as the logo; design.md §13, « plus tard »).
+// (Mikky in pixels, to try as the logo; design.md §12, « plus tard »).
 
 /// A small picture drawn pixel by pixel from a map: one character per
 /// pixel, [colors] gives each one's color, « . » and unknown ones are

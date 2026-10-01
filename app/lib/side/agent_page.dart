@@ -199,10 +199,9 @@ class _AgentPageState extends State<AgentPage> {
             // No pause button any more: « Mettre en pause », « Reprendre »
             // and « Arrêter l'agent » are in the ··· menu (user request,
             // 2026-09-30).
-            RoundButton(
-              'more',
+            RoundButton.menu(
               size: 34,
-              tooltip: 'Plus',
+              tooltip: 'Menu',
               onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
             ),
           ],

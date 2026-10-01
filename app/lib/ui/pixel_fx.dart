@@ -46,11 +46,10 @@ class PixelFxPalette {
   /// (the one of a done task's bubble).
   static PixelFxPalette of(UiStatus status, MikkyUi ui) => switch (status) {
     UiStatus.working => blue,
-    UiStatus.thinking => violet,
     UiStatus.approval => fire,
     UiStatus.error => red,
     UiStatus.limited => yellow,
-    UiStatus.sleeping => grey,
+    UiStatus.paused => grey,
     UiStatus.finished => green(ui),
   };
 }
@@ -99,8 +98,12 @@ void paintPixelGrid(Canvas canvas, Size size, int n, Color? Function(int x, int 
 abstract class PixelEffect {
   const PixelEffect();
 
-  /// The effect of every state.
+  /// The effect of the states that go on by themselves (working, limit,
+  /// finished).
   static const calmFirework = CalmFirework();
+
+  /// The effect of what needs the user (a yes / no, a question, an error).
+  static const exclamation = Exclamation();
 
   /// Pixels on a side.
   int get grid;
@@ -158,24 +161,79 @@ class CalmFirework extends PixelEffect {
   }
 }
 
+/// « ! » in pixels (user request, 2026-10-01: an exclamation for what
+/// needs the user's OK): the bar and its dot, lit from the top, frame by
+/// frame like the firework — plain, lit, lit with a glow, lit.
+class Exclamation extends PixelEffect {
+  const Exclamation();
+
+  @override
+  int get grid => 7;
+
+  @override
+  double get still => 1.0;
+
+  @override
+  double at(double t, int dx, int dy) {
+    const frames = [0, 1, 2, 1];
+    return frame(frames[((t / 3.6) % 1 * frames.length).floor()], dx, dy);
+  }
+
+  /// One frame: 0 plain, 1 lit, 2 lit with a glow. The bar is 3 pixels
+  /// wide at the top, 1 lower down, then the dot: it reads at 18 px.
+  static double frame(int frame, int dx, int dy) {
+    final ax = dx.abs();
+    final wide = dy == -3 || dy == -2, narrow = dy == -1 || dy == 0, dot = dy == 2;
+    if ((wide && ax <= 1) || ((narrow || dot) && ax == 0)) {
+      // A glint at the top, while lit.
+      if (frame > 0 && dy == -3 && dx == 0) return .9;
+      return narrow ? .45 : .7;
+    }
+    if (frame == 2 && ax == 2 && wide) return .2;
+    return 0;
+  }
+}
+
+/// The violet star of « Ensorcelé » (relaunched by itself when its limit
+/// lifts): the only violet, no agent state uses it (2026-10-01).
+class SpellFx extends StatelessWidget {
+  const SpellFx({super.key, this.size = 20});
+
+  final double size;
+
+  @override
+  Widget build(BuildContext context) => PixelFx(palette: PixelFxPalette.violet, size: size, slow: 2 / 3);
+}
+
 /// An agent's state as a small pixel effect in its color — the calm
 /// firework (user request, 2026-09-30), each state at its own pace (see
 /// [_slow]); finished stays still, at a moment where it shows well.
 class StatusFx extends StatelessWidget {
-  const StatusFx(this.status, {super.key, this.size = 16, this.effect = PixelEffect.calmFirework});
+  const StatusFx(this.status, {super.key, this.size = 16, this.effect});
 
   final UiStatus status;
   final double size;
-  final PixelEffect effect;
+
+  /// Another effect to try (boards); else the state's own.
+  final PixelEffect? effect;
+
+  /// The state's own effect: « ! » for what needs the user.
+  static PixelEffect effectOf(UiStatus s) =>
+      s == UiStatus.approval || s == UiStatus.error ? PixelEffect.exclamation : PixelEffect.calmFirework;
 
   @override
-  Widget build(BuildContext context) => PixelFx(
-    effect: effect,
-    palette: PixelFxPalette.of(status, MikkyUi.of(context)),
-    size: size,
-    at: status == UiStatus.finished ? effect.still : null,
-    slow: _slow(status),
-  );
+  Widget build(BuildContext context) {
+    // Paused or idle: nothing goes on, nothing moves (its place is kept).
+    if (status == UiStatus.paused) return SizedBox.square(dimension: size);
+    final effect = this.effect ?? effectOf(status);
+    return PixelFx(
+      effect: effect,
+      palette: PixelFxPalette.of(status, MikkyUi.of(context)),
+      size: size,
+      at: status == UiStatus.finished ? effect.still : null,
+      slow: _slow(status),
+    );
+  }
 
   /// How slowly each state moves, against the effect's own pace (the calm
   /// firework: 3.6 s there and back): waiting fastest (1.2 s), then
@@ -184,7 +242,6 @@ class StatusFx extends StatelessWidget {
   static double _slow(UiStatus s) => switch (s) {
     UiStatus.approval => 1 / 3,
     UiStatus.working => 1.6 / 3.6,
-    UiStatus.sleeping => 4.8 / 3.6,
     _ => 2 / 3,
   };
 }

@@ -53,9 +53,10 @@ void main() {
   vec2 n = normalize(vec2(scene(p + e.xy) - scene(p - e.xy), scene(p + e.yx) - scene(p - e.yx)) + 1e-6);
   float outside = smoothstep(-uPx, uPx, d);
 
-  // Two-layer shadow: wide and soft, then tight contact.
-  float wide = mix(.38, .13, uLight) *
-      exp(-max(scene(p - vec2(0., mix(10., 14., uLight))), 0.) / mix(20., 30., uLight)) * outside;
+  // Two-layer shadow: wide and soft, then tight contact. The wide one
+  // reaches zero by 48 px, inside the area painted around the island.
+  float far = max(scene(p - vec2(0., mix(10., 14., uLight))), 0.);
+  float wide = mix(.38, .13, uLight) * exp(-far / mix(20., 30., uLight)) * (1. - smoothstep(24., 48., far)) * outside;
   float contact = mix(.20, .10, uLight) *
       exp(-max(scene(p - vec2(0., mix(2., 1., uLight))), 0.) / mix(3., 2., uLight)) * outside;
   float shadow = 1. - (1. - wide) * (1. - contact);

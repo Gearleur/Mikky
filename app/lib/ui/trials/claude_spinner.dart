@@ -6,7 +6,7 @@ import '../motion.dart';
 
 // A trial, shown on the design boards only: Claude at work, against its
 // logo that turns ([SpinningLogo], in use); the user picks one (design.md
-// §13, step 1).
+// §12, step 1).
 
 /// Claude Code's own « working » star, as its terminal shows it: a dot
 /// that grows into a cross, an asterisk, a star, a flower, then back, in

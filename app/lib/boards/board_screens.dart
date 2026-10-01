@@ -137,7 +137,7 @@ class _HomeMockState extends State<HomeMock> {
         LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
-          status: UiStatus.sleeping,
+          status: UiStatus.paused,
           title: t,
           who: w,
           brand: b,
@@ -155,23 +155,15 @@ class _HomeMockState extends State<HomeMock> {
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
         AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}, onMenu: () {}),
     ]);
-    if (widget.limits != null) {
-      body.add(Padding(
-        padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 1), child: BrandLogo(Brand.codex, size: 12)),
-          const SizedBox(width: 6),
-          Expanded(child: Text(widget.limits!, style: uiText(TextSize.caption, color: ui.text3, height: 1.3, tabular: true))),
-        ]),
-      ));
-    }
+    // At the top, as in the app (2026-10-01).
+    if (widget.limits != null) body.insert(0, SubscriptionLimits([(Brand.codex, widget.limits!)]));
     return SideFrame(
       child: Stack(children: [
         SideHead(
           title: 'Agents',
           titleMark: AutoRelaunchMark(force: widget.autoRelaunch),
           leading: const HeadMikky(),
-          actions: [RoundButton('more', size: 34, onPressed: () {})],
+          actions: [RoundButton.menu(size: 34, onPressed: () {})],
         ),
         Positioned.fill(
           top: 68,
@@ -198,7 +190,7 @@ class _HomeMockState extends State<HomeMock> {
 const _waiting = ('Met à jour le site', Brand.codex, 'Veut lancer une commande', 'WSL');
 const _working = [
   (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working),
-  (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.thinking),
+  (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.working),
 ];
 const _workingOne = (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working);
 const _paused = ('Prépare le plan de l’API', Brand.codex, '', '');
@@ -235,8 +227,18 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
         ),
       ),
       BoardFrame(
-        label: 'Historique ouvert, limites Codex',
-        child: HomeMock(done: _done, history: 12, historyOpen: true, limits: 'Codex · 5 h : 38 % · semaine : 12 % · repart à 17 h 10'),
+        label: 'Limites Codex en haut, historique ouvert',
+        note: 'Les limites de l’abonnement en haut, avant les groupes (1er octobre ; avant : tout en bas).',
+        child: HomeMock(working: [_workingOne], done: _done, history: 12, historyOpen: true, limits: '69 % des 5 h, repart à 17 h 10 · 70 % de la semaine'),
+      ),
+      BoardFrame(
+        label: 'Limite Codex atteinte',
+        note: 'Codex écrit 99 % juste avant de refuser : bloqué, Mikky affiche 100 % jusqu’à la reprise, et la tâche en « Limite atteinte » (plus « Terminé »).',
+        child: HomeMock(
+          limited: [(('Nettoie les imports', Brand.codex, '', ''), false)],
+          done: _done,
+          limits: '100 % des 5 h, repart à 14 h 10 · 74 % de la semaine',
+        ),
       ),
     ],
   ),
@@ -351,7 +353,7 @@ class _AgentMockState extends State<AgentMock> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
-            RoundButton('more', size: 34, onPressed: () {}, tooltip: 'Plus'),
+            RoundButton.menu(size: 34, onPressed: () {}, tooltip: 'Menu'),
           ],
         ),
         if (!readOnly)
@@ -652,7 +654,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
         BoardFrame(
           label: 'Arrêtée, en erreur',
           child: _Pane([
-            const TaskSection(status: UiStatus.sleeping, title: 'Tâche arrêtée', meta: '2 étapes', steps: [TaskStep(label: 'Lit 2 fichiers')]),
+            const TaskSection(status: UiStatus.paused, title: 'Tâche arrêtée', meta: '2 étapes', steps: [TaskStep(label: 'Lit 2 fichiers')]),
             const TaskSection(status: UiStatus.error, title: 'Tâche en erreur', meta: '1 étape', steps: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')]),
           ]),
         ),

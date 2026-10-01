@@ -376,7 +376,8 @@ class IslandMachine {
       focus: focus,
       agents: visible,
       pendingAlerts: _alerts.length,
-      bubble: shape == IslandShape.compact && _alerts.isNotEmpty,
+      // What needs the user always comes out in the bubble, never under Mikky.
+      bubble: shape == IslandShape.compact && (_alerts.isNotEmpty || (focus?.status.needsYou ?? false)),
       closeCountdown: countdown,
     );
   }

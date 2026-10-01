@@ -244,7 +244,7 @@ List<MainStep> mainSteps(TurnSpan turn, List<ToolItem> tools) {
 UiStatus taskStatus(TurnSpan turn) => turn.running
     ? UiStatus.working
     : switch (turn.reason) {
-        StopReason.cancelled => UiStatus.sleeping,
+        StopReason.cancelled => UiStatus.paused,
         StopReason.rateLimited => UiStatus.limited,
         StopReason.error => UiStatus.error,
         _ => UiStatus.finished,

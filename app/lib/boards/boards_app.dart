@@ -9,6 +9,7 @@ import '../ui/sliding_hover.dart';
 import '../ui/tokens.dart';
 import 'board_brand.dart';
 import 'board_components.dart';
+import 'board_island.dart';
 import 'board_screens.dart';
 import 'board_technical.dart';
 import 'canvas.dart';
@@ -34,7 +35,7 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, homeBoard, agentBoard, messagesBoard, technicalBoard];
+final boards = [brandBoard, componentsBoard, islandBoard, homeBoard, agentBoard, messagesBoard, technicalBoard];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});

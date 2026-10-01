@@ -274,7 +274,7 @@ class AgentCard extends StatelessWidget {
             width: 28,
             child: Center(
               child: switch (status) {
-                UiStatus.working || UiStatus.thinking => SpinningLogo(claude: brand == Brand.claude, child: logo),
+                UiStatus.working => SpinningLogo(claude: brand == Brand.claude, child: logo),
                 UiStatus.approval => Looping(
                   period: const Duration(milliseconds: 1800),
                   builder: (context, t) => Transform.translate(offset: Offset(0, -4 * StatusDot.hop(t)), child: logo),

@@ -9,19 +9,29 @@ import 'package:flutter/widgets.dart';
 import '../overlay/overlay_channel.dart';
 import 'icons.dart';
 import 'motion.dart';
+import 'pixel_fx.dart';
 import 'sliding_hover.dart';
 import 'tokens.dart';
 
 /// Our own floating menu, in place of Windows' (user requests, 2026-09-30:
-/// « notre menu flottant, avec les paramètres et tout »; « le bouton ···
+/// « notre menu flottant, avec les paramètres et tout »; « le bouton étoile
 /// qui se transforme en menu, smooth, rapide, efficace, un peu gluant »).
-/// The round button stretches into the panel on a slightly soft spring —
+/// The grey star stretches into the panel on a slightly soft spring —
 /// wider first, then taller — and the items come in once it is open; on
 /// a choice, a click outside or Échap it shrinks back into the button.
 /// [from]: the button, in global coordinates (else a round button around
 /// the last press). It stays inside [within] (the small window). Null:
-/// nothing chosen.
+/// nothing chosen. A menu opened right after a choice (« Supprimer… »
+/// asks again) takes the same panel over, in place (user request,
+/// 2026-10-01: « elle doit arriver beaucoup plus vite », not at the
+/// bottom).
 Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rect? from}) {
+  final done = Completer<int?>();
+  if (FloatingMenu._chosen case final panel? when panel.mounted) {
+    FloatingMenu._button = null;
+    panel._continueWith(entries, done);
+    return done.future;
+  }
   final overlay = Overlay.maybeOf(within);
   final area = within.findRenderObject() as RenderBox?;
   final overlayBox = overlay?.context.findRenderObject() as RenderBox?;
@@ -29,9 +39,15 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
   final ui = MikkyUi.of(within);
   final bounds = MatrixUtils.transformRect(area.getTransformTo(overlayBox), Offset.zero & area.size);
   final press = FloatingMenu.lastPress ?? area.localToGlobal(area.size.topRight(const Offset(-30, 30)));
-  final button = from ?? Rect.fromCircle(center: press, radius: 17);
+  // Opened by a menu button (its star): the menu grows out of exactly
+  // that button and stands in for its star until it is back.
+  final pressed = FloatingMenu._button;
+  FloatingMenu._button = null;
+  final last = FloatingMenu.lastPress;
+  final star = pressed != null &&
+      (from == null ? last == null || pressed.rect.inflate(2).contains(last) : (from.center - pressed.rect.center).distance < 1);
+  final button = from ?? (star ? pressed.rect : Rect.fromCircle(center: press, radius: 17));
   final origin = Rect.fromPoints(overlayBox.globalToLocal(button.topLeft), overlayBox.globalToLocal(button.bottomRight));
-  final done = Completer<int?>();
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (context) => MikkyUiTheme(
@@ -40,13 +56,16 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
         bounds: bounds,
         origin: origin,
         entries: entries,
-        onGone: (id) {
+        star: star,
+        done: done,
+        onGone: () {
           entry.remove();
-          if (!done.isCompleted) done.complete(id);
+          if (star && identical(FloatingMenu.covering.value, pressed.owner)) FloatingMenu.covering.value = null;
         },
       ),
     ),
   );
+  if (star) FloatingMenu.covering.value = pressed.owner;
   overlay.insert(entry);
   return done.future;
 }
@@ -74,26 +93,58 @@ abstract final class FloatingMenu {
   /// Closing: back into the button, which gives a slight gluey bounce —
   /// a touch smaller, then its size (user request, 2026-09-30).
   static const closeSpring = SpringDescription(mass: 1, stiffness: 380, damping: 23);
+
+  static ({Rect rect, Object owner})? _button;
+
+  /// A menu folding back after a choice: the next menu takes it over.
+  static _MorphMenuState? _chosen;
+
+  /// A menu button ([owner]) was pressed: the menu it opens grows out of
+  /// it. Call before opening the menu.
+  static void pressed(BuildContext owner) {
+    final box = owner.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    _button = (rect: MatrixUtils.transformRect(box.getTransformTo(null), Offset.zero & box.size), owner: owner);
+  }
+
+  /// The button whose star the open menu draws (it hides its own, so
+  /// that only one star shows while the menu opens and folds back).
+  static final covering = ValueNotifier<Object?>(null);
 }
 
 class _MorphMenu extends StatefulWidget {
-  const _MorphMenu({required this.bounds, required this.origin, required this.entries, required this.onGone});
+  const _MorphMenu({required this.bounds, required this.origin, required this.entries, required this.star, required this.done, required this.onGone});
 
   final Rect bounds;
   final Rect origin;
   final List<MenuEntry> entries;
-  final ValueChanged<int?> onGone;
+
+  /// Grows out of a menu button: its star shows at both ends.
+  final bool star;
+
+  /// Completed with the choice as soon as it is made.
+  final Completer<int?> done;
+  final VoidCallback onGone;
 
   @override
   State<_MorphMenu> createState() => _MorphMenuState();
 }
 
-class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMixin {
+class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
   late final _t = AnimationController.unbounded(vsync: this)..addListener(() => setState(() {}));
+
+  /// From [_from] to [_target] when a follow-up menu takes the panel over
+  /// (1: settled).
+  late final _swap = AnimationController.unbounded(vsync: this, value: 1)..addListener(() => setState(() {}));
   final _measure = GlobalKey();
   final _focus = FocusNode();
-  Rect? _target;
-  bool _closing = false;
+  late List<MenuEntry> _entries = widget.entries;
+  late Completer<int?> _done = widget.done;
+  Rect? _target, _from;
+  bool _closing = false, _measuring = true;
+
+  /// Bumped when a follow-up menu stops the folding.
+  int _run = 0;
 
   @override
   void initState() {
@@ -102,7 +153,10 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final size = _measure.currentContext?.size;
       if (!mounted || size == null) return;
-      setState(() => _target = _place(size));
+      setState(() {
+        _target = _place(size);
+        _measuring = false;
+      });
       _focus.requestFocus();
       if (Motion.reduced(context)) {
         _t.value = 1;
@@ -114,9 +168,45 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
 
   @override
   void dispose() {
+    if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
+    if (!_done.isCompleted) _done.complete(null);
     _t.dispose();
+    _swap.dispose();
     _focus.dispose();
     super.dispose();
+  }
+
+  /// A follow-up menu: the panel stops folding, takes its new size where
+  /// it is, and shows the new items.
+  void _continueWith(List<MenuEntry> entries, Completer<int?> done) {
+    FloatingMenu._chosen = null;
+    _run++;
+    _t.stop();
+    _closing = false;
+    _done = done;
+    setState(() {
+      _entries = entries;
+      _measuring = true;
+      _from = _target;
+      _swap.value = 0;
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final size = _measure.currentContext?.size;
+      if (!mounted || size == null) return;
+      setState(() {
+        _from = _target;
+        _target = _place(size);
+        _measuring = false;
+      });
+      _focus.requestFocus();
+      if (Motion.reduced(context)) {
+        _t.value = 1;
+        _swap.value = 1;
+      } else {
+        _t.animateWith(SpringSimulation(FloatingMenu.spring, _t.value, 1, 0));
+        _swap.animateWith(SpringSimulation(FloatingMenu.spring, 0, 1, 0));
+      }
+    });
   }
 
   /// Down and to the left from the button, its top right corner on the
@@ -134,17 +224,26 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
   Future<void> _close(int? id) async {
     if (_closing) return;
     _closing = true;
+    final run = _run;
+    // The choice goes at once; a menu it opens takes this panel over.
+    if (id != null) FloatingMenu._chosen = this;
+    if (!_done.isCompleted) _done.complete(id);
+    // Not before the follow-up, if any, had its chance to come.
+    await Future<void>.delayed(Duration.zero);
+    if (run != _run || !mounted) return;
     if (!Motion.reduced(context)) {
       await _t.animateWith(SpringSimulation(FloatingMenu.closeSpring, _t.value, 0, 0, tolerance: const Tolerance(distance: .002, velocity: .02)));
+      if (run != _run || !mounted) return;
     }
-    widget.onGone(id);
+    if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
+    widget.onGone();
   }
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final target = _target;
-    final list = _MenuList(entries: widget.entries, onChoose: _close);
+    final list = _MenuList(entries: _entries, onChoose: _close);
     return Focus(
       focusNode: _focus,
       onKeyEvent: (_, e) {
@@ -160,14 +259,13 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
           rect: widget.bounds,
           child: GestureDetector(behavior: HitTestBehavior.opaque, onTapDown: (_) => _close(null)),
         ),
-        if (target == null)
+        if (target != null) _frame(ui, target, list),
+        if (_measuring)
           Positioned(
             left: 0,
             top: 0,
-            child: Offstage(child: KeyedSubtree(key: _measure, child: _PanelBox(child: list))),
-          )
-        else
-          _frame(ui, target, list),
+            child: Offstage(child: KeyedSubtree(key: _measure, child: _PanelBox(child: _MenuList(entries: _entries)))),
+          ),
       ]),
     );
   }
@@ -179,12 +277,15 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     // Past the button on the way back: the button itself, squeezed a
     // little, before it comes back to its size.
     if (t < 0) {
+      if (!widget.star) return const SizedBox.shrink();
       final r = o.deflate(math.min(-t, .2) * o.shortestSide * .8);
       return Positioned.fromRect(
         rect: r,
-        child: DecoratedBox(
-          decoration: BoxDecoration(color: ui.ctlA, shape: BoxShape.circle),
-          child: Center(child: MikkyIcon('more', size: 16, color: ui.text)),
+        child: Center(
+          child: Transform.scale(
+            scale: r.width / o.width,
+            child: const PixelStar(PixelFxPalette.grey, size: 14),
+          ),
         ),
       );
     }
@@ -194,12 +295,15 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
     double lerp(double a, double b, double f) => a + (b - a) * f;
     // It opens upwards when there was no room below.
     final growsUp = target.top < o.top;
-    final rect = Rect.fromLTRB(lerp(o.left, target.left, w), lerp(o.top, target.top, h), lerp(o.right, target.right, w), lerp(o.bottom, target.bottom, h));
+    // Taking a follow-up's size, from the panel it was.
+    final shown = _from == null ? target : Rect.lerp(_from, target, _swap.value)!;
+    final rect = Rect.fromLTRB(lerp(o.left, shown.left, w), lerp(o.top, shown.top, h), lerp(o.right, shown.right, w), lerp(o.bottom, shown.bottom, h));
     final f = t.clamp(0.0, 1.0);
     final radius = lerp(o.shortestSide / 2, Radii.xl, f);
-    final color = Color.lerp(ui.ctlA, ui.well, (f * 1.8).clamp(0.0, 1.0))!;
-    final content = ((t - .45) / .4).clamp(0.0, 1.0);
-    final dots = (1 - t / .25).clamp(0.0, 1.0);
+    final color = Color.lerp(ui.well.withValues(alpha: 0), ui.well, (f * 1.8).clamp(0.0, 1.0))!;
+    // A follow-up's items come in as the panel takes its size.
+    final content = _measuring ? 0.0 : math.min(((t - .45) / .4).clamp(0.0, 1.0), ((_swap.value - .3) / .5).clamp(0.0, 1.0));
+    final star = widget.star ? (1 - t / .25).clamp(0.0, 1.0) : 0.0;
     return Positioned.fromRect(
       rect: rect,
       child: DecoratedBox(
@@ -207,25 +311,24 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
           color: color,
           borderRadius: BorderRadius.circular(radius),
           border: Border.all(color: ui.line.withValues(alpha: ui.line.a * f)),
-          // The menu's shadow grows with it; the button's own soft contact
-          // shadow is already there (70 %).
+          // The shadow appears with the panel; the resting star has none.
           boxShadow: [
-            for (final (i, s) in ui.shMenu.indexed)
-              s.box.copyWith(color: s.color.withValues(alpha: s.color.a * (i == ui.shMenu.length - 1 ? .7 + .3 * f : f))),
+            for (final s in ui.shMenu)
+              s.box.copyWith(color: s.color.withValues(alpha: s.color.a * f)),
           ],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius),
           child: Stack(clipBehavior: Clip.none, children: [
-            // The button's three dots, fading as it opens.
-            if (dots > 0)
+            // The grey star fades out and returns as the menu folds back.
+            if (star > 0)
               Positioned(
                 right: 0,
                 top: growsUp ? null : 0,
                 bottom: growsUp ? 0 : null,
                 width: o.width,
                 height: o.height,
-                child: Opacity(opacity: dots, child: Center(child: MikkyIcon('more', size: 16, color: ui.text))),
+                child: Opacity(opacity: star, child: Center(child: const PixelStar(PixelFxPalette.grey, size: 14))),
               ),
             // The items, at their final size, uncovered as it opens.
             Positioned(
@@ -235,7 +338,7 @@ class _MorphMenuState extends State<_MorphMenu> with SingleTickerProviderStateMi
               width: target.width,
               height: target.height,
               child: IgnorePointer(
-                ignoring: t < .8 || _closing,
+                ignoring: t < .8 || _swap.value < .8 || _closing,
                 child: Opacity(
                   opacity: content,
                   child: Transform.translate(

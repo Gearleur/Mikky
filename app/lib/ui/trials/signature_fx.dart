@@ -7,7 +7,7 @@ import '../pixel_fx.dart';
 import 'pixel_map.dart';
 
 // Trials, shown on the design boards only: fireworks in the two signature
-// colors (design.md §3 and §13).
+// colors (design.md §3 and §12).
 
 /// The calm firework in the signature colors: its frames (small, middle,
 /// big, middle), blue at the heart and orange at the tips.

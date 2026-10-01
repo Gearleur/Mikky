@@ -16,11 +16,10 @@ import '../settings.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
 import '../ui/floating_menu.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/status.dart';
 import '../ui/tokens.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
+import 'compact_view.dart';
 import 'content/parts.dart';
 import 'island_painter.dart';
 
@@ -206,7 +205,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final r = _islandRect;
     return switch (_edge) {
       IslandEdge.top => SideBubble.at(Offset(r.right - 20, _motion.metrics.compact.height / 2), const Offset(1, 0), out),
-      IslandEdge.right => SideBubble.at(Offset(r.center.dx, r.bottom - 20), const Offset(0, 1), out),
+      IslandEdge.right => SideBubble.at(compactBubbleAnchor(r), const Offset(0, 1), out),
     };
   }
 
@@ -250,7 +249,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (s.shape == IslandShape.open) _mikky.blink();
     }
     // Mikky stands for the agent in focus (rule 10).
-    _mikky.setState(_mikkyStateFor(s.focus?.status));
+    _mikky.setState(mikkyStateFor(s.focus?.status));
     if (s.openReason == OpenReason.alert && prev.openReason == OpenReason.alert && prev.focus?.id != s.focus?.id) {
       // Next alert of the queue, maybe of the same kind: show it anyway.
       _mikky.alert();
@@ -266,18 +265,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (changed || !_motion.isGone) _wake();
     _schedule();
   }
-
-  static MikkyState _mikkyStateFor(AgentStatus? status) => switch (status) {
-        null || AgentStatus.idle || AgentStatus.paused => MikkyState.idle,
-        AgentStatus.working => MikkyState.working,
-        AgentStatus.thinking => MikkyState.thinking,
-        AgentStatus.searching => MikkyState.searching,
-        AgentStatus.approval => MikkyState.approval,
-        AgentStatus.question => MikkyState.question,
-        AgentStatus.error => MikkyState.error,
-        AgentStatus.finished => MikkyState.finished,
-        AgentStatus.rateLimited => MikkyState.rateLimited,
-      };
 
   /// Agents are immutable: the same objects mean nothing changed.
   static bool _sameAgents(List<Agent> a, List<Agent> b) {
@@ -716,9 +703,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             ),
         ];
       case IslandEdge.right:
-        // Under Mikky, the firework of the most pressing state among the
-        // agents (user request, 2026-09-30); his name when there are none.
-        final top = _snap.focus == null ? null : UiStatus.of(_snap.focus!.status);
+        // Under Mikky, the state of the agent he stands for; his name
+        // when there are none, or while the bubble shows it.
         return [
           Positioned(
             left: rect.left,
@@ -727,11 +713,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             height: 18,
             child: Opacity(
               opacity: opacity,
-              child: Center(
-                child: top == null || _snap.bubble
-                    ? name
-                    : MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(top, size: 18)),
-              ),
+              child: Center(child: CompactUnderMikky(theme: theme, status: _snap.bubble ? null : _snap.focus?.status)),
             ),
           ),
         ];
@@ -845,10 +827,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   },
                   child: Opacity(
                     opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
-                    child: MikkyUiTheme(
-                      ui: theme.isLight ? MikkyUi.light : MikkyUi.dark,
-                      child: StatusFx(UiStatus.of(_snap.focus?.status ?? AgentStatus.approval), size: 20),
-                    ),
+                    child: BubbleStatus(theme: theme, status: _snap.focus?.status ?? AgentStatus.approval),
                   ),
                 ),
               ),

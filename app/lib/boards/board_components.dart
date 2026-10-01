@@ -111,7 +111,8 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           label: 'Ronds',
           child: _Tray([
             _row([
-              for (final i in ['folder', 'sliders', 'plus', 'more']) RoundButton(i, onPressed: () {}),
+              for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
+              RoundButton.menu(size: 40, onPressed: () {}),
               RoundButton('up', ink: true, onPressed: () {}),
             ]),
             _row([
@@ -183,9 +184,15 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
       title: 'Menu flottant',
       note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il s’ouvre là où on a cliqué ; Échap ou un clic à côté le ferme.',
       frames: [
-        const BoardFrame(label: 'Accueil ···', note: 'Les réglages de Mikky.', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
-        const BoardFrame(label: 'Un agent ···', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
-        const BoardFrame(label: 'À essayer', note: 'Clique sur ··· : le vrai menu s’ouvre.', width: 300, child: _MenuTry()),
+        const BoardFrame(label: 'Accueil · étoile grise', note: 'Les réglages de Mikky.', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
+        const BoardFrame(label: 'Un agent · étoile grise', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
+        const BoardFrame(label: 'À essayer', note: 'Clique sur l’étoile grise : le menu se déploie et se replie en elle (une seule étoile à la fois).', width: 300, child: _MenuTry(_homeMenu)),
+        const BoardFrame(
+          label: 'À essayer · Supprimer…',
+          note: 'Un menu qui en ouvre un autre : le panneau ne se replie pas, il prend sur place la taille de la confirmation (1er octobre).',
+          width: 300,
+          child: _MenuTry(_agentMenu, followUps: {7: _deleteMenu}),
+        ),
       ],
     ),
     BoardSection(
@@ -197,14 +204,14 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
           child: _Tray([
             SizedBox(
               height: 60,
-              child: Stack(children: [SideHead(title: 'Agents', leading: const HeadMikky(), actions: [RoundButton('more', size: 34, onPressed: () {})])]),
+              child: Stack(children: [SideHead(title: 'Agents', leading: const HeadMikky(), actions: [RoundButton.menu(size: 34, onPressed: () {})])]),
             ),
             SizedBox(
               height: 60,
               child: Stack(children: [
                 SideHead(
                   leading: RoundButton('left', size: 34, onPressed: () {}),
-                  actions: [RoundButton('stop', size: 34, onPressed: () {}), RoundButton('more', size: 34, onPressed: () {})],
+                  actions: [RoundButton('stop', size: 34, onPressed: () {}), RoundButton.menu(size: 34, onPressed: () {})],
                 ),
               ]),
             ),
@@ -296,7 +303,7 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
               actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
             ),
             AgentCard(status: UiStatus.working, title: 'Corrige les tests du moteur', who: '', brand: Brand.claude, subtitle: 'Modifie island_machine.dart', onTap: () {}),
-            AgentCard(status: UiStatus.thinking, title: 'Prépare le plan de l’API', who: '', brand: Brand.codex, subtitle: 'Réfléchit au plan', pinned: true, onTap: () {}),
+            AgentCard(status: UiStatus.working, title: 'Prépare le plan de l’API', who: '', brand: Brand.codex, subtitle: 'Réfléchit au plan', pinned: true, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
             AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
               ]),
@@ -310,17 +317,16 @@ final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec
       frames: [
         BoardFrame(
           label: 'États d’un agent',
-          note: 'Un feu d’artifice de pixels par état, à son rythme.',
+          note: 'Seulement ce qui dit quelque chose (1er octobre) : le feu d’artifice bleu pour tout le travail (travaille, réfléchit, cherche), « ! » pour ce qui attend ton feu vert ou ta réponse, « ! » rouge pour une erreur, le jaune pour la limite, le vert figé quand c’est fini ; rien en pause. Le violet est réservé à « Ensorcelé ».',
           child: _Tray([
             Wrap(spacing: 6, runSpacing: 6, children: [
               for (final (s, name) in [
                 (UiStatus.working, 'Travaille'),
-                (UiStatus.thinking, 'Réfléchit'),
                 (UiStatus.approval, 'Attend'),
-                (UiStatus.finished, 'Terminé'),
                 (UiStatus.error, 'Erreur'),
-                (UiStatus.limited, 'Limité'),
-                (UiStatus.sleeping, 'Dort'),
+                (UiStatus.limited, 'Limite'),
+                (UiStatus.finished, 'Terminé'),
+                (UiStatus.paused, 'En pause (rien)'),
               ])
                 SizedBox(
                   width: 140,
@@ -422,9 +428,21 @@ const _agentMenu = [
   MenuEntry(7, 'Supprimer…'),
 ];
 
-/// A small window with its ··· button: the real menu opens in it.
+/// « Supprimer… » asks again.
+const _deleteMenu = [
+  MenuEntry(20, 'Supprimer de Mikky (le fichier de session reste)'),
+  MenuEntry(21, 'Supprimer aussi le fichier de Claude (définitif)'),
+  MenuEntry.separator(),
+  MenuEntry(22, 'Annuler'),
+];
+
+/// A small window with its grey star: the real menu opens in it; a choice
+/// in [followUps] opens the next one, as the app does.
 class _MenuTry extends StatefulWidget {
-  const _MenuTry();
+  const _MenuTry(this.entries, {this.followUps = const {}});
+
+  final List<MenuEntry> entries;
+  final Map<int, List<MenuEntry>> followUps;
 
   @override
   State<_MenuTry> createState() => _MenuTryState();
@@ -432,7 +450,6 @@ class _MenuTry extends StatefulWidget {
 
 class _MenuTryState extends State<_MenuTry> {
   String? _chosen;
-  final _button = GlobalKey();
 
   // The boards have no overlay of their own: this little window brings one
   // (the app's has it).
@@ -450,11 +467,18 @@ class _MenuTryState extends State<_MenuTry> {
       Positioned(
         top: 14,
         right: 14,
-        child: RoundButton('more', key: _button, size: 34, onPressed: () async {
-          final box = _button.currentContext!.findRenderObject() as RenderBox;
-          final id = await showFloatingMenu(inner, _homeMenu, from: box.localToGlobal(Offset.zero) & box.size);
+        child: RoundButton.menu(size: 34, onPressed: () async {
+          var entries = widget.entries;
+          var id = await showFloatingMenu(inner, entries);
+          while (id != null) {
+            final next = widget.followUps[id];
+            if (next == null || !inner.mounted) break;
+            entries = next;
+            id = await showFloatingMenu(inner, entries);
+          }
           if (!mounted) return;
-          setState(() => _chosen = id == null ? 'rien' : _homeMenu.firstWhere((e) => e.id == id).label);
+          final chosen = id;
+          setState(() => _chosen = chosen == null ? 'rien' : entries.firstWhere((e) => e.id == chosen).label);
           _layer.markNeedsBuild();
         }),
       ),

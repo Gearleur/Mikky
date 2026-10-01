@@ -155,7 +155,7 @@ class SpellStar extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Enchantments.instance,
     builder: (context, _) => force || Enchantments.instance.isOn(id)
-        ? const IgnorePointer(child: StatusFx(UiStatus.thinking, size: 20))
+        ? const IgnorePointer(child: SpellFx(size: 20))
         : limited
         ? const IgnorePointer(child: StatusFx(UiStatus.limited, size: 20))
         : const SizedBox.shrink(),
@@ -174,7 +174,7 @@ class AutoRelaunchMark extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Enchantments.instance,
     builder: (context, _) => force || Enchantments.instance.everywhere
-        ? const Padding(padding: EdgeInsets.only(left: 8, top: 2), child: StatusFx(UiStatus.thinking, size: 14))
+        ? const Padding(padding: EdgeInsets.only(left: 8, top: 2), child: SpellFx(size: 14))
         : const SizedBox.shrink(),
   );
 }
@@ -204,7 +204,7 @@ class LimitCard extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
         child: Row(children: [
-          const StatusFx(UiStatus.thinking, size: 20),
+          const SpellFx(size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(
@@ -263,7 +263,7 @@ class PausedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AgentCard(
-        status: UiStatus.sleeping,
+        status: UiStatus.paused,
         title: 'En pause',
         who: '',
         subtitle: 'Travail arrêté, session gardée',
@@ -341,6 +341,37 @@ class _QuestionCardState extends State<QuestionCard> {
           ),
         ]),
       ]),
+    );
+  }
+}
+
+/// What is left of the subscriptions, at the top of the home (user
+/// request, 2026-10-01; Codex tells it, Claude does not): a small logo and
+/// « 69 % des 5 h, repart à 17 h 10 · 70 % de la semaine », in grey.
+class SubscriptionLimits extends StatelessWidget {
+  const SubscriptionLimits(this.lines, {super.key});
+
+  final List<(Brand, String)> lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (brand, text) in lines)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(brand, size: 12)),
+                const SizedBox(width: 6),
+                Expanded(child: Text(text, style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
+              ]),
+            ),
+        ],
+      ),
     );
   }
 }

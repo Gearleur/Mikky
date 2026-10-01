@@ -249,6 +249,18 @@ void main() {
     expect(h.shape, IslandShape.hidden);
   });
 
+  test('closed, what needs the user stays in the bubble, even once dismissed', () {
+    final h = Harness();
+    h.set('a', AgentStatus.error);
+    h.m.close(h.now);
+    h.wait(5);
+    expect(h.shape, IslandShape.compact);
+    expect(h.s.focus?.id, 'a');
+    expect(h.s.bubble, isTrue);
+    h.set('a', AgentStatus.working);
+    expect(h.s.bubble, isFalse);
+  });
+
   test('rule 9: alerts queue up, one at a time, in order', () {
     final h = Harness();
     h.set('a', AgentStatus.approval);

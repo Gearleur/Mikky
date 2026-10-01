@@ -11,7 +11,6 @@ import '../ui/status.dart';
 import '../ui/tokens.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
-import '../ui/trials/thinking_star.dart';
 import 'canvas.dart';
 
 String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
@@ -329,26 +328,26 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
           width: 640,
           child: _grid([
             _Swatch('blue', ui.blue, use: 'travaille'),
-            _Swatch('purple', ui.purple, use: 'réfléchit, internet'),
+            _Swatch('purple', ui.purple, use: 'Ensorcelé (la magie)'),
             _Swatch('amber', ui.amber, use: 'attend, commande'),
             _Swatch('green', ui.green, use: 'terminé, crée'),
             _Swatch('red', ui.red, use: 'erreur, supprime'),
             _Swatch('yellow', ui.yellow, use: 'limité, déplace'),
-            _Swatch('grey', ui.grey, use: 'dort, historique'),
+            _Swatch('grey', ui.grey, use: 'en pause, historique'),
           ]),
         ),
       ],
     ),
     BoardSection(
       title: 'Pixels',
-      note: 'La direction : Mikky, le chat magique, avec de l’informatique et des pixels. Chaque état est un petit feu d’artifice de pixels, à son rythme (attend 1,2 s, travaille 1,6 s, les autres 2,4 s, dort 4,8 s ; terminé figé).',
+      note: 'La direction : Mikky, le chat magique, avec de l’informatique et des pixels. Chaque état est un petit dessin de pixels, à son rythme : le feu d’artifice (travaille 1,6 s, limite 2,4 s, terminé figé) et « ! » pour ce qui demande ton attention (attend 1,2 s, erreur 2,4 s) ; rien en pause. Le violet ne sert qu’à « Ensorcelé ».',
       frames: [
         BoardFrame(
           label: 'Palettes',
           note: 'Quatre niveaux, du cœur au bord. En clair, le cœur blanc prend une teinte de la couleur.',
           width: 520,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final st in UiStatus.values)
+            for (final st in UiStatus.values.where((s) => s != UiStatus.paused))
               Padding(
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -365,19 +364,18 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
         BoardFrame(
           label: 'États en grand',
           width: 520,
-          child: Wrap(spacing: 18, runSpacing: 18, children: [for (final st in UiStatus.values) StatusFx(st, size: 56)]),
+          child: Wrap(spacing: 18, runSpacing: 18, children: [for (final st in UiStatus.values) if (st != UiStatus.paused) StatusFx(st, size: 56), const SpellFx(size: 56)]),
         ),
         BoardFrame(
           label: 'Effets à l’essai',
-          note: 'Étincelle, feu d’artifice complet, galaxie ; et l’étoile qui réfléchit, mise de côté.',
+          note: 'Étincelle, feu d’artifice complet, galaxie.',
           width: 520,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             for (final k in const <PixelEffect>[Sparkle(), Firework(), Galaxy()])
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, effect: k, size: 40))]),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) if (st != UiStatus.paused) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, effect: k, size: 40))]),
               ),
-            const ThinkingStar(size: 40),
           ]),
         ),
       ],

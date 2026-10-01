@@ -261,9 +261,7 @@ class HomePage extends StatelessWidget {
     }) {
       if (list.isEmpty) return;
       final isOpen = scope.groups[key] ?? true;
-      // Keyed: when a group comes or goes, the others keep their own
-      // state (else « Travaillent » appearing took « Terminés »' animated
-      // height, and a blank space closed under it).
+      // Keyed: a group that comes or goes leaves the others' state alone.
       body.add(
         GroupHeader(
           key: ValueKey('head-$key'),
@@ -327,32 +325,7 @@ class HomePage extends StatelessWidget {
     // At the top: whether there is room for more work (user request,
     // 2026-10-01).
     if (limits.isNotEmpty) {
-      body.insert(
-        0,
-        Padding(
-          key: const ValueKey('limits'),
-          padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final (p, l) in limits)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 4),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(Brand.of(p), size: 12)),
-                      const SizedBox(width: 6),
-                      Expanded(
-                        child: Text(limitsLine(l), style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true)),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
+      body.insert(0, SubscriptionLimits(key: const ValueKey('limits'), [for (final (p, l) in limits) (Brand.of(p), limitsLine(l))]));
     }
     return Stack(
       children: [
@@ -362,7 +335,7 @@ class HomePage extends StatelessWidget {
           titleMark: const AutoRelaunchMark(),
           // The island draws Mikky here (it moves from the tab to this spot).
           leading: const SizedBox(width: 42, height: 40),
-          actions: [RoundButton('more', size: 34, onPressed: host.islandMenu, tooltip: 'Plus')],
+          actions: [RoundButton.menu(size: 34, onPressed: host.islandMenu, tooltip: 'Menu')],
         ),
         Positioned.fill(
           top: 68,
@@ -441,7 +414,7 @@ class HomePage extends StatelessWidget {
         onMenu: menu,
       ),
       HomeGroup.working when e.status == AgentStatus.paused => AgentCard(
-        status: UiStatus.sleeping,
+        status: UiStatus.paused,
         title: e.name,
         who: e.host == AgentHost.wsl ? 'WSL' : '',
         pinned: e.mark.pinned,
