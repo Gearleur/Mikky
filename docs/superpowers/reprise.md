@@ -131,6 +131,7 @@ Dans **`design.md`** (Mikky, ses transformations, les pixels, la marque, les éc
 - **`future.whenComplete(() => map.remove(k))`** quand la map contient ce même futur : la flèche renvoie le futur, que `whenComplete` attend… lui-même, pour toujours. Écrire un bloc `{ map.remove(k); }`.
 - **Agent dans WSL** : la session ACP doit recevoir le chemin Linux (`/tmp/x`), pas `\\wsl.localhost\…` ; sinon Codex part de `/tmp` et ses commandes échouent (`AgentRun.workingDirectory`).
 - **Scripts Python avec des antislashs** (chemins Windows) dans un heredoc : `\U`, `\x`… cassent la chaîne. Écrire le script dans un fichier, avec des chaînes `r'...'`, ou passer par l'outil d'édition.
+- **L'inventaire de Rust arrive comme des mises à jour** (`DaemonSessionWatcher` : au démarrage et après une reconnexion). `RealAgentSource` ne prend pour « nouveau » que ce qui a été écrit après `follow()`, sinon une vieille erreur restait sur l'île (étoile rouge) alors que l'accueil la rangeait dans l'historique. L'île suit la même règle que l'accueil pour ce qui attend (`homeGroupOf`, erreur 30 min). Diagnostic en lecture seule : `dart run tool/state_check.dart` dans `packages/mikky_agents`.
 - Un `Stack` dont les enfants ne sont pas positionnés les laisse à leur taille : les pages de la petite fenêtre ont besoin de `StackFit.expand`.
 
 ## 9. Mesures (release, 1920 × 1080 à 100 %, 12 cœurs)

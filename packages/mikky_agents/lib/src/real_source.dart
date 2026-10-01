@@ -208,7 +208,12 @@ class RealAgentSource implements AgentSource {
     if (e.homeStatus != e.status) return false;
     final s = e.status;
     if (s.isBusy || s == AgentStatus.rateLimited) return true;
-    if (s.needsYou) return e.changedLive || e.origin == AgentOrigin.mikky;
+    if (s.needsYou) {
+      // Same rule as the home: an error left alone leaves « En attente »
+      // there, and the island with it.
+      if (homeGroupOf(s, e.lastActivity, _now()) != HomeGroup.waiting) return false;
+      return e.changedLive || e.origin == AgentOrigin.mikky;
+    }
     return e.changedLive && s == AgentStatus.finished && now - e.statusSince < finishedLinger;
   }
 
@@ -374,6 +379,7 @@ class RealAgentSource implements AgentSource {
   /// Follows the sessions [watcher] finds. Sessions Mikky runs itself
   /// are shown once, from their live stream.
   void follow(SessionWatcher watcher) {
+    _followedAt = _now();
     for (final s in watcher.sessions.values) {
       _onWatched(s, live: false);
     }
@@ -381,7 +387,13 @@ class RealAgentSource implements AgentSource {
     _changed();
   }
 
+  /// When [follow] began: sessions not written since are the inventory
+  /// (Rust sends it as updates, and again after a reconnection), not news.
+  DateTime? _followedAt;
+
   void _onWatched(WatchedSession s, {required bool live}) {
+    final since = _followedAt;
+    if (since != null && s.modified.isBefore(since)) live = false;
     final sessionId = s.sessionId;
     if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
     AgentEntry? e;
@@ -393,7 +405,8 @@ class RealAgentSource implements AgentSource {
       final stored = sessionId == null ? null : store?.bySession(sessionId);
       e =
           AgentEntry._(
-              stored?.id ?? 'w${_ids++}',
+              // Unique across runs: kept agents may carry an older one.
+              stored?.id ?? 'w${DateTime.now().microsecondsSinceEpoch}-${_ids++}',
               s.provider,
               s.host,
               stored == null ? AgentOrigin.external : AgentOrigin.mikky,
@@ -583,6 +596,10 @@ class RealAgentSource implements AgentSource {
     for (final e in _entries) {
       if (e.changedLive && e.status == AgentStatus.finished && !e.dismissed) {
         final t = e.statusSince + finishedLinger;
+        if (t > now) consider(t);
+      }
+      if (e.status == AgentStatus.error && e.homeStatus == AgentStatus.error) {
+        final t = now + e.lastActivity.add(homeErrorWaitsFor).difference(wall).inMilliseconds / 1000;
         if (t > now) consider(t);
       }
       final last = e.log.lastEventAt;
