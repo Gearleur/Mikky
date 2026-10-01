@@ -93,6 +93,7 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
   - terminés : ligne simple, petit logo (18 px), titre, « il y a 2 min · WSL » à droite ;
   - les logos doivent paraître de la même taille : celui d'OpenAI (Codex) est dessiné à 84 % de son carré, son nœud remplissant tout le carré (`Brand.scale`) ;
   - survol : le carré blanc qui glisse (voir Mouvement).
+- **Règle : les actions d'une ligne ou d'une carte passent par la barre à plat** (`AnswerBar`, comme Oui / Non : Oui / Non, Reprendre, Terminer / Relance auto…), **jamais des boutons en capsule** (`MButton`) : trop gros, ils prennent trop de place (essayé et refusé le 2026-10-01). `MButton` est réservé aux écrans (nouvel agent, connexion, réglages) ; seule exception pour l'instant : « Passer » / « Envoyer » du formulaire de question.
 - **Oui / Non à plat** sous la ligne qui attend : un carré blanc (avec un trait fin) sous la réponse choisie, qui **glisse** vers celle qu'on presse ; Oui choisi par défaut ; la commande en petite pilule à côté.
 - Mikky en petit en haut à gauche ; bouton rond noir → en bas à droite pour un nouvel agent.
 - **Limites de l'abonnement Codex en haut** de l'accueil, avant les groupes (demande de l'utilisateur, 2026-10-01 ; avant : tout en bas, sous Archives) : petit logo (12 px) et « 69 % des 5 h, repart à 17 h 10 · 70 % de la semaine », en gris. Pas encore sur les planches.
@@ -108,7 +109,7 @@ Sous Mikky, **l'état de l'agent qu'il suit** (le plus pressant : attend « ! »
 ### Limite de l'abonnement
 Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 10 » (l'heure lue dans le message de Claude ou de Codex) ; dans le chat, la tâche « Limite atteinte » et une carte jaune « Limite de l'abonnement atteinte · Reprend à 17 h 10 ».
 
-**Deux boutons séparés** (2026-10-01) : **« Terminer »** (on n'attend plus la reprise ; l'agent compte comme fini, quitte « Travaillent » et l'île, et reste dans « Terminés » puis l'historique ; il revient s'il se passe de nouveau quelque chose dans sa session) et **« Relance auto »**. Ensorcelé, il reste **« Terminer »**, pour refuser la relance (même quand la relance automatique pour tous est activée). « Relancer » tout de suite a été retiré.
+**Deux réponses** (2026-10-01), dans la barre à plat comme Oui / Non : **« Terminer »** (on n'attend plus la reprise ; l'agent compte comme fini, quitte « Travaillent » et l'île, et reste dans « Terminés » puis l'historique ; il revient s'il se passe de nouveau quelque chose dans sa session) et **« Relance auto »**. Ensorcelé, il reste **« Terminer »**, pour refuser la relance (même quand la relance automatique pour tous est activée). « Relancer » tout de suite a été retiré.
 
 **Ensorcelé** (le mode magique, 2026-09-30) : le bouton s'appelle **« Relance auto »**, l'état garde son nom **« Ensorcelé »**.
 - Limite atteinte : **étoile jaune en haut au milieu** de la page de l'agent ; dans le chat, la carte « Limite de l'abonnement atteinte · Reprend à 17 h 10 » avec « Terminer » et « Relance auto ».
@@ -157,7 +158,7 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 ## 9. Écarté (ne pas reproposer)
 
 - Pour les états : le liseré vert autour des logos, la matrice de points qui s'illumine, le « snake » / lanceur carré, les carrés d'état 3 × 3, les reflets façon diamant, l'effet qui tourne, l'éclat final du feu d'artifice.
-- Oui / Non en relief ; la carte grise « en attente » ; l'animation de clic trop gluante.
+- Oui / Non en relief ; la carte grise « en attente » ; l'animation de clic trop gluante ; des boutons en capsule (`MButton`) pour les actions d'une ligne ou d'une carte (Terminer / Relance auto, 2026-10-01) : la barre à plat seulement.
 - Mikky en boule de poils pour « travaille » ; l'étoile magique sur Mikky pour « réfléchit ».
 - Logo : l'étoile pixel bleue et orange ; Mikky entier, la tête en grand, la tête en pixels ; C5 à C9 (tête en bas, content, en pixels, sur bleu, sur orange).
 - Polices de texte autres que Geist (Inter, Host Grotesk, Hanken, Schibsted, Onest, Space Grotesk) ; pour le nom : Tiny5, Silkscreen, Jersey 15 à 25, Workbench, Jacquard 12, Micro 5, Press Start 2P, Doto, etc.

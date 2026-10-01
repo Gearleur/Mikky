@@ -28,8 +28,9 @@ class LimitHooks {
   final VoidCallback? finish;
 }
 
-/// What can be done about a limit (user request, 2026-10-01): two separate
-/// buttons, « Terminer » (no more waiting, the session counts as done) and
+/// What can be done about a limit (user request, 2026-10-01), as two
+/// answers of the flat bar (like Oui / Non, never capsule buttons):
+/// « Terminer » (no more waiting, the session counts as done) and
 /// « Relance auto » (Mikky relaunches it when the limit lifts). Under the
 /// spell, only « Terminer », to refuse the relaunch.
 class LimitActions extends StatelessWidget {
@@ -40,11 +41,7 @@ class LimitActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerRight,
-    child: Row(mainAxisSize: MainAxisSize.min, children: [
-      if (onFinish != null) MButton('Terminer', small: true, onPressed: onFinish),
-      if (onFinish != null && onSpell != null) const SizedBox(width: 8),
-      if (onSpell != null) MButton('Relance auto', small: true, onPressed: onSpell),
-    ]),
+    child: AnswerBar(answers: [if (onFinish != null) ('Terminer', onFinish), if (onSpell != null) ('Relance auto', onSpell)]),
   );
 }
 
