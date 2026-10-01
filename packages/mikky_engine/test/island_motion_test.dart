@@ -63,9 +63,9 @@ void main() {
     test('compact is a small tab, visible once it has its width', () {
       final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.compact);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (64, 92));
+      expect((m.currentWidth, m.currentHeight), (74, 82));
       expect(m.visibility, 1);
-      expect(m.mikkyRadius, 13);
+      expect(m.mikkyRadius, 15);
     });
 
     test('open is a portrait card, taller than wide', () {
@@ -74,13 +74,13 @@ void main() {
       m.setShape(IslandShape.open);
       run(m, 2 / 60);
       // The depth (width, away from the edge) waits for the length.
-      expect(m.currentHeight, greaterThan(92));
-      expect(m.currentWidth, 64);
+      expect(m.currentHeight, greaterThan(82));
+      expect(m.currentWidth, 74);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (320, 560));
+      expect((m.currentWidth, m.currentHeight), (344, 520));
       expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
       // Mikky in small, top left of the small window's head (ux-a.html).
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (30, 39, 15));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (30, 39, 16));
       expect(m.cornerRadius, 38);
     });
 

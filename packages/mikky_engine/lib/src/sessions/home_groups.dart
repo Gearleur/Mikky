@@ -16,13 +16,16 @@ enum HomeGroup {
   history,
 }
 
+/// How long an error stays in « En attente » (and on the island).
+const homeErrorWaitsFor = Duration(minutes: 30);
+
 /// Where an agent in [status], last active at [lastActivity], goes at [now].
 HomeGroup homeGroupOf(
   AgentStatus status,
   DateTime lastActivity,
   DateTime now, {
   Duration historyAfter = const Duration(days: 1),
-  Duration errorWaitsFor = const Duration(minutes: 30),
+  Duration errorWaitsFor = homeErrorWaitsFor,
 }) {
   final idle = now.difference(lastActivity);
   final old = idle > historyAfter;

@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'session_event.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 /// Reads a Codex session file (`~/.codex/sessions/YYYY/MM/DD/rollout-….jsonl`),
 /// one JSON line at a time, into [SessionEvent]s. Codex writes an item once

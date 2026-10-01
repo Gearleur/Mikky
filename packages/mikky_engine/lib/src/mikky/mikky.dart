@@ -481,10 +481,7 @@ class Mikky {
   /// Where the state makes Mikky look, instead of the cursor.
   (double, double)? _stateGaze() => switch (state) {
         MikkyState.thinking => (.55, -.8),
-        // Searching (the agent reads, looks things up) no longer sweeps his
-        // gaze: he keeps looking at the cursor, like at work (user
-        // request, 2026-09-30: « en mode travail il regarde pas du bon
-        // côté »).
+        // Searching: he keeps looking at the cursor, like at work.
         MikkyState.sleeping => (0, .35),
         MikkyState.dizzy => (math.cos(_time * 6) * .5, math.sin(_time * 6) * .5),
         _ => null,

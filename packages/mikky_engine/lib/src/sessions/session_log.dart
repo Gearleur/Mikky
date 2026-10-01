@@ -216,7 +216,9 @@ class SessionLog {
       case TokensUsed():
         tokens += e.total;
       case LimitsSeen():
-        limits = e;
+        // Codex also reports other counters (« premium ») with no window:
+        // they would hide the real ones.
+        if (e.short != null || e.long != null) limits = e;
       case CommandsChanged():
         commands = e.commands;
       case QuestionAsked():
