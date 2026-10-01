@@ -7,7 +7,7 @@ import 'canvas.dart';
 
 enum _Stage {
   ready('En place'),
-  transition('Transition'),
+  transition('À compléter'),
   next('Prévu'),
   measure('À mesurer');
 
@@ -320,19 +320,85 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
       ],
     ),
     const BoardSection(
-      title: '07 — La suite, dans l’ordre',
-      note: 'Le socle R2 / R3 est implémenté et vérifié par les tests. La validation visuelle finale et les mesures de charge accompagnent la migration ; les étapes suivantes restent distinctes.',
+      title: '07 — Le bilan livré',
+      note: 'Suivi du 1er octobre : main reste centré sur l’île. Détails, fichiers et validations dans docs/superpowers/r3-verification.md.',
       frames: [
         _Note(
-          'R2 → R3 / Consolider',
+          'R2 → R3 / Le socle Rust',
           'Lancements, lecteurs et stockage appartiennent à Rust. L’ancien backend Dart est isolé dans les outils de test. Le protocole 3 diffuse les événements normalisés et synchronise les métadonnées des écrans.',
           'Parité vérifiée · app cliente uniquement',
-          stage: _Stage.transition,
+          stage: _Stage.ready,
         ),
         _Note(
-          'R4 → R6 / Un espace de travail',
-          'Pour plus tard : la grande fenêtre est conservée sur la branche feature/r4-workspace. Mikky reste centré sur l’île flottante. Harnais, équipes et machines distantes viendront ensuite.',
-          'Grande fenêtre → harnais → équipes',
+          'Données et continuité',
+          'SQLite importe agents.json une seule fois. Les écrans partagent leurs métadonnées sans écraser les changements en attente. Permissions et questions survivent à la fermeture de l’écran ; WSL possède son moteur natif.',
+          'Store · reconnexion · daemon WSL',
+        ),
+        _Note(
+          'L’île au premier plan',
+          'Le lancement ouvre à nouveau l’île et sa petite fenêtre. Grande fenêtre, entrée de menu et planche Espace retirées de main. Le backend et la planche Technique sont conservés.',
+          '92c6be6 · Start-Mikky.ps1',
+        ),
+      ],
+    ),
+    const BoardSection(
+      title: '08 — Vérifier et livrer',
+      frames: [
+        _Note(
+          'Les contrôles passés',
+          '14 tests Rust, 56 du client Dart, 111 du moteur d’affichage et 44 Flutter. Sept fixtures ACP comparées message par message. Scénario WSL : permission retrouvée après relance du pont Windows.',
+          'Analyses sans problème · références clair/sombre',
+        ),
+        _Note(
+          'Une livraison reproductible',
+          'Scripts de build et de lancement, bundles versionnés, remplacement Linux atomique. Mise à jour des anciens moteurs seulement sans agent actif. Tâche de démarrage du moteur enregistrée dans Windows.',
+          'scripts/Build-Windows.ps1 · autostart',
+        ),
+        _Note(
+          'À confirmer en usage réel',
+          'Tester une vraie reconnexion Windows et tout le parcours de l’île. Codex a répondu au smoke test ; la réponse complète de Claude WSL reste à revérifier après la limite de quota.',
+          'Tâche enregistrée ≠ redémarrage testé',
+          stage: _Stage.transition,
+        ),
+      ],
+    ),
+    const BoardSection(
+      title: '09 — Les prochaines priorités de l’île',
+      frames: [
+        _Note(
+          'Maîtriser la mémoire',
+          'Charger les détails des historiques à la demande, garder des résumés et définir la conservation du flux. Les pages de 256 événements limitent les échanges, pas la mémoire totale du moteur.',
+          'Historiques longs · nombreux agents',
+          stage: _Stage.next,
+        ),
+        _Note(
+          'Mesurer la fluidité',
+          'Comparer CPU, mémoire et temps de frame : île au repos, animée, agents actifs et chat long. Profiler markdown et flous sur une même charge avant de choisir les optimisations.',
+          'Release · Flutter + Rust + WSL',
+          stage: _Stage.measure,
+        ),
+        _Note(
+          'Relance après quota',
+          'La relance automatique existe côté écran. Fermer cet écran suspend cette automatisation. Pour fonctionner sans interface, son échéancier devra rejoindre Rust avec des tests de reprise et d’annulation.',
+          'Ensorcelé · pas encore durable côté Rust',
+          stage: _Stage.transition,
+        ),
+      ],
+    ),
+    const BoardSection(
+      title: '10 — Reporté et prévu pour plus tard',
+      note: 'La grande fenêtre ne revient pas dans main sans nouvelle décision. La priorité reste l’île flottante.',
+      frames: [
+        _Note(
+          'R4 / Grande fenêtre reportée',
+          'Le prototype de monitoring, son cadre et la planche Espace sont sauvegardés sur une branche dédiée. Ils ne font plus partie de la version actuelle de Mikky.',
+          'feature/r4-workspace · branche poussée',
+          stage: _Stage.next,
+        ),
+        _Note(
+          'R5 → R6 / Harnais et équipes',
+          'Décrire les autres harnais et leurs capacités. Mener la recherche puis la spec des équipes : canal entre agents, identités, droits et journal avant implémentation.',
+          'Descriptions → spec → intégration',
           stage: _Stage.next,
         ),
         _Note(
