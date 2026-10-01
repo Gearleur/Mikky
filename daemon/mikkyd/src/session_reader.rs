@@ -225,15 +225,20 @@ impl Reader {
                     self.user_in_turn = false;
                     return vec![json!({"type":"start"})];
                 }
+                // Codex now ends a refused turn here, with its error (the
+                // subscription limit: `usage_limit_exceeded`).
+                "task_complete" if p["error"].is_object() => {
+                    let e = &p["error"];
+                    return self.end(
+                        failure(string(&e["message"]), string(&e["codex_error_info"])),
+                        e["message"].clone(),
+                    );
+                }
                 "task_complete" => return self.end("endTurn", Value::Null),
                 "turn_aborted" => return self.end("cancelled", Value::Null),
                 "error" => {
                     return self.end(
-                        if string(&p["message"]).to_lowercase().contains("limit") {
-                            "rateLimited"
-                        } else {
-                            "error"
-                        },
+                        failure(string(&p["message"]), string(&p["codex_error_info"])),
                         p["message"].clone(),
                     );
                 }
@@ -309,6 +314,15 @@ impl Reader {
     }
 }
 
+/// Why a Codex turn failed: the subscription limit, or another error.
+fn failure(message: &str, info: &str) -> &'static str {
+    if info.contains("limit") || message.to_lowercase().contains("limit") {
+        "rateLimited"
+    } else {
+        "error"
+    }
+}
+
 fn codex_plan(plan: &Value) -> Value {
     let entries: Vec<_> = plan
         .as_array()
@@ -357,4 +371,32 @@ fn claude_tool(b: &Value) -> Value {
         _ => Value::Null,
     };
     json!({"type":"tool", "id":b["id"], "name":name, "kind":kind, "title":title, "status":"running", "command":input["command"], "path":path, "diff":diff})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn codex_limit_in_task_complete_is_rate_limited() {
+        let mut r = Reader::default();
+        r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_started"}}));
+        let out = r.read(
+            "codex",
+            &json!({"type":"event_msg","payload":{"type":"task_complete","error":{
+                "message":"You've hit your usage limit. Try again at 2:10 PM.",
+                "codex_error_info":"usage_limit_exceeded"}}}),
+        );
+        assert_eq!(out[0]["type"], "end");
+        assert_eq!(out[0]["reason"], "rateLimited");
+        assert_eq!(out[0]["message"], "You've hit your usage limit. Try again at 2:10 PM.");
+    }
+
+    #[test]
+    fn codex_task_complete_without_error_ends_the_turn() {
+        let mut r = Reader::default();
+        r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_started"}}));
+        let out = r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_complete"}}));
+        assert_eq!(out[0]["reason"], "endTurn");
+    }
 }

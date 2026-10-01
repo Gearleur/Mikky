@@ -77,6 +77,25 @@ void main() {
     expect(homeGroupOf(e.homeStatus, e.lastActivity, wall), HomeGroup.done);
   });
 
+  test('stopped by the limit after Codex said 99 %: the fullest window shows 100 %', () async {
+    final s = WatchedSession('/c.jsonl', AgentProvider.codex, AgentHost.windows)..modified = wall;
+    s.log
+      ..apply(SessionStarted('c', cwd: '/p', at: wall))
+      ..apply(TurnStarted(at: wall))
+      ..apply(LimitsSeen(short: const LimitWindow(99, minutes: 300), long: const LimitWindow(74, minutes: 10080), at: wall))
+      ..apply(TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall));
+    watcher.send(s);
+    await flush();
+    source.advance(clock);
+    expect(source.entries.single.status, AgentStatus.rateLimited);
+    final l = source.limitsOf(AgentProvider.codex)!;
+    expect((l.short!.usedPercent, l.long!.usedPercent), (100, 74));
+
+    // Once it lifts, the reading stands as it was.
+    wall = DateTime(2026, 10, 1, 14, 11);
+    expect(source.limitsOf(AgentProvider.codex)!.short!.usedPercent, 99);
+  });
+
   test('watched sessions get ids no kept agent can share', () async {
     watcher
       ..send(failed('a', wall))

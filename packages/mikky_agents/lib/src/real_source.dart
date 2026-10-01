@@ -572,7 +572,26 @@ class RealAgentSource implements AgentSource {
         if (l != null && (best == null || (l.at ?? DateTime(0)).isAfter(best.at ?? DateTime(0)))) best = l;
       }
     }
-    return best;
+    if (best == null) return null;
+    // Codex's last reading before it refuses can say 99 %: a turn stopped
+    // by the limit since, not lifted yet, means the fullest window is full.
+    final now = _now();
+    final seen = best.at ?? DateTime(0);
+    final stopped = _entries.any((e) {
+      final resets = e.log.limitResetsAt;
+      final at = e.log.lastEventAt;
+      return e.provider == provider && resets != null && resets.isAfter(now) && at != null && !at.isBefore(seen);
+    });
+    if (!stopped) return best;
+    final short = best.short, long = best.long;
+    final shortFull = long == null || (short != null && short.usedPercent >= long.usedPercent);
+    LimitWindow? full(LimitWindow? w) => w == null ? null : LimitWindow(100, minutes: w.minutes, resetsAt: w.resetsAt);
+    return LimitsSeen(
+      short: shortFull ? full(short) : short,
+      long: shortFull ? long : full(long),
+      plan: best.plan,
+      at: best.at,
+    );
   }
 
   /// Answers agent [id]'s question (see [AgentRun.answerQuestion]).
