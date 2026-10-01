@@ -33,18 +33,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
       std::find(command_line_arguments.begin(), command_line_arguments.end(),
                 "--kit") != command_line_arguments.end();
 
-  const bool home =
-      std::find(command_line_arguments.begin(), command_line_arguments.end(),
-                "--home") != command_line_arguments.end();
   project.set_dart_entrypoint_arguments(std::move(command_line_arguments));
 
   FlutterWindow window(project);
-  if (home) {
-    if (!window.Create(L"Mikky - Espace de travail", Win32Window::Size(1180, 800),
-                       /*overlay=*/false)) {
-      return EXIT_FAILURE;
-    }
-  } else if (kit) {
+  if (kit) {
     if (!window.Create(L"Planches de Mikky", Win32Window::Size(1440, 920),
                        /*overlay=*/false)) {
       return EXIT_FAILURE;

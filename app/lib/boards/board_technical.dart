@@ -105,7 +105,7 @@ class _FlowState extends State<_Flow> {
     ),
     (
       '05 / Le retour',
-      'Rust traduit le trafic ACP en événements communs. SessionLog construit le fil côté Flutter ; l’île et la grande fenêtre partagent le même moteur.',
+      'Rust traduit le trafic ACP en événements communs. SessionLog construit le fil côté Flutter ; l’île et sa petite fenêtre partagent le même moteur.',
       'Rust Reader → événements → SessionLog → interface',
     ),
   ];
@@ -331,7 +331,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         ),
         _Note(
           'R4 → R6 / Un espace de travail',
-          'La fenêtre --home est utilisable : sessions, chat, permissions et états Windows/WSL. Restent les harnais supplémentaires, les équipes et leur canal, puis les machines distantes.',
+          'Pour plus tard : la grande fenêtre est conservée sur la branche feature/r4-workspace. Mikky reste centré sur l’île flottante. Harnais, équipes et machines distantes viendront ensuite.',
           'Grande fenêtre → harnais → équipes',
           stage: _Stage.next,
         ),

@@ -12,5 +12,4 @@ if ($InstallStartup) {
     if ($mikkySetup.ExitCode -ne 0) { throw 'Windows n’a pas pu enregistrer le démarrage automatique.' }
 }
 if ($Boards) { Start-Process -FilePath $mikkyExe -WorkingDirectory $mikkyBundle -ArgumentList '--kit' }
-elseif ($Island) { Start-Process -FilePath $mikkyExe -WorkingDirectory $mikkyBundle }
-else { Start-Process -FilePath $mikkyExe -WorkingDirectory $mikkyBundle -ArgumentList '--home' }
+else { Start-Process -FilePath $mikkyExe -WorkingDirectory $mikkyBundle }

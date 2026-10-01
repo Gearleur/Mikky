@@ -41,7 +41,6 @@ const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9,
 const _menuAutoRelaunch = 20;
 const _menuStopAll = 12;
 const _menuAutostart = 13;
-const _menuHome = 14;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -486,8 +485,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final s = widget.settings;
     final autostart = widget.agents.autostartEnabled;
     final chosen = await _menu([
-      const MenuEntry(_menuHome, 'Ouvrir l’espace de travail'),
-      const MenuEntry.separator(),
       MenuEntry(_menuThemeAuto, 'Thème : automatique', checked: s.theme == ThemeChoice.auto),
       MenuEntry(_menuThemeDark, 'Thème : noir', checked: s.theme == ThemeChoice.dark),
       MenuEntry(_menuThemeLight, 'Thème : blanc', checked: s.theme == ThemeChoice.light),
@@ -513,8 +510,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     switch (chosen) {
       case _menuQuit:
         await _quit();
-      case _menuHome:
-        await Process.start(Platform.resolvedExecutable, ['--home'], mode: ProcessStartMode.detached);
       case _menuAutostart:
         try { await widget.agents.setAutostart(!autostart); }
         catch (_) { await _menu([const MenuEntry(1, 'Windows n’a pas pu modifier le démarrage automatique')]); }

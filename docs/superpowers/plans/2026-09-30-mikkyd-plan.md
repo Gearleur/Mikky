@@ -1,3 +1,4 @@
+> **Décision du 1 octobre 2026 : l'île flottante reste l'interface de Mikky.** La grande fenêtre de monitoring est reportée et conservée sur `feature/r4-workspace`. Sur `main`, `Start-Mikky.ps1` ouvre l'île, avec sa petite fenêtre de sessions ; le backend Rust et la planche Technique sont conservés. Les mentions de livraison de la grande fenêtre ci-dessous décrivent l'étape antérieure, désormais retirée de `main`.
 # Plan — `mikkyd` (R0 à R7)
 
 Spec : `specs/2026-09-30-mikkyd-design.md` (validée le 2026-09-30). Code : `daemon/` (cargo workspace).

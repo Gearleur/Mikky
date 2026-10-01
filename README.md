@@ -1,3 +1,4 @@
+> **Décision du 1 octobre 2026 : l'île flottante reste l'interface de Mikky.** La grande fenêtre de monitoring est reportée et conservée sur `feature/r4-workspace`. Sur `main`, `Start-Mikky.ps1` ouvre l'île, avec sa petite fenêtre de sessions ; le backend Rust et la planche Technique sont conservés. Les mentions de livraison de la grande fenêtre ci-dessous décrivent l'étape antérieure, désormais retirée de `main`.
 # Mikky
 
 Mikky est une petite mascotte (un chat noir aux grands yeux) qui vit dans une île en haut de l'écran et, à terme, suit et pilote tes agents Claude Code sur le PC, le téléphone et un VPS.
@@ -15,10 +16,10 @@ Prérequis de compilation : Flutter Windows, Visual Studio avec C++, Cargo Windo
 
 ```powershell
 .\scripts\Build-Windows.ps1
-.\Start-Mikky.ps1                  # grande fenêtre fonctionnelle
+.\Start-Mikky.ps1                  # île flottante
 .\Start-Mikky.ps1 -Island          # île / zone de notification
-.\Start-Mikky.ps1 -Boards          # planches, Technique et Espace
-.\Start-Mikky.ps1 -InstallStartup  # grande fenêtre + moteur à la connexion Windows
+.\Start-Mikky.ps1 -Boards          # planches, dont Technique
+.\Start-Mikky.ps1 -InstallStartup  # île + moteur à la connexion Windows
 ```
 
 Le bundle complet se trouve dans `dist/Mikky-<date>/` : conserver `data`, les DLL et les deux exécutables Rust à côté de `mikky.exe`. Fermer un écran laisse les agents actifs. L’arrêt global et le démarrage Windows se règlent dans le menu du moteur. Les anciens moteurs sont mis à jour automatiquement seulement s’ils n’ont aucun agent actif ; sinon terminer leurs agents avant la mise à jour. WSL est optionnel à l’exécution : son indisponibilité n’empêche pas les agents Windows.

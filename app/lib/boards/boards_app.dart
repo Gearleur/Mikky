@@ -11,7 +11,6 @@ import 'board_brand.dart';
 import 'board_components.dart';
 import 'board_screens.dart';
 import 'board_technical.dart';
-import 'board_workspace.dart';
 import 'canvas.dart';
 
 /// `mikky.exe --kit`: the design boards, as in Figma (user request,
@@ -35,7 +34,7 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, homeBoard, agentBoard, messagesBoard, technicalBoard, workspaceBoard];
+final boards = [brandBoard, componentsBoard, homeBoard, agentBoard, messagesBoard, technicalBoard];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});

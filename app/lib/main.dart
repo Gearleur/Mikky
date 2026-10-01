@@ -5,7 +5,6 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import 'agents/agents_service.dart';
 import 'agents/enchant.dart';
-import 'home/home_app.dart';
 
 import 'island/island_painter.dart';
 import 'island/island_view.dart';
@@ -36,11 +35,6 @@ Future<void> main(List<String> args) async {
   // Claude and Codex: found and followed in the background, never blocking
   // the island's first frame.
   final agents = AgentsService(clock: () => clock.now);
-  if (args.contains('--home')) {
-    unawaited(agents.start());
-    runApp(HomeApp(service: agents, overlay: overlay));
-    return;
-  }
   final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
   unawaited(agents.start());
   // The spells: agents stopped by a limit relaunched when it lifts.
