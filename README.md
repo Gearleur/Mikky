@@ -1,14 +1,12 @@
-> **Décision du 1 octobre 2026 : l'île flottante reste l'interface de Mikky.** La grande fenêtre de monitoring est reportée et conservée sur `feature/r4-workspace`. Sur `main`, `Start-Mikky.ps1` ouvre l'île, avec sa petite fenêtre de sessions ; le backend Rust et la planche Technique sont conservés. Les mentions de livraison de la grande fenêtre ci-dessous décrivent l'étape antérieure, désormais retirée de `main`.
 # Mikky
 
-Mikky est une petite mascotte (un chat noir aux grands yeux) qui vit dans une île en haut de l'écran et, à terme, suit et pilote tes agents Claude Code sur le PC, le téléphone et un VPS.
+Mikky est une petite mascotte (un chat noir aux grands yeux) qui vit dans une île flottante au bord de l'écran, et qui lance et suit tes agents Claude Code et Codex.
 
-- Spec de l'étape 1 : [docs/superpowers/specs/2026-09-28-etape-1-design.md](docs/superpowers/specs/2026-09-28-etape-1-design.md)
-- Référence visuelle : les planches de `mikky.exe --kit` (les prototypes HTML sont historiques).
-- Plan de l'étape 1 : [docs/superpowers/plans/2026-09-28-etape-1-plan.md](docs/superpowers/plans/2026-09-28-etape-1-plan.md)
-- L'app Windows : [app/](app/)
+- Où on en est : [docs/superpowers/reprise.md](docs/superpowers/reprise.md)
+- Le design : [docs/superpowers/design.md](docs/superpowers/design.md) ; référence visuelle : les planches (`.\Start-Mikky.ps1 -Boards`)
+- L'app Windows : [app/](app/) ; le moteur Rust : [daemon/](daemon/)
 
-Architecture R2/R3 : Flutter affiche, `mikkyd` (Rust) lance et suit les agents et conserve les métadonnées dans SQLite. Windows et WSL ont chacun leur backend, actif après fermeture de l'écran. [État vérifié et limites restantes](docs/superpowers/r3-verification.md). La page **Technique** de `mikky.exe --kit` explique ce fonctionnement et la suite prévue. Le build Windows embarque les deux backends et demande Cargo sous Windows ainsi que Rust dans WSL `Ubuntu`.
+Architecture R2/R3 : Flutter affiche, `mikkyd` (Rust) lance et suit les agents et conserve les métadonnées dans SQLite. Windows et WSL ont chacun leur backend, actif après fermeture de l'écran. La page **Technique** de `mikky.exe --kit` explique ce fonctionnement et la suite prévue. Le build Windows embarque les deux backends et demande Cargo sous Windows ainsi que Rust dans WSL `Ubuntu`.
 
 ## Lancer l’application
 

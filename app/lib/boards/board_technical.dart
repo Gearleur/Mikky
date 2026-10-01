@@ -321,7 +321,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
     ),
     const BoardSection(
       title: '07 — Le bilan livré',
-      note: 'Suivi du 1er octobre : main reste centré sur l’île. Détails, fichiers et validations dans docs/superpowers/r3-verification.md.',
+      note: 'Suivi du 1er octobre : main reste centré sur l’île. Où on en est : docs/superpowers/reprise.md.',
       frames: [
         _Note(
           'R2 → R3 / Le socle Rust',
