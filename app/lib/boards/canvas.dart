@@ -40,7 +40,7 @@ class BoardSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: Text(note!, style: uiText(13, color: ui.text2, height: 1.45)),
+                child: Text(note!, style: uiText(TextSize.label, color: ui.text2, height: 1.45)),
               ),
             ),
           const SizedBox(height: 22),
@@ -82,8 +82,8 @@ class BoardFrame extends StatelessWidget {
   /// Width of the text above; the child keeps its own size.
   final double? width;
 
-  static TextStyle _labelStyle(MikkyUi ui) => uiText(13, weight: FontWeight.w600, color: ui.text2);
-  static TextStyle _noteStyle(MikkyUi ui) => uiText(11.5, color: ui.text3, height: 1.4);
+  static TextStyle _labelStyle(MikkyUi ui) => uiText(TextSize.label, weight: FontWeight.w600, color: ui.text2);
+  static TextStyle _noteStyle(MikkyUi ui) => uiText(TextSize.caption, color: ui.text3, height: 1.4);
 
   /// The height of the label and the note, laid out.
   double _headHeight(BuildContext context) {
@@ -122,6 +122,38 @@ class BoardFrame extends StatelessWidget {
         const SizedBox(height: 10),
         child,
       ],
+    );
+  }
+}
+
+/// How a screen behaves, written next to it as in a design spec (user
+/// request, 2026-10-01): a title per rule, then what happens.
+class BoardRules extends StatelessWidget {
+  const BoardRules(this.rules, {super.key, this.width = 520});
+
+  final List<(String, String)> rules;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Container(
+      width: width,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: ui.line)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (title, text) in rules)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text.rich(TextSpan(children: [
+                TextSpan(text: '$title  ', style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45)),
+                TextSpan(text: text, style: uiText(TextSize.small, color: ui.text2, height: 1.45)),
+              ])),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -271,7 +303,7 @@ class ZoomPill extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: hover ? ui.hover : null, borderRadius: BorderRadius.circular(8)),
-            child: Text(label, style: uiText(12.5, weight: FontWeight.w600, color: ui.text, tabular: true)),
+            child: Text(label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, tabular: true)),
           ),
         ),
       ),

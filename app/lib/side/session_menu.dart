@@ -88,14 +88,14 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
 /// The folder in the Windows file explorer (a WSL folder through
 /// `\\wsl.localhost`).
 void openFolder(String folder, AgentHost host) {
-  final path = host == AgentHost.wsl ? WslTarget().windowsPath(folder) : folder;
+  final path = host == AgentHost.wsl ? const WslPath().windowsPath(folder) : folder;
   Process.run('explorer.exe', [path]);
 }
 
 /// The folder in VS Code; in WSL, through VS Code's WSL extension.
 void openInVsCode(String folder, AgentHost host) {
   if (host == AgentHost.wsl) {
-    final linux = WslTarget().linuxPath(folder);
+    final linux = const WslPath().linuxPath(folder);
     Process.run('cmd', ['/c', 'code', '--folder-uri', 'vscode-remote://wsl+Ubuntu$linux']);
   } else {
     Process.run('cmd', ['/c', 'code', folder]);

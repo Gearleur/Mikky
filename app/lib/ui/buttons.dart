@@ -1,8 +1,10 @@
 import 'package:flutter/widgets.dart';
 
 import 'feedback.dart';
+import 'floating_menu.dart';
 import 'icons.dart';
 import 'motion.dart';
+import 'pixel_fx.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -51,7 +53,7 @@ class MButton extends StatelessWidget {
       ButtonKind.ghost => (null, null, ui.text2, const <CssShadow>[]),
     };
     final enabled = onPressed != null && !loading;
-    final text = uiText(small ? 13 : 15, weight: FontWeight.w600, color: fg, height: 1, tracking: small ? 0 : -.005);
+    final text = uiText(small ? TextSize.label : TextSize.lead, weight: FontWeight.w600, color: fg, height: 1, tracking: small ? 0 : -.005);
     Widget content = Row(
       mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -85,6 +87,9 @@ class MButton extends StatelessWidget {
 /// `.round`: one action as an icon. Sizes: 40 (default), 34 (sm), 26 (xs),
 /// 46 (the home's new-agent button), 32 (inside the field).
 class RoundButton extends StatelessWidget {
+  const RoundButton.menu({super.key, this.onPressed, this.size = 34, this.tooltip = 'Menu'})
+      : icon = 'menu-star', ink = false, ghost = true, iconSize = 14;
+
   const RoundButton(this.icon, {super.key, this.onPressed, this.size = 40, this.ink = false, this.ghost = false, this.iconSize, this.tooltip});
 
   final String icon;
@@ -115,7 +120,12 @@ class RoundButton extends StatelessWidget {
       button: true,
       label: tooltip,
       child: Pressable(
-        onTap: onPressed,
+        onTap: icon == 'menu-star' && onPressed != null
+            ? () {
+                FloatingMenu.pressed(context);
+                onPressed!();
+              }
+            : onPressed,
         pressedScale: .9,
         child: Surface(
           width: size,
@@ -124,7 +134,14 @@ class RoundButton extends StatelessWidget {
           gradient: ink || ghost ? null : ui.control,
           shadows: ink ? ui.shInk : (ghost ? const [] : [ui.highlight, ...ui.shCtl]),
           child: Center(
-            child: MikkyIcon(icon, size: iconSize ?? iconFor(size), color: fg),
+            child: icon == 'menu-star'
+                // Hidden while its menu is open: the menu draws it.
+                ? ValueListenableBuilder<Object?>(
+                    valueListenable: FloatingMenu.covering,
+                    builder: (_, owner, star) => Opacity(opacity: identical(owner, context) ? 0 : 1, child: star),
+                    child: const PixelStar(PixelFxPalette.grey, size: 14),
+                  )
+                : MikkyIcon(icon, size: iconSize ?? iconFor(size), color: fg),
           ),
         ),
       ),
@@ -143,7 +160,7 @@ class ActionBar extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Surface(
       color: ui.raise,
-      shadows: [CssShadow(0, 0, 0, ui.hlEdge, spread: 1, inset: true), ...ui.shBar],
+      shadows: ui.floating,
       padding: const EdgeInsets.all(8),
       child: Row(
         mainAxisSize: MainAxisSize.min,

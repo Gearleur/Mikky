@@ -39,11 +39,11 @@ flutter:
         - asset: assets/fonts/GeistMono-Regular.ttf
         - asset: assets/fonts/GeistMono-Medium.ttf
           weight: 500
-    # Pixel fonts for the app's name (user request, 2026-09-30): Jacquard
-    # 24 preferred, then Jersey 10. SIL Open Font License.
+    # The name's pixel font (chosen 2026-10-01). SIL Open Font License.
     - family: Jacquard 24
       fonts:
-        - asset: assets/fonts/trial/Jacquard24-400.ttf
+        - asset: assets/fonts/Jacquard24-400.ttf
+    # Second choice for the name, kept for the boards.
     - family: Jersey 10
       fonts:
         - asset: assets/fonts/trial/Jersey10-400.ttf

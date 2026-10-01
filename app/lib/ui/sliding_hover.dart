@@ -13,7 +13,7 @@ import 'tokens.dart';
 /// themselves with [HoverTarget] — [AgentCard] and [HoverRow] do it on
 /// their own when they sit in a [SlidingHover].
 class SlidingHover extends StatefulWidget {
-  const SlidingHover({super.key, required this.child, this.radius = 10, this.followHover = true, this.hairline = true});
+  const SlidingHover({super.key, required this.child, this.radius = Radii.md, this.followHover = true, this.hairline = true});
 
   final Widget child;
   final double radius;
@@ -158,7 +158,7 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
                       border: widget.hairline ? Border.all(color: ui.line, width: .8) : null,
                       boxShadow: [
                         for (final s in ui.shThumb)
-                          if (!s.inset) BoxShadow(color: s.color, offset: Offset(s.dx, s.dy), blurRadius: s.blur, spreadRadius: s.spread),
+                          if (!s.inset) s.box,
                       ],
                     ),
                   ),
@@ -226,4 +226,55 @@ class _HoverTargetState extends State<HoverTarget> {
     onExit: (_) => _scope?._exit(this),
     child: widget.child,
   );
+}
+
+/// Something to click in the chat: a light grey under the mouse, the
+/// hand cursor (user request, 2026-09-30).
+class HoverRow extends StatefulWidget {
+  const HoverRow({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4)});
+
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  State<HoverRow> createState() => _HoverRowState();
+}
+
+class _HoverRowState extends State<HoverRow> {
+  bool _hover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (widget.onTap == null) return Padding(padding: widget.padding, child: widget.child);
+    // In a task: the sliding square shows the hover.
+    if (SlidingHover.maybeOf(context) != null) {
+      return HoverTarget(
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: widget.onTap,
+            child: Padding(padding: widget.padding, child: widget.child),
+          ),
+        ),
+      );
+    }
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hover = true),
+      onExit: (_) => setState(() => _hover = false),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: Motion.hover,
+          padding: widget.padding,
+          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(Radii.md)),
+          child: widget.child,
+        ),
+      ),
+    );
+  }
 }

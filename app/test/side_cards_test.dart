@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mikky/side/session_views.dart';
-import 'package:mikky/ui/thread.dart';
+import 'package:mikky/side/session_cards.dart';
+import 'package:mikky/ui/messages.dart';
 import 'package:mikky/ui/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 

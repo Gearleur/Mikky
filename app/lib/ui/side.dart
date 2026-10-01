@@ -24,10 +24,10 @@ class SideFrame extends StatelessWidget {
     return Surface(
       width: width,
       height: height,
-      radius: 38,
+      radius: Radii.window,
       color: ui.island,
       shadows: ui.islandShadow,
-      child: ClipRRect(borderRadius: BorderRadius.circular(38), child: child),
+      child: ClipRRect(borderRadius: BorderRadius.circular(Radii.window), child: child),
     );
   }
 }
@@ -70,7 +70,7 @@ class SideHead extends StatelessWidget {
                           title!,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: uiText(small ? 16 : 20, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
+                          style: uiText(small ? TextSize.heading : TextSize.title, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
                         ),
                       ),
                       ?titleMark,

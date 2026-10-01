@@ -18,6 +18,21 @@ abstract final class Motion {
   /// `cubic-bezier(.4,0,.2,1)`: things that fold away.
   static const leave = Cubic(.4, 0, .2, 1);
 
+  /// A light grey coming under the mouse, a small sign showing up.
+  static const hover = Duration(milliseconds: 140);
+
+  /// A text changing color.
+  static const fade = Duration(milliseconds: 180);
+
+  /// Something that opens or folds, a chevron that turns.
+  static const fold = Duration(milliseconds: 300);
+
+  /// Something that slides: a page coming in, a switch's knob.
+  static const slide = Duration(milliseconds: 380);
+
+  /// [d], or at once when Windows asks for fewer animations.
+  static Duration of(BuildContext context, Duration d) => reduced(context) ? const Duration(milliseconds: 1) : d;
+
   static const pressDown = Duration(milliseconds: 80);
   static const pressUp = Duration(milliseconds: 340);
 
@@ -223,4 +238,73 @@ abstract final class DecorClock {
       _watch.stop();
     }
   }
+}
+
+/// A widget animated forever by one controller of [period]; stops (and
+/// shows [frozenAt]) when Windows asks for fewer animations. [frozenAt]
+/// is where the CSS animation ends, as the prototypes show with
+/// `prefers-reduced-motion` (and their `#calme` captures).
+class Looping extends StatefulWidget {
+  const Looping({super.key, required this.period, required this.builder, this.frozenAt = 0, this.repeat = true});
+
+  final Duration period;
+  final Widget Function(BuildContext context, double t) builder;
+  final double frozenAt;
+
+  /// False: plays once (a pop, a shake).
+  final bool repeat;
+
+  @override
+  State<Looping> createState() => _LoopingState();
+}
+
+class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
+  // One-shot (pop, shake): short, at 60 fps. Loops: on the DecorClock.
+  late final AnimationController _c = AnimationController(vsync: this, duration: widget.period);
+  bool _onClock = false;
+  Duration? _start;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final reduced = Motion.reduced(context);
+    if (!widget.repeat) {
+      if (reduced) {
+        _c.value = 1;
+      } else if (_c.value == 0 && !_c.isAnimating) {
+        _c.forward();
+      }
+      return;
+    }
+    final run = Motion.loops(context);
+    if (!run && _onClock) {
+      DecorClock.unlisten(_tick);
+      _onClock = false;
+    } else if (run && !_onClock) {
+      DecorClock.listen(_tick);
+      _onClock = true;
+    }
+  }
+
+  void _tick() => setState(() {});
+
+  double get _t {
+    if (!_onClock) return widget.frozenAt;
+    final now = DecorClock.now.value;
+    final start = _start ??= now;
+    final period = widget.period.inMicroseconds;
+    return ((now - start).inMicroseconds % period) / period;
+  }
+
+  @override
+  void dispose() {
+    if (_onClock) DecorClock.unlisten(_tick);
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: widget.repeat ? widget.builder(context, _t) : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
+  );
 }

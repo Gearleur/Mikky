@@ -52,6 +52,27 @@ add_subdirectory(${FLUTTER_MANAGED_DIR})
 # Application build; see runner/CMakeLists.txt.
 add_subdirectory("runner")
 
+# Rust owns the agents. Always ship the matching backend, never silently
+# depend on a developer's checkout or fall back to an in-process launcher.
+find_program(MIKKY_CARGO cargo HINTS "$ENV{USERPROFILE}/.cargo/bin" REQUIRED)
+get_filename_component(MIKKY_DAEMON_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../../daemon" ABSOLUTE)
+set(MIKKY_DAEMON_TARGET "${CMAKE_CURRENT_BINARY_DIR}/rust")
+add_custom_target(mikkyd_build
+  COMMAND "${MIKKY_CARGO}" build --release --locked
+    --manifest-path "${MIKKY_DAEMON_DIR}/Cargo.toml"
+    --target-dir "${MIKKY_DAEMON_TARGET}"
+  WORKING_DIRECTORY "${MIKKY_DAEMON_DIR}"
+  VERBATIM)
+add_dependencies(${BINARY_NAME} mikkyd_build)
+string(SUBSTRING "${MIKKY_DAEMON_DIR}" 0 1 MIKKY_DRIVE)
+string(TOLOWER "${MIKKY_DRIVE}" MIKKY_DRIVE)
+string(SUBSTRING "${MIKKY_DAEMON_DIR}" 2 -1 MIKKY_LINUX_TAIL)
+set(MIKKY_LINUX_DIR "/mnt/${MIKKY_DRIVE}${MIKKY_LINUX_TAIL}")
+add_custom_target(mikkyd_linux_build
+  COMMAND wsl.exe -d Ubuntu -- bash "${MIKKY_LINUX_DIR}/build-linux.sh"
+  VERBATIM)
+add_dependencies(${BINARY_NAME} mikkyd_linux_build)
+
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
@@ -74,6 +95,10 @@ set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
+install(FILES "${MIKKY_DAEMON_TARGET}/release/mikkyd.exe"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+install(FILES "${MIKKY_DAEMON_DIR}/target/linux-release/mikkyd-linux"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 
 install(FILES "${FLUTTER_ICU_DATA_FILE}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   COMPONENT Runtime)

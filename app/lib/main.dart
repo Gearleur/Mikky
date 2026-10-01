@@ -36,27 +36,42 @@ Future<void> main(List<String> args) async {
   // the island's first frame.
   final agents = AgentsService(clock: () => clock.now);
   final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
-  unawaited(agents.start(useDaemon: settings.daemon && !args.contains('--no-daemon')));
+  unawaited(agents.start());
   // The spells: agents stopped by a limit relaunched when it lifts.
-  Enchantments.instance.watch(agents.source, everywhere: settings.autoRelaunch, save: (on) {
-    settings.autoRelaunch = on;
-    unawaited(settings.save());
-  });
+  Enchantments.instance.watch(
+    agents.source,
+    everywhere: settings.autoRelaunch,
+    save: (on) {
+      settings.autoRelaunch = on;
+      unawaited(settings.save());
+    },
+  );
   // Before the first frame: the window only shows up once it is in place.
   await overlay.setPlacement(settings.edge, windowSizeFor(settings.edge));
   // A bare WidgetsApp: no background (everything outside the island must
   // stay fully transparent), but the text shortcuts (Ctrl+C, Ctrl+V…) and an
   // Overlay for the « Copier » menu of the small window.
-  runApp(WidgetsApp(
-    title: 'Mikky',
-    color: const Color(0x00000000),
-    debugShowCheckedModeBanner: false,
-    builder: (context, _) => Overlay(
-      initialEntries: [
-        OverlayEntry(
-          builder: (context) => IslandView(overlay: overlay, settings: settings, program: program, tuning: tuning, clock: clock, agents: agents),
-        ),
-      ],
+  runApp(
+    WidgetsApp(
+      title: 'Mikky',
+      color: const Color(0x00000000),
+      debugShowCheckedModeBanner: false,
+      builder: (context, _) => Overlay(
+        initialEntries: [
+          OverlayEntry(
+            builder: (context) =>
+                IslandView(
+                  overlay: overlay,
+                  settings: settings,
+                  program: program,
+                  tuning: tuning,
+                  clock: clock,
+                  agents: agents,
+                  bench: args.contains('--bench') ? (args.contains('--fast') ? IslandBench.fast : IslandBench.calm) : null,
+                ),
+          ),
+        ],
+      ),
     ),
-  ));
+  );
 }

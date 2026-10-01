@@ -2,6 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
+import '../side/session_cards.dart';
+import '../side/session_text.dart';
 import '../side/session_views.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
@@ -9,11 +11,13 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
+import '../ui/messages.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
-import '../ui/thread.dart';
+import '../ui/status.dart';
+import '../ui/tasks.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
@@ -130,10 +134,10 @@ class _HomeMockState extends State<HomeMock> {
     group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length + widget.limited.length, [
       for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: _who(w), brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
       for (final (i, ((t, b, _, w), _)) in widget.limited.indexed)
-        LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}),
+        LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}, onFinish: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
-          status: UiStatus.sleeping,
+          status: UiStatus.paused,
           title: t,
           who: w,
           brand: b,
@@ -151,23 +155,15 @@ class _HomeMockState extends State<HomeMock> {
       for (final (t, w) in [('Ajoute la position à droite', 'Claude'), ('Traduis le README', 'Codex'), ('Corrige le hook souris', 'Claude')])
         AgentCard(status: UiStatus.finished, title: t, who: w, style: AgentCardStyle.old, onTap: () {}, onMenu: () {}),
     ]);
-    if (widget.limits != null) {
-      body.add(Padding(
-        padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Padding(padding: EdgeInsets.only(top: 1), child: BrandLogo(Brand.codex, size: 12)),
-          const SizedBox(width: 6),
-          Expanded(child: Text(widget.limits!, style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
-        ]),
-      ));
-    }
+    // At the top, as in the app (2026-10-01).
+    if (widget.limits != null) body.insert(0, SubscriptionLimits([(Brand.codex, widget.limits!)]));
     return SideFrame(
       child: Stack(children: [
         SideHead(
           title: 'Agents',
           titleMark: AutoRelaunchMark(force: widget.autoRelaunch),
           leading: const HeadMikky(),
-          actions: [RoundButton('more', size: 34, onPressed: () {})],
+          actions: [RoundButton.menu(size: 34, onPressed: () {})],
         ),
         Positioned.fill(
           top: 68,
@@ -175,9 +171,9 @@ class _HomeMockState extends State<HomeMock> {
               ? Padding(
                   padding: const EdgeInsets.fromLTRB(32, 120, 32, 0),
                   child: Column(children: [
-                    Text('Aucun agent pour l’instant', textAlign: TextAlign.center, style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
+                    Text('Aucun agent pour l’instant', textAlign: TextAlign.center, style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
                     const SizedBox(height: 6),
-                    Text('La flèche en bas lance Claude ou Codex.', textAlign: TextAlign.center, style: uiText(12.5, color: ui.text3)),
+                    Text('La flèche en bas lance Claude ou Codex.', textAlign: TextAlign.center, style: uiText(TextSize.small, color: ui.text3)),
                   ]),
                 )
               : SingleChildScrollView(
@@ -194,7 +190,7 @@ class _HomeMockState extends State<HomeMock> {
 const _waiting = ('Met à jour le site', Brand.codex, 'Veut lancer une commande', 'WSL');
 const _working = [
   (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working),
-  (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.thinking),
+  (('Prépare le plan de l’API', Brand.codex, 'Réfléchit au plan', ''), UiStatus.working),
 ];
 const _workingOne = (('Corrige les tests du moteur', Brand.claude, 'Modifie island_machine.dart', ''), UiStatus.working);
 const _paused = ('Prépare le plan de l’API', Brand.codex, '', '');
@@ -220,7 +216,7 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Limite atteinte, ensorcelé',
-        note: 'Étoile jaune : la limite, et quand elle se lève ; Relancer ou Relance auto. Ensorcelé : une ligne normale, qui dit quand il se relance (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; « Terminer » (on n’attend plus, l’agent passe dans Terminés) ou « Relance auto ». Ensorcelé : une ligne normale, qui dit quand il se relance, et « Terminer » pour refuser la relance. Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
         child: HomeMock(
           autoRelaunch: true,
           working: [_workingOne],
@@ -231,8 +227,18 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
         ),
       ),
       BoardFrame(
-        label: 'Historique ouvert, limites Codex',
-        child: HomeMock(done: _done, history: 12, historyOpen: true, limits: 'Codex · 5 h : 38 % · semaine : 12 % · repart à 17 h 10'),
+        label: 'Limites Codex en haut, historique ouvert',
+        note: 'Les limites de l’abonnement en haut, avant les groupes (1er octobre ; avant : tout en bas).',
+        child: HomeMock(working: [_workingOne], done: _done, history: 12, historyOpen: true, limits: '69 % des 5 h, repart à 17 h 10 · 70 % de la semaine'),
+      ),
+      BoardFrame(
+        label: 'Limite Codex atteinte',
+        note: 'Codex écrit 99 % juste avant de refuser : bloqué, Mikky affiche 100 % jusqu’à la reprise, et la tâche en « Limite atteinte » (plus « Terminé »).',
+        child: HomeMock(
+          limited: [(('Nettoie les imports', Brand.codex, '', ''), false)],
+          done: _done,
+          limits: '100 % des 5 h, repart à 14 h 10 · 74 % de la semaine',
+        ),
       ),
     ],
   ),
@@ -242,6 +248,27 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
     frames: [
       BoardFrame(label: 'Tout à la fois, actuel', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(label: 'Tout à la fois, épuré', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12, calm: true)),
+    ],
+  ),
+  const BoardSection(
+    title: 'Fonctionnement',
+    note: 'Ce que fait l’accueil, règle par règle.',
+    frames: [
+      BoardFrame(
+        label: 'Règles de l’accueil',
+        child: BoardRules([
+          ('En attente', 'Feu vert et questions (on répond sur la ligne), erreurs de moins de 30 min.'),
+          ('Travaillent', 'Au travail, en pause (« Reprendre »), arrêtés par la limite (« Terminer », « Relance auto »).'),
+          ('Terminés, Historique', 'Les 5 plus récents de moins d’un jour ; le reste dans l’historique, replié. Archives : rangées à la main.'),
+          ('Ordre', 'Les épinglés en tête de leur groupe ; sinon le plus récent d’abord.'),
+          ('Limites Codex', 'En haut : ce qui reste sur 5 h et sur la semaine (Claude ne le donne pas). Bloqué après le dernier relevé : 100 % jusqu’à la reprise.'),
+          ('Terminer', 'Sur une limite : on n’attend plus ; la session passe dans Terminés et quitte l’île. Elle revient si elle bouge de nouveau.'),
+          ('Relance auto', 'Mikky envoie « reprends » une minute après la reprise (30 min si l’heure est inconnue). Ensorcelé, il reste dans Travaillent, avec « Terminer » pour refuser. Pour tous : réglage du menu étoile, étoile violette après « Agents ».'),
+          ('Erreur réglée', 'Menu de la ligne, « Marquer l’erreur comme réglée » : elle passe dans Terminés.'),
+          ('Menu d’une ligne', 'Étoile grise ou clic droit : pause, arrêter, VS Code, dossier, renommer, épingler, archiver, supprimer (la confirmation reprend le même panneau).'),
+          ('Sessions d’ailleurs', 'Lancées dans un terminal ou VS Code, elles apparaissent seules. Une reprise (« fork ») remplace l’originale.'),
+        ]),
+      ),
     ],
   ),
 ]);
@@ -260,10 +287,14 @@ class AgentMock extends StatefulWidget {
     this.scrolled = false,
     this.paused = false,
     this.enchanted = false,
+    this.finished = false,
   });
 
   /// Stopped by its limit, and already under the spell (« Ensorceler »).
   final bool enchanted;
+
+  /// Its limit « Terminée »: only « Relance auto » is left.
+  final bool finished;
 
   /// Its name (the page does not show it any more; kept to tell the
   /// frames apart in the code).
@@ -292,7 +323,7 @@ class _AgentMockState extends State<AgentMock> {
 
   // Its own agent id for the spell, as the app's page would have.
   late final _id = 'board-${identityHashCode(this)}';
-  late final _limit = LimitHooks(_id, (_) async {});
+  late final _limit = LimitHooks(_id, (_) async {}, finish: () {}, finished: widget.finished);
 
   @override
   void initState() {
@@ -319,7 +350,7 @@ class _AgentMockState extends State<AgentMock> {
     final usage = usageLine(log);
     final content = <Widget>[
       if (usage.isNotEmpty)
-        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true))),
+        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(TextSize.caption, color: ui.text3, tabular: true))),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: _limit)),
       if (widget.paused)
         Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
@@ -347,7 +378,7 @@ class _AgentMockState extends State<AgentMock> {
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
           actions: [
-            RoundButton('more', size: 34, onPressed: () {}, tooltip: 'Plus'),
+            RoundButton.menu(size: 34, onPressed: () {}, tooltip: 'Menu'),
           ],
         ),
         if (!readOnly)
@@ -371,7 +402,7 @@ class _AgentMockState extends State<AgentMock> {
             child: Row(children: [
               MikkyIcon('lock', size: 13, color: ui.text3),
               const SizedBox(width: 6),
-              Expanded(child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.', style: uiText(11.5, color: ui.text3, height: 1.35))),
+              Expanded(child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
             ]),
           ),
       ]),
@@ -399,19 +430,19 @@ class NewAgentMock extends StatelessWidget {
           child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
             const MiniMikky(size: 64),
             const SizedBox(height: 8),
-            Text('Qu’est-ce qu’on lance ?', style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
+            Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
             if (starting) ...[
               const SizedBox(height: 14),
               Row(mainAxisSize: MainAxisSize.min, children: [
                 const Spinner(size: 14),
                 const SizedBox(width: 8),
-                Text('Démarrage…', style: uiText(12.5, color: ui.text2)),
+                Text('Démarrage…', style: uiText(TextSize.small, color: ui.text2)),
               ]),
             ],
             if (error != null)
               Padding(
                 padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-                child: Text(error!, textAlign: TextAlign.center, style: uiText(12, color: ui.red)),
+                child: Text(error!, textAlign: TextAlign.center, style: uiText(TextSize.small, color: ui.red)),
               ),
           ]),
         ),
@@ -470,12 +501,17 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Relancer » tout de suite, ou « Relance auto ».',
+        note: 'L’abonnement est au bout : étoile jaune en haut ; une ligne, sans encadré, « Limite atteinte · reprend à 17 h 10 » (l’heure lue dans le message de l’agent), puis la barre à plat : « Terminer » (on n’attend plus) ou « Relance auto ».',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
       ),
       BoardFrame(
+        label: 'Limite atteinte, terminée',
+        note: 'Après « Terminer » : il ne reste que « Relance auto » (qui la remet en attente de la reprise, ensorcelée).',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), finished: true),
+      ),
+      BoardFrame(
         label: 'Ensorcelée',
-        note: 'Plus de carte : « Ensorcelé · se relance à 17 h 11 », en violet, la couleur de la magie, et l’étoile violette en haut au milieu. Pour l’enlever : le menu ··· de l’agent (« Arrêter la relance auto »).',
+        note: 'La même ligne : « Ensorcelé · se relance à 17 h 11 », l’étoile violette, et « Terminer » pour refuser la relance ; l’étoile violette en haut au milieu.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
       ),
       BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
@@ -638,7 +674,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                   icon: 'file',
                   title: 'Écrire le résumé',
                   detail: 'docs/resume.md',
-                  trailing: Text('+12', style: uiText(11.5, weight: FontWeight.w500, mono: true, color: ui.green)),
+                  trailing: Text('+12', style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true, color: ui.green)),
                 ),
                 const NoteLine('Résumé écrit, 12 lignes.'),
               ],
@@ -648,7 +684,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
         BoardFrame(
           label: 'Arrêtée, en erreur',
           child: _Pane([
-            const TaskSection(status: UiStatus.sleeping, title: 'Tâche arrêtée', meta: '2 étapes', steps: [TaskStep(label: 'Lit 2 fichiers')]),
+            const TaskSection(status: UiStatus.paused, title: 'Tâche arrêtée', meta: '2 étapes', steps: [TaskStep(label: 'Lit 2 fichiers')]),
             const TaskSection(status: UiStatus.error, title: 'Tâche en erreur', meta: '1 étape', steps: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')]),
           ]),
         ),

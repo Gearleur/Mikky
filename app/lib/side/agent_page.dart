@@ -10,7 +10,9 @@ import '../ui/selection.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import 'session_cards.dart';
 import 'session_menu.dart';
+import 'session_text.dart';
 import 'session_views.dart';
 import 'side_app.dart';
 
@@ -46,11 +48,20 @@ class _AgentPageState extends State<AgentPage> {
   }
 
   RealAgentSource get _source => widget.host.service.source;
+  String? _sendError;
 
-  void _send(String text) {
-    _source.send(widget.id, text);
+  Future<void> _send(String text) async {
+    try {
+      await _source.send(widget.id, text);
+      if (mounted) setState(() => _sendError = null);
+    } catch (e) {
+      if (mounted) setState(() => _sendError = 'Envoi non confirmé : $e');
+    }
+    if (!mounted) return;
     // The answer comes in the chat: follow it.
-    if (!(_source.entry(widget.id)?.log.working ?? false)) setState(() => _view = 1);
+    if (!(_source.entry(widget.id)?.log.working ?? false)) {
+      setState(() => _view = 1);
+    }
   }
 
   /// In Chat, stays at the bottom as the conversation grows (unless the
@@ -63,7 +74,9 @@ class _AgentPageState extends State<AgentPage> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!_scroll.hasClients) return;
       final p = _scroll.position;
-      if (first || p.maxScrollExtent - p.pixels < 160) _scroll.jumpTo(p.maxScrollExtent);
+      if (first || p.maxScrollExtent - p.pixels < 160) {
+        _scroll.jumpTo(p.maxScrollExtent);
+      }
     });
   }
 
@@ -90,14 +103,24 @@ class _AgentPageState extends State<AgentPage> {
 
     final usage = usageLine(log);
     final content = <Widget>[
+      if (_sendError != null) Text(_sendError!, style: uiText(12, color: ui.red)),
       if (usage.isNotEmpty)
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(e.id, (t) => _source.send(e.id, t)))),
+      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(
+        e.id,
+        (t) => _source.send(e.id, t),
+        finish: () => finishLimit(widget.host, e.id),
+        finished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
+        unfinish: () => _source.unsettle(e.id),
+      ))),
       if (e.status == AgentStatus.paused)
-        Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () => _source.unpause(e.id)))
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: PausedCard(onResume: () => _source.unpause(e.id)),
+        )
       else if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -117,10 +140,15 @@ class _AgentPageState extends State<AgentPage> {
                 ? 'Continuer dans Mikky…'
                 : 'Continuer avec cet agent…',
             options: working
-                ? Segmented(options: const ['Suivi', 'Chat'], selected: _view, size: SegmentSize.field, onChanged: (i) => setState(() => _view = i))
+                ? Segmented(
+                    options: const ['Suivi', 'Chat'],
+                    selected: _view,
+                    size: SegmentSize.field,
+                    onChanged: (i) => setState(() => _view = i),
+                  )
                 : null,
             commands: e.live ? log.commands : const [],
-            onSend: _send,
+            onSend: widget.host.service.canLaunch ? _send : null,
             glass: true,
           );
 
@@ -177,10 +205,9 @@ class _AgentPageState extends State<AgentPage> {
             // No pause button any more: « Mettre en pause », « Reprendre »
             // and « Arrêter l'agent » are in the ··· menu (user request,
             // 2026-09-30).
-            RoundButton(
-              'more',
+            RoundButton.menu(
               size: 34,
-              tooltip: 'Plus',
+              tooltip: 'Menu',
               onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
             ),
           ],

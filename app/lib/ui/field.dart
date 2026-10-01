@@ -106,7 +106,7 @@ class _SearchFieldState extends State<SearchField> {
               children: [
                 if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: 18, color: ui.text2), const SizedBox(width: 8)],
                 Expanded(
-                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(14.5, height: 1.2), placeholder: widget.placeholder),
+                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(TextSize.body, height: 1.2), placeholder: widget.placeholder),
                 ),
               ],
             ),
@@ -253,7 +253,7 @@ class _ComposerState extends State<Composer> {
       : Stack(children: [
           Positioned.fill(
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(Radii.xxl),
               child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
             ),
           ),
@@ -272,7 +272,7 @@ class _ComposerState extends State<Composer> {
         // high, a full pill; 8 more at the bottom when options sit half
         // inside it, so they never cover the text.
         child: _frost(Surface(
-          radius: 20,
+          radius: Radii.xxl,
           color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
           shadows: focused ? ui.focusRing : ui.inset,
           padding: EdgeInsets.fromLTRB(15, 4, 5, widget.options == null ? 4 : 12),
@@ -287,7 +287,7 @@ class _ComposerState extends State<Composer> {
                     child: _Input(
                       controller: _controller,
                       focusNode: _focus,
-                      style: uiText(14, height: 20 / 14),
+                      style: uiText(TextSize.body, height: 20 / TextSize.body),
                       placeholder: widget.placeholder,
                       maxLines: 5,
                     ),
@@ -346,7 +346,7 @@ class _CommandList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Surface(
-      radius: 18,
+      radius: Radii.xl,
       color: ui.thumb,
       shadows: ui.shThumb,
       padding: const EdgeInsets.all(5),
@@ -358,16 +358,16 @@ class _CommandList extends StatelessWidget {
               cursor: SystemMouseCursors.click,
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: i == picked ? ui.hover : null, borderRadius: BorderRadius.circular(13)),
+                decoration: BoxDecoration(color: i == picked ? ui.hover : null, borderRadius: BorderRadius.circular(Radii.lg)),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                  Text('/${commands[i].name}', style: uiText(12.5, mono: true, weight: FontWeight.w500, color: ui.text, height: 1.3)),
+                  Text('/${commands[i].name}', style: uiText(TextSize.small, mono: true, weight: FontWeight.w500, color: ui.text, height: 1.3)),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       commands[i].hint ?? commands[i].description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: uiText(12, color: ui.text3, height: 1.3),
+                      style: uiText(TextSize.small, color: ui.text3, height: 1.3),
                     ),
                   ),
                 ]),
@@ -402,7 +402,7 @@ class ComposerChip extends StatelessWidget {
           height: 24,
           // A shade darker under the mouse.
           color: hover ? Color.lerp(ui.thumb, ui.text, .06)! : ui.thumb,
-          shadows: [...ui.shThumb, CssShadow(0, 0, 0, ui.island, spread: 3)],
+          shadows: [...ui.shThumb, ui.cutout],
           padding: const EdgeInsets.symmetric(horizontal: 9),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -410,7 +410,7 @@ class ComposerChip extends StatelessWidget {
               if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
               Text(
                 label,
-                style: uiText(11.5, weight: FontWeight.w600, color: ui.text, height: 1),
+                style: uiText(TextSize.caption, weight: FontWeight.w600, color: ui.text, height: 1),
               ),
               const SizedBox(width: 4),
               MikkyIcon('down', size: 11, color: ui.text2),
