@@ -134,7 +134,7 @@ class _HomeMockState extends State<HomeMock> {
     group('work', 'Travaillent', ui.blue, UiStatus.working, widget.working.length + widget.paused.length + widget.limited.length, [
       for (final ((t, b, s, w), st) in widget.working) AgentCard(status: st, title: t, who: _who(w), brand: b, subtitle: s, onTap: () {}, onMenu: () {}),
       for (final (i, ((t, b, _, w), _)) in widget.limited.indexed)
-        LimitedAgentCard(id: _ids[i], title: t, log: _log, who: w, brand: b, onTap: () {}, onMenu: () {}, onCancel: () {}),
+        LimitedAgentCard(id: _ids[i], title: t, log: _log, send: (_) async {}, who: w, brand: b, onTap: () {}, onMenu: () {}, onFinish: () {}),
       for (final (t, b, _, w) in widget.paused)
         AgentCard(
           status: UiStatus.paused,
@@ -216,7 +216,7 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
       BoardFrame(label: 'Tout à la fois', note: 'Attend, travaillent, terminés, historique replié.', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(
         label: 'Limite atteinte, ensorcelé',
-        note: 'Étoile jaune : la limite, et quand elle se lève ; « Annuler » : on n’attend plus, l’agent passe dans Terminés. Ensorcelé : une ligne normale, qui dit quand il se relance (pour l’enlever : son menu ···). Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
+        note: 'Étoile jaune : la limite, et quand elle se lève ; « Terminer » (on n’attend plus, l’agent passe dans Terminés) ou « Relance auto ». Ensorcelé : une ligne normale, qui dit quand il se relance, et « Terminer » pour refuser la relance. Étoile violette après « Agents » : la relance automatique pour tous, dans le menu ··· de l’accueil.',
         child: HomeMock(
           autoRelaunch: true,
           working: [_workingOne],
@@ -248,6 +248,27 @@ final homeBoard = BoardSpec('Accueil', 'La liste des agents, dans chaque situati
     frames: [
       BoardFrame(label: 'Tout à la fois, actuel', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12)),
       BoardFrame(label: 'Tout à la fois, épuré', child: HomeMock(waiting: [_waiting], working: _working, done: _done, history: 12, calm: true)),
+    ],
+  ),
+  const BoardSection(
+    title: 'Fonctionnement',
+    note: 'Ce que fait l’accueil, règle par règle.',
+    frames: [
+      BoardFrame(
+        label: 'Règles de l’accueil',
+        child: BoardRules([
+          ('En attente', 'Feu vert et questions (on répond sur la ligne), erreurs de moins de 30 min.'),
+          ('Travaillent', 'Au travail, en pause (« Reprendre »), arrêtés par la limite (« Terminer », « Relance auto »).'),
+          ('Terminés, Historique', 'Les 5 plus récents de moins d’un jour ; le reste dans l’historique, replié. Archives : rangées à la main.'),
+          ('Ordre', 'Les épinglés en tête de leur groupe ; sinon le plus récent d’abord.'),
+          ('Limites Codex', 'En haut : ce qui reste sur 5 h et sur la semaine (Claude ne le donne pas). Bloqué après le dernier relevé : 100 % jusqu’à la reprise.'),
+          ('Terminer', 'Sur une limite : on n’attend plus ; la session passe dans Terminés et quitte l’île. Elle revient si elle bouge de nouveau.'),
+          ('Relance auto', 'Mikky envoie « reprends » une minute après la reprise (30 min si l’heure est inconnue). Ensorcelé, il reste dans Travaillent, avec « Terminer » pour refuser. Pour tous : réglage du menu étoile, étoile violette après « Agents ».'),
+          ('Erreur réglée', 'Menu de la ligne, « Marquer l’erreur comme réglée » : elle passe dans Terminés.'),
+          ('Menu d’une ligne', 'Étoile grise ou clic droit : pause, arrêter, VS Code, dossier, renommer, épingler, archiver, supprimer (la confirmation reprend le même panneau).'),
+          ('Sessions d’ailleurs', 'Lancées dans un terminal ou VS Code, elles apparaissent seules. Une reprise (« fork ») remplace l’originale.'),
+        ]),
+      ),
     ],
   ),
 ]);
@@ -298,7 +319,7 @@ class _AgentMockState extends State<AgentMock> {
 
   // Its own agent id for the spell, as the app's page would have.
   late final _id = 'board-${identityHashCode(this)}';
-  late final _limit = LimitHooks(_id, (_) async {}, cancel: () {});
+  late final _limit = LimitHooks(_id, (_) async {}, finish: () {});
 
   @override
   void initState() {
@@ -476,7 +497,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Annuler » : on n’attend plus la reprise (la relance auto reste dans le menu ···).',
+        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Terminer » : on n’attend plus la reprise ; « Relance auto » : Mikky la relance quand la limite se lève.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
       ),
       BoardFrame(

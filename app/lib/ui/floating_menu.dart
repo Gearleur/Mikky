@@ -99,6 +99,16 @@ abstract final class FloatingMenu {
   /// A menu folding back after a choice: the next menu takes it over.
   static _MorphMenuState? _chosen;
 
+  static final _open = <_MorphMenuState>{};
+
+  /// Closes every menu at once, nothing chosen: the window they live in is
+  /// going away (the island closes).
+  static void dismissAll() {
+    for (final m in [..._open]) {
+      m._dismiss();
+    }
+  }
+
   /// A menu button ([owner]) was pressed: the menu it opens grows out of
   /// it. Call before opening the menu.
   static void pressed(BuildContext owner) {
@@ -149,6 +159,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+    FloatingMenu._open.add(this);
     // First the panel's size, laid out unseen; then it opens.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final size = _measure.currentContext?.size;
@@ -168,6 +179,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
 
   @override
   void dispose() {
+    FloatingMenu._open.remove(this);
     if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
     if (!_done.isCompleted) _done.complete(null);
     _t.dispose();
@@ -221,6 +233,16 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
     return Rect.fromLTWH(left, top, size.width, size.height);
   }
 
+  /// Gone at once, nothing chosen.
+  void _dismiss() {
+    if (!FloatingMenu._open.remove(this)) return;
+    _run++;
+    _closing = true;
+    if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
+    if (!_done.isCompleted) _done.complete(null);
+    widget.onGone();
+  }
+
   Future<void> _close(int? id) async {
     if (_closing) return;
     _closing = true;
@@ -236,7 +258,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
       if (run != _run || !mounted) return;
     }
     if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
-    widget.onGone();
+    if (FloatingMenu._open.remove(this)) widget.onGone();
   }
 
   @override

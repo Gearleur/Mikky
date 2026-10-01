@@ -126,6 +126,38 @@ class BoardFrame extends StatelessWidget {
   }
 }
 
+/// How a screen behaves, written next to it as in a design spec (user
+/// request, 2026-10-01): a title per rule, then what happens.
+class BoardRules extends StatelessWidget {
+  const BoardRules(this.rules, {super.key, this.width = 520});
+
+  final List<(String, String)> rules;
+  final double width;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Container(
+      width: width,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
+      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: ui.line)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (title, text) in rules)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text.rich(TextSpan(children: [
+                TextSpan(text: '$title  ', style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45)),
+                TextSpan(text: text, style: uiText(TextSize.small, color: ui.text2, height: 1.45)),
+              ])),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
 /// A canvas as in Figma: the wheel scrolls it (Shift: sideways), Ctrl and
 /// the wheel zoom around the mouse; dragging moves it — anywhere, even on
 /// a frame (a click stays a click), with Space held (the hand), or with

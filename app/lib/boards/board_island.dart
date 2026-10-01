@@ -47,4 +47,26 @@ final islandBoard = BoardSpec('Petite île', 'L’île fermée, à droite de l�
       BoardFrame(label: 'Erreur', child: _Compact(AgentStatus.error, detach: true)),
     ],
   ),
+  const BoardSection(
+    title: 'Fonctionnement',
+    note: 'Ce que fait l’île, règle par règle (les valeurs sont celles du code : IslandTimings, IslandMachine).',
+    frames: [
+      BoardFrame(
+        label: 'Règles de l’île',
+        child: BoardRules([
+          ('Quand elle sort', 'Dès qu’un agent travaille, attend, est limité ou vient de finir. Personne : cachée, et aucune image (0 % de CPU). Pousser la souris contre le bord de l’écran fait sortir un aperçu.'),
+          ('Absent', '3 min sans bouger la souris : elle se cache, et revient au premier mouvement. Ce qui attend l’utilisateur la garde sortie.'),
+          ('Survol', 'Elle s’ouvre en 0,2 s ; la souris partie, elle se referme 0,65 s après.'),
+          ('Clic', 'Ouverte, elle reste jusqu’à 60 s sans rien faire ; un trait fin compte les 10 dernières secondes.'),
+          ('Clic en dehors', 'Elle se referme, et ses menus flottants avec. S’il reste une alerte, la petite île garde sa bulle.'),
+          ('Alerte', 'Feu vert, question ou erreur : la bulle sort d’abord (1,8 s), puis l’île s’ouvre sur l’agent, jusqu’à la réponse. Plusieurs alertes : l’une après l’autre, dans l’ordre.'),
+          ('Erreur', 'Elle attend 30 min (sur l’île et dans « En attente »), puis devient une session finie en rouge.'),
+          ('Fini', 'La petite île sort 5,2 s, l’état « terminé » sous Mikky, puis l’agent quitte l’île.'),
+          ('Qui Mikky suit', 'Le plus pressant : attend ou erreur, puis limite, puis travail, puis fini ; à égalité, le plus récent. Mikky prend son état (réfléchir et chercher, c’est travailler).'),
+          ('Sessions d’ailleurs', 'Un terminal ou VS Code : elles comptent dès qu’elles bougent pendant que Mikky regarde. Les vieilles ne remontent pas sur l’île au démarrage.'),
+          ('Performance', '60 images par seconde pendant les mouvements, 30 au repos (Mikky respire), aucune quand elle est cachée.'),
+        ]),
+      ),
+    ],
+  ),
 ]);

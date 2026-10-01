@@ -80,6 +80,18 @@ void main() {
     expect(find.text('Renommer…'), findsNothing);
   });
 
+  testWidgets('the island closing closes its menus at once, nothing chosen', (tester) async {
+    await pumpWindow(tester, button: true);
+    final star = tester.getCenter(find.byType(PixelStar));
+    await tester.tapAt(star);
+    await tester.pumpAndSettle();
+    expect(find.text('Renommer…'), findsOneWidget);
+    FloatingMenu.dismissAll();
+    await tester.pump();
+    expect(find.text('Renommer…'), findsNothing);
+    expect(FloatingMenu.covering.value, isNull);
+  });
+
   testWidgets('a follow-up menu takes the panel over, at once and in place', (tester) async {
     final open = await pumpWindow(tester);
     await tester.tapAt(const Offset(320, 40));

@@ -428,13 +428,14 @@ class HomePage extends StatelessWidget {
           child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))]),
         ),
       ),
-      // Stopped by its subscription's limit: when it lifts, « Annuler »;
-      // the violet star under the spell.
+      // Stopped by its subscription's limit: « Terminer », « Relance
+      // auto »; the violet star under the spell.
       HomeGroup.working when e.status == AgentStatus.rateLimited => LimitedAgentCard(
         id: e.id,
         title: e.name,
         log: log,
-        onCancel: () => cancelLimit(host, e.id),
+        send: (t) => host.service.source.send(e.id, t),
+        onFinish: () => finishLimit(host, e.id),
         who: e.host == AgentHost.wsl ? 'WSL' : '',
         brand: Brand.of(e.provider),
         pinned: e.mark.pinned,
@@ -506,9 +507,9 @@ class _Empty extends StatelessWidget {
   }
 }
 
-/// « Annuler » on an agent stopped by its limit: no relaunch, no more
+/// « Terminer » on an agent stopped by its limit: no relaunch, no more
 /// waiting; it leaves « Travaillent » and the island, and stays as done.
-void cancelLimit(SideHost host, String id) {
+void finishLimit(SideHost host, String id) {
   Enchantments.instance.cancel(id);
   host.service.source.settle(id);
 }

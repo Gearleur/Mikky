@@ -19,13 +19,33 @@ import 'session_text.dart';
 /// What an agent's page lends the thread to act on a limit: which agent,
 /// and how to write to it.
 class LimitHooks {
-  const LimitHooks(this.id, this.send, {this.cancel});
+  const LimitHooks(this.id, this.send, {this.finish});
 
   final String id;
   final Future<void> Function(String text) send;
 
-  /// « Annuler »: no more waiting for the limit; the session counts as done.
-  final VoidCallback? cancel;
+  /// « Terminer »: no more waiting for the limit; the session counts as done.
+  final VoidCallback? finish;
+}
+
+/// What can be done about a limit (user request, 2026-10-01): two separate
+/// buttons, « Terminer » (no more waiting, the session counts as done) and
+/// « Relance auto » (Mikky relaunches it when the limit lifts). Under the
+/// spell, only « Terminer », to refuse the relaunch.
+class LimitActions extends StatelessWidget {
+  const LimitActions({super.key, this.onFinish, this.onSpell});
+
+  final VoidCallback? onFinish, onSpell;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.centerRight,
+    child: Row(mainAxisSize: MainAxisSize.min, children: [
+      if (onFinish != null) MButton('Terminer', small: true, onPressed: onFinish),
+      if (onFinish != null && onSpell != null) const SizedBox(width: 8),
+      if (onSpell != null) MButton('Relance auto', small: true, onPressed: onSpell),
+    ]),
+  );
 }
 
 
@@ -68,13 +88,14 @@ class _LimitBlockState extends State<LimitBlock> {
       message: widget.message,
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
       relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
-      onCancel: h?.cancel,
+      onFinish: h?.finish,
+      onSpell: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
     );
   }
 }
 
 /// An agent stopped by its limit, on the home: its logo, the yellow star,
-/// when it lifts, « Annuler »; under the spell a plain
+/// when it lifts, « Terminer » and « Relance auto »; under the spell a plain
 /// row, « Ensorcelé · se relance à 17 h 11 », nothing to press — the
 /// spell comes off in its ··· menu (user requests, 2026-09-30).
 class LimitedAgentCard extends StatelessWidget {
@@ -83,24 +104,26 @@ class LimitedAgentCard extends StatelessWidget {
     required this.id,
     required this.title,
     required this.log,
+    required this.send,
     this.who = '',
     this.brand,
     this.pinned = false,
     this.onTap,
     this.onMenu,
-    this.onCancel,
+    this.onFinish,
   });
 
   final String id;
   final String title;
   final SessionLog log;
+  final Future<void> Function(String text) send;
   final String who;
   final Brand? brand;
   final bool pinned;
   final VoidCallback? onTap, onMenu;
 
-  /// « Annuler »: no more waiting for the limit; the session counts as done.
-  final VoidCallback? onCancel;
+  /// « Terminer »: no more waiting for the limit; the session counts as done.
+  final VoidCallback? onFinish;
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -128,11 +151,7 @@ class LimitedAgentCard extends StatelessWidget {
             : limitLine(resets),
         onTap: onTap,
         onMenu: onMenu,
-        // One way out (user request, 2026-10-01): « Annuler ». Relaunching
-        // by itself stays in the ··· menu.
-        actions: spell || onCancel == null
-            ? null
-            : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Annuler', onCancel)])),
+        actions: LimitActions(onFinish: onFinish, onSpell: spell ? null : () => spells.enchant(id, resets, send)),
       );
     },
   );
@@ -181,12 +200,11 @@ class AutoRelaunchMark extends StatelessWidget {
 }
 
 /// A subscription's limit reached: the yellow state and when it lifts
-/// (user request, 2026-09-30), « Annuler ». Once
+/// (user request, 2026-09-30), « Terminer » and « Relance auto ». Once
 /// under the spell there is no card any more, only « Ensorcelé · se
-/// relance à 17 h 11 », big, with the violet star; the spell comes off in
-/// the agent's ··· menu.
+/// relance à 17 h 11 », big, with the violet star, and « Terminer ».
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onCancel});
+  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onFinish, this.onSpell});
 
   final DateTime? resetsAt;
   final String? message;
@@ -196,14 +214,15 @@ class LimitCard extends StatelessWidget {
 
   /// Under the spell, the relaunch sent.
   final bool relaunched;
-  /// « Annuler »: no more waiting for the limit.
-  final VoidCallback? onCancel;
+
+  /// See [LimitActions].
+  final VoidCallback? onFinish, onSpell;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     if (relaunchAt != null || relaunched) {
-      return Padding(
+      final spell = Padding(
         padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
         child: Row(children: [
           const SpellFx(size: 20),
@@ -221,13 +240,15 @@ class LimitCard extends StatelessWidget {
           ),
         ]),
       );
+      if (onFinish == null || relaunched) return spell;
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [spell, const SizedBox(height: 6), LimitActions(onFinish: onFinish)]);
     }
     return AgentCard(
       status: UiStatus.limited,
       title: 'Limite de l’abonnement atteinte',
       who: '',
       subtitle: resetsAt == null ? (message ?? 'Réessaie plus tard') : 'Reprend à ${hourText(resetsAt!)}',
-      actions: onCancel == null ? null : Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Annuler', onCancel)])),
+      actions: onFinish == null && onSpell == null ? null : LimitActions(onFinish: onFinish, onSpell: onSpell),
     );
   }
 }

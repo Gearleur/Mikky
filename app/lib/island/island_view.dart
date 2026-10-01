@@ -292,6 +292,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         });
       }
     }
+    // The small window closes: its menus with it.
+    if (prev.shape == IslandShape.open && s.shape != IslandShape.open) FloatingMenu.dismissAll();
     if (s.shape != _motion.shape) {
       _motion.setShape(s.shape);
       if (s.shape == IslandShape.open) _mikky.blink();
