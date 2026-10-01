@@ -2,9 +2,12 @@ import 'dart:io';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
-import 'acp/agent_run.dart';
-import 'daemon/daemon_client.dart';
-import 'daemon/daemon_run.dart';
+import 'local_agent_run.dart';
+
+import 'package:mikky_agents/src/acp/agent_run.dart';
+import 'package:mikky_agents/src/daemon/daemon_client.dart';
+import 'package:mikky_agents/src/daemon/daemon_run.dart';
+
 import 'target.dart';
 
 /// Versions checked in the A0 probe (2026-09-29).
@@ -38,11 +41,8 @@ class SetupStatus {
 class AgentSetup {
   AgentSetup._(this.target, this.home, this.dir);
 
-  static Future<AgentSetup> windows({String? dir}) async => AgentSetup._(
-        WindowsTarget(),
-        Platform.environment['USERPROFILE'] ?? '',
-        dir ?? '${Platform.environment['LOCALAPPDATA']}\\Mikky',
-      );
+  static Future<AgentSetup> windows({String? dir}) async =>
+      AgentSetup._(WindowsTarget(), Platform.environment['USERPROFILE'] ?? '', dir ?? '${Platform.environment['LOCALAPPDATA']}\\Mikky');
 
   static Future<AgentSetup> wsl({String distro = 'Ubuntu'}) async {
     final target = WslTarget(distro: distro);
@@ -84,7 +84,8 @@ class AgentSetup {
       version = null;
     }
     final major = int.tryParse(RegExp(r'^v(\d+)').firstMatch(version ?? '')?[1] ?? '') ?? 0;
-    final adapters = await _exists(adapterScript(AgentProvider.claude)) &&
+    final adapters =
+        await _exists(adapterScript(AgentProvider.claude)) &&
         await _exists(adapterScript(AgentProvider.codex)) &&
         (!_wsl || await _exists(watchScript));
     return SetupStatus(node: major >= minNodeMajor, nodeVersion: version, adapters: adapters);
@@ -144,14 +145,22 @@ class AgentSetup {
   Future<AgentRun> spawn(AgentProvider provider, {required String cwd, DaemonClient? daemon}) async {
     final c = await command(provider, cwd: cwd);
     if (daemon != null) {
-      return DaemonAgentRun.start(daemon,
-          provider: provider, host: target.host, executable: c.executable, args: c.args, cwd: c.cwd, env: c.env);
+      return DaemonAgentRun.start(
+        daemon,
+        provider: provider,
+        host: target.host,
+        executable: c.executable,
+        args: c.args,
+        cwd: c.cwd,
+        env: c.env,
+      );
     }
     return LocalAgentRun.spawn(target, c.executable, c.args, cwd: c.cwd, env: c.env);
   }
 }
 
-String _wslInstallScript(String dir) => '''
+String _wslInstallScript(String dir) =>
+    '''
 set -e
 D=$dir
 V=$privateNodeVersion

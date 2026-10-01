@@ -59,8 +59,10 @@ class DaemonClient {
   }
 
   static Future<DaemonClient> connect(DaemonEndpoint e) async {
-    final socket = await WebSocket.connect('ws://127.0.0.1:${e.port}', headers: {'Authorization': 'Bearer ${e.token}'})
-        .timeout(const Duration(seconds: 3));
+    final socket = await WebSocket.connect(
+      'ws://127.0.0.1:${e.port}',
+      headers: {'Authorization': 'Bearer ${e.token}'},
+    ).timeout(const Duration(seconds: 3));
     return DaemonClient._(socket);
   }
 
@@ -70,7 +72,21 @@ class DaemonClient {
     final known = DaemonEndpoint.fromCredentialStore();
     if (known != null) {
       try {
-        return await connect(known);
+        final client = await connect(known);
+        final hello = await client.request('hello').timeout(const Duration(seconds: 5)) as Map;
+        if (hello['protocol'] == 3) return client;
+        // An older idle backend can be upgraded. Never interrupt a run or
+        // assume a disconnected remote machine has no work in progress.
+        final runs = await client.request('runs.list').timeout(const Duration(seconds: 15)) as List;
+        if (runs.isNotEmpty) return client;
+        try {
+          await client.request('daemon.shutdown').timeout(const Duration(seconds: 3));
+        } on DaemonError catch (e) {
+          if (e.code != -32601 || known.pid == null) rethrow;
+          // R1 predates daemon.shutdown and is known to have no live runs.
+          Process.killPid(known.pid!);
+        }
+        await client.close();
       } catch (_) {
         // Gone: a new one is started below.
       }
@@ -117,6 +133,7 @@ class DaemonClient {
 
   final WebSocket _socket;
   final Map<int, Completer<Object?>> _pending = {};
+
   /// Sync: each notification is handled before the next message, so the
   /// traffic `mikkyd` sent before an answer is in the runs' logs when the
   /// answer completes (an async stream would deliver one event per
@@ -209,6 +226,9 @@ const _credTypeGeneric = 1;
 
 final _advapi32 = DynamicLibrary.open('advapi32.dll');
 
-final _credRead = _advapi32.lookupFunction<Int32 Function(Pointer<Utf16>, Uint32, Uint32, Pointer<Pointer<Uint8>>),
-    int Function(Pointer<Utf16>, int, int, Pointer<Pointer<Uint8>>)>('CredReadW');
+final _credRead = _advapi32
+    .lookupFunction<
+      Int32 Function(Pointer<Utf16>, Uint32, Uint32, Pointer<Pointer<Uint8>>),
+      int Function(Pointer<Utf16>, int, int, Pointer<Pointer<Uint8>>)
+    >('CredReadW');
 final _credFree = _advapi32.lookupFunction<Void Function(Pointer<Void>), void Function(Pointer<Void>)>('CredFree');

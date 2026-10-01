@@ -4,6 +4,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../overlay/overlay_channel.dart';
+import '../ui/backend_status.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
@@ -21,13 +22,7 @@ import 'session_text.dart';
 
 /// What the small window needs from the island around it.
 class SideHost {
-  const SideHost({
-    required this.service,
-    required this.answer,
-    required this.pickFolder,
-    required this.showMenu,
-    required this.islandMenu,
-  });
+  const SideHost({required this.service, required this.answer, required this.pickFolder, required this.showMenu, required this.islandMenu});
 
   final AgentsService service;
 
@@ -86,12 +81,13 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   }
 
   void _open(String what) => switch (what) {
-        'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
-        final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
-        _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
-      };
+    'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
+    final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
+    _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
+  };
 
-  void _launched(String id) => _replaceTop(_Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'))));
+  void _launched(String id) =>
+      _replaceTop(_Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'))));
 
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;
@@ -128,9 +124,12 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     final top = _leaving ?? _pages.last;
     final below = _leaving != null ? _pages.last : (_pages.length > 1 ? _pages[_pages.length - 2] : null);
     Widget page(_Page p) => KeyedSubtree(
-          key: ValueKey(p.key),
-          child: ColoredBox(color: ui.island, child: _GroupsScope(groups: _groups, onToggle: _toggle, child: p.build())),
-        );
+      key: ValueKey(p.key),
+      child: ColoredBox(
+        color: ui.island,
+        child: _GroupsScope(groups: _groups, onToggle: _toggle, child: p.build()),
+      ),
+    );
     return ListenableBuilder(
       listenable: host.service,
       builder: (context, _) => AnimatedBuilder(
@@ -138,16 +137,44 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         builder: (context, _) {
           final t = _t.value;
           final moving = t < 1;
-          return Stack(fit: StackFit.expand, clipBehavior: Clip.hardEdge, children: [
-            // Pages further down keep their state but are not drawn.
-            for (final p in _pages)
-              if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
-            if (below != null)
-              moving
-                  ? Transform.translate(offset: Offset(-.28 * 320 * t, 0), child: Opacity(opacity: 1 - .5 * t, child: page(below)))
-                  : Offstage(child: TickerMode(enabled: false, child: page(below))),
-            Transform.translate(offset: Offset((1 - t) * 320, 0), child: page(top)),
-          ]);
+          final notice = switch (host.service.backend) {
+            BackendState.online => null,
+            BackendState.connecting => const BackendStatus(title: 'Connexion à Mikky', message: 'Tes sessions arrivent…'),
+            BackendState.reconnecting => const BackendStatus(
+              title: 'Reconnexion en cours',
+              message: 'Le dernier état reste visible. Les actions seront disponibles une fois la connexion rétablie.',
+            ),
+            BackendState.unavailable => BackendStatus(
+              title: 'Moteur indisponible',
+              message: host.service.backendError ?? 'La connexion sera réessayée automatiquement.',
+              retry: host.service.reconnect,
+              warning: true,
+            ),
+          };
+          return Column(
+            children: [
+              ?notice,
+              Expanded(
+                child: Stack(
+                  fit: StackFit.expand,
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    // Pages further down keep their state but are not drawn.
+                    for (final p in _pages)
+                      if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
+                    if (below != null)
+                      moving
+                          ? Transform.translate(
+                              offset: Offset(-.28 * 320 * t, 0),
+                              child: Opacity(opacity: 1 - .5 * t, child: page(below)),
+                            )
+                          : Offstage(child: TickerMode(enabled: false, child: page(below))),
+                    Transform.translate(offset: Offset((1 - t) * 320, 0), child: page(top)),
+                  ],
+                ),
+              ),
+            ],
+          );
         },
       ),
     );
@@ -188,11 +215,25 @@ class HomePage extends StatelessWidget {
     final scope = _GroupsScope.of(context);
     final now = DateTime.now();
     final all = host.service.source.homeEntries;
-    final archived = [for (final e in all) if (e.mark.archived) e]..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
-    final groups = groupHome([for (final e in all) if (!e.mark.archived) e], status: (e) => e.homeStatus, lastActivity: (e) => e.lastActivity, now: now);
+    final archived = [
+      for (final e in all)
+        if (e.mark.archived) e,
+    ]..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
+    final groups = groupHome(
+      [
+        for (final e in all)
+          if (!e.mark.archived) e,
+      ],
+      status: (e) => e.homeStatus,
+      lastActivity: (e) => e.lastActivity,
+      now: now,
+    );
     for (final list in groups.values) {
       // Pinned first, each part still the most recent first.
-      final pinned = [for (final e in list) if (e.mark.pinned) e];
+      final pinned = [
+        for (final e in list)
+          if (e.mark.pinned) e,
+      ];
       list
         ..removeWhere((e) => e.mark.pinned)
         ..insertAll(0, pinned);
@@ -209,31 +250,66 @@ class HomePage extends StatelessWidget {
       HomeGroup.history: ('Historique', ui.grey),
     };
     final body = <Widget>[];
-    void group(String key, String label, Color color, List<AgentEntry> list, Widget Function(AgentEntry) card, {bool tight = false, UiStatus? status}) {
+    void group(
+      String key,
+      String label,
+      Color color,
+      List<AgentEntry> list,
+      Widget Function(AgentEntry) card, {
+      bool tight = false,
+      UiStatus? status,
+    }) {
       if (list.isEmpty) return;
       final isOpen = scope.groups[key] ?? true;
-      body.add(GroupHeader(label: label, color: color, status: status, count: list.length, open: isOpen, first: body.isEmpty, onTap: () => scope.onToggle(key)));
-      body.add(AnimatedSize(
-        duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
-        curve: Motion.enter,
-        alignment: Alignment.topCenter,
-        child: isOpen
-            ? Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                for (var i = 0; i < list.length; i++) Padding(padding: EdgeInsets.only(top: i == 0 || tight ? 0 : 8), child: card(list[i])),
-              ])
-            : const SizedBox(width: double.infinity),
-      ));
+      body.add(
+        GroupHeader(
+          label: label,
+          color: color,
+          status: status,
+          count: list.length,
+          open: isOpen,
+          first: body.isEmpty,
+          onTap: () => scope.onToggle(key),
+        ),
+      );
+      body.add(
+        AnimatedSize(
+          duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
+          curve: Motion.enter,
+          alignment: Alignment.topCenter,
+          child: isOpen
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < list.length; i++)
+                      Padding(
+                        padding: EdgeInsets.only(top: i == 0 || tight ? 0 : 8),
+                        child: card(list[i]),
+                      ),
+                  ],
+                )
+              : const SizedBox(width: double.infinity),
+        ),
+      );
     }
 
     for (final g in HomeGroup.values) {
       final (label, color) = labels[g]!;
       // No cards any more: the rows follow each other without a gap.
-      group(g.name, label, color, groups[g]!, (e) => _card(context, e, g, now), tight: true, status: switch (g) {
-        HomeGroup.waiting => UiStatus.approval,
-        HomeGroup.working => UiStatus.working,
-        HomeGroup.done => UiStatus.finished,
-        HomeGroup.history => null,
-      });
+      group(
+        g.name,
+        label,
+        color,
+        groups[g]!,
+        (e) => _card(context, e, g, now),
+        tight: true,
+        status: switch (g) {
+          HomeGroup.waiting => UiStatus.approval,
+          HomeGroup.working => UiStatus.working,
+          HomeGroup.done => UiStatus.finished,
+          HomeGroup.history => null,
+        },
+      );
     }
     group('archives', 'Archives', ui.grey, archived, (e) => _card(context, e, HomeGroup.history, now), tight: true);
     // What is left of the subscriptions (Codex tells it; Claude does not,
@@ -243,42 +319,67 @@ class HomePage extends StatelessWidget {
         if (host.service.source.limitsOf(p) case final l?) (p, l),
     ];
     if (limits.isNotEmpty) {
-      body.add(Padding(
-        padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          for (final (p, l) in limits)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 4),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(Brand.of(p), size: 12)),
-                const SizedBox(width: 6),
-                Expanded(child: Text(limitsLine(l), style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
-              ]),
-            ),
-        ]),
-      ));
+      body.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(6, 18, 6, 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final (p, l) in limits)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(Brand.of(p), size: 12)),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(limitsLine(l), style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true)),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
     }
-    return Stack(children: [
-      SideHead(
-        title: 'Agents',
-        // The violet star while « Relance automatique » is on (set in ···).
-        titleMark: const AutoRelaunchMark(),
-        // The island draws Mikky here (it moves from the tab to this spot).
-        leading: const SizedBox(width: 42, height: 40),
-        actions: [RoundButton('more', size: 34, onPressed: host.islandMenu, tooltip: 'Plus')],
-      ),
-      Positioned.fill(
-        top: 68,
-        child: body.isEmpty
-            ? const _Empty()
-            : SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 2, 16, 72),
-                // The rows' hover: the sliding square of Oui / Non.
-                child: SlidingHover(radius: 14, child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body)),
-              ),
-      ),
-      Positioned(right: 16, bottom: 16, child: RoundButton('go', size: 46, ink: true, onPressed: () => open('new'), tooltip: 'Nouvel agent')),
-    ]);
+    return Stack(
+      children: [
+        SideHead(
+          title: 'Agents',
+          // The violet star while « Relance automatique » is on (set in ···).
+          titleMark: const AutoRelaunchMark(),
+          // The island draws Mikky here (it moves from the tab to this spot).
+          leading: const SizedBox(width: 42, height: 40),
+          actions: [RoundButton('more', size: 34, onPressed: host.islandMenu, tooltip: 'Plus')],
+        ),
+        Positioned.fill(
+          top: 68,
+          child: body.isEmpty
+              ? const _Empty()
+              : SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(16, 2, 16, 72),
+                  // The rows' hover: the sliding square of Oui / Non.
+                  child: SlidingHover(
+                    radius: 14,
+                    child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: body),
+                  ),
+                ),
+        ),
+        Positioned(
+          right: 16,
+          bottom: 16,
+          child: RoundButton(
+            'go',
+            size: 46,
+            ink: true,
+            onPressed: host.service.canLaunch ? () => open('new') : null,
+            tooltip: 'Nouvel agent',
+          ),
+        ),
+      ],
+    );
   }
 
   /// A row of the home; its menu (right click, or the grey star on the
@@ -290,56 +391,59 @@ class HomePage extends StatelessWidget {
     final where = external ? ' · hors de Mikky' : '';
     return switch (g) {
       HomeGroup.waiting when e.log.question != null => AgentCard(
-          status: UiStatus.approval,
-          title: e.name,
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: 'Pose une question : ${log.detail}',
-          style: AgentCardStyle.waiting,
-          onTap: () => open(e.id),
-          onMenu: menu,
-        ),
+        status: UiStatus.approval,
+        title: e.name,
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: 'Pose une question : ${log.detail}',
+        style: AgentCardStyle.waiting,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.waiting when e.status == AgentStatus.approval || e.status == AgentStatus.question => AgentCard(
-          status: UiStatus.approval,
-          title: e.name,
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: askLabel(log),
-          style: AgentCardStyle.waiting,
-          onTap: () => open(e.id),
-          onMenu: menu,
-          actions: e.live
-              ? WaitActions(
-                  command: log.detail,
-                  onYes: () => host.answer(e.id, AgentAnswer.allow),
-                  onNo: () => host.answer(e.id, AgentAnswer.deny),
-                  onAlways: canAlways(log) ? () => host.answer(e.id, AgentAnswer.allowAlways) : null,
-                )
-              : null,
-        ),
+        status: UiStatus.approval,
+        title: e.name,
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: askLabel(log),
+        style: AgentCardStyle.waiting,
+        onTap: () => open(e.id),
+        onMenu: menu,
+        actions: e.live
+            ? WaitActions(
+                command: log.detail,
+                onYes: () => host.answer(e.id, AgentAnswer.allow),
+                onNo: () => host.answer(e.id, AgentAnswer.deny),
+                onAlways: canAlways(log) ? () => host.answer(e.id, AgentAnswer.allowAlways) : null,
+              )
+            : null,
+      ),
       HomeGroup.waiting => AgentCard(
-          status: UiStatus.of(e.status),
-          title: e.name,
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
-          onTap: () => open(e.id),
-          onMenu: menu,
-        ),
+        status: UiStatus.of(e.status),
+        title: e.name,
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: log.detail.isEmpty ? 'Erreur' : log.detail,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.working when e.status == AgentStatus.paused => AgentCard(
-          status: UiStatus.sleeping,
-          title: e.name,
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: 'En pause',
-          onTap: () => open(e.id),
-          onMenu: menu,
-          actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))])),
+        status: UiStatus.sleeping,
+        title: e.name,
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: 'En pause',
+        onTap: () => open(e.id),
+        onMenu: menu,
+        actions: Align(
+          alignment: Alignment.centerRight,
+          child: AnswerBar(answers: [('Reprendre', () => host.service.source.unpause(e.id))]),
         ),
+      ),
       // Stopped by its subscription's limit: when it lifts, « Relancer » or
       // « Ensorceler »; the violet star under the spell (2026-09-30).
       HomeGroup.working when e.status == AgentStatus.rateLimited => LimitedAgentCard(
@@ -354,37 +458,37 @@ class HomePage extends StatelessWidget {
         onMenu: menu,
       ),
       HomeGroup.working => AgentCard(
-          status: UiStatus.of(e.status),
-          title: e.name,
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
-          onTap: () => open(e.id),
-          onMenu: menu,
-        ),
+        status: UiStatus.of(e.status),
+        title: e.name,
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: '${log.detail.isEmpty ? 'Réfléchit…' : log.detail}$where',
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.done => AgentCard(
-          status: UiStatus.of(e.status),
-          title: e.name,
-          // The logo says Claude or Codex; only where it ran is left.
-          who: e.host == AgentHost.wsl ? 'WSL' : '',
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
-          style: AgentCardStyle.done,
-          onTap: () => open(e.id),
-          onMenu: menu,
-        ),
+        status: UiStatus.of(e.status),
+        title: e.name,
+        // The logo says Claude or Codex; only where it ran is left.
+        who: e.host == AgentHost.wsl ? 'WSL' : '',
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        subtitle: '${_capitalized(ago(e.lastActivity, now))}$where',
+        style: AgentCardStyle.done,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
       HomeGroup.history => AgentCard(
-          status: UiStatus.of(e.status),
-          title: e.name,
-          who: whoOf(e),
-          pinned: e.mark.pinned,
-          brand: Brand.of(e.provider),
-          style: AgentCardStyle.old,
-          onTap: () => open(e.id),
-          onMenu: menu,
-        ),
+        status: UiStatus.of(e.status),
+        title: e.name,
+        who: whoOf(e),
+        pinned: e.mark.pinned,
+        brand: Brand.of(e.provider),
+        style: AgentCardStyle.old,
+        onTap: () => open(e.id),
+        onMenu: menu,
+      ),
     };
   }
 
@@ -399,11 +503,21 @@ class _Empty extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(32, 120, 32, 0),
-      child: Column(children: [
-        Text('Aucun agent pour l’instant', textAlign: TextAlign.center, style: uiText(14, weight: FontWeight.w500, color: ui.text2)),
-        const SizedBox(height: 6),
-        Text('La flèche en bas lance Claude ou Codex.', textAlign: TextAlign.center, style: uiText(12.5, color: ui.text3)),
-      ]),
+      child: Column(
+        children: [
+          Text(
+            'Aucun agent pour l’instant',
+            textAlign: TextAlign.center,
+            style: uiText(14, weight: FontWeight.w500, color: ui.text2),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'La flèche en bas lance Claude ou Codex.',
+            textAlign: TextAlign.center,
+            style: uiText(12.5, color: ui.text3),
+          ),
+        ],
+      ),
     );
   }
 }

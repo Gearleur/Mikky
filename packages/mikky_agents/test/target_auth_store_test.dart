@@ -1,6 +1,9 @@
 import 'dart:io';
 
-import 'package:mikky_agents/mikky_agents.dart';
+import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
+
+import '../tool/legacy/legacy.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -49,7 +52,8 @@ void main() {
     });
 
     test('the device code, through the terminal noise', () {
-      const out = '\x1B[1mFollow these steps\x1B[0m\r\n'
+      const out =
+          '\x1B[1mFollow these steps\x1B[0m\r\n'
           '1. Open this link in your browser and sign in to your account\r\n'
           '   \x1B[94mhttps://auth.openai.com/codex/device\x1B[0m\r\n'
           '2. Enter this one-time code (expires in 15 minutes)\r\n'
@@ -70,16 +74,18 @@ void main() {
 
     test('keeps agents, recent folders and choices', () async {
       final store = AgentStore(File('${tmp.path}/agents.json'));
-      store.put(StoredAgent(
-        id: 'a1',
-        provider: AgentProvider.codex,
-        host: AgentHost.wsl,
-        cwd: '/home/user/p',
-        permissions: PermissionMode.auto,
-        createdAt: DateTime.utc(2026, 9, 29),
-        sessionId: 's1',
-        title: 'Tests',
-      ));
+      store.put(
+        StoredAgent(
+          id: 'a1',
+          provider: AgentProvider.codex,
+          host: AgentHost.wsl,
+          cwd: '/home/user/p',
+          permissions: PermissionMode.auto,
+          createdAt: DateTime.utc(2026, 9, 29),
+          sessionId: 's1',
+          title: 'Tests',
+        ),
+      );
       for (var i = 0; i < 10; i++) {
         store.usedFolder('/p$i', const LaunchChoice(provider: AgentProvider.claude, host: AgentHost.wsl, permissions: PermissionMode.ask));
       }

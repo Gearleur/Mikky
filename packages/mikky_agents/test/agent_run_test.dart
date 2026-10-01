@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:mikky_agents/mikky_agents.dart';
+import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
+
+import '../tool/legacy/legacy.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -31,7 +34,11 @@ void main() {
   });
 
   test('Mikky offers every model but Haiku', () {
-    final models = offeredModels(const [SessionModel('opus', 'Opus 5.5'), SessionModel('haiku', 'Haiku 4.5'), SessionModel('claude-haiku-4-5', 'Fast')]);
+    final models = offeredModels(const [
+      SessionModel('opus', 'Opus 5.5'),
+      SessionModel('haiku', 'Haiku 4.5'),
+      SessionModel('claude-haiku-4-5', 'Fast'),
+    ]);
     expect(models.map((m) => m.id), ['opus']);
   });
 
@@ -125,7 +132,7 @@ void main() {
     final (_, run) = await opened();
     await run.prompt('limit');
     expect(run.log.statusAt(_now), AgentStatus.rateLimited);
-    expect(run.log.detail, contains('resets'));
+    expect(run.log.turns.last.message, contains('resets'));
   });
 
   test('the mode the agent really took wins', () async {

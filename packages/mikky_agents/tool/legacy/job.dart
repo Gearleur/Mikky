@@ -73,13 +73,19 @@ const _processSetQuota = 0x0100;
 final _kernel32 = DynamicLibrary.open('kernel32.dll');
 
 final _createJobObject = _kernel32
-    .lookupFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf16>), Pointer<Void> Function(Pointer<Void>, Pointer<Utf16>)>('CreateJobObjectW');
-final _setInformationJobObject = _kernel32.lookupFunction<Int32 Function(Pointer<Void>, Int32, Pointer<Void>, Uint32),
-    int Function(Pointer<Void>, int, Pointer<Void>, int)>('SetInformationJobObject');
-final _openProcess =
-    _kernel32.lookupFunction<Pointer<Void> Function(Uint32, Int32, Uint32), Pointer<Void> Function(int, int, int)>('OpenProcess');
-final _assignProcessToJobObject =
-    _kernel32.lookupFunction<Int32 Function(Pointer<Void>, Pointer<Void>), int Function(Pointer<Void>, Pointer<Void>)>('AssignProcessToJobObject');
-final _terminateJobObject =
-    _kernel32.lookupFunction<Int32 Function(Pointer<Void>, Uint32), int Function(Pointer<Void>, int)>('TerminateJobObject');
+    .lookupFunction<Pointer<Void> Function(Pointer<Void>, Pointer<Utf16>), Pointer<Void> Function(Pointer<Void>, Pointer<Utf16>)>(
+      'CreateJobObjectW',
+    );
+final _setInformationJobObject = _kernel32
+    .lookupFunction<Int32 Function(Pointer<Void>, Int32, Pointer<Void>, Uint32), int Function(Pointer<Void>, int, Pointer<Void>, int)>(
+      'SetInformationJobObject',
+    );
+final _openProcess = _kernel32.lookupFunction<Pointer<Void> Function(Uint32, Int32, Uint32), Pointer<Void> Function(int, int, int)>(
+  'OpenProcess',
+);
+final _assignProcessToJobObject = _kernel32
+    .lookupFunction<Int32 Function(Pointer<Void>, Pointer<Void>), int Function(Pointer<Void>, Pointer<Void>)>('AssignProcessToJobObject');
+final _terminateJobObject = _kernel32.lookupFunction<Int32 Function(Pointer<Void>, Uint32), int Function(Pointer<Void>, int)>(
+  'TerminateJobObject',
+);
 final _closeHandle = _kernel32.lookupFunction<Int32 Function(Pointer<Void>), int Function(Pointer<Void>)>('CloseHandle');

@@ -1,4 +1,4 @@
-import 'session_event.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 /// Reads the ACP JSON-RPC stream between Mikky and an agent adapter
 /// (`claude-agent-acp`, `codex-acp`), both ways, into [SessionEvent]s.

@@ -1,5 +1,7 @@
 # Mikky — guide for AI coding agents
 
+**Current architecture (2026-10-01):** read `docs/superpowers/r3-verification.md` first for R3 and the first R4 workspace. Production Flutter is always a Rust backend client (protocol 3, normalized events); no `--no-daemon` path. `mikky_agents` is the client/presentation package. Old Dart launchers are development-only in `tool/legacy/`; reference readers are in `mikky_engine/test/support/readers/`. `Start-Mikky.ps1` launches the versioned bundle built by `scripts/Build-Windows.ps1`; `--home` is the ordinary desktop workspace. Earlier R1 descriptions below are historical where they conflict with this note.
+
 Mikky is a small black cat mascot with big white eyes living in an "island" at the top of the screen. Since 2026-09-29 the goal is wider: a simple Paperclip-like companion that runs and tracks Claude Code and Codex agents (see `docs/superpowers/idees.md`). Step 1: Mikky + island on Windows with fake agents (demo mode). Later: real Claude Code agents (step 2), Flutter mobile (step 3), a Rust daemon `mikkyd` on PC + VPS where agents talk on a shared channel (step 4). Inspired by the Coucou macOS app (`~/projects/coucou`, see `NotchBuddy/Sources/App/BotEngine.swift` for the animation technique).
 
 ## Where things are

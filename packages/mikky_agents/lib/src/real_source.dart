@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'acp/agent_run.dart';
+import 'daemon/daemon_run.dart';
 import 'store.dart';
 import 'watch/session_watcher.dart';
 
@@ -120,26 +121,37 @@ class RealAgentSource implements AgentSource {
     required this.clock,
     required this.spawn,
     this.store,
+    this.deleteTranscript,
     DateTime Function()? now,
     this.finishedLinger = 8,
     this.staleAfter = const Duration(minutes: 15),
   }) : _now = now ?? DateTime.now {
     // An agent that never got a session (it could not start) cannot be
     // continued: forgotten.
-    store?.agents.removeWhere((a) => a.sessionId == null);
+    restoreStored();
+  }
+
+  /// Called after asynchronous store loading, before attaching live runs.
+  void restoreStored() {
     for (final a in store?.agents ?? const <StoredAgent>[]) {
+      // An in-flight launch in another screen may not have its session yet.
+      if (a.sessionId == null) continue;
+      if (_entries.any((e) => e.id == a.id)) continue;
       final e = AgentEntry._(a.id, a.provider, a.host, AgentOrigin.mikky, a.cwd, a.createdAt)
         ..permissions = a.permissions
-        ..storedTitle = a.title;
+        ..storedTitle = a.title
+        ..failure = (SessionLog()..apply(SessionStarted(a.sessionId!, cwd: a.cwd, at: a.createdAt)));
       _entries.add(e);
       _stored[a.id] = a;
     }
+    _changed();
   }
 
   /// Island clock (seconds), as the [IslandMachine] uses.
   final double Function() clock;
   final AgentSpawner spawn;
   final AgentStore? store;
+  final Future<void> Function(String path)? deleteTranscript;
   final DateTime Function() _now;
 
   /// A finished agent stays this long on the island (seconds).
@@ -164,9 +176,9 @@ class RealAgentSource implements AgentSource {
   /// [AgentEntry.homeStatus]): not forgotten, not continued elsewhere.
   /// Archived ones are in, for the « Archives » group.
   List<AgentEntry> get homeEntries => [
-        for (final e in _entries)
-          if (!e.mark.forgotten && e.supersededBy == null) e,
-      ];
+    for (final e in _entries)
+      if (!e.mark.forgotten && e.supersededBy == null) e,
+  ];
 
   AgentEntry? entry(String id) => _entries.where((e) => e.id == id).firstOrNull;
 
@@ -201,19 +213,19 @@ class RealAgentSource implements AgentSource {
   }
 
   Agent _agentOf(AgentEntry e) => Agent(
-        id: e.id,
-        name: e.name,
-        status: e.status,
-        startedAt: e.startedAt,
-        statusSince: e.statusSince,
-        detail: e.log.detail,
-        provider: e.provider,
-        host: e.host,
-        origin: e.origin,
-        cwd: e.cwd,
-        sessionId: e.sessionId,
-        permissions: e.permissions,
-      );
+    id: e.id,
+    name: e.name,
+    status: e.status,
+    startedAt: e.startedAt,
+    statusSince: e.statusSince,
+    detail: e.log.detail,
+    provider: e.provider,
+    host: e.host,
+    origin: e.origin,
+    cwd: e.cwd,
+    sessionId: e.sessionId,
+    permissions: e.permissions,
+  );
 
   /// Launches an agent and sends its first message. Returns its id at
   /// once; the agent shows up as it starts.
@@ -252,10 +264,12 @@ class RealAgentSource implements AgentSource {
     try {
       final run = await spawn(e.provider, e.host, cwd);
       e.run = run;
-      _subs.add(run.changes.listen((_) {
-        _remember(e);
-        _changed();
-      }));
+      _subs.add(
+        run.changes.listen((_) {
+          _remember(e);
+          _changed();
+        }),
+      );
       await run.open(cwd: run.workingDirectory ?? cwd, resume: resume, mode: mode);
       if (model != null && model != run.log.modelId) await run.setModel(model);
       _remember(e);
@@ -277,7 +291,15 @@ class RealAgentSource implements AgentSource {
     // Kept agents know their session from the store until a file shows up.
     var e = sessionId == null
         ? null
-        : _entries.where((x) => x.run == null && (x.sessionId ?? _stored[x.id]?.sessionId) == sessionId).firstOrNull;
+        : _entries
+              .where(
+                (x) =>
+                    (x.run == null || (x.run is DaemonAgentRun && (x.run as DaemonAgentRun).stopped)) &&
+                    x.provider == provider &&
+                    x.host == host &&
+                    (x.sessionId ?? _stored[x.id]?.sessionId) == sessionId,
+              )
+              .firstOrNull;
     if (e == null) {
       e = AgentEntry._('m${DateTime.now().microsecondsSinceEpoch}-${_ids++}', provider, host, AgentOrigin.mikky, cwd, _now());
       _entries.add(e);
@@ -287,10 +309,12 @@ class RealAgentSource implements AgentSource {
       ..run = run
       ..startedAt = clock()
       ..statusSince = clock();
-    _subs.add(run.changes.listen((_) {
-      _remember(entry);
-      _changed();
-    }));
+    _subs.add(
+      run.changes.listen((_) {
+        _remember(entry);
+        _changed();
+      }),
+    );
     _remember(entry);
     _changed();
   }
@@ -300,6 +324,9 @@ class RealAgentSource implements AgentSource {
   Future<void> send(String id, String text) async {
     final e = entry(id);
     if (e == null) return;
+    if (e.run case final DaemonAgentRun run when run.disconnected) {
+      throw StateError('Connexion interrompue. Attends la reconnexion avant de renvoyer un message.');
+    }
     if (e.mark.pausedAt != null) _mark(id, (m) => m.copyWith(clearPaused: true));
     if (!e.live) return resume(id, text);
     e.dismissed = false;
@@ -328,14 +355,19 @@ class RealAgentSource implements AgentSource {
     _changed();
   }
 
-  /// Ends every agent Mikky runs (when Mikky quits).
+  /// Explicit stop of all agents; closing a screen calls detach instead.
   Future<void> stopAll() async {
     for (final e in _entries) {
       await e.run?.stop();
     }
+    await detach();
+  }
+
+  Future<void> detach() async {
     for (final s in _subs) {
       await s.cancel();
     }
+    _subs.clear();
     await store?.saved;
   }
 
@@ -354,23 +386,24 @@ class RealAgentSource implements AgentSource {
     if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
     AgentEntry? e;
     for (final x in _entries) {
-      if (x.watched == s || (sessionId != null && x.sessionId == sessionId)) e = x;
+      if (x.watched == s || (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId)) e = x;
     }
     if (e != null && e.run != null) return;
     if (e == null) {
       final stored = sessionId == null ? null : store?.bySession(sessionId);
-      e = AgentEntry._(
-        stored?.id ?? 'w${_ids++}',
-        s.provider,
-        s.host,
-        stored == null ? AgentOrigin.external : AgentOrigin.mikky,
-        stored?.cwd ?? s.log.cwd,
-        s.log.startedAt ?? s.modified,
-      )
-        ..permissions = stored?.permissions
-        ..storedTitle = stored?.title
-        ..startedAt = clock()
-        ..statusSince = clock();
+      e =
+          AgentEntry._(
+              stored?.id ?? 'w${_ids++}',
+              s.provider,
+              s.host,
+              stored == null ? AgentOrigin.external : AgentOrigin.mikky,
+              stored?.cwd ?? s.log.cwd,
+              s.log.startedAt ?? s.modified,
+            )
+            ..permissions = stored?.permissions
+            ..storedTitle = stored?.title
+            ..startedAt = clock()
+            ..statusSince = clock();
       if (stored != null) _entries.removeWhere((x) => x.id == stored.id);
       _entries.add(e);
     }
@@ -386,16 +419,17 @@ class RealAgentSource implements AgentSource {
     final s = store;
     if (s == null || e.origin != AgentOrigin.mikky) return;
     final old = _stored[e.id];
-    final next = (old ??
-            StoredAgent(
-              id: e.id,
-              provider: e.provider,
-              host: e.host,
-              cwd: e.cwd ?? '',
-              permissions: e.permissions ?? PermissionMode.ask,
-              createdAt: e.createdAt,
-            ))
-        .copyWith(sessionId: e.sessionId, title: e.log.title ?? e.firstPrompt);
+    final next =
+        (old ??
+                StoredAgent(
+                  id: e.id,
+                  provider: e.provider,
+                  host: e.host,
+                  cwd: e.cwd ?? '',
+                  permissions: e.permissions ?? PermissionMode.ask,
+                  createdAt: e.createdAt,
+                ))
+            .copyWith(sessionId: e.sessionId, title: e.log.title ?? e.firstPrompt);
     if (old != null && old.sessionId == next.sessionId && old.title == next.title) return;
     _stored[e.id] = next;
     s.put(next);
@@ -475,10 +509,14 @@ class RealAgentSource implements AgentSource {
     if (deleteFile) {
       final path = e.watched?.path;
       if (path != null) {
-        try {
-          await File(path).delete();
-        } on FileSystemException {
-          // Already gone.
+        if (deleteTranscript case final remove?) {
+          await remove(path);
+        } else {
+          try {
+            await File(path).delete();
+          } on FileSystemException {
+            // Already gone.
+          }
         }
       }
     }

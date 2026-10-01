@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:mikky_agents/mikky_agents.dart';
+import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
+
+import '../tool/legacy/legacy.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -66,7 +69,16 @@ void main() {
   });
 
   test('launched agents are kept on disk, with their folder and choices', () async {
-    final id = await source.launch(const LaunchRequest(provider: AgentProvider.codex, host: AgentHost.windows, cwd: r'C:\p', prompt: 'bonjour', permissions: PermissionMode.auto, model: 'haiku'));
+    final id = await source.launch(
+      const LaunchRequest(
+        provider: AgentProvider.codex,
+        host: AgentHost.windows,
+        cwd: r'C:\p',
+        prompt: 'bonjour',
+        permissions: PermissionMode.auto,
+        model: 'haiku',
+      ),
+    );
     expect(fakes.single.received, contains('session/set_model'));
     expect(source.entry(id)!.log.modelId, 'haiku');
     await settle(() => store.agents.isNotEmpty && store.agents.single.sessionId != null);
@@ -77,7 +89,9 @@ void main() {
   });
 
   test('pause stops the turn and holds the agent; Reprendre goes on; stop ends it', () async {
-    final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'));
+    final id = await source.launch(
+      const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'),
+    );
     await settle(() => source.entry(id)!.log.items.whereType<ToolItem>().isNotEmpty);
     await source.pause(id);
     await settle(() => source.entry(id)!.status == AgentStatus.paused);
@@ -99,7 +113,9 @@ void main() {
   });
 
   test('a message while it works is slipped in; stop ends it', () async {
-    final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'));
+    final id = await source.launch(
+      const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'slow'),
+    );
     await settle(() => statusOf(id) == AgentStatus.working);
     await source.cancel(id);
     await settle(() => source.entry(id)!.status == AgentStatus.idle);
@@ -109,19 +125,42 @@ void main() {
     expect(source.entry(id)!.live, isFalse);
   });
 
-  test('after a restart: kept agents keep their title; those without a session are forgotten', () async {
+  test('restoring hides incomplete launches without deleting another screen’s draft', () async {
     store.agents
-      ..add(StoredAgent(id: 'a', provider: AgentProvider.codex, host: AgentHost.wsl, cwd: '/p', permissions: PermissionMode.ask, createdAt: DateTime(2026), sessionId: 's1', title: 'Créer le fichier ok.txt'))
-      ..add(StoredAgent(id: 'b', provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', permissions: PermissionMode.ask, createdAt: DateTime(2026), title: 'Jamais parti'));
+      ..add(
+        StoredAgent(
+          id: 'a',
+          provider: AgentProvider.codex,
+          host: AgentHost.wsl,
+          cwd: '/p',
+          permissions: PermissionMode.ask,
+          createdAt: DateTime(2026),
+          sessionId: 's1',
+          title: 'Créer le fichier ok.txt',
+        ),
+      )
+      ..add(
+        StoredAgent(
+          id: 'b',
+          provider: AgentProvider.claude,
+          host: AgentHost.windows,
+          cwd: r'C:\p',
+          permissions: PermissionMode.ask,
+          createdAt: DateTime(2026),
+          title: 'Jamais parti',
+        ),
+      );
     final again = RealAgentSource(clock: () => clock, store: store, spawn: (p, h, c) async => throw StateError('no'));
     expect(again.entries.map((e) => e.id), ['a']);
-    expect(store.agents.map((a) => a.id), ['a']);
+    expect(store.agents.map((a) => a.id), ['a', 'b']);
     expect(again.entry('a')!.name, 'Créer le fichier ok.txt');
   });
 
   test('a settled error counts as done, and leaves the island', () async {
     final failing = RealAgentSource(clock: () => clock, store: store, spawn: (p, h, c) async => throw StateError('non'));
-    final id = await failing.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'));
+    final id = await failing.launch(
+      const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'),
+    );
     final e = failing.entry(id)!;
     expect(e.homeStatus, AgentStatus.error);
     expect(failing.agents, isNotEmpty);
@@ -132,7 +171,9 @@ void main() {
 
   test('an agent that cannot start is in error, with the reason', () async {
     final failing = RealAgentSource(clock: () => clock, spawn: (p, h, c) async => throw const ProcessException('node', [], 'introuvable'));
-    final id = await failing.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'));
+    final id = await failing.launch(
+      const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'),
+    );
     expect(failing.entry(id)!.status, AgentStatus.error);
     expect(failing.agents.single.detail, contains('introuvable'));
     expect(failing.answer(id, AgentAnswer.dismiss, clock), isTrue);
@@ -177,7 +218,9 @@ void main() {
       File('${home.path}/projects/C--p/orig.jsonl').writeAsStringSync('${lines.join('\n')}\n');
       // The fork: the same history (same message ids) under a new session.
       final fork = lines.map((l) => l.replaceAll('1735f552-326a-4423-82d2-138c1e35ba31', 'f0f0f0f0-0000-0000-0000-000000000000'));
-      File('${home.path}/projects/C--p/fork.jsonl').writeAsStringSync('${fork.join('\n')}\n{"type":"ai-title","aiTitle":"La suite","sessionId":"f0f0f0f0-0000-0000-0000-000000000000"}\n');
+      File('${home.path}/projects/C--p/fork.jsonl').writeAsStringSync(
+        '${fork.join('\n')}\n{"type":"ai-title","aiTitle":"La suite","sessionId":"f0f0f0f0-0000-0000-0000-000000000000"}\n',
+      );
       await Future<void>.delayed(const Duration(milliseconds: 20));
       File('${home.path}/projects/C--p/fork.jsonl').setLastModifiedSync(DateTime.now());
       await watcher.start();
@@ -209,7 +252,9 @@ void main() {
     });
 
     test('a session Mikky launched is shown once', () async {
-      final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'bonjour'));
+      final id = await source.launch(
+        const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'bonjour'),
+      );
       await settle(() => source.entry(id)!.sessionId != null);
       final file = File('${home.path}/projects/C--p/${FakeAgent.sessionId}.jsonl')
         ..writeAsStringSync('{"type":"ai-title","aiTitle":"Autre","sessionId":"${FakeAgent.sessionId}"}\n');

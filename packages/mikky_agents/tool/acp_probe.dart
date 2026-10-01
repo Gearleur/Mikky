@@ -29,16 +29,23 @@ void main(List<String> argv) async {
   _log = File(a['log']!.single).openWrite();
 
   final pkg = agent == 'claude' ? 'claude-agent-acp' : 'codex-acp';
-  final env = <String, String>{
-    for (final kv in a['env'] ?? const <String>[]) kv.split('=').first: kv.substring(kv.indexOf('=') + 1),
-  };
+  final env = <String, String>{for (final kv in a['env'] ?? const <String>[]) kv.split('=').first: kv.substring(kv.indexOf('=') + 1)};
   if (target == 'windows') {
     final script = '$adapters\\node_modules\\@agentclientprotocol\\$pkg\\dist\\index.js';
     _proc = await Process.start('node', [script], workingDirectory: cwd, environment: env);
   } else {
     final script = '$adapters/node_modules/@agentclientprotocol/$pkg/dist/index.js';
     final exports = env.entries.map((e) => "export ${e.key}='${e.value}';").join(' ');
-    _proc = await Process.start('wsl.exe', ['-d', 'Ubuntu', '--cd', cwd, '--', 'bash', '-lc', '$exports exec \$HOME/.local/share/mikky/node/bin/node $script']);
+    _proc = await Process.start('wsl.exe', [
+      '-d',
+      'Ubuntu',
+      '--cd',
+      cwd,
+      '--',
+      'bash',
+      '-lc',
+      '$exports exec \$HOME/.local/share/mikky/node/bin/node $script',
+    ]);
   }
   _note('spawned pid ${_proc.pid}');
 
@@ -64,7 +71,9 @@ void main(List<String> argv) async {
   if (a.containsKey('list')) {
     final r = await _request('session/list', {if (a['list']!.single != 'all') 'cwd': cwd});
     final sessions = ((r['result'] as Map?)?['sessions'] as List?) ?? const [];
-    _note('session/list → ${sessions.length} sessions, first: ${_short(sessions.take(3).toList(), 900)} · keys ${_short((r['result'] as Map?)?.keys.toList())}');
+    _note(
+      'session/list → ${sessions.length} sessions, first: ${_short(sessions.take(3).toList(), 900)} · keys ${_short((r['result'] as Map?)?.keys.toList())}',
+    );
     if (!a.containsKey('load')) return _quit(0);
   }
 
@@ -102,7 +111,11 @@ void main(List<String> argv) async {
   if (cancel != null) {
     Timer(Duration(seconds: int.parse(cancel)), () {
       _note('cancel');
-      _send({'jsonrpc': '2.0', 'method': 'session/cancel', 'params': {'sessionId': sessionId}});
+      _send({
+        'jsonrpc': '2.0',
+        'method': 'session/cancel',
+        'params': {'sessionId': sessionId},
+      });
     });
   }
 
@@ -115,11 +128,11 @@ void main(List<String> argv) async {
 }
 
 Future<Map<String, dynamic>> _prompt(String sessionId, String text) => _request('session/prompt', {
-      'sessionId': sessionId,
-      'prompt': [
-        {'type': 'text', 'text': text},
-      ],
-    });
+  'sessionId': sessionId,
+  'prompt': [
+    {'type': 'text', 'text': text},
+  ],
+});
 
 Future<void> _quit(int code) async {
   await Future<void>.delayed(const Duration(milliseconds: 300));
@@ -184,7 +197,9 @@ Future<void> _onPermission(Map<String, dynamic> msg) async {
   final params = msg['params'] as Map;
   final options = (params['options'] as List).cast<Map>();
   final answer = _answers.isEmpty ? 'allow' : _answers.removeAt(0);
-  _note('PERMISSION asked: ${_short(params['toolCall'], 200)} · options ${options.map((o) => '${o['optionId']}/${o['kind']}').join(' ')} · answer $answer');
+  _note(
+    'PERMISSION asked: ${_short(params['toolCall'], 200)} · options ${options.map((o) => '${o['optionId']}/${o['kind']}').join(' ')} · answer $answer',
+  );
   var kind = answer;
   if (answer.startsWith('wait:')) {
     await Future<void>.delayed(Duration(seconds: int.parse(answer.substring(5))));
@@ -201,8 +216,7 @@ Future<void> _onPermission(Map<String, dynamic> msg) async {
   });
 }
 
-void _write(String dir, Object msg) =>
-    _log.writeln(jsonEncode({'t': _watch.elapsedMilliseconds, 'dir': dir, 'msg': msg}));
+void _write(String dir, Object msg) => _log.writeln(jsonEncode({'t': _watch.elapsedMilliseconds, 'dir': dir, 'msg': msg}));
 
 void _note(String s) {
   final line = '[${(_watch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $s';

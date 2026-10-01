@@ -4,6 +4,10 @@ Spec : `specs/2026-09-30-mikkyd-design.md` (validée le 2026-09-30). Code : `dae
 
 ## Avancement
 
+**1er octobre : R3 consolidé et première tranche R4 utilisable.** Le lecteur ACP a rejoint Rust ; aucun chemin de lancement local dans Flutter. Les références Dart sont hors production. Le protocole 3 synchronise événements et métadonnées ; les moteurs inactifs peuvent être mis à jour. Une fenêtre `--home` réutilise les vrais écrans de sessions et affiche les machines Windows/WSL. Scripts de build/lancement et détails de validation : [r3-verification.md](../r3-verification.md). R5–R7 restent à réaliser.
+
+**Mise à jour R2/R3 du 2026-09-30 :** voir [l'état vérifié et les limites restantes](../r3-verification.md). Rust possède maintenant les lancements, le stockage SQLite et les sessions extérieures, avec un daemon natif WSL. Fermer Flutter laisse les agents continuer ; reconnexion incrémentale et arrêt global séparé. Le retrait du chemin local et du lecteur ACP Dart reste à terminer : R3 est en consolidation. Cette mise à jour remplace les descriptions du fonctionnement R1 ci-dessous, conservées comme historique.
+
 ### R0 — Préparer ✔ (2026-09-30)
 
 - Rust 1.98.1 installé avec rustup, sous Windows (`%USERPROFILE%\.cargo\bin`) et dans WSL (`~/.cargo/bin`).

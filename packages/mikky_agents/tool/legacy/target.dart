@@ -89,9 +89,13 @@ class WslTarget extends Target {
     final exports = env.entries.map((e) => 'export ${e.key}=${shellQuote(e.value)}; ').join();
     final command = [executable, ...args].map(shellQuote).join(' ');
     return Process.start('wsl.exe', [
-      '-d', distro,
+      '-d',
+      distro,
       if (cwd != null) ...['--cd', cwd],
-      '--', 'bash', '-lc', '${exports}exec $command',
+      '--',
+      'bash',
+      '-lc',
+      '${exports}exec $command',
     ]);
   }
 

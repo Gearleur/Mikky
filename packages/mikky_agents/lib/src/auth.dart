@@ -1,10 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
-import 'target.dart';
+import 'daemon/daemon_client.dart';
 
 /// Is the agent tool there, and is its user signed in (MVP spec §3.3)?
 /// Mikky only asks the tools; it never reads or writes a credential.
@@ -21,25 +20,11 @@ class AuthStatus {
   String toString() => 'AuthStatus(installed: $installed, loggedIn: $loggedIn, plan: $plan)';
 }
 
-/// Asks `claude auth status` or `codex login status` on [target].
-/// [claude]: the path of the user's `claude` when known.
-Future<AuthStatus> authStatus(Target target, AgentProvider provider, {String? claude}) async {
-  try {
-    if (provider == AgentProvider.claude) {
-      final exe = claude ?? 'claude';
-      final r = target.host == AgentHost.wsl ? await target.run('bash', ['-lc', '$exe auth status']) : await target.run(exe, ['auth', 'status']);
-      return parseClaudeStatus(r.exitCode, r.stdout as String);
-    }
-    final r = target.host == AgentHost.wsl ? await target.run('bash', ['-lc', 'codex login status']) : await target.run('codex.cmd', ['login', 'status']);
-    return parseCodexStatus(r.exitCode, '${r.stdout}\n${r.stderr}');
-  } on ProcessException {
-    return const AuthStatus(installed: false, loggedIn: false);
-  }
-}
-
 AuthStatus parseClaudeStatus(int exitCode, String stdout) {
   final start = stdout.indexOf('{');
-  if (start < 0) return AuthStatus(installed: exitCode != 127 && stdout.trim().isNotEmpty, loggedIn: false);
+  if (start < 0) {
+    return AuthStatus(installed: exitCode != 127 && stdout.trim().isNotEmpty, loggedIn: false);
+  }
   try {
     final json = (jsonDecode(stdout.substring(start)) as Map).cast<String, dynamic>();
     return AuthStatus(installed: true, loggedIn: json['loggedIn'] == true, plan: json['subscriptionType'] as String?);
@@ -49,7 +34,9 @@ AuthStatus parseClaudeStatus(int exitCode, String stdout) {
 }
 
 AuthStatus parseCodexStatus(int exitCode, String output) {
-  if (exitCode == 127 || output.contains('command not found')) return const AuthStatus(installed: false, loggedIn: false);
+  if (exitCode == 127 || output.contains('command not found')) {
+    return const AuthStatus(installed: false, loggedIn: false);
+  }
   final m = RegExp(r'Logged in using (\S+)').firstMatch(output);
   if (m != null) return AuthStatus(installed: true, loggedIn: true, plan: m[1]);
   return const AuthStatus(installed: true, loggedIn: false);
@@ -83,35 +70,56 @@ class LoginDone extends LoginState {
 /// Codex prints nothing without a terminal: in WSL it runs under `script`.
 /// The raw output is never logged or kept.
 class Login {
-  Login._(this._process) {
-    _process.stdout.transform(const Utf8Decoder(allowMalformed: true)).listen(_onText);
-    _process.stderr.transform(const Utf8Decoder(allowMalformed: true)).listen(_onText);
-    _process.exitCode.then((code) {
+  Login._remote(this._client, this._host, this._id) {
+    _sub = _client!.notifications.listen((n) {
+      if (n.params['login'] != _id || _states.isClosed) return;
+      if (n.method == 'login.output') _onText(n.params['text'] as String);
+      if (n.method == 'login.done') {
+        _emit(LoginDone(ok: n.params['ok'] == true, message: n.params['ok'] == true ? null : _lastLine));
+        _states.close();
+        _sub?.cancel();
+      }
+    });
+    _client.done.then((_) {
       if (_states.isClosed) return;
-      _states.add(LoginDone(ok: code == 0, message: code == 0 ? null : _lastLine));
+      _emit(const LoginDone(ok: false, message: 'Connexion au moteur interrompue.'));
       _states.close();
+      _sub?.cancel();
     });
   }
 
-  static Future<Login> start(Target target, AgentProvider provider) async {
-    final command = provider == AgentProvider.codex ? 'codex login --device-auth' : 'claude auth login';
-    final Process p;
-    if (target.host == AgentHost.wsl) {
-      p = await target.start('script', ['-q', '-f', '-c', command, '/dev/null']);
-    } else {
-      final parts = command.split(' ');
-      p = await target.start(provider == AgentProvider.codex ? 'codex.cmd' : 'claude', parts.sublist(1));
+  static Future<Login> remote(DaemonClient client, AgentHost host, AgentProvider provider) async {
+    final id = 'login-${DateTime.now().microsecondsSinceEpoch}';
+    final login = Login._remote(client, host, id);
+    try {
+      await client.request('tools.login', {'host': host.name, 'provider': provider.name, 'login': id});
+    } catch (_) {
+      login.cancel();
+      rethrow;
     }
-    return Login._(p);
+    return login;
   }
 
-  final Process _process;
+  final DaemonClient? _client;
+  final AgentHost? _host;
+  final String? _id;
+  StreamSubscription<DaemonNotification>? _sub;
+  LoginState? _latest;
+  void _emit(LoginState state) {
+    _latest = state;
+    _states.add(state);
+  }
+
   final _states = StreamController<LoginState>.broadcast();
   final _buffer = StringBuffer();
   bool _prompted = false;
   String? _lastLine;
 
-  Stream<LoginState> get states => _states.stream;
+  Stream<LoginState> get states => Stream.multi((sink) {
+    final sub = _states.stream.listen(sink.addSync, onError: sink.addErrorSync, onDone: sink.closeSync);
+    if (_latest case final state?) sink.addSync(state);
+    sink.onCancel = sub.cancel;
+  });
 
   void _onText(String chunk) {
     final text = stripAnsi(chunk);
@@ -124,11 +132,17 @@ class Login {
     if (prompt == null) return;
     _prompted = true;
     _buffer.clear();
-    _states.add(prompt);
+    _emit(prompt);
   }
 
   /// Gives up: the tool stops waiting.
-  void cancel() => _process.kill();
+  void cancel() {
+    if (_client case final client?) {
+      unawaited(client.request('tools.cancelLogin', {'host': _host!.name, 'login': _id}).catchError((Object _) => null));
+      _sub?.cancel();
+      if (!_states.isClosed) _states.close();
+    }
+  }
 }
 
 /// The link (and Codex's one-time code) in a login command's output.

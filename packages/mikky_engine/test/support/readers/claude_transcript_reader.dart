@@ -1,4 +1,4 @@
-import 'session_event.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 /// Reads a Claude Code session file (`~/.claude/projects/<dir>/<id>.jsonl`),
 /// one JSON line at a time, into [SessionEvent]s. Used for the sessions

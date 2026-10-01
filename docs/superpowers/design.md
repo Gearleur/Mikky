@@ -1,5 +1,9 @@
 # Mikky — le design
 
+## Livraison technique du 1 octobre 2026
+
+La planche **Technique** explique la séparation Rust/Flutter, le parcours d'une requête et les optimisations avec des statuts colorés. La planche **Espace** présente le cadre de la grande fenêtre : navigation à gauche, état réel des machines, sessions et chat dans le panneau principal. `Start-Mikky.ps1` ouvre cette fenêtre fonctionnelle ; `-Boards` ouvre les planches. Le cadre reprend les jetons existants et dispose de références visuelles claires et sombres. Les équipes et VPS restent des étapes futures. Voir `r3-verification.md` pour les validations et limites de cette livraison.
+
 Dernière mise à jour : 2026-09-30
 
 > **Pour reprendre (prochaine conversation)** : lire ce fichier, surtout **§11 (ce qui a été fait)**, **§12 (le code à remanier)** et **§13 (les prochaines étapes, dans l'ordre)** ; ouvrir les planches (`app\build\windows\x64\runner\Release\mikky.exe --kit`, après `flutter build windows --release`). Deux choix attendent l'utilisateur (§13, étape 1). D'autres sessions travaillent en même temps dans le dépôt (le démon Rust, l'accueil, la page d'agent) : n'enregistrer que ses propres fichiers ou lignes (voir §12).
@@ -146,6 +150,10 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 - Logo : l'étoile pixel bleue et orange ; Mikky entier, la tête en grand, la tête en pixels ; C5 à C9 (tête en bas, content, en pixels, sur bleu, sur orange).
 - Polices de texte autres que Geist (Inter, Host Grotesk, Hanken, Schibsted, Onest, Space Grotesk) ; pour le nom : Tiny5, Silkscreen, Jersey 15 à 25, Workbench, Jacquard 12, Micro 5, Press Start 2P, Doto, etc.
 - Les maquettes HTML comme référence.
+
+### Planche Technique — 2026-09-30
+
+Sixième page de `--kit`, même toile, navigation et typographie que les planches existantes. Présentation éditoriale : carte Flutter → Rust → outils, parcours interactif d'une demande en cinq étapes, responsabilités, optimisations, mesures, stockage et suite R2–R7. Vert = en place, orange = transition, violet = prévu, bleu = à mesurer ; chaque couleur a un libellé. Ce sont des statuts documentaires, pas de la télémétrie. Les chiffres historiques sont datés. Les états de connexion partagent le composant `BackendStatus` avec l'app : reconnexion, indisponibilité et mode local explicite. Références claires/sombres dans `app/test/goldens/boards/technique_*.png`.
 
 ## 10. Où c'est dans le code
 

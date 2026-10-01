@@ -6,6 +6,10 @@ Dernière mise à jour : 2026-09-30 (fin de session) · Dépôt : https://github
 
 ## 0. En bref
 
+**1er octobre — R3 consolidé, première fenêtre R4 :** [état livré et vérifications](r3-verification.md). Protocole 3 normalisé en Rust, lancement local supprimé de l’app, anciens lecteurs/lanceurs isolés dans les tests, métadonnées synchronisées entre écrans. `Start-Mikky.ps1` ouvre `--home` ; `scripts/Build-Windows.ps1` fabrique le bundle complet versionné. Cette note remplace les limites du premier socle R2/R3 décrites ci-dessous.
+
+**Actualisation backend R2/R3 (2026-09-30) :** voir [r3-verification.md](r3-verification.md), prioritaire sur les anciennes descriptions techniques ci-dessous. Rust persistant Windows + WSL, SQLite, surveillance native et lecteurs de fichiers, lancement/installation/authentification côté backend. Fermeture de Flutter sans arrêt des agents, reconnexion et arrêt global explicite. `--kit` inclut la planche **Technique**. Build isolé : `app/build/r3/windows/x64/runner/Release/`. Le nettoyage final des anciens chemins Dart et les points de validation restants y sont détaillés.
+
 - **L'étape 1 marche** : Mikky et son île sous Windows (§1).
 - **Depuis le 2026-09-29, Mikky est un compagnon d'agents** : il lance et suit Claude Code et Codex, un « Paperclip plus simple » (`idees.md`). Spec du MVP validée : `specs/2026-09-29-mvp-design.md`. Plan et avancement détaillé : `plans/2026-09-29-mvp-plan.md` (A0 à A7).
 - **Fait (A0 à A7.6)** :

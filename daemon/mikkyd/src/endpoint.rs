@@ -16,7 +16,11 @@ pub fn new_token() -> String {
 
 /// `a == b` in a time that does not depend on where they differ.
 pub fn same_token(a: &str, b: &str) -> bool {
-    a.len() == b.len() && a.bytes().zip(b.bytes()).fold(0u8, |acc, (x, y)| acc | (x ^ y)) == 0
+    a.len() == b.len()
+        && a.bytes()
+            .zip(b.bytes())
+            .fold(0u8, |acc, (x, y)| acc | (x ^ y))
+            == 0
 }
 
 /// What the app needs to connect, as JSON.
@@ -43,7 +47,9 @@ pub fn single_instance() -> bool {
 /// Puts `describe(port, token)` in the credential store for this session.
 #[cfg(windows)]
 pub fn publish(port: u16, token: &str) -> std::io::Result<()> {
-    use windows_sys::Win32::Security::Credentials::{CRED_PERSIST_SESSION, CRED_TYPE_GENERIC, CREDENTIALW, CredWriteW};
+    use windows_sys::Win32::Security::Credentials::{
+        CRED_PERSIST_SESSION, CRED_TYPE_GENERIC, CREDENTIALW, CredWriteW,
+    };
     let mut blob = describe(port, token).into_bytes();
     let mut target = wide(CREDENTIAL);
     let mut user = wide("mikkyd");
@@ -68,7 +74,9 @@ pub fn single_instance() -> bool {
 /// Off Windows, not yet (R2): use `--stdout-endpoint`.
 #[cfg(not(windows))]
 pub fn publish(_port: u16, _token: &str) -> std::io::Result<()> {
-    Err(std::io::Error::other("no credential store yet off Windows: use --stdout-endpoint"))
+    Err(std::io::Error::other(
+        "no credential store yet off Windows: use --stdout-endpoint",
+    ))
 }
 
 #[cfg(test)]

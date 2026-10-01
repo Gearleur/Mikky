@@ -1,3 +1,6 @@
+import '../support/readers/codex_rollout_reader.dart';
+import '../support/readers/claude_transcript_reader.dart';
+import '../support/readers/acp_reader.dart';
 import 'dart:convert';
 import 'dart:io';
 

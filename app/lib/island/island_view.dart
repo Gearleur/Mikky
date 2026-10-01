@@ -39,6 +39,9 @@ const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
 const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10, _menuNotifications = 11;
 const _menuAutoRelaunch = 20;
+const _menuStopAll = 12;
+const _menuAutostart = 13;
+const _menuHome = 14;
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
@@ -481,7 +484,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   Future<void> _showMenu() async {
     final s = widget.settings;
+    final autostart = widget.agents.autostartEnabled;
     final chosen = await _menu([
+      const MenuEntry(_menuHome, 'Ouvrir l’espace de travail'),
+      const MenuEntry.separator(),
       MenuEntry(_menuThemeAuto, 'Thème : automatique', checked: s.theme == ThemeChoice.auto),
       MenuEntry(_menuThemeDark, 'Thème : noir', checked: s.theme == ThemeChoice.dark),
       MenuEntry(_menuThemeLight, 'Thème : blanc', checked: s.theme == ThemeChoice.light),
@@ -497,13 +503,30 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       // Agents stopped by a subscription's limit relaunched by themselves
       // (« Ensorcelé »); the violet star after « Agents » while on.
       MenuEntry(_menuAutoRelaunch, 'Relance automatique', checked: Enchantments.instance.everywhere),
+      if (widget.agents.canLaunch)
+        MenuEntry(_menuAutostart, 'Moteur au démarrage de Windows', checked: autostart),
       const MenuEntry.separator(),
-      const MenuEntry(_menuQuit, 'Quitter'),
+      if (widget.agents.canLaunch) const MenuEntry(_menuStopAll, 'Arrêter tous les agents de Mikky…'),
+      MenuEntry(_menuQuit, 'Fermer Mikky · les agents continuent'),
     ]);
     final now = _clock.now;
     switch (chosen) {
       case _menuQuit:
         await _quit();
+      case _menuHome:
+        await Process.start(Platform.resolvedExecutable, ['--home'], mode: ProcessStartMode.detached);
+      case _menuAutostart:
+        try { await widget.agents.setAutostart(!autostart); }
+        catch (_) { await _menu([const MenuEntry(1, 'Windows n’a pas pu modifier le démarrage automatique')]); }
+      case _menuStopAll:
+        final sure = await _menu([
+          const MenuEntry(1, 'Arrêter tous les agents lancés par Mikky'),
+          const MenuEntry(2, 'Annuler'),
+        ]);
+        if (sure == 1) {
+          try { await widget.agents.stopAll(); }
+          catch (_) { await _menu([const MenuEntry(1, 'Arrêt non confirmé : vérifie la connexion au moteur')]); }
+        }
       case _menuAutoRelaunch:
         Enchantments.instance.everywhere = !Enchantments.instance.everywhere;
       case _menuThemeAuto || _menuThemeDark || _menuThemeLight:
@@ -545,20 +568,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
   }
 
-  static const _quitYes = 1;
 
   /// Quitting stops the agents Mikky runs (no `mikkyd` yet): asks first
   /// when some are at work.
   Future<void> _quit() async {
-    final working = widget.agents.working;
-    if (working > 0) {
-      final sure = await _menu([
-        MenuEntry(_quitYes, working == 1 ? 'Quitter et arrêter l’agent au travail' : 'Quitter et arrêter les $working agents au travail'),
-        const MenuEntry.separator(),
-        const MenuEntry(2, 'Annuler'),
-      ]);
-      if (sure != _quitYes) return;
-    }
     await widget.agents.shutdown();
     _overlay.quit();
   }

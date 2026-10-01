@@ -11,10 +11,13 @@ mod windows {
 
     use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
     use windows_sys::Win32::System::JobObjects::{
-        AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE, JOBOBJECT_EXTENDED_LIMIT_INFORMATION,
-        JobObjectExtendedLimitInformation, SetInformationJobObject, TerminateJobObject,
+        AssignProcessToJobObject, CreateJobObjectW, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+        JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JobObjectExtendedLimitInformation,
+        SetInformationJobObject, TerminateJobObject,
     };
-    use windows_sys::Win32::System::Threading::{OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE};
+    use windows_sys::Win32::System::Threading::{
+        OpenProcess, PROCESS_SET_QUOTA, PROCESS_TERMINATE,
+    };
 
     pub struct Job(HANDLE);
 
@@ -36,7 +39,13 @@ mod windows {
                 let mut info: JOBOBJECT_EXTENDED_LIMIT_INFORMATION = std::mem::zeroed();
                 info.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
                 let size = std::mem::size_of_val(&info) as u32;
-                if SetInformationJobObject(job.0, JobObjectExtendedLimitInformation, &info as *const _ as *const c_void, size) == 0 {
+                if SetInformationJobObject(
+                    job.0,
+                    JobObjectExtendedLimitInformation,
+                    &info as *const _ as *const c_void,
+                    size,
+                ) == 0
+                {
                     return None;
                 }
                 let process = OpenProcess(PROCESS_SET_QUOTA | PROCESS_TERMINATE, 0, pid);
@@ -67,14 +76,25 @@ mod windows {
 }
 
 /// Off Windows, no job yet (R2: a process group in WSL and on the VPS).
-#[cfg(not(windows))]
-pub struct Job;
+#[cfg(unix)]
+pub struct Job(u32);
 
-#[cfg(not(windows))]
+#[cfg(unix)]
 impl Job {
-    pub fn for_process(_pid: u32) -> Option<Job> {
-        None
+    pub fn for_process(pid: u32) -> Option<Job> {
+        Some(Job(pid))
     }
 
-    pub fn terminate(&self) {}
+    pub fn terminate(&self) {
+        unsafe {
+            libc::kill(-(self.0 as i32), libc::SIGKILL);
+        }
+    }
+}
+
+#[cfg(unix)]
+impl Drop for Job {
+    fn drop(&mut self) {
+        self.terminate();
+    }
 }
