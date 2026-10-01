@@ -6,3 +6,5 @@ build/
 .idea/
 .superpowers/
 target/
+dist/
+app/test/failures/
