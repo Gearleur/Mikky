@@ -69,6 +69,12 @@ Les routines, déclencheurs, téléphone et web restent des perspectives après 
 
 ## Nettoyage et protections ajoutées
 
+### Correction fonctionnelle de l'île
+
+- Clic extérieur : les alertes ne bloquent plus la fermeture de l'écran. L'île se réduit pendant deux secondes puis se masque, même si la souris bouge ailleurs. Les permissions restent en attente dans le moteur ; une nouvelle alerte peut faire revenir l'île. Le bord de l'écran et l'icône de notification permettent de la rouvrir.
+- État compact de Mikky : attente d'intervention avant quota, puis activité, fin et repos ; à priorité égale, l'état le plus récent est choisi. La file des alertes ouvertes conserve son ordre pour ne pas changer la demande en cours de réponse. Les changements d'horodatage sont désormais transmis à l'île.
+- Validation : 114 tests du moteur, dont trois régressions ajoutées pour le masquage avec alertes, le masquage sans agent et le choix de l'état prioritaire/récent.
+
 - Retrait des lanceurs et lecteurs Dart de production ; conservation explicite des références pour les tests de parité.
 - Suppression du mode de secours local silencieux ; états de connexion visibles et reconnexion automatique.
 - Synchronisation des métadonnées entre écrans sans écraser les modifications en attente ; préservation des brouillons encore en création.

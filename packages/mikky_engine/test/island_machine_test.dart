@@ -42,6 +42,47 @@ class Harness {
 }
 
 void main() {
+  test('explicit close shrinks then hides despite desktop activity and pending alerts', () {
+    final h = Harness();
+    h.set('a', AgentStatus.approval);
+    h.set('b', AgentStatus.question);
+    h.wait(1);
+    h.m.close(h.now);
+    expect(h.shape, IslandShape.compact);
+    h.wait(1);
+    h.pointer();
+    h.wait(1.1);
+    expect(h.shape, IslandShape.hidden);
+    expect(h.s.pendingAlerts, 2);
+    h.pointer(edge: true);
+    h.wait(.7);
+    expect(h.shape, IslandShape.open);
+  });
+
+  test('compact focus follows priority then newest state, not insertion order', () {
+    final h = Harness();
+    h.set('old', AgentStatus.working);
+    h.wait(1);
+    h.set('new', AgentStatus.searching);
+    expect(h.s.focus?.id, 'new');
+    h.set('limited', AgentStatus.rateLimited);
+    expect(h.s.focus?.id, 'limited');
+    h.wait(1);
+    h.set('new', AgentStatus.thinking);
+    expect(h.s.focus?.id, 'limited');
+    h.set('limited', AgentStatus.idle);
+    expect(h.s.focus?.id, 'new');
+  });
+
+  test('empty island also shrinks before disappearing', () {
+    final h = Harness();
+    h.m.click(0);
+    h.m.close(0);
+    expect(h.shape, IslandShape.compact);
+    h.wait(IslandTimings.dismissedLinger);
+    expect(h.shape, IslandShape.hidden);
+  });
+
   test('rule 1: no agent, hidden', () {
     final h = Harness();
     expect(h.shape, IslandShape.hidden);
@@ -117,8 +158,8 @@ void main() {
     h.pointer(over: true);
     h.wait(.3);
     h.m.close(h.now);
-    h.wait(2);
-    expect(h.shape, IslandShape.compact);
+    h.wait(2.1);
+    expect(h.shape, IslandShape.hidden);
     h.pointer();
     h.pointer(over: true);
     h.wait(.3);
@@ -174,14 +215,14 @@ void main() {
     expect(h.s.openReason, OpenReason.alert);
   });
 
-  test('Escape on an alert leaves the bubble; a new alert opens again', () {
+  test('Escape hides an alert after the compact delay; a new alert opens again', () {
     final h = Harness();
     h.set('a', AgentStatus.approval);
     h.wait(1);
     h.m.close(h.now);
     h.wait(5);
-    expect(h.shape, IslandShape.compact);
-    expect(h.s.bubble, isTrue);
+    expect(h.shape, IslandShape.hidden);
+    expect(h.s.pendingAlerts, 1);
     h.set('b', AgentStatus.error);
     h.wait(1);
     expect(h.shape, IslandShape.open);

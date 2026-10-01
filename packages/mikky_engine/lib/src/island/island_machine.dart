@@ -29,6 +29,7 @@ abstract final class IslandTimings {
   static const countdown = 10.0;
   static const finishedShown = 5.2;
   static const away = 180.0;
+  static const dismissedLinger = 2.0;
 
   /// The split bubble shows alone for this long before the island opens.
   static const bubbleLead = .9;
@@ -110,6 +111,7 @@ class IslandMachine {
   bool _suppressHover = false;
   double _lastActivity;
   double _now;
+  double? _dismissedAt;
 
   // ---------------------------------------------------------------- inputs
 
@@ -120,6 +122,7 @@ class IslandMachine {
     for (final a in agents) {
       final was = before[a.id];
       final isNew = was == null || was.status != a.status;
+      if (isNew && (a.status.needsYou || a.status == AgentStatus.finished)) _dismissedAt = null;
       if (a.status.needsYou && isNew && !_alerts.contains(a.id)) {
         _alerts.add(a.id);
       }
@@ -149,6 +152,7 @@ class IslandMachine {
     if (inside != _pointerIn) {
       _pointerIn = inside;
       if (inside) {
+        if (!_suppressHover && overIsland) _dismissedAt = null;
         _pointerInSince = now;
         _pointerOutSince = null;
       } else {
@@ -168,6 +172,7 @@ class IslandMachine {
   /// only counts as activity.
   void click(double now) {
     advance(now);
+    _dismissedAt = null;
     _lastActivity = now;
     _lastInteraction = now;
     if (_shapeAt(now) != IslandShape.open) {
@@ -178,14 +183,16 @@ class IslandMachine {
     }
   }
 
-  /// Escape, or click on the open island outside anything clickable: close.
-  /// An alert closed this way stays as a bubble and does not reopen.
+  /// Explicit dismissal: compact briefly, then hidden. Pending alerts remain
+  /// unanswered and a new alert can reveal the island again.
   void close(double now) {
     advance(now);
     _lastActivity = now;
-    final head = _alertHead;
-    if (head != null) _escaped.add(head);
-    if (_finishedSince != null) _retireFinished();
+    _escaped.addAll(_alerts);
+    while (_finished.isNotEmpty) {
+      _retireFinished();
+    }
+    _dismissedAt = now;
     _userOpen = null;
     _previewSince = null;
     _suppressHover = _pointerIn;
@@ -249,6 +256,7 @@ class IslandMachine {
       if (_userOpen == OpenReason.click) _lastInteraction + IslandTimings.inactivityClose,
       if (_bubbleSince != null) _bubbleSince! + IslandTimings.bubbleLead,
       if (_finishedSince != null) _finishedSince! + IslandTimings.finishedShown,
+      if (_dismissedAt != null) _dismissedAt! + IslandTimings.dismissedLinger,
       if (_visible.isNotEmpty || _userOpen != null) _lastActivity + IslandTimings.away,
     ];
     double? next;
@@ -310,6 +318,7 @@ class IslandMachine {
 
   /// Opens at the user's request (click, hover, peek).
   void _openByUser(OpenReason reason) {
+    _dismissedAt = null;
     if (_userOpen == null) _openedEmpty = _visible.isEmpty;
     _userOpen = reason;
   }
@@ -327,6 +336,10 @@ class IslandMachine {
   }
 
   IslandShape _shapeAt(double now) {
+    final dismissed = _dismissedAt;
+    if (dismissed != null && _userOpen == null && _previewSince == null) {
+      return now < dismissed + IslandTimings.dismissedLinger ? IslandShape.compact : IslandShape.hidden;
+    }
     if (_openReasonAt(now) != null) return IslandShape.open;
     if (_alertHead != null) return IslandShape.compact; // bubble first
     if (!_isAway(now) && _visible.isNotEmpty) return IslandShape.compact;
@@ -342,9 +355,7 @@ class IslandMachine {
     final Agent? focus = switch (reason) {
       OpenReason.alert => _agent(_alertHead),
       OpenReason.finished => _agent(_finished.firstOrNull),
-      _ => _agent(_alerts.firstOrNull) ??
-          visible.where((a) => a.status.isBusy).firstOrNull ??
-          visible.firstOrNull,
+      _ => _priorityFocus(visible),
     };
     final content = switch (reason) {
       null => IslandContent.focus,
@@ -370,6 +381,24 @@ class IslandMachine {
       closeCountdown: countdown,
     );
   }
+}
+
+Agent? _priorityFocus(List<Agent> agents) {
+  int rank(AgentStatus status) => switch (status) {
+    AgentStatus.approval || AgentStatus.question || AgentStatus.error => 4,
+    AgentStatus.rateLimited => 3,
+    AgentStatus.working || AgentStatus.thinking || AgentStatus.searching => 2,
+    AgentStatus.finished => 1,
+    AgentStatus.paused || AgentStatus.idle => 0,
+  };
+  Agent? best;
+  for (final agent in agents) {
+    if (best == null || rank(agent.status) > rank(best.status) ||
+        (rank(agent.status) == rank(best.status) && agent.statusSince > best.statusSince)) {
+      best = agent;
+    }
+  }
+  return best;
 }
 
 double _max(double a, double b) => a > b ? a : b;

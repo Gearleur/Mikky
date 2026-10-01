@@ -365,11 +365,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (id != null && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
   }
 
-  /// A click elsewhere closes the island the user opened (click, hover), like
-  /// a popover. An agent waiting for a yes keeps it open until answered.
+  /// Closing hides the screen, never answers or cancels a pending permission.
   void _onOutsideClick() {
-    final reason = _snap.openReason;
-    if (_snap.shape != IslandShape.open || reason == OpenReason.alert) return;
+    if (_snap.shape != IslandShape.open) return;
     _machine.close(_clock.now);
     _apply();
   }

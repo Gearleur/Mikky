@@ -198,7 +198,7 @@ class RealAgentSource implements AgentSource {
     ];
   }
 
-  static String _key(List<Agent> agents) => agents.map((a) => '${a.id}:${a.status.name}:${a.detail}').join('|');
+  static String _key(List<Agent> agents) => agents.map((a) => '${a.id}:${a.status.name}:${a.statusSince}:${a.detail}').join('|');
 
   /// What the island last read, to tell it when that changed.
   String _islandKey = '';
