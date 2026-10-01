@@ -16,6 +16,7 @@ import '../settings.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
 import '../ui/floating_menu.dart';
+import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
@@ -46,6 +47,11 @@ const _menuAutostart = 13;
 /// [IslandMachine] decides everything (spec §5.3); this widget feeds it the
 /// cursor, clicks and agents, wakes it up at its deadlines, and draws its
 /// snapshot. Nothing runs while nothing happens.
+/// `--bench` (development): the island with one made-up agent at work, to
+/// measure its CPU in a steady state; `--fast` keeps 60 frames a second as
+/// the island did before it rested on the decor clock.
+enum IslandBench { calm, fast }
+
 class IslandView extends StatefulWidget {
   const IslandView({
     super.key,
@@ -55,7 +61,10 @@ class IslandView extends StatefulWidget {
     required this.tuning,
     required this.clock,
     required this.agents,
+    this.bench,
   });
+
+  final IslandBench? bench;
 
   final OverlayChannel overlay;
 
@@ -95,7 +104,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       showMenu: _menu,
       islandMenu: _showMenu,
     ),
-    onHome: (home) => setState(() => _sideHome = home),
+    onHome: (home) {
+      _sideHome = home;
+      _wake();
+    },
   );
   bool _sideHome = true;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
@@ -106,7 +118,16 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   Timer? _deadlineTimer;
   double? _deadlineAt;
 
+  /// Fast frames (60 a second) while something springs; see [_wake].
   late final Ticker _ticker;
+
+  /// Mikky's idle life on the decor clock (30 a second) while nothing else
+  /// moves; see [_animate].
+  bool _calm = false;
+  Duration? _calmLast;
+
+  /// `--bench`: how often each clock took over.
+  int _wakes = 0, _calms = 0;
   late final ui.FragmentShader? _shader = widget.program?.fragmentShader();
   late IslandMotion _motion = IslandMotion(edge: widget.settings.edge);
   final _bubble = Spring(0, SpringSpec.sideBubble);
@@ -137,11 +158,37 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _overlay.onNotificationClick = _onNotificationClick;
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
+    if (widget.bench != null) {
+      _demo = true;
+      _demoSource.addAgent(_clock.now);
+      _machine.setAgents(_source.agents, _clock.now);
+      _runBench();
+    }
     // Real agents move on their own: the island follows them.
     _agentsSub = widget.agents.source.changes.listen((_) {
       if (!_demo && mounted) _sync();
     });
     _sync();
+  }
+
+  /// Counts the frames from 4 s to 16 s, writes them to
+  /// `%TEMP%\mikky-bench.txt`, then quits.
+  void _runBench() {
+    final timings = <ui.FrameTiming>[];
+    void collect(List<ui.FrameTiming> t) => timings.addAll(t);
+    Timer(const Duration(seconds: 4), () {
+      SchedulerBinding.instance.addTimingsCallback(collect);
+      Timer(const Duration(seconds: 12), () {
+        SchedulerBinding.instance.removeTimingsCallback(collect);
+        double avg(Duration Function(ui.FrameTiming) f) =>
+            timings.isEmpty ? 0 : timings.map((t) => f(t).inMicroseconds).reduce((a, b) => a + b) / timings.length / 1000;
+        final line = '${widget.bench!.name}: ${(timings.length / 12).toStringAsFixed(1)} frames/s, '
+            'build ${avg((t) => t.buildDuration).toStringAsFixed(2)} ms, raster ${avg((t) => t.rasterDuration).toStringAsFixed(2)} ms, '
+            'fast clock started $_wakes times, decor clock $_calms times, motion at rest ${_motion.isAtRest}, bubble at rest ${_bubble.isAtRest()}';
+        File('${Platform.environment['TEMP']}/mikky-bench.txt').writeAsStringSync('$line\n', mode: FileMode.append);
+        _overlay.quit();
+      });
+    });
   }
 
   @override
@@ -155,6 +202,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _agentsSub?.cancel();
     _deadlineTimer?.cancel();
     _ticker.dispose();
+    _leaveCalm();
     _keys.dispose();
     super.dispose();
   }
@@ -262,7 +310,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _bubble.target = s.bubble ? 1 : 0;
     _notify(s);
     final changed = s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
-    if (changed || !_motion.isGone) _wake();
+    if (changed || !_settled) {
+      _wake();
+    } else {
+      _animate();
+    }
     _schedule();
   }
 
@@ -584,16 +636,66 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   // ---------------------------------------------------------------- frames
 
+  /// Nothing springs: the island, the bubble and Mikky's fade are still.
+  bool get _settled =>
+      _motion.isAtRest && _bubble.isAtRest() && (_mikkyOpacity == 0 || _mikkyOpacity == 1);
+
+  /// Hidden and still: no frames at all until something happens.
+  bool get _gone => _motion.isGone && _bubble.isAtRest();
+
+  /// Something moves: fast frames.
   void _wake() {
+    _leaveCalm();
     if (!_ticker.isActive) {
+      _wakes++;
       _lastTick = Duration.zero;
       _ticker.start();
     }
   }
 
+  /// Keeps Mikky alive without asking for fast frames.
+  void _animate() {
+    if (_ticker.isActive || _calm || _gone) return;
+    if (!_settled || widget.bench == IslandBench.fast) return _wake();
+    _calm = true;
+    _calms++;
+    _calmLast = null;
+    DecorClock.listen(_onCalmTick);
+  }
+
+  void _leaveCalm() {
+    if (!_calm) return;
+    _calm = false;
+    DecorClock.unlisten(_onCalmTick);
+  }
+
   void _onTick(Duration elapsed) {
     final dt = _lastTick == Duration.zero ? 1 / 60 : math.min((elapsed - _lastTick).inMicroseconds / 1e6, 1 / 20);
     _lastTick = elapsed;
+    _step(dt);
+    if (_gone) {
+      _ticker.stop();
+    } else if (_settled && widget.bench != IslandBench.fast) {
+      _ticker.stop();
+      _animate();
+    }
+  }
+
+  void _onCalmTick() {
+    final now = DecorClock.now.value;
+    final dt = _calmLast == null ? 1 / DecorClock.fps : math.min((now - _calmLast!).inMicroseconds / 1e6, 1 / 10);
+    _calmLast = now;
+    _step(dt, calm: true);
+    if (!_settled) {
+      _wake();
+    } else if (_gone) {
+      _leaveCalm();
+    }
+  }
+
+  /// One frame of the island. [calm]: on the decor clock; with Mikky out
+  /// of sight and no countdown, nothing to draw.
+  void _step(double dt, {bool calm = false}) {
 
     // The countdown before closing moves every frame.
     if (_snap.openReason == OpenReason.click) {
@@ -616,9 +718,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
-    // Hidden and still: no more frames until something happens.
-    if (_motion.isGone && _bubble.isAtRest()) _ticker.stop();
     _overlay.setHitRect(_hitRect);
+    if (calm && _mikkyOpacity == 0 && _snap.closeCountdown == null) return;
     setState(() {});
   }
 
@@ -798,16 +899,19 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         child: Stack(
           children: [
             Positioned.fill(
-              child: CustomPaint(
-                painter: IslandPainter(
-                  shader: _shader,
-                  shape: _shapeRect,
-                  visible: rect,
-                  radius: _motion.cornerRadius,
-                  visibility: _motion.visibility,
-                  theme: theme,
-                  devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-                  side: side,
+              // Own layer: Mikky moving every frame does not redraw the island.
+              child: RepaintBoundary(
+                child: CustomPaint(
+                  painter: IslandPainter(
+                    shader: _shader,
+                    shape: _shapeRect,
+                    visible: rect,
+                    radius: _motion.cornerRadius,
+                    visibility: _motion.visibility,
+                    theme: theme,
+                    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+                    side: side,
+                  ),
                 ),
               ),
             ),
@@ -841,13 +945,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                 child: IgnorePointer(
                   child: Opacity(
                     opacity: _mikkyOpacity,
-                    child: CustomPaint(
-                      painter: MikkyPainter(
-                        geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
-                        center: _mikkyCenter,
-                        rim: theme.mikkyRim,
-                        statusColor: theme.status,
-                        foreground: theme.foreground,
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: MikkyPainter(
+                          geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
+                          center: _mikkyCenter,
+                          rim: theme.mikkyRim,
+                          statusColor: theme.status,
+                          foreground: theme.foreground,
+                        ),
                       ),
                     ),
                   ),

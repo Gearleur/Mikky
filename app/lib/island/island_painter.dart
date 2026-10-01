@@ -76,7 +76,15 @@ class IslandPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(IslandPainter oldDelegate) => true;
+  bool shouldRepaint(IslandPainter old) =>
+      old.shader != shader ||
+      old.shape != shape ||
+      old.visible != visible ||
+      old.radius != radius ||
+      old.visibility != visibility ||
+      old.theme != theme ||
+      old.devicePixelRatio != devicePixelRatio ||
+      old.side != side;
 }
 
 /// The split bubble (Dynamic Island style), as in the prototype: it slides
@@ -98,6 +106,13 @@ class SideBubble {
 
   final Offset center;
   final double radius;
+
+  @override
+  bool operator ==(Object other) =>
+      other is SideBubble && other.center == center && other.radius == radius && other.smoothness == smoothness;
+
+  @override
+  int get hashCode => Object.hash(center, radius, smoothness);
   final double smoothness;
 }
 

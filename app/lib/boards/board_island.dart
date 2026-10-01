@@ -13,22 +13,22 @@ final Future<ui.FragmentProgram?> _program = loadIslandProgram();
 
 /// The closed island at the right edge, with the shader once it is there.
 class _Compact extends StatelessWidget {
-  const _Compact(this.status, {this.detach = false, this.jacquard = false});
+  const _Compact(this.status, {this.detach = false});
 
   final AgentStatus? status;
-  final bool detach, jacquard;
+  final bool detach;
 
   @override
   Widget build(BuildContext context) => FutureBuilder<ui.FragmentProgram?>(
     future: _program,
-    builder: (context, shot) => CompactIslandPreview(status: status, program: shot.data, detach: detach, jacquard: jacquard),
+    builder: (context, shot) => CompactIslandPreview(status: status, program: shot.data, detach: detach),
   );
 }
 
 final islandBoard = BoardSpec('Petite île', 'L’île fermée, à droite de l’écran, dans chaque état', (context) => [
   const BoardSection(
     title: 'Petite île à droite',
-    note: 'Fermée : un petit onglet collé au bord droit, Mikky dans l’état de l’agent qu’il suit, et sous lui ce que fait cet agent (le même dessin que sur les lignes de l’accueil) ; son nom « Mikky » quand il n’y a personne ou rien à montrer. Ce qui attend ton feu vert, ta réponse ou une erreur sort dans une bulle qui se détache de l’île, jamais sous Mikky. Survol : elle s’ouvre en petite fenêtre.',
+    note: 'Fermée : un petit onglet collé au bord droit, Mikky dans l’état de l’agent qu’il suit, et sous lui ce que fait cet agent (le même dessin que sur les lignes de l’accueil) ; son nom « Mikky », en Jacquard 24 (la police pixel du nom), quand il n’y a personne ou rien à montrer. Mikky travaille aussi quand l’agent réfléchit ou cherche (son animation de travail). Ce qui attend ton feu vert, ta réponse ou une erreur sort dans une bulle qui se détache de l’île, jamais sous Mikky. Survol : elle s’ouvre en petite fenêtre.',
     frames: [
       BoardFrame(label: 'Personne', note: 'Aucun agent : son nom.', child: _Compact(null)),
       BoardFrame(label: 'Travaille', note: 'Aussi quand il réfléchit ou cherche : le bleu.', child: _Compact(AgentStatus.working)),
@@ -45,15 +45,6 @@ final islandBoard = BoardSpec('Petite île', 'L’île fermée, à droite de l�
     frames: [
       BoardFrame(label: 'Se détache, revient', note: 'En boucle, sur le ressort de l’île.', child: _Compact(AgentStatus.approval, detach: true)),
       BoardFrame(label: 'Erreur', child: _Compact(AgentStatus.error, detach: true)),
-    ],
-  ),
-  const BoardSection(
-    title: 'Le nom en Jacquard 24 (essai)',
-    note: 'La police pixel du nom de l’app, sur la petite île, à côté de Geist (l’actuel).',
-    frames: [
-      BoardFrame(label: 'Geist (actuel)', child: _Compact(null)),
-      BoardFrame(label: 'Jacquard 24', child: _Compact(null, jacquard: true)),
-      BoardFrame(label: 'Jacquard 24, en pause', child: _Compact(AgentStatus.paused, jacquard: true)),
     ],
   ),
 ]);

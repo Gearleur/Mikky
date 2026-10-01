@@ -12,12 +12,11 @@ import '../ui/tokens.dart';
 import 'content/parts.dart';
 import 'island_painter.dart';
 
-/// Mikky's state for the agent he stands for.
+/// Mikky's state for the agent he stands for. Thinking and searching
+/// are work: his working animation (user request, 2026-10-01).
 MikkyState mikkyStateFor(AgentStatus? status) => switch (status) {
   null || AgentStatus.idle || AgentStatus.paused => MikkyState.idle,
-  AgentStatus.working => MikkyState.working,
-  AgentStatus.thinking => MikkyState.thinking,
-  AgentStatus.searching => MikkyState.searching,
+  AgentStatus.working || AgentStatus.thinking || AgentStatus.searching => MikkyState.working,
   AgentStatus.approval => MikkyState.approval,
   AgentStatus.question => MikkyState.question,
   AgentStatus.error => MikkyState.error,
@@ -27,21 +26,19 @@ MikkyState mikkyStateFor(AgentStatus? status) => switch (status) {
 
 /// Under Mikky on the closed island at the right edge: what the agent he
 /// stands for is doing; his name when there is none, nothing to show
-/// (paused), or when it needs the user (that goes in the bubble).
-/// [jacquard]: the name in the pixel font (trial, 2026-10-01).
+/// (paused), or when it needs the user (that goes in the bubble). The
+/// name is in Jacquard 24, the pixel font of the name (2026-10-01).
 class CompactUnderMikky extends StatelessWidget {
-  const CompactUnderMikky({super.key, required this.theme, required this.status, this.jacquard = false});
+  const CompactUnderMikky({super.key, required this.theme, required this.status});
 
   final MikkyTheme theme;
   final AgentStatus? status;
-  final bool jacquard;
 
   @override
   Widget build(BuildContext context) {
     final s = status == null || status!.needsYou ? null : UiStatus.of(status!);
     if (s == null || s == UiStatus.paused) {
-      final style = sansStyle(theme, size: 11.5, weight: FontWeight.w600);
-      return Text('Mikky', style: jacquard ? style.copyWith(fontFamily: 'Jacquard 24', fontSize: 17, fontWeight: FontWeight.w400, height: 1) : style);
+      return Text('Mikky', style: sansStyle(theme, size: 17).copyWith(fontFamily: 'Jacquard 24', height: 1));
     }
     return MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(s, size: 18));
   }
@@ -68,14 +65,13 @@ Offset compactBubbleAnchor(Rect island) => Offset(island.center.dx, island.botto
 /// when the agent needs the user ([detach]: it comes out and goes back,
 /// on the island's own spring).
 class CompactIslandPreview extends StatelessWidget {
-  const CompactIslandPreview({super.key, required this.status, this.program, this.detach = false, this.jacquard = false});
+  const CompactIslandPreview({super.key, required this.status, this.program, this.detach = false});
 
   final AgentStatus? status;
 
   /// The island shader; null: its plain fallback.
   final ui.FragmentProgram? program;
   final bool detach;
-  final bool jacquard;
 
   static const _m = IslandMetrics.right;
 
@@ -143,7 +139,7 @@ class CompactIslandPreview extends StatelessWidget {
             top: island.top + 57,
             width: w,
             height: 18,
-            child: Center(child: CompactUnderMikky(theme: theme, status: status, jacquard: jacquard)),
+            child: Center(child: CompactUnderMikky(theme: theme, status: status)),
           ),
           if (bubble != null && out > .45)
             Positioned(

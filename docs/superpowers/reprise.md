@@ -39,14 +39,13 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 
 ## À valider avec l'utilisateur
 
-- **Planche Petite île** : la bulle et son « ! », le nom en Jacquard 24.
 - **Dans l'app** : la bulle, la petite île à la fin d'un agent, la confirmation de suppression.
 - **Choix en attente** (`design.md` §12) : l'animation de Claude au travail, l'accueil épuré.
 
 ## Prochaines étapes, dans l'ordre
 
 1. **Fiabilité en usage réel**, sous Windows et dans WSL : lancer, chat, permissions, questions, pause, arrêt, fermeture puis reconnexion. Vraie reconnexion de session Windows. Claude dans WSL quand le quota le permet.
-2. **Performance** : mesurer l'île, un long chat et les flous (`--perf`). Peut-être un mode sans animation.
+2. **Performance** : la petite île au repos est passée de 56 à 28 images par seconde (`--bench`). Reste à mesurer l'île ouverte, un long chat et les flous (`--perf`). Peut-être un mode sans animation.
 3. **Mémoire de `mikkyd`** : résumés de sessions, détail chargé à la demande.
 4. **Relance automatique dans Rust**, si elle doit marcher sans écran (aujourd'hui, fermer l'app la suspend).
 5. **R5, nouveaux outils** : OpenCode, pi, OpenClaw, Gemini CLI. Ne garder que ceux qui marchent avec un abonnement sans clé ; vérifier qu'ils parlent ACP.
@@ -80,6 +79,7 @@ Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptat
   - `C:\dev\flutter\bin\dart.bat test` dans chaque paquet ;
   - `flutter.bat test` dans `app/` ;
   - pour les images : `flutter.bat test --update-goldens test/boards_test.dart`, **puis les regarder**.
+- **Mesure de l'île** : `mikky.exe --bench`, ou `--bench --fast` pour l'ancien rythme à 60 images par seconde. L'île sort avec un faux agent ; Mikky compte les images entre 4 et 16 s, les écrit dans `%TEMP%\mikky-bench.txt`, puis se ferme. Arrêter l'île ouverte d'abord. Le CPU mesuré de l'extérieur ne veut rien dire quand Windows ne cadence pas la fenêtre (île cachée, écran éteint).
 - **Diagnostic** : `dart run tool/state_check.dart` dans `packages/mikky_agents` compare ce que voit l'île et ce que voit l'accueil (lecture seule). `tool/smoke.dart` essaie de vrais agents : ça coûte deux messages, et il faut supprimer les sessions qu'il laisse.
 
 ## Pièges utiles

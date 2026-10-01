@@ -58,7 +58,7 @@ class _Missing extends StatelessWidget {
     ('Logo', 'C, Mikky qui dépasse, est retenue ; C2, C3, C4 à côté. Un petit quelque chose de magique à ajouter. Puis l’icône de l’app et de la zone de notification.'),
     ('Couleurs signature', 'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).'),
     ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
-    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Jacquard 24, puis Jersey 10. Échelle des tailles faite (section Lettres et formes) ; reste à poser le nom dans l’app.'),
+    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Jacquard 24 (choisie, sur la petite île), Jersey 10 en second. Échelle des tailles faite (section Lettres et formes).'),
     ('Mikky en pixels', 'Une première tête en pixels (le feu d’artifice « Mikky »). À voir.'),
     ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
     ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),

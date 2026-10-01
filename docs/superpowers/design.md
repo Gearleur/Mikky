@@ -28,7 +28,7 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 - **Nom** : Mikky (validé).
 - **Logo** : **Mikky lui-même**, la mascotte bien présente. Retenue : **C, Mikky qui dépasse du bas du carré** (« de loin la mieux »). Restent à côté : **C2** plus près (juste les oreilles et les yeux), **C3** penché par le coin, **C4** par le côté. **À ajouter plus tard : un petit quelque chose de magique.** Ensuite : l'icône de l'app et de la zone de notification. Sur blanc et sur gris anthracite `#2A2A2E` (sur noir, un chat noir disparaît).
-- **Nom de l'app en lettres** : police pixel **Jacquard 24** (préférée), puis **Jersey 10** (`app/assets/fonts/trial/`).
+- **Nom de l'app en lettres** : police pixel **Jacquard 24**, choisie le 2026-10-01 et posée sur la petite île, **seulement pour le nom** (`app/assets/fonts/`) ; Jersey 10 en second choix (`assets/fonts/trial/`).
 - **Texte** : **Geist** et **Geist Mono** partout (choisies).
 - **Couleurs signature** (validées, **gardées pour plus tard**) :
   - orange, de la capture de l'utilisateur : `#FF8204` `#FA500F` `#E51300` `#C4001D` ;
@@ -64,7 +64,8 @@ Mêmes noms en clair et en sombre (`app/lib/ui/tokens.dart`, planche Marque) :
 - **Palettes** (4 niveaux, du cœur au bord) : bleu, orange, rouge, jaune, vert (le vert du thème) ; violet pour Ensorcelé ; gris pour les étoiles fixes. En clair, le cœur blanc prend une teinte de la couleur.
 - **Petite étoile fixe** (`PixelStar`, 5 × 5) : une par étape de tâche dans le chat, de la couleur de son action — **crée vert, modifie bleu, commande orange, internet violet, supprime rouge, déplace jaune ; lire et chercher gris** ; l'étape en cours bouge (feu d'artifice bleu) ; les étapes à venir en gris pâle.
 - **Étoile grise figée** pour les groupes sans agent actif de l'accueil (Historique, Archives), à la place de l'ancien carré gris.
-- En essai sur la planche Marque, sans usage : étincelle, feu d'artifice complet, galaxie ; l'étoile qui réfléchit.
+- En essai sur la planche Marque, sans usage : étincelle, feu d'artifice complet, galaxie.
+- **Mikky lui-même** : quand l'agent réfléchit ou cherche, Mikky prend son **animation de travail** (2026-10-01) ; ses états « réfléchit » et « cherche » restent dans le moteur, inutilisés pour l'instant.
 
 ## 6. Mikky
 
@@ -147,7 +148,7 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 ## 8. Mouvement
 
 - **Ressorts** : sélecteurs 380 / 0,70 (un peu gluants) ; formes de Mikky 95 / 0,38 (gelée). Rien de trop gluant : l'utilisateur veut que ce soit satisfaisant, pas mou.
-- Boucles décoratives à **30 images par seconde**, sur une seule horloge ; **figées** quand Windows demande moins d'animations ; **0 % de CPU** île cachée.
+- Boucles décoratives à **30 images par seconde**, sur une seule horloge ; Mikky aussi quand rien d'autre ne bouge (60 seulement pendant les ressorts) ; **figées** quand Windows demande moins d'animations ; **0 % de CPU** île cachée.
 - **Survol de base : le carré blanc de Oui / Non** (blanc, trait fin, ombre douce) qui **glisse** sur un ressort (380 / 0,70) jusqu'à la ligne sous la souris, et revient **se poser sur la ligne choisie** (`SlidingHover`, `HoverTarget` ; choisi par l'utilisateur le 2026-09-30). Dans une liste sans choix (lignes de l'accueil, étapes et outils du chat), il suit la souris. **Quand il marque un choix** (colonne des planches, et demain les onglets, menus…), **il reste sur le choix** et ne glisse qu'au clic ; le survol, c'est **le nom qui s'éclaire** : gris clair au repos (`text3`), noir sous la souris. **Contraste voulu** (capture de l'utilisateur) : carré blanc sur **fond gris clair** (`well`, ~`#F5F5F5`), ombre douce, sans trait fin ; le trait fin seulement pour un carré blanc sur la fenêtre blanche. Ailleurs (puces du champ, options des sélecteurs), un survol simple. Le mouvement du carré est le même dans les deux sens et pour toutes les distances ; rien de lourd ne doit se construire pendant qu'il glisse (dans les planches, la nouvelle planche s'affiche une fois le carré arrivé, 0,22 s).
 
 ## 9. Écarté (ne pas reproposer)
@@ -174,7 +175,7 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 **À remanier** (par ordre d'intérêt) :
 1. **Jetons** : quelques valeurs en dur restent dans `side_app.dart`, `agent_page.dart`, `session_menu.dart`, `backend_status.dart` et la planche Technique ; les passer aux jetons.
 2. **`AgentCard` fait trop de choses** (style, marque, état, actions, épingle, menu…) : une ligne « vivante » (au travail, en attente, limitée) et une ligne « terminée » séparées.
-3. **Code mort ou en essai à trier une fois les choix faits** : `PixelMap` (plus utilisé), les effets en essai (étincelle, feu d'artifice complet, galaxie), le perdant entre `SpinningLogo` et `ClaudeSpinner`, `GroupHeader.color` (plus lu), le mode `quiet` si l'épuré est refusé, `MSwitch` (à garder pour l'écran de réglages). Les deux polices du nom sont dans `assets/fonts/trial/` et pas encore utilisées dans l'app : dossier à renommer quand le nom sera posé.
+3. **Code mort ou en essai à trier une fois les choix faits** : `PixelMap` (plus utilisé), les effets en essai (étincelle, feu d'artifice complet, galaxie), le perdant entre `SpinningLogo` et `ClaudeSpinner`, `GroupHeader.color` (plus lu), le mode `quiet` si l'épuré est refusé, `MSwitch` (à garder pour l'écran de réglages). Jersey 10 (`assets/fonts/trial/`) si Jacquard 24 reste.
 4. **Couleurs de marque en dur** : l'orange de Claude (`#D97757`) dans `ClaudeSpinner` ; les ranger avec les marques (`Brand`) ou les jetons.
 5. **Deux survols qui cohabitent** (fond gris `HoverBuilder` et carré qui glisse) : écrire la règle dans les composants eux-mêmes (liste → carré ; élément isolé → gris), pour ne plus choisir au cas par cas.
 
@@ -190,9 +191,9 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 ## 12. Prochaines étapes (design et marque), dans l'ordre
 
 1. **Deux choix de l'utilisateur** : l'animation de Claude au travail (son logo qui tourne, ou l'étoile de Claude Code, planche Composants) ; l'accueil épuré (planche Accueil), à appliquer ou non.
-2. **Valider la petite île** (planche Petite île, puis l'app) : la bulle et son « ! », les cinq états, le nom en Jacquard 24.
+2. **Petite île validée** (2026-10-01) : la bulle qui se détache, le nom en Jacquard 24. Reste à la voir dans l'app avec les cinq états.
 3. **Jetons et remaniement** (§11, points 1 à 3) : c'est ce qui rendra les étapes suivantes rapides et cohérentes.
-4. **Icône** : l'icône de l'app et de la zone de notification à partir du logo C (et le « petit quelque chose de magique ») ; le nom « Mikky » en Jacquard 24 là où il s'affiche (en-tête de l'accueil, écran « à propos »).
+4. **Icône** : l'icône de l'app et de la zone de notification à partir du logo C (et le « petit quelque chose de magique ») ; le nom « Mikky » en Jacquard 24 ailleurs, s'il le faut (écran « à propos »).
 5. **Palettes pixel** figées et nommées ; décider où vivent les couleurs signature (focus, liens, bouton « go », magie de Mikky).
 6. **Écrans à dessiner** : réglages (ils vivent pour l'instant dans le menu « ··· »), connexion à Claude / Codex, boîte de confirmation, notification d'erreur, état vide ; nos infobulles (bulle blanche, ombre douce).
 7. **Codex dans le chat** (avec la session technique, quand l'abonnement revient) : sorties des commandes, plan, réflexions (résumés à activer dans sa configuration), messages en cours hors du détail.
