@@ -14,9 +14,12 @@ use crate::connection::{Connection, Event, RpcError};
 /// One message, either way, with when it passed (RFC 3339, UTC).
 #[derive(Debug)]
 pub struct Traffic {
+    pub sequence: u64,
+    #[cfg(test)]
     pub outgoing: bool,
-    pub at: String,
+    #[cfg(test)]
     pub message: Value,
+    pub events: Vec<Value>,
 }
 
 #[derive(Debug, Clone)]
@@ -36,6 +39,7 @@ struct PermissionOption {
 
 #[derive(Default)]
 struct State {
+    reader: crate::reader::Reader,
     backlog: Vec<Arc<Traffic>>,
     subscribers: Vec<Sink>,
     /// Permission requests waiting for the user, oldest first.
@@ -52,7 +56,11 @@ impl State {
     /// Keeps a message and hands it on. A request the user must answer is
     /// held first, so that no one can answer it before it is known.
     fn record(&mut self, outgoing: bool, message: &Value) {
-        if let (false, Some(id), Some(method)) = (outgoing, message.get("id"), message.get("method").and_then(Value::as_str)) {
+        if let (false, Some(id), Some(method)) = (
+            outgoing,
+            message.get("id"),
+            message.get("method").and_then(Value::as_str),
+        ) {
             let params = message.get("params").unwrap_or(&Value::Null);
             if method == "session/request_permission" {
                 let options = params
@@ -62,7 +70,11 @@ impl State {
                         o.iter()
                             .map(|o| PermissionOption {
                                 id: o.get("optionId").cloned().unwrap_or(Value::Null),
-                                kind: o.get("kind").and_then(Value::as_str).unwrap_or_default().to_owned(),
+                                kind: o
+                                    .get("kind")
+                                    .and_then(Value::as_str)
+                                    .unwrap_or_default()
+                                    .to_owned(),
                             })
                             .collect()
                     })
@@ -72,13 +84,19 @@ impl State {
                 self.questions.push(id.clone());
             }
         }
+        let at = chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true);
+        let events = self.reader.read(message, outgoing, &at);
         let t = Arc::new(Traffic {
+            sequence: self.backlog.len() as u64 + 1,
+            #[cfg(test)]
             outgoing,
-            at: chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Micros, true),
+            #[cfg(test)]
             message: message.clone(),
+            events,
         });
         self.backlog.push(t.clone());
-        self.subscribers.retain(|sink| sink(RunEvent::Traffic(t.clone())));
+        self.subscribers
+            .retain(|sink| sink(RunEvent::Traffic(t.clone())));
     }
 }
 
@@ -86,7 +104,8 @@ impl State {
 /// questions); any other gets an error.
 fn held(method: &str, params: &Value) -> bool {
     method == "session/request_permission"
-        || (method == "elicitation/create" && params.get("mode").and_then(Value::as_str) == Some("form"))
+        || (method == "elicitation/create"
+            && params.get("mode").and_then(Value::as_str) == Some("form"))
 }
 
 #[derive(Clone)]
@@ -110,13 +129,18 @@ impl Run {
         };
         let (conn, mut events) = Connection::new(input, output, hook);
         let (closed_tx, closed) = watch::channel(false);
-        let run = Run { conn, state, closed };
+        let run = Run {
+            conn,
+            state,
+            closed,
+        };
         let pump = run.clone();
         tokio::spawn(async move {
             while let Some(e) = events.recv().await {
                 match e {
                     Event::Request { id, method, params } if !held(&method, &params) => {
-                        pump.conn.respond_error(id, -32601, &format!("Method not found: {method}"));
+                        pump.conn
+                            .respond_error(id, -32601, &format!("Method not found: {method}"));
                     }
                     Event::Request { .. } => {}
                     Event::Closed => break,
@@ -131,17 +155,33 @@ impl Run {
     /// Hands `sink` everything so far, then what comes (atomically: nothing
     /// missed, nothing twice), then [RunEvent::Closed].
     pub fn subscribe(&self, sink: Sink) {
+        self.subscribe_after(0, sink);
+    }
+
+    /// Replay only missed messages after a transport interruption.
+    pub fn subscribe_after(&self, after: u64, sink: Sink) {
+        self.subscribe_page(after, usize::MAX, sink);
+    }
+
+    /// Replay a bounded page; only the final page installs the live sink.
+    pub fn subscribe_page(&self, after: u64, limit: usize, sink: Sink) -> (u64, bool) {
         let mut s = self.state.lock().unwrap();
-        for t in &s.backlog {
+        let start = (after as usize).min(s.backlog.len());
+        let end = start.saturating_add(limit).min(s.backlog.len());
+        for t in &s.backlog[start..end] {
             if !sink(RunEvent::Traffic(t.clone())) {
-                return;
+                return (start as u64, true);
             }
+        }
+        if end < s.backlog.len() {
+            return (end as u64, true);
         }
         if s.closed {
             sink(RunEvent::Closed);
         } else {
             s.subscribers.push(sink);
         }
+        (end as u64, false)
     }
 
     pub fn session_id(&self) -> Option<String> {
@@ -164,7 +204,12 @@ impl Run {
 
     /// Handshake, then a new session in `cwd`, or `resume` one (the agent
     /// replays its thread), then the permission `mode`.
-    pub async fn open(&self, cwd: &str, resume: Option<&str>, mode: Option<&str>) -> Result<String, RpcError> {
+    pub async fn open(
+        &self,
+        cwd: &str,
+        resume: Option<&str>,
+        mode: Option<&str>,
+    ) -> Result<String, RpcError> {
         self.conn
             .request(
                 "initialize",
@@ -183,17 +228,33 @@ impl Run {
             .await?;
         let session_id = match resume {
             None => {
-                let r = self.conn.request("session/new", json!({"cwd": cwd, "mcpServers": []})).await?;
-                r.get("sessionId").and_then(Value::as_str).unwrap_or_default().to_owned()
+                let r = self
+                    .conn
+                    .request("session/new", json!({"cwd": cwd, "mcpServers": []}))
+                    .await?;
+                r.get("sessionId")
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_owned()
             }
             Some(id) => {
-                self.conn.request("session/load", json!({"sessionId": id, "cwd": cwd, "mcpServers": []})).await?;
+                self.conn
+                    .request(
+                        "session/load",
+                        json!({"sessionId": id, "cwd": cwd, "mcpServers": []}),
+                    )
+                    .await?;
                 id.to_owned()
             }
         };
         self.state.lock().unwrap().session_id = Some(session_id.clone());
         if let Some(mode) = mode {
-            self.conn.request("session/set_mode", json!({"sessionId": session_id, "modeId": mode})).await?;
+            self.conn
+                .request(
+                    "session/set_mode",
+                    json!({"sessionId": session_id, "modeId": mode}),
+                )
+                .await?;
         }
         Ok(session_id)
     }
@@ -213,7 +274,10 @@ impl Run {
         };
         let r = self
             .conn
-            .request("session/prompt", json!({"sessionId": session_id, "prompt": [{"type": "text", "text": text}]}))
+            .request(
+                "session/prompt",
+                json!({"sessionId": session_id, "prompt": [{"type": "text", "text": text}]}),
+            )
             .await;
         self.state.lock().unwrap().prompts -= 1;
         r
@@ -239,7 +303,9 @@ impl Run {
             (true, false) => &["allow_once", "allow_always"],
             (false, _) => &["reject_once", "reject_always"],
         };
-        let pick = wanted.iter().find_map(|kind| options.iter().find(|o| o.kind == *kind));
+        let pick = wanted
+            .iter()
+            .find_map(|kind| options.iter().find(|o| o.kind == *kind));
         self.conn.respond(
             id,
             match pick {
@@ -273,14 +339,19 @@ impl Run {
     /// Stops the current turn; the session stays open for the next message.
     pub fn cancel(&self) {
         let session_id = self.session_id();
-        self.conn.notify("session/cancel", json!({"sessionId": session_id}));
+        self.conn
+            .notify("session/cancel", json!({"sessionId": session_id}));
         // After a cancel, ACP wants every open request answered « cancelled ».
         let (asked, questions) = {
             let mut s = self.state.lock().unwrap();
-            (std::mem::take(&mut s.asked), std::mem::take(&mut s.questions))
+            (
+                std::mem::take(&mut s.asked),
+                std::mem::take(&mut s.questions),
+            )
         };
         for (id, _) in asked {
-            self.conn.respond(id, json!({"outcome": {"outcome": "cancelled"}}));
+            self.conn
+                .respond(id, json!({"outcome": {"outcome": "cancelled"}}));
         }
         for id in questions {
             self.conn.respond(id, json!({"action": "cancel"}));
@@ -323,13 +394,17 @@ mod tests {
         }
 
         async fn send(&mut self, v: Value) {
-            self.output.write_all(format!("{v}\n").as_bytes()).await.unwrap();
+            self.output
+                .write_all(format!("{v}\n").as_bytes())
+                .await
+                .unwrap();
         }
 
         /// Answers the next request with `result`; returns it.
         async fn answer(&mut self, result: Value) -> Value {
             let r = self.next().await;
-            self.send(json!({"jsonrpc": "2.0", "id": r["id"], "result": result})).await;
+            self.send(json!({"jsonrpc": "2.0", "id": r["id"], "result": result}))
+                .await;
             r
         }
     }
@@ -337,7 +412,13 @@ mod tests {
     fn start() -> (Run, Agent) {
         let (client_in, agent_out) = duplex(1 << 16);
         let (agent_in, client_out) = duplex(1 << 16);
-        (Run::start(client_in, client_out), Agent { input: BufReader::new(agent_in), output: agent_out })
+        (
+            Run::start(client_in, client_out),
+            Agent {
+                input: BufReader::new(agent_in),
+                output: agent_out,
+            },
+        )
     }
 
     async fn opened() -> (Run, Agent) {
@@ -346,10 +427,16 @@ mod tests {
             let run = run.clone();
             async move { run.open("/tmp/x", None, Some("default")).await }
         });
-        assert_eq!(agent.answer(json!({"protocolVersion": 1})).await["method"], "initialize");
+        assert_eq!(
+            agent.answer(json!({"protocolVersion": 1})).await["method"],
+            "initialize"
+        );
         agent.answer(json!({"sessionId": "s1"})).await;
         let mode = agent.answer(json!({})).await;
-        assert_eq!(mode["params"], json!({"sessionId": "s1", "modeId": "default"}));
+        assert_eq!(
+            mode["params"],
+            json!({"sessionId": "s1", "modeId": "default"})
+        );
         assert_eq!(open.await.unwrap().unwrap(), "s1");
         (run, agent)
     }
@@ -387,12 +474,19 @@ mod tests {
     async fn permissions_pick_the_option_the_user_meant() {
         let (run, mut agent) = opened().await;
         assert!(!run.answer(true, false, None));
-        for (allow, always, want) in [(true, false, "yes"), (true, true, "always"), (false, false, "no")] {
+        for (allow, always, want) in [
+            (true, false, "yes"),
+            (true, true, "always"),
+            (false, false, "no"),
+        ] {
             agent.send(permission("p")).await;
             settle(&run, 1).await;
             assert!(run.answer(allow, always, None));
             let r = agent.next().await;
-            assert_eq!(r["result"]["outcome"], json!({"outcome": "selected", "optionId": want}));
+            assert_eq!(
+                r["result"]["outcome"],
+                json!({"outcome": "selected", "optionId": want})
+            );
         }
     }
 
@@ -404,13 +498,19 @@ mod tests {
             .await;
         settle(&run, 1).await;
         assert!(run.answer_question(Some(json!({"question_0": "Postgres"}))));
-        assert_eq!(agent.next().await["result"], json!({"action": "accept", "content": {"question_0": "Postgres"}}));
+        assert_eq!(
+            agent.next().await["result"],
+            json!({"action": "accept", "content": {"question_0": "Postgres"}})
+        );
 
         agent.send(permission("p2")).await;
         settle(&run, 1).await;
         run.cancel();
         assert_eq!(agent.next().await["method"], "session/cancel");
-        assert_eq!(agent.next().await["result"], json!({"outcome": {"outcome": "cancelled"}}));
+        assert_eq!(
+            agent.next().await["result"],
+            json!({"outcome": {"outcome": "cancelled"}})
+        );
         assert!(!run.answer(true, false, None));
     }
 
@@ -421,14 +521,18 @@ mod tests {
         // initialize, session/new, set_mode: asked and answered.
         let mut backlog = vec![];
         for _ in 0..6 {
-            let Some(RunEvent::Traffic(t)) = rx.recv().await else { panic!() };
+            let Some(RunEvent::Traffic(t)) = rx.recv().await else {
+                panic!()
+            };
             backlog.push(t);
         }
         assert!(backlog[0].outgoing && !backlog[1].outgoing);
         agent
             .send(json!({"jsonrpc": "2.0", "method": "session/update", "params": {"sessionId": "s1"}}))
             .await;
-        let RunEvent::Traffic(t) = rx.recv().await.unwrap() else { panic!() };
+        let RunEvent::Traffic(t) = rx.recv().await.unwrap() else {
+            panic!()
+        };
         assert_eq!(t.message["method"], "session/update");
         drop(agent);
         run.wait_closed().await;
@@ -445,7 +549,9 @@ mod tests {
     #[tokio::test]
     async fn unknown_requests_get_an_error() {
         let (_run, mut agent) = opened().await;
-        agent.send(json!({"jsonrpc": "2.0", "id": 3, "method": "fs/read_text_file", "params": {}})).await;
+        agent
+            .send(json!({"jsonrpc": "2.0", "id": 3, "method": "fs/read_text_file", "params": {}}))
+            .await;
         assert_eq!(agent.next().await["error"]["code"], -32601);
     }
 }

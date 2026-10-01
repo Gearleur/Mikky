@@ -8,7 +8,7 @@
 //! subscribe) and `run.closed`.
 
 use std::collections::HashMap;
-use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
@@ -36,59 +36,88 @@ struct Agent {
     job: Option<Job>,
 }
 
-#[derive(Default)]
 pub struct Daemon {
+    store: crate::store::Store,
+    sessions: crate::watch::Sessions,
     agents: Mutex<HashMap<String, Arc<Agent>>>,
     next: AtomicU64,
-    clients: AtomicUsize,
-    /// Wakes the idle watch when a client comes or goes.
-    clients_changed: Notify,
+    instance: String,
+    shutdown: Notify,
+    allow_wsl: bool,
+    wsl: tokio::sync::Mutex<Option<Arc<crate::wsl::Proxy>>>,
+    preparing: tokio::sync::Mutex<()>,
+    logins: crate::login::Logins,
 }
 
 impl Daemon {
+    pub fn new(
+        store: crate::store::Store,
+        sessions: crate::watch::Sessions,
+        allow_wsl: bool,
+    ) -> Self {
+        Self {
+            store,
+            sessions,
+            agents: Mutex::new(HashMap::new()),
+            next: AtomicU64::new(0),
+            instance: crate::endpoint::new_token()[..16].into(),
+            shutdown: Notify::new(),
+            allow_wsl,
+            wsl: tokio::sync::Mutex::new(None),
+            preparing: tokio::sync::Mutex::new(()),
+            logins: crate::login::Logins::default(),
+        }
+    }
+    async fn wsl(
+        &self,
+        out: &mpsc::UnboundedSender<String>,
+    ) -> Result<Arc<crate::wsl::Proxy>, RpcError> {
+        let mut proxy = self.wsl.lock().await;
+        if !proxy.as_ref().is_some_and(|p| p.alive()) {
+            *proxy = Some(crate::wsl::Proxy::start().await?);
+        }
+        let proxy = proxy.as_ref().unwrap().clone();
+        proxy.subscribe(out);
+        Ok(proxy)
+    }
     fn agent(&self, params: &Value) -> Result<Arc<Agent>, RpcError> {
         let id = str_param(params, "run")?;
-        self.agents.lock().unwrap().get(id).cloned().ok_or_else(|| RpcError::new(-32000, format!("no run {id}")))
+        self.agents
+            .lock()
+            .unwrap()
+            .get(id)
+            .cloned()
+            .ok_or_else(|| RpcError::new(-32000, format!("no run {id}")))
     }
 
     /// Ends every agent (when `mikkyd` ends).
     pub async fn stop_all(&self) {
         let agents: Vec<_> = self.agents.lock().unwrap().values().cloned().collect();
-        for a in agents {
-            stop(&a).await;
-        }
+        futures_util::future::join_all(agents.iter().map(|a| stop(a))).await;
     }
 
-    /// Returns once no screen has been connected for `grace`.
-    pub async fn idle(&self, grace: Duration) {
-        loop {
-            if self.clients.load(Ordering::SeqCst) == 0 {
-                tokio::select! {
-                    _ = tokio::time::sleep(grace) => {
-                        if self.clients.load(Ordering::SeqCst) == 0 {
-                            return;
-                        }
-                    }
-                    _ = self.clients_changed.notified() => {}
-                }
-            } else {
-                self.clients_changed.notified().await;
-            }
-        }
+    pub async fn wait_shutdown(&self) {
+        self.shutdown.notified().await;
     }
 }
 
 /// Serves screens on `listener` until the process ends.
 pub async fn serve(listener: TcpListener, token: String, daemon: Arc<Daemon>) {
     loop {
-        let Ok((stream, _)) = listener.accept().await else { continue };
+        let Ok((stream, _)) = listener.accept().await else {
+            continue;
+        };
         tokio::spawn(client(stream, token.clone(), daemon.clone()));
     }
 }
 
 async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
     let check = |req: &Request, resp: Response| -> Result<Response, ErrorResponse> {
-        let auth = req.headers().get("authorization").and_then(|v| v.to_str().ok()).unwrap_or("");
+        let auth = req
+            .headers()
+            .get("authorization")
+            .and_then(|v| v.to_str().ok())
+            .unwrap_or("");
         // A browser page always sends an Origin: no web page may drive agents.
         let from_browser = req.headers().contains_key("origin");
         if from_browser || !same_token(auth.strip_prefix("Bearer ").unwrap_or(""), &token) {
@@ -98,12 +127,13 @@ async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
         }
         Ok(resp)
     };
-    let Ok(ws) = tokio_tungstenite::accept_hdr_async(stream, check).await else { return };
-    daemon.clients.fetch_add(1, Ordering::SeqCst);
-    daemon.clients_changed.notify_one();
+    let Ok(ws) = tokio_tungstenite::accept_hdr_async(stream, check).await else {
+        return;
+    };
 
     let (mut sink, mut source) = ws.split();
     let (out, mut out_rx) = mpsc::unbounded_channel::<String>();
+    let watching = watch_notifications(&daemon, out.clone());
     let writer = tokio::spawn(async move {
         while let Some(text) = out_rx.recv().await {
             if sink.send(Message::text(text)).await.is_err() {
@@ -122,29 +152,213 @@ async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
         }
     }
     writer.abort();
-    daemon.clients.fetch_sub(1, Ordering::SeqCst);
-    daemon.clients_changed.notify_one();
+    watching.abort();
 }
 
-async fn handle(text: String, out: mpsc::UnboundedSender<String>, daemon: Arc<Daemon>) {
-    let Ok(req) = serde_json::from_str::<Value>(&text) else { return };
-    let method = req.get("method").and_then(Value::as_str).unwrap_or_default();
+pub fn watch_notifications(
+    daemon: &Daemon,
+    notices: mpsc::UnboundedSender<String>,
+) -> tokio::task::JoinHandle<()> {
+    let mut changes = daemon.sessions.changes.subscribe();
+    let mut state = daemon.store.changes.subscribe();
+    tokio::spawn(async move {
+        loop {
+            let update = tokio::select! {
+                result = changes.recv() => Some(result),
+                result = state.recv() => {
+                    if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
+                    if notices.send(notification("state.changed", json!({}))).is_err() { break; }
+                    None
+                }
+            };
+            let Some(update) = update else {
+                continue;
+            };
+            let params = match update {
+                Ok(session) => session,
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => json!({"rescan": true}),
+                Err(_) => break,
+            };
+            if notices
+                .send(notification("sessions.changed", params))
+                .is_err()
+            {
+                break;
+            }
+        }
+    })
+}
+
+pub async fn handle(text: String, out: mpsc::UnboundedSender<String>, daemon: Arc<Daemon>) {
+    let Ok(req) = serde_json::from_str::<Value>(&text) else {
+        return;
+    };
+    let method = req
+        .get("method")
+        .and_then(Value::as_str)
+        .unwrap_or_default();
     let params = req.get("params").cloned().unwrap_or_else(|| json!({}));
     let result = dispatch(&daemon, method, &params, &out).await;
-    let Some(id) = req.get("id").cloned() else { return };
+    let Some(id) = req.get("id").cloned() else {
+        return;
+    };
     let answer = match result {
         Ok(result) => json!({"jsonrpc": "2.0", "id": id, "result": result}),
-        Err(e) => json!({"jsonrpc": "2.0", "id": id, "error": {"code": e.code, "message": e.message}}),
+        Err(e) => {
+            json!({"jsonrpc": "2.0", "id": id, "error": {"code": e.code, "message": e.message}})
+        }
     };
     let _ = out.send(answer.to_string());
 }
 
-async fn dispatch(daemon: &Arc<Daemon>, method: &str, params: &Value, out: &mpsc::UnboundedSender<String>) -> Result<Value, RpcError> {
+async fn dispatch(
+    daemon: &Arc<Daemon>,
+    method: &str,
+    params: &Value,
+    out: &mpsc::UnboundedSender<String>,
+) -> Result<Value, RpcError> {
+    if daemon.allow_wsl
+        && (params["host"] == "wsl"
+            || params["run"]
+                .as_str()
+                .is_some_and(|s| s.starts_with("wsl:"))
+            || params["path"]
+                .as_str()
+                .is_some_and(|s| s.starts_with("\\\\wsl.localhost\\Ubuntu\\")))
+    {
+        let mut remote = params.clone();
+        if remote["host"] == "wsl" {
+            remote["host"] = json!("windows");
+        }
+        if let Some(id) = params["run"].as_str().and_then(|s| s.strip_prefix("wsl:")) {
+            remote["run"] = json!(id);
+        }
+        if let Some(path) = params["path"]
+            .as_str()
+            .and_then(|s| s.strip_prefix("\\\\wsl.localhost\\Ubuntu"))
+        {
+            remote["path"] = json!(path.replace('\\', "/"));
+        }
+        let proxy = daemon.wsl(out).await?;
+        if method == "tools.login" {
+            proxy.login_sink(str_param(params, "login")?, out);
+        }
+        let mut result = proxy.request(method, remote).await?;
+        if method == "run.start" || method == "tools.launch" {
+            crate::wsl::prefix(&mut result);
+        }
+        if method == "sessions.read" {
+            crate::wsl::prefix(&mut result["session"]);
+        }
+        return Ok(result);
+    }
     match method {
-        "hello" => Ok(json!({"version": env!("CARGO_PKG_VERSION"), "pid": std::process::id()})),
+        "tools.login" => {
+            daemon
+                .logins
+                .start(
+                    str_param(params, "provider")?,
+                    str_param(params, "login")?.to_owned(),
+                    out.clone(),
+                )
+                .await
+        }
+        "tools.cancelLogin" => {
+            daemon.logins.cancel(str_param(params, "login")?);
+            Ok(Value::Null)
+        }
+        "tools.status" => Ok(crate::tools::status().await),
+        "tools.auth" => crate::tools::auth(str_param(params, "provider")?).await,
+        "tools.launch" => {
+            let _prepare = daemon.preparing.lock().await;
+            crate::tools::prepare().await?;
+            let command =
+                crate::tools::launch(str_param(params, "provider")?, str_param(params, "cwd")?)
+                    .await?;
+            start(daemon, &command)
+        }
+        "autostart.status" => crate::autostart::configure(None).await,
+        "autostart.set" => {
+            crate::autostart::configure(Some(
+                params
+                    .get("enabled")
+                    .and_then(Value::as_bool)
+                    .ok_or_else(|| RpcError::new(-32602, "missing enabled"))?,
+            ))
+            .await
+        }
+        "sessions.list" => {
+            let mut list = daemon.sessions.list();
+            if daemon.allow_wsl {
+                if let Ok(proxy) = daemon.wsl(out).await {
+                    if let Ok(Value::Array(mut remote)) = proxy.request(method, json!({})).await {
+                        for item in &mut remote {
+                            crate::wsl::prefix(item);
+                        }
+                        list.as_array_mut().unwrap().extend(remote);
+                    }
+                }
+            }
+            Ok(list)
+        }
+        "sessions.delete" => {
+            daemon
+                .sessions
+                .delete(std::path::Path::new(str_param(params, "path")?))
+                .map_err(|e| RpcError::new(-32000, e))?;
+            Ok(Value::Null)
+        }
+        "sessions.read" => daemon
+            .sessions
+            .read(
+                std::path::Path::new(str_param(params, "path")?),
+                params.get("after").and_then(Value::as_u64).unwrap_or(0) as usize,
+                params
+                    .get("generation")
+                    .and_then(Value::as_u64)
+                    .unwrap_or(0),
+            )
+            .ok_or_else(|| RpcError::new(-32000, "unknown session")),
+        "state.get" => daemon
+            .store
+            .read()
+            .await
+            .map_err(|e| RpcError::new(-32000, e)),
+        "state.patch" => daemon
+            .store
+            .patch(params.clone())
+            .await
+            .map_err(|e| RpcError::new(-32000, e)),
+        "hello" => Ok(
+            json!({"version": env!("CARGO_PKG_VERSION"), "protocol": 3, "persistent": true, "pid": std::process::id()}),
+        ),
+        "runs.stopAll" => {
+            daemon.stop_all().await;
+            if daemon.allow_wsl {
+                daemon.wsl(out).await?.request(method, json!({})).await?;
+            }
+            Ok(Value::Null)
+        }
+        "daemon.shutdown" => {
+            daemon.stop_all().await;
+            daemon.shutdown.notify_one();
+            Ok(Value::Null)
+        }
         "runs.list" => {
+            let remote = if daemon.allow_wsl {
+                // A missing WSL installation does not prevent Windows work.
+                match daemon.wsl(out).await {
+                    Ok(proxy) => proxy
+                        .request(method, json!({}))
+                        .await
+                        .unwrap_or(json!([{"unavailable":true}])),
+                    Err(e) => json!([{"unavailable":true,"message":e.message}]),
+                }
+            } else {
+                json!([])
+            };
             let agents = daemon.agents.lock().unwrap();
-            Ok(agents
+            let mut list: Vec<Value> = agents
                 .iter()
                 .map(|(id, a)| {
                     json!({
@@ -152,7 +366,14 @@ async fn dispatch(daemon: &Arc<Daemon>, method: &str, params: &Value, out: &mpsc
                         "sessionId": a.run.session_id(), "alive": a.run.alive(), "working": a.run.working(),
                     })
                 })
-                .collect())
+                .collect();
+            if let Value::Array(mut remote) = remote {
+                for item in &mut remote {
+                    crate::wsl::prefix(item);
+                }
+                list.extend(remote);
+            }
+            Ok(json!(list))
         }
         "run.start" => start(daemon, params),
         "run.open" => {
@@ -169,18 +390,41 @@ async fn dispatch(daemon: &Arc<Daemon>, method: &str, params: &Value, out: &mpsc
         }
         "run.request" => {
             let a = daemon.agent(params)?;
-            a.run.request(str_param(params, "method")?, params.get("params").cloned().unwrap_or_else(|| json!({}))).await
+            a.run
+                .request(
+                    str_param(params, "method")?,
+                    params.get("params").cloned().unwrap_or_else(|| json!({})),
+                )
+                .await
         }
-        "run.prompt" => daemon.agent(params)?.run.prompt(str_param(params, "text")?).await,
+        "run.prompt" => {
+            daemon
+                .agent(params)?
+                .run
+                .prompt(str_param(params, "text")?)
+                .await
+        }
         "run.answer" => {
             let a = daemon.agent(params)?;
-            let allow = params.get("allow").and_then(Value::as_bool).unwrap_or(false);
-            let always = params.get("always").and_then(Value::as_bool).unwrap_or(false);
-            Ok(json!(a.run.answer(allow, always, params.get("requestId").filter(|v| !v.is_null()))))
+            let allow = params
+                .get("allow")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            let always = params
+                .get("always")
+                .and_then(Value::as_bool)
+                .unwrap_or(false);
+            Ok(json!(a.run.answer(
+                allow,
+                always,
+                params.get("requestId").filter(|v| !v.is_null())
+            )))
         }
         "run.answerQuestion" => {
             let a = daemon.agent(params)?;
-            Ok(json!(a.run.answer_question(params.get("answers").filter(|v| !v.is_null()).cloned())))
+            Ok(json!(a.run.answer_question(
+                params.get("answers").filter(|v| !v.is_null()).cloned()
+            )))
         }
         "run.cancel" => {
             daemon.agent(params)?.run.cancel();
@@ -198,14 +442,18 @@ async fn dispatch(daemon: &Arc<Daemon>, method: &str, params: &Value, out: &mpsc
             // before the answer to subscribe, and each message before the
             // answer to the request it ends (a prompt's last words first).
             let out = out.clone();
-            a.run.subscribe(Box::new(move |e| {
-                let text = match e {
-                    RunEvent::Traffic(t) => traffic(&id, &t),
-                    RunEvent::Closed => notification("run.closed", json!({"run": id})),
-                };
-                out.send(text).is_ok()
-            }));
-            Ok(Value::Null)
+            let (next, more) = a.run.subscribe_page(
+                params.get("after").and_then(Value::as_u64).unwrap_or(0),
+                256,
+                Box::new(move |e| {
+                    let text = match e {
+                        RunEvent::Traffic(t) => traffic(&id, &t),
+                        RunEvent::Closed => notification("run.closed", json!({"run": id})),
+                    };
+                    out.send(text).is_ok()
+                }),
+            );
+            Ok(json!({"next":next,"more":more}))
         }
         _ => Err(RpcError::new(-32601, format!("Method not found: {method}"))),
     }
@@ -221,16 +469,31 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
     let args: Vec<String> = params
         .get("args")
         .and_then(Value::as_array)
-        .map(|a| a.iter().filter_map(Value::as_str).map(str::to_owned).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(Value::as_str)
+                .map(str::to_owned)
+                .collect()
+        })
         .unwrap_or_default();
     let env: Vec<(String, String)> = params
         .get("env")
         .and_then(Value::as_object)
-        .map(|m| m.iter().filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned()))).collect())
+        .map(|m| {
+            m.iter()
+                .filter_map(|(k, v)| Some((k.clone(), v.as_str()?.to_owned())))
+                .collect()
+        })
         .unwrap_or_default();
     let host = match host_name.as_str() {
         "windows" => Host::Windows,
-        "wsl" => Host::Wsl { distro: params.get("distro").and_then(Value::as_str).unwrap_or("Ubuntu").to_owned() },
+        "wsl" => Host::Wsl {
+            distro: params
+                .get("distro")
+                .and_then(Value::as_str)
+                .unwrap_or("Ubuntu")
+                .to_owned(),
+        },
         other => return Err(RpcError::new(-32602, format!("unknown host {other}"))),
     };
 
@@ -241,8 +504,20 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
     let (stdin, stdout) = (child.stdin.take().unwrap(), child.stdout.take().unwrap());
     let run = Run::start(stdout, stdin);
 
-    let id = format!("r{}", daemon.next.fetch_add(1, Ordering::Relaxed) + 1);
-    let agent = Arc::new(Agent { provider, host: host_name, cwd, run: run.clone(), child: tokio::sync::Mutex::new(child), job });
+    // IDs must not collide when a client reconnects to a restarted daemon.
+    let id = format!(
+        "{}-r{}",
+        daemon.instance,
+        daemon.next.fetch_add(1, Ordering::Relaxed) + 1
+    );
+    let agent = Arc::new(Agent {
+        provider,
+        host: host_name,
+        cwd,
+        run: run.clone(),
+        child: tokio::sync::Mutex::new(child),
+        job,
+    });
     daemon.agents.lock().unwrap().insert(id.clone(), agent);
     // Once the adapter is gone, so is the agent (and, dropped, its job with
     // whatever it left running).
@@ -251,7 +526,7 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
         run.wait_closed().await;
         daemon.agents.lock().unwrap().remove(&run_id);
     });
-    Ok(json!({"run": id}))
+    Ok(json!({"run": id, "cwd": params["cwd"]}))
 }
 
 /// Ends an agent and everything it started: cancel the turn, close its
@@ -272,7 +547,10 @@ async fn stop(a: &Agent) {
 }
 
 fn traffic(run: &str, t: &Traffic) -> String {
-    notification("run.traffic", json!({"run": run, "outgoing": t.outgoing, "at": t.at, "message": t.message}))
+    notification(
+        "run.traffic",
+        json!({"run": run, "sequence": t.sequence, "events": t.events}),
+    )
 }
 
 fn notification(method: &str, params: Value) -> String {
@@ -280,5 +558,8 @@ fn notification(method: &str, params: Value) -> String {
 }
 
 fn str_param<'a>(params: &'a Value, key: &str) -> Result<&'a str, RpcError> {
-    params.get(key).and_then(Value::as_str).ok_or_else(|| RpcError::new(-32602, format!("missing {key}")))
+    params
+        .get(key)
+        .and_then(Value::as_str)
+        .ok_or_else(|| RpcError::new(-32602, format!("missing {key}")))
 }

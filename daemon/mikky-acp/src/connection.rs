@@ -19,7 +19,10 @@ pub struct RpcError {
 
 impl RpcError {
     pub fn new(code: i64, message: impl Into<String>) -> Self {
-        Self { code, message: message.into() }
+        Self {
+            code,
+            message: message.into(),
+        }
     }
 
     fn closed() -> Self {
@@ -45,7 +48,11 @@ pub type TrafficHook = Arc<dyn Fn(bool, &Value) + Send + Sync>;
 pub enum Event {
     /// A request from the agent, to answer with [Connection::respond]. The
     /// hook saw it first.
-    Request { id: Value, method: String, params: Value },
+    Request {
+        id: Value,
+        method: String,
+        params: Value,
+    },
     /// The agent's output ended.
     Closed,
 }
@@ -71,7 +78,11 @@ pub struct Connection {
 impl Connection {
     /// Talks JSON-RPC on `input` / `output` (the adapter's stdout / stdin);
     /// `hook` sees every message.
-    pub fn new<R, W>(input: R, output: W, hook: TrafficHook) -> (Connection, mpsc::UnboundedReceiver<Event>)
+    pub fn new<R, W>(
+        input: R,
+        output: W,
+        hook: TrafficHook,
+    ) -> (Connection, mpsc::UnboundedReceiver<Event>)
     where
         R: AsyncRead + Unpin + Send + 'static,
         W: AsyncWrite + Unpin + Send + 'static,
@@ -138,7 +149,10 @@ impl Connection {
     }
 }
 
-async fn write_loop<W: AsyncWrite + Unpin>(mut output: W, mut lines: mpsc::UnboundedReceiver<String>) {
+async fn write_loop<W: AsyncWrite + Unpin>(
+    mut output: W,
+    mut lines: mpsc::UnboundedReceiver<String>,
+) {
     while let Some(mut line) = lines.recv().await {
         line.push('\n');
         if output.write_all(line.as_bytes()).await.is_err() || output.flush().await.is_err() {
@@ -164,21 +178,34 @@ async fn read_loop<R: AsyncRead + Unpin>(input: R, inner: Arc<Inner>) {
             continue;
         }
         // Not JSON: a log line some adapters print on stdout.
-        let Ok(message) = serde_json::from_str::<Value>(line) else { continue };
+        let Ok(message) = serde_json::from_str::<Value>(line) else {
+            continue;
+        };
         if !message.is_object() {
             continue;
         }
-        let method = message.get("method").and_then(Value::as_str).map(str::to_owned);
+        let method = message
+            .get("method")
+            .and_then(Value::as_str)
+            .map(str::to_owned);
         let id = message.get("id").cloned();
         let params = message.get("params").cloned().unwrap_or(Value::Null);
         let answer = match &method {
-            None => Some((message.get("result").cloned(), message.get("error").cloned())),
+            None => Some((
+                message.get("result").cloned(),
+                message.get("error").cloned(),
+            )),
             Some(_) => None,
         };
         (inner.hook)(false, &message);
         match (method, id) {
             (None, Some(id)) => {
-                let Some(tx) = id.as_u64().and_then(|id| inner.pending.lock().unwrap().remove(&id)) else { continue };
+                let Some(tx) = id
+                    .as_u64()
+                    .and_then(|id| inner.pending.lock().unwrap().remove(&id))
+                else {
+                    continue;
+                };
                 let (result, error) = answer.unwrap();
                 let _ = tx.send(match error {
                     Some(e) => Err(RpcError::new(
@@ -211,13 +238,21 @@ mod tests {
     type Seen = Arc<Mutex<Vec<(bool, Value)>>>;
 
     /// A connection, what its hook saw, and the agent's end of the pipes.
-    fn pair() -> (Connection, mpsc::UnboundedReceiver<Event>, Seen, tokio::io::DuplexStream, tokio::io::DuplexStream) {
+    fn pair() -> (
+        Connection,
+        mpsc::UnboundedReceiver<Event>,
+        Seen,
+        tokio::io::DuplexStream,
+        tokio::io::DuplexStream,
+    ) {
         let (client_in, agent_out) = duplex(1 << 16);
         let (agent_in, client_out) = duplex(1 << 16);
         let seen: Seen = Arc::default();
         let hook = {
             let seen = seen.clone();
-            Arc::new(move |outgoing: bool, m: &Value| seen.lock().unwrap().push((outgoing, m.clone())))
+            Arc::new(move |outgoing: bool, m: &Value| {
+                seen.lock().unwrap().push((outgoing, m.clone()))
+            })
         };
         let (c, events) = Connection::new(client_in, client_out, hook);
         (c, events, seen, agent_in, agent_out)
@@ -264,7 +299,10 @@ mod tests {
             .unwrap();
         loop {
             if let Event::Request { id, method, params } = events.recv().await.unwrap() {
-                assert_eq!((id, method.as_str(), params), (json!("p1"), "session/request_permission", json!({"x": 1})));
+                assert_eq!(
+                    (id, method.as_str(), params),
+                    (json!("p1"), "session/request_permission", json!({"x": 1}))
+                );
                 break;
             }
         }

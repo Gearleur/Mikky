@@ -5,6 +5,7 @@
 //! `AcpReader` (Dart, tested with real recordings) builds the session.
 
 mod connection;
+pub mod reader;
 mod run;
 
 pub use connection::{Connection, Event, RpcError, TrafficHook};
