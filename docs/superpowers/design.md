@@ -99,6 +99,8 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 ### L'île fermée, à droite
 Sous Mikky, le **feu d'artifice de l'état le plus pressant** parmi les agents (attend, erreur, limite, travaille, réfléchit, terminé, dort) ; son nom « Mikky » quand il n'y a pas d'agent.
 
+**Un agent qui a fini** (2026-10-01, demande de l'utilisateur) : la **petite île** sort sur le côté pendant 5,2 s, Mikky et le feu d'artifice sous lui prennent l'état « terminé » de cet agent (même si un autre travaille) ; plus la grande île ouverte avec le feu d'artifice.
+
 ### Limite de l'abonnement
 Un vrai état, **jaune** : sur l'accueil « Limite atteinte · reprend à 17 h 10 » (l'heure lue dans le message de Claude ou de Codex) ; dans le chat, la tâche « Limite atteinte » et une carte jaune « Limite de l'abonnement atteinte · Reprend à 17 h 10 ».
 

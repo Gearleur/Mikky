@@ -261,8 +261,12 @@ class HomePage extends StatelessWidget {
     }) {
       if (list.isEmpty) return;
       final isOpen = scope.groups[key] ?? true;
+      // Keyed: when a group comes or goes, the others keep their own
+      // state (else « Travaillent » appearing took « Terminés »' animated
+      // height, and a blank space closed under it).
       body.add(
         GroupHeader(
+          key: ValueKey('head-$key'),
           label: label,
           color: color,
           status: status,
@@ -274,6 +278,7 @@ class HomePage extends StatelessWidget {
       );
       body.add(
         AnimatedSize(
+          key: ValueKey('body-$key'),
           duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 280),
           curve: Motion.enter,
           alignment: Alignment.topCenter,
@@ -283,6 +288,7 @@ class HomePage extends StatelessWidget {
                   children: [
                     for (var i = 0; i < list.length; i++)
                       Padding(
+                        key: ValueKey(list[i].id),
                         padding: EdgeInsets.only(top: i == 0 || tight ? 0 : 8),
                         child: card(list[i]),
                       ),
@@ -324,6 +330,7 @@ class HomePage extends StatelessWidget {
       body.insert(
         0,
         Padding(
+          key: const ValueKey('limits'),
           padding: const EdgeInsets.fromLTRB(6, 0, 6, 10),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

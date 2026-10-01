@@ -229,15 +229,21 @@ void main() {
     expect(h.s.focus?.id, 'b');
   });
 
-  test('rule 8: finished, open 5.2 s, then the agent leaves', () {
+  test('rule 8: finished, the compact island 5.2 s (not the big one), then the agent leaves', () {
     final h = Harness();
     h.set('a', AgentStatus.working);
+    h.set('b', AgentStatus.working);
     h.set('a', AgentStatus.finished);
-    expect(h.shape, IslandShape.open);
-    expect(h.s.content, IslandContent.finished);
+    expect(h.shape, IslandShape.compact);
+    // Its state under Mikky, even with another one at work.
     expect(h.s.focus?.id, 'a');
     h.wait(5);
-    expect(h.shape, IslandShape.open);
+    expect(h.shape, IslandShape.compact);
+    expect(h.s.focus?.id, 'a');
+    h.wait(.3);
+    expect(h.s.agents.map((a) => a.id), ['b']);
+    expect(h.s.focus?.id, 'b');
+    h.remove('b');
     h.wait(.3);
     expect(h.s.agents, isEmpty);
     expect(h.shape, IslandShape.hidden);
@@ -264,7 +270,7 @@ void main() {
     h.wait(10);
     expect(h.s.focus?.id, 'a');
     h.set('a', AgentStatus.working);
-    expect(h.s.content, IslandContent.finished);
+    expect(h.shape, IslandShape.compact);
     expect(h.s.focus?.id, 'b');
   });
 

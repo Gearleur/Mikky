@@ -11,13 +11,10 @@ enum OpenReason {
 
   /// An agent needs the user: stays until answered.
   alert,
-
-  /// An agent just finished: shown for a few seconds.
-  finished,
 }
 
 /// What the open island shows.
-enum IslandContent { empty, focus, list, finished }
+enum IslandContent { empty, focus, list }
 
 /// Timings of the island rules (spec §5.3), in seconds.
 abstract final class IslandTimings {
@@ -297,7 +294,7 @@ class IslandMachine {
     final head = _alertHead;
     if (head != _bubbleHead) {
       // Open for another reason, or on the previous alert (not the new head).
-      final wasOpen = _userOpen != null || _finishedSince != null || (_bubbleHead != null && _bubbleSince == null);
+      final wasOpen = _userOpen != null || (_bubbleHead != null && _bubbleSince == null);
       _bubbleHead = head;
       // Already open: switch at once. Closed: the bubble comes out first.
       _bubbleSince = head == null || wasOpen ? null : now;
@@ -331,7 +328,6 @@ class IslandMachine {
   OpenReason? _openReasonAt(double now) {
     // While the bubble comes out alone, a click opens at once.
     if (_alertHead != null) return _bubbleSince != null && _userOpen == null ? null : OpenReason.alert;
-    if (_finishedSince != null) return OpenReason.finished;
     return _userOpen;
   }
 
@@ -343,6 +339,9 @@ class IslandMachine {
     }
     if (_openReasonAt(now) != null) return IslandShape.open;
     if (_alertHead != null) return IslandShape.compact; // bubble first
+    // Just finished: the compact island, its state under Mikky (user
+    // request, 2026-10-01: not the big island).
+    if (_finishedSince != null) return IslandShape.compact;
     if (!_isAway(now) && _visible.isNotEmpty) return IslandShape.compact;
     if (_previewSince != null) return IslandShape.compact;
     return IslandShape.hidden;
@@ -355,12 +354,11 @@ class IslandMachine {
     final visible = _visible;
     final Agent? focus = switch (reason) {
       OpenReason.alert => _agent(_alertHead),
-      OpenReason.finished => _agent(_finished.firstOrNull),
+      null when _finishedSince != null => _agent(_finished.firstOrNull),
       _ => _priorityFocus(visible),
     };
     final content = switch (reason) {
       null => IslandContent.focus,
-      OpenReason.finished => IslandContent.finished,
       OpenReason.alert => IslandContent.focus,
       _ when visible.isEmpty => IslandContent.empty,
       _ => layout == IslandLayout.list ? IslandContent.list : IslandContent.focus,
