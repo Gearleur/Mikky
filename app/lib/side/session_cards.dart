@@ -19,13 +19,19 @@ import 'session_text.dart';
 /// What an agent's page lends the thread to act on a limit: which agent,
 /// and how to write to it.
 class LimitHooks {
-  const LimitHooks(this.id, this.send, {this.finish});
+  const LimitHooks(this.id, this.send, {this.finish, this.finished = false, this.unfinish});
 
   final String id;
   final Future<void> Function(String text) send;
 
   /// « Terminer »: no more waiting for the limit; the session counts as done.
   final VoidCallback? finish;
+
+  /// « Terminer » was chosen: only « Relance auto » is left.
+  final bool finished;
+
+  /// « Relance auto » after « Terminer »: the limit waits again.
+  final VoidCallback? unfinish;
 }
 
 /// What can be done about a limit (user request, 2026-10-01), as two
@@ -85,8 +91,13 @@ class _LimitBlockState extends State<LimitBlock> {
       message: widget.message,
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
       relaunched: h != null && _spells.isOn(h.id) && _spells.relaunchAt(h.id) == null,
-      onFinish: h?.finish,
-      onSpell: h == null ? null : () => _spells.enchant(h.id, resets, h.send),
+      onFinish: h == null || h.finished ? null : h.finish,
+      onSpell: h == null
+          ? null
+          : () {
+              if (h.finished) h.unfinish?.call();
+              _spells.enchant(h.id, resets, h.send);
+            },
     );
   }
 }
@@ -197,9 +208,9 @@ class AutoRelaunchMark extends StatelessWidget {
 }
 
 /// A subscription's limit reached: the yellow state and when it lifts
-/// (user request, 2026-09-30), « Terminer » and « Relance auto ». Once
-/// under the spell there is no card any more, only « Ensorcelé · se
-/// relance à 17 h 11 », big, with the violet star, and « Terminer ».
+/// (user request, 2026-09-30), « Terminer » and « Relance auto ». No box
+/// (2026-10-01): one line, like under the spell, « Ensorcelé · se relance
+/// à 17 h 11 » with the violet star, then the flat answer bar.
 class LimitCard extends StatelessWidget {
   const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onFinish, this.onSpell});
 
@@ -218,34 +229,36 @@ class LimitCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    if (relaunchAt != null || relaunched) {
-      final spell = Padding(
-        padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
-        child: Row(children: [
-          const SpellFx(size: 20),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: 'Ensorcelé', style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, height: 1.3)),
-                TextSpan(
-                  text: relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}',
-                  style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
-                ),
-              ]),
-            ),
+    final spell = relaunchAt != null || relaunched;
+    final line = Padding(
+      padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
+      child: Row(children: [
+        spell ? const SpellFx(size: 20) : const StatusFx(UiStatus.limited, size: 20),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text.rich(
+            TextSpan(children: [
+              TextSpan(
+                text: spell ? 'Ensorcelé' : 'Limite atteinte',
+                style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, height: 1.3),
+              ),
+              TextSpan(
+                text: spell
+                    ? (relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}')
+                    : (resetsAt == null ? ' · ${message ?? 'réessaie plus tard'}' : ' · reprend à ${hourText(resetsAt!)}'),
+                style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
+              ),
+            ]),
           ),
-        ]),
-      );
-      if (onFinish == null || relaunched) return spell;
-      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [spell, const SizedBox(height: 6), LimitActions(onFinish: onFinish)]);
-    }
-    return AgentCard(
-      status: UiStatus.limited,
-      title: 'Limite de l’abonnement atteinte',
-      who: '',
-      subtitle: resetsAt == null ? (message ?? 'Réessaie plus tard') : 'Reprend à ${hourText(resetsAt!)}',
-      actions: onFinish == null && onSpell == null ? null : LimitActions(onFinish: onFinish, onSpell: onSpell),
+        ),
+      ]),
+    );
+    final finish = relaunched ? null : onFinish;
+    final relaunch = spell ? null : onSpell;
+    if (finish == null && relaunch == null) return line;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [line, const SizedBox(height: 6), LimitActions(onFinish: finish, onSpell: relaunch)],
     );
   }
 }

@@ -514,6 +514,12 @@ class RealAgentSource implements AgentSource {
     _mark(id, (m) => m.copyWith(settledAt: _now()));
   }
 
+  /// Takes back [settle]: the error or the limit waits again.
+  void unsettle(String id) {
+    entry(id)?.dismissed = false;
+    _mark(id, (m) => m.copyWith(clearSettled: true));
+  }
+
   /// Deletes the session from Mikky; with [deleteFile], also Claude's or
   /// Codex's own file of it (its history is then gone for good).
   Future<void> forget(String id, {bool deleteFile = false}) async {

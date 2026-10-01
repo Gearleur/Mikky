@@ -134,6 +134,7 @@ class SessionMark {
     bool? pinned,
     bool? archived,
     DateTime? settledAt,
+    bool clearSettled = false,
     DateTime? pausedAt,
     bool clearPaused = false,
     bool? forgotten,
@@ -141,7 +142,7 @@ class SessionMark {
     name: clearName ? null : (name ?? this.name),
     pinned: pinned ?? this.pinned,
     archived: archived ?? this.archived,
-    settledAt: settledAt ?? this.settledAt,
+    settledAt: clearSettled ? null : (settledAt ?? this.settledAt),
     pausedAt: clearPaused ? null : (pausedAt ?? this.pausedAt),
     forgotten: forgotten ?? this.forgotten,
   );

@@ -109,7 +109,13 @@ class _AgentPageState extends State<AgentPage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(e.id, (t) => _source.send(e.id, t), finish: () => finishLimit(widget.host, e.id)))),
+      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(
+        e.id,
+        (t) => _source.send(e.id, t),
+        finish: () => finishLimit(widget.host, e.id),
+        finished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
+        unfinish: () => _source.unsettle(e.id),
+      ))),
       if (e.status == AgentStatus.paused)
         Padding(
           padding: const EdgeInsets.only(top: 12),

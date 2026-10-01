@@ -287,10 +287,14 @@ class AgentMock extends StatefulWidget {
     this.scrolled = false,
     this.paused = false,
     this.enchanted = false,
+    this.finished = false,
   });
 
   /// Stopped by its limit, and already under the spell (« Ensorceler »).
   final bool enchanted;
+
+  /// Its limit « Terminée »: only « Relance auto » is left.
+  final bool finished;
 
   /// Its name (the page does not show it any more; kept to tell the
   /// frames apart in the code).
@@ -319,7 +323,7 @@ class _AgentMockState extends State<AgentMock> {
 
   // Its own agent id for the spell, as the app's page would have.
   late final _id = 'board-${identityHashCode(this)}';
-  late final _limit = LimitHooks(_id, (_) async {}, finish: () {});
+  late final _limit = LimitHooks(_id, (_) async {}, finish: () {}, finished: widget.finished);
 
   @override
   void initState() {
@@ -497,12 +501,17 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : étoile jaune en haut, et quand ça reprend, lu dans le message de l’agent. « Terminer » : on n’attend plus la reprise ; « Relance auto » : Mikky la relance quand la limite se lève.',
+        note: 'L’abonnement est au bout : étoile jaune en haut ; une ligne, sans encadré, « Limite atteinte · reprend à 17 h 10 » (l’heure lue dans le message de l’agent), puis la barre à plat : « Terminer » (on n’attend plus) ou « Relance auto ».',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
       ),
       BoardFrame(
+        label: 'Limite atteinte, terminée',
+        note: 'Après « Terminer » : il ne reste que « Relance auto » (qui la remet en attente de la reprise, ensorcelée).',
+        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), finished: true),
+      ),
+      BoardFrame(
         label: 'Ensorcelée',
-        note: 'Plus de carte : « Ensorcelé · se relance à 17 h 11 », en violet, la couleur de la magie, et l’étoile violette en haut au milieu. Pour l’enlever : le menu ··· de l’agent (« Arrêter la relance auto »).',
+        note: 'La même ligne : « Ensorcelé · se relance à 17 h 11 », l’étoile violette, et « Terminer » pour refuser la relance ; l’étoile violette en haut au milieu.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
       ),
       BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
