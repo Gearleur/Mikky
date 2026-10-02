@@ -28,18 +28,28 @@ class TabItem {
 /// selectors' spring; the chosen icon pops (500 / 0.45, from 0.78).
 /// Kept for later (user, 2026-09-29).
 class MTabBar extends StatelessWidget {
-  const MTabBar({super.key, required this.items, required this.selected, this.onChanged, this.mini = false});
+  const MTabBar({super.key, required this.items, required this.selected, this.onChanged, this.mini = false, this.height, this.ink = false});
 
   final List<TabItem> items;
   final int selected;
   final ValueChanged<int>? onChanged;
   final bool mini;
 
+  /// The mini bar's height (52 by default); each tab is then a circle,
+  /// the home's two modes (2026-10-02: 44 at the top, 52 at the right).
+  final double? height;
+
+  /// The chosen tab in black (white in dark), as in the home's mockups;
+  /// to compare with the white capsule.
+  final bool ink;
+
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final height = mini ? 52.0 : 62.0;
+    final height = mini ? this.height ?? 52.0 : 62.0;
     final radius = height / 2;
+    // Mini: 50 px per tab at 52 (a capsule); a circle at any other height.
+    final tab = this.height == null ? 50.0 : height - 10;
     Widget bar(double col) => SizedBox(
       height: height - 10,
       child: Stack(
@@ -60,7 +70,7 @@ class MTabBar extends StatelessWidget {
                         top: 0,
                         bottom: 0,
                         width: col + stretch,
-                        child: Surface(radius: mini ? 21 : 26, color: ui.thumb, shadows: ui.shThumb),
+                        child: Surface(radius: mini ? (height - 10) / 2 : 26, color: ink ? ui.ink : ui.thumb, shadows: ink ? ui.shInk : ui.shThumb),
                       ),
                     ],
                   );
@@ -75,7 +85,7 @@ class MTabBar extends StatelessWidget {
                   width: col,
                   child: PressDown(
                     onDown: onChanged == null || i == selected ? null : () => onChanged!(i),
-                    child: _Tab(item: items[i], on: i == selected, mini: mini),
+                    child: _Tab(item: items[i], on: i == selected, mini: mini, ink: ink, iconSize: height >= 52 ? 21 : 18),
                   ),
                 ),
             ],
@@ -84,7 +94,7 @@ class MTabBar extends StatelessWidget {
       ),
     );
     final content = mini
-        ? SizedBox(width: 50.0 * items.length, child: bar(50))
+        ? SizedBox(width: tab * items.length, child: bar(tab))
         : LayoutBuilder(builder: (context, box) => bar(box.maxWidth / items.length));
     return Stack(
       clipBehavior: Clip.none,
@@ -122,11 +132,13 @@ class MTabBar extends StatelessWidget {
 }
 
 class _Tab extends StatefulWidget {
-  const _Tab({required this.item, required this.on, required this.mini});
+  const _Tab({required this.item, required this.on, required this.mini, this.ink = false, this.iconSize = 21});
 
   final TabItem item;
   final bool on;
   final bool mini;
+  final bool ink;
+  final double iconSize;
 
   @override
   State<_Tab> createState() => _TabState();
@@ -150,15 +162,23 @@ class _TabState extends State<_Tab> with SingleTickerProviderStateMixin {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: widget.on,
+    label: widget.item.label,
+    // The others darken under the mouse, as in the selectors.
+    child: HoverBuilder(enabled: !widget.on, builder: _build),
+  );
+
+  Widget _build(BuildContext context, bool hover) {
     final ui = MikkyUi.of(context);
-    final color = widget.on ? ui.text : ui.text2;
+    final color = widget.on ? (widget.ink ? ui.onInk : ui.text) : (hover ? ui.text : ui.text2);
     final item = widget.item;
     final icon = RepaintBoundary(
       child: AnimatedBuilder(
         animation: _pop,
         builder: (context, child) => Transform.scale(scale: _pop.value, child: child),
-        child: MikkyIcon(item.icon, size: 21, color: color),
+        child: MikkyIcon(item.icon, size: widget.iconSize, color: color),
       ),
     );
     return Stack(

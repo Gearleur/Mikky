@@ -30,6 +30,9 @@ const _icons = <String, String>{
   'pause': '<path d="M9 7v10M15 7v10"/>',
   'play': '<path d="M8.5 6.5v11l9-5.5z"/>',
   'pin': '<path d="M12 16.5V21M8.5 3.5h7M9.5 3.5v5.2l-2.8 3.3a1 1 0 0 0 .8 1.5h9a1 1 0 0 0 .8-1.5l-2.8-3.3V3.5"/>',
+  // The home's two modes (2026-10-02): the agents' tiles, the chat.
+  'grid': '<rect x="4.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.6"/>',
+  'chat': '<path d="M7 5h10a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-5.5L7 20.5V17a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z"/><circle cx="8.6" cy="11" r=".5"/><circle cx="12" cy="11" r=".5"/><circle cx="15.4" cy="11" r=".5"/>',
 };
 
 /// Names of every icon, for the kit.

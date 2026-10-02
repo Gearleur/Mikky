@@ -220,6 +220,12 @@ class MikkyUi {
   /// Raised control: `linear-gradient(--ctl-a, --ctl-b)`.
   Gradient get control => LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [ctlA, ctlB]);
 
+  /// An app's tile on the home (2026-10-02): white fading to the well in
+  /// light, the raised controls' grey in dark.
+  Gradient get tile => isLight
+      ? LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [thumb, well])
+      : control;
+
   /// `inset 0 1px 0 var(--hl)`: the light edge on top of raised controls.
   CssShadow get highlight => CssShadow(0, 1, 0, hl, inset: true);
 
