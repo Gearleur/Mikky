@@ -4,6 +4,8 @@ Créé le 2026-09-29, pendant le brainstorming avec l'utilisateur. Mikky devient
 
 **On ne fait pas tout d'un coup.** On commence par le MVP ci-dessous. Tout le reste est gardé ici pour plus tard. L'utilisateur est d'accord avec la liste et l'ordre proposés ; on choisira dans cette liste à chaque nouvelle étape.
 
+Le périmètre opérationnel actuel du MVP est tenu à jour dans [`reprise.md`](reprise.md). Les anciennes listes de cette page gardent l'histoire des idées ; la section 9 contient la nouvelle exploration UI/UX.
+
 ## 1. Le MVP (choisi le 2026-09-29)
 
 1. **Lancer Claude Code et Codex depuis la petite fenêtre à droite** (la position « à droite » de l'île, format téléphone) et **voir lequel est en train de travailler**.
@@ -177,3 +179,39 @@ Après le premier essai de la petite fenêtre. ✔ = fait. Rien d'autre n'est d�
 - Paperclip : https://github.com/paperclipai/paperclip (agents, tickets, heartbeats, budgets, approbations, routines).
 - VelaTerm : https://velaterm.com/docs/session-commands (sessions, worktrees, `vsearch` / `vrefer` / `vtell`, planifier / exécuter).
 - Protocole LocalSend : https://github.com/localsend/protocol
+
+## 9. Direction UI/UX à explorer (2026-10-01)
+
+**Planche `Accueil haut`** : l'accueil complet et les tuiles restent retirés. Le bandeau, rapproché du bord gauche, montre le nombre réel d'agents `isBusy`, les effets d'état dans des cercles neutres et le rail gris de nos sélecteurs ; cas 0, 1, 4 et plus de 5. Le choix Local / WSL / VPS / Cloud se teste dans une section séparée : texte coloré à plat et étoile grise des paramètres au repos, relief dès la pression et menu flottant commun. Réutiliser les composants et animations existants ; isoler les surfaces fixes pour préserver la fluidité. VPS et Cloud ne sont pas encore des lieux connectés. Les composants sont isolés de l'accueil réel. Les pistes de navigation ci-dessous restent des idées.
+
+**Statut : idées à éprouver sur les planches, pas un design validé.** L'utilisateur cherche le juste milieu entre mascotte agréable à utiliser et outil professionnel pour suivre plusieurs agents. L'accueil actuel est validé en lignes plates (`design.md` §2 et §7) ; l'envie de tuiles avec un peu de relief ouvre un nouvel essai, sans remplacer ce choix avant comparaison visuelle.
+
+### Ce que montrent les références
+
+- Coucou (projet local comparé avec Mikky) : présence du compagnon, aperçu de l'activité et parcours de connexion/permissions. À reprendre comme principe de proximité ; Mikky doit garder son fonctionnement Windows, WSL et ses agents ACP.
+- [Cocoon Shell](https://cocoon-shell.com/) : grille configurable en pages et tuiles d'apps/jeux. Piste pour une **île ouverte en haut** où chaque tuile représente un agent et sa tâche ; à adapter à l'étroite fenêtre de droite.
+- [iiSU](https://iisu.network/gallery) : ambiance de console portable/DS moderne, hiérarchie visuelle et états évocateurs. S'inspirer du rythme, des surfaces et du mouvement, tout en gardant le texte et les actions lisibles au clavier.
+- [Replicas](https://replicas.dev/customers) : espaces cloud isolés autour d'un dépôt, d'une tâche et d'un agent. Sa [documentation](https://docs.replicas.dev/) décrit aussi API, environnements, automatisations et mémoire. Replicas serait **un connecteur de lieu d'exécution ultérieur**, à côté de Windows, WSL et VPS ; il ne devient pas la structure imposée à toute l'app.
+
+### Organisation proposée pour la navigation
+
+1. **Île fermée** : Mikky, état prioritaire, une action urgente. **Île ouverte** : aperçu des agents en cours et accès rapide à l'action ou à la tâche.
+2. **Activité / Agents** : point d'entrée principal. D'abord « a besoin de moi », puis agents au travail, terminés et historique. Essayer des tuiles légèrement en relief pour le travail vivant, des lignes compactes pour l'historique. Chaque tuile dit : agent, tâche, état réel, projet, lieu et prochaine action. Pas de pourcentage de progression inventé.
+3. **Agent** : suivi/chat actuels, puis un petit volet « Informations » : session, durée, modèle, jetons et contexte quand connus, processus possédé, projet et lieu. Les statistiques globales vont ailleurs.
+4. **Projets / Espaces de travail** : regrouper d'abord par projet, dépôt ou dossier et par tâche ; montrer les agents et sessions liés. Windows, WSL, VPS et Replicas sont des badges et filtres de lieu, avec une page de configuration des machines dans les réglages. Si plusieurs machines deviennent le premier besoin quotidien, tester alors une variante « lieux d'abord ».
+5. **Consommation** : distinguer clairement les limites de l'abonnement, les jetons/contexte d'une session et l'activité de Mikky. Garder les mentions « observé », « inconnu » et « dernière mise à jour » quand la source est partielle.
+6. **Réglages** : page dédiée, avec Apparence (thème, position, mouvement), Agents (permission par défaut, relance), Connexions (Claude, Codex, machines), Notifications, Données (sessions, export/sauvegarde) et À propos. Montrer l'état et la cause d'une connexion cassée ; conserver le menu rapide de l'île pour les actions fréquentes.
+
+**Point de départ recommandé** : dessiner une carte de navigation très courte et la page Réglages sur les planches, en partant des commandes qui existent déjà dans le menu. Comparer ensuite trois variantes de l'accueil ouvert — lignes actuelles, tuiles partout, hybride tuiles actives + lignes historiques — en haut et à droite, avec 0, 1 et plusieurs agents, une permission, une limite et un hôte indisponible. Puis dessiner Agent/Consommation et Projets. Implémenter chaque écran après sa revue visuelle.
+
+### Consommation Claude et Codex : sources à tester
+
+- L'app reçoit déjà des événements d'usage ACP et des données de sessions locales : jetons, contexte et certaines limites Codex. Cela décrit ce que **Mikky observe**, pas nécessairement tout ce que l'utilisateur consomme sur ses autres appareils.
+- Pour les limites de compte, Claude propose [Réglages → Usage et `/usage`](https://support.claude.com/en/articles/14553413-claude-code-cheatsheet) ; Codex propose son [tableau d'usage et `/status`](https://help.openai.com/en/articles/11369540-using-codex-with-your-chatgpt-plan). Première page Mikky : résumer les données fiables déjà reçues, montrer leur provenance, et ouvrir la page officielle pour le reste. Étudier une intégration plus directe seulement si une interface officielle adaptée est disponible ; ne pas lire les cookies ni les jetons privés de Claude/ChatGPT.
+- Sur abonnement, « 12 000 jetons observés » et « il reste 40 % du quota du compte » sont deux mesures différentes. Aucun coût en euros ne doit être calculé comme si l'abonnement était facturé au jeton. Si une clé API est ajoutée plus tard, son coût aura une source et une section propres.
+
+### Gamification, mémoire et connecteurs plus tard
+
+- Gamifier la **lecture de l'état** : Mikky réagit, les tuiles vivent doucement, un travail terminé reçoit une courte célébration, une tâche en attente attire l'œil. La commande, le risque, la provenance et les chiffres restent sobres. Pas de score ou de niveau qui pousse à consommer des agents.
+- Mémoire locale partagée : souvenirs choisis et corrigeables, avec source, date, portée (utilisateur, projet, agent), droits de lecture, suppression et export. Une ontologie simple pourra lier personnes, projets, tâches, décisions, fichiers et sessions ; commencer par une recherche et des liens explicites avant un graphe complexe.
+- Connecteurs futurs : fichiers/Git, bases de données, MCP, Replicas et automatisations planifiées. Chacun indique ce qu'il peut lire, écrire et déclencher, son compte/lieu, et ses événements dans un journal. Accès aux bases en lecture seule par défaut ; aucune clé dans l'interface Flutter ou la mémoire transmise aux agents. La mémoire et ces connecteurs suivent la fiabilité du cœur MVP.

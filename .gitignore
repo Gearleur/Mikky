@@ -8,3 +8,5 @@ build/
 target/
 dist/
 app/test/failures/
+docs/onboarding/
+docs/notch_haut/
