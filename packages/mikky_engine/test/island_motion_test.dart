@@ -41,11 +41,17 @@ void main() {
       expect(m.openContentOpacity, 1);
     });
 
-    test('the list layout is a bit bigger', () {
+    test('the list layout is the home: taller, Mikky at its top left', () {
       final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
       expect(m.currentWidth, 450);
-      expect(m.currentHeight, 180);
+      expect(m.currentHeight, 260);
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      // An alert: the same island takes the focus size, Mikky its place.
+      m.setShape(IslandShape.open, layout: IslandLayout.focus);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (430, 178));
+      expect(m.mikkyRadius, 28);
     });
 
     test('hiding slides Mikky up with the island', () {
@@ -79,8 +85,8 @@ void main() {
       run(m, 2);
       expect((m.currentWidth, m.currentHeight), (344, 520));
       expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
-      // Mikky in small, top left of the small window's head (ux-a.html).
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (30, 39, 16));
+      // Mikky at the top left of the home (2026-10-02).
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 37, 21));
       expect(m.cornerRadius, 38);
     });
 

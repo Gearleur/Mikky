@@ -30,22 +30,27 @@ class IslandMetrics {
     required this.openRadius,
     required this.mikkyCompact,
     required this.mikkyOpen,
+    required this.mikkyList,
   });
 
-  /// Spec §3: closed 186 × 36, open Focus 430 × 178, List 450 × 180.
+  /// Spec §3: closed 186 × 36, open Focus 430 × 178. List: the home,
+  /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
+  /// validated by the user).
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
     focus: (width: 430, height: 178),
-    list: (width: 450, height: 180),
+    list: (width: 450, height: 260),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
+    // Top left of the home, where its 72 px Mikky is drawn.
+    mikkyList: (x: 40, y: 35, radius: 21),
   );
 
   /// A small tab when closed, a phone-shaped card when open: the small
-  /// window of `ux-a.html`, Mikky in small at the top left of its head.
+  /// window, Mikky at the top left of its home (2026-10-02).
   static const right = IslandMetrics._(
     compact: (width: 74, height: 82),
     focus: (width: 344, height: 520),
@@ -54,7 +59,8 @@ class IslandMetrics {
     compactRadius: 22,
     openRadius: 38,
     mikkyCompact: (x: 37, y: 32, radius: 15),
-    mikkyOpen: (x: 30, y: 39, radius: 16),
+    mikkyOpen: (x: 40, y: 37, radius: 21),
+    mikkyList: (x: 40, y: 37, radius: 21),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
@@ -65,6 +71,11 @@ class IslandMetrics {
   final IslandSize compact, focus, list, hidden;
   final double compactRadius, openRadius;
   final MikkySpot mikkyCompact, mikkyOpen;
+
+  /// Mikky's place when open in the [IslandLayout.list] layout (the home).
+  final MikkySpot mikkyList;
+
+  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.list ? mikkyList : mikkyOpen;
 
   IslandSize open(IslandLayout layout) => layout == IslandLayout.focus ? focus : list;
 }
@@ -173,15 +184,17 @@ class IslandMotion {
   double get openContentOpacity => ((openness - .5) * 2.4).clamp(0.0, 1.0);
 
   double get mikkyRadius =>
-      _lerp(metrics.mikkyCompact.radius, metrics.mikkyOpen.radius, openness.clamp(0.0, 1.05));
+      _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
+
+  MikkySpot get _open => metrics.mikkyAt(_layout);
 
   /// Mikky's center, from the island's left edge.
-  double get mikkyX => _lerp(metrics.mikkyCompact.x, metrics.mikkyOpen.x, openness.clamp(0.0, 1.0));
+  double get mikkyX => _lerp(metrics.mikkyCompact.x, _open.x, openness.clamp(0.0, 1.0));
 
   /// Mikky's center, from the island's top edge. At the top of the screen,
   /// Mikky slides up with the island while it hides.
   double get mikkyY =>
-      _lerp(metrics.mikkyCompact.y, metrics.mikkyOpen.y, openness.clamp(0.0, 1.0)) +
+      _lerp(metrics.mikkyCompact.y, _open.y, openness.clamp(0.0, 1.0)) +
       (edge == IslandEdge.top ? math.min(0, currentHeight - metrics.compact.height) : 0);
 }
 
