@@ -51,7 +51,7 @@ void main() {
   testWidgets('top: a dot goes to its page', (tester) async {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(20), animate: false)));
     final dots = tester.getRect(find.byType(PageDots));
-    await tester.tapAt(Offset(dots.left + PageDots.pill / 2 + 2 * PageDots.step, dots.center.dy));
+    await tester.tapAt(Offset(dots.left + PageDots.star / 2 + 2 * PageDots.step, dots.center.dy));
     await tester.pumpAndSettle();
     expect(page(tester), 2);
   });
