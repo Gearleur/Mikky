@@ -1,6 +1,10 @@
 import 'package:flutter/widgets.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 import '../overlay/overlay_channel.dart';
+import '../home/tools_rail.dart';
+import '../ui/app_tile.dart';
+import '../ui/backend_status.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/cards.dart';
@@ -16,6 +20,8 @@ import '../ui/status.dart';
 import '../ui/tabs.dart';
 import '../ui/tokens.dart';
 import '../ui/trials/claude_spinner.dart';
+import 'board_brand.dart';
+import 'board_home.dart';
 import 'canvas.dart';
 
 /// A bit of state of its own, so a click rebuilds only its widget.
@@ -83,322 +89,463 @@ class _SendButtonState extends State<_SendButton> {
   );
 }
 
-final componentsBoard = BoardSpec('Composants', 'Chaque composant une fois, avec ses états', (context) {
+/// The Composants board (2026-10-02): by category, the most used first, a
+/// selector on top whose thumb slides to the category shown. Every
+/// component once; one used in several forms shows them side by side,
+/// with what each is for.
+final componentsBoard = BoardSpec('Composants', 'Par catégorie, les plus utilisés d’abord', (context) => [ComponentsByCategory(categories: _categories(context))]);
+
+/// The categories, in order, and their sections.
+List<(String, List<Widget>)> _categories(BuildContext context) {
   final ui = MikkyUi.of(context);
   return [
-    BoardSection(
-      title: 'Boutons',
-      note: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Discret : texte. Rond : une action en icône. Réponses : petits boutons à plat, le carré blanc glisse vers la réponse appuyée.',
-      frames: [
-        BoardFrame(
-          label: 'Capsules',
-          note: 'Normal, petit, désactivé, en cours (clic sur « Envoyer »).',
-          child: _Tray([
-            _row([
-              MButton('Lancer', kind: ButtonKind.primary, onPressed: () {}),
-              MButton('Annuler', onPressed: () {}),
-              MButton('Plus tard', kind: ButtonKind.ghost, onPressed: () {}),
+    ('Boutons', [
+      BoardSection(
+        title: 'Boutons',
+        note: 'Principal : noir (blanc en sombre), un seul par écran. Secondaire : gris en relief. Discret : texte. Rond : une action en icône. Réponses : petits boutons à plat, le carré blanc glisse vers la réponse appuyée.',
+        frames: [
+          BoardFrame(
+            label: 'Ronds',
+            note: 'Les plus utilisés : retour, menu (l’étoile grise), envoyer, flèches des pages (28 px, gris).',
+            child: _Tray([
+              _row([
+                for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
+                RoundButton.menu(size: 40, onPressed: () {}),
+                RoundButton('up', ink: true, onPressed: () {}),
+              ]),
+              _row([
+                RoundButton('left', size: 34, onPressed: () {}),
+                RoundButton('stop', size: 34, onPressed: () {}),
+                RoundButton('x', size: 26, onPressed: () {}),
+                RoundButton('go', size: 46, ink: true, onPressed: () {}),
+              ]),
+              _row([
+                RoundButton('left', size: 28, onPressed: () {}),
+                RoundButton('right', size: 28, onPressed: () {}),
+              ]),
             ]),
-            _row([
-              MButton('Lancer', small: true, kind: ButtonKind.primary, onPressed: () {}),
-              MButton('Annuler', small: true, onPressed: () {}),
-              const MButton('Lancer', small: true, kind: ButtonKind.primary),
+          ),
+          BoardFrame(
+            label: 'Réponses',
+            note: 'Oui / Non d’un agent qui attend ; « Toujours » quand l’agent le propose. Toutes les actions d’une ligne ou d’une carte passent par cette barre.',
+            child: _Tray([
+              AnswerBar(answers: [('Non', () {}), ('Oui', () {})]),
+              AnswerBar(answers: [('Toujours', () {}), ('Non', () {}), ('Oui', () {})]),
+              AnswerBar(answers: [('Terminer', () {}), ('Relance auto', () {})]),
+              WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
+              WaitActions(command: 'Remove-Item -LiteralPath C:\\essai\\hello.txt', onYes: () {}, onNo: () {}, onAlways: () {}),
             ]),
-            const _SendButton(),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Ronds',
-          child: _Tray([
-            _row([
-              for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
-              RoundButton.menu(size: 40, onPressed: () {}),
-              RoundButton('up', ink: true, onPressed: () {}),
+          ),
+          BoardFrame(
+            label: 'Capsules',
+            note: 'Réservées aux écrans (nouvel agent, connexion, réglages). Normal, petit, désactivé, en cours (clic sur « Envoyer »).',
+            child: _Tray([
+              _row([
+                MButton('Lancer', kind: ButtonKind.primary, onPressed: () {}),
+                MButton('Annuler', onPressed: () {}),
+                MButton('Plus tard', kind: ButtonKind.ghost, onPressed: () {}),
+              ]),
+              _row([
+                MButton('Lancer', small: true, kind: ButtonKind.primary, onPressed: () {}),
+                MButton('Annuler', small: true, onPressed: () {}),
+                const MButton('Lancer', small: true, kind: ButtonKind.primary),
+              ]),
+              const _SendButton(),
             ]),
-            _row([
-              RoundButton('left', size: 34, onPressed: () {}),
-              RoundButton('stop', size: 34, onPressed: () {}),
-              RoundButton('x', size: 26, onPressed: () {}),
-              RoundButton('go', size: 46, ink: true, onPressed: () {}),
-            ]),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Réponses',
-          note: 'Oui / Non d’un agent qui attend ; « Toujours » quand l’agent le propose.',
-          child: _Tray([
-            AnswerBar(answers: [('Non', () {}), ('Oui', () {})]),
-            AnswerBar(answers: [('Toujours', () {}), ('Non', () {}), ('Oui', () {})]),
-            WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
-            WaitActions(command: 'Remove-Item -LiteralPath C:\\essai\\hello.txt', onYes: () {}, onNo: () {}, onAlways: () {}),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Sélecteurs et champs',
-      frames: [
-        BoardFrame(
-          label: 'Sélecteurs',
-          note: 'Le carré glisse avec un ressort (380 / 0,70) ; les autres options foncent au survol.',
-          child: _Tray([
-            Local(0, (v, set) => Segmented(options: const ['Tous', 'En cours', 'Finis'], selected: v, onChanged: set)),
-            Local(0, (v, set) => Segmented(options: const ['Claude', 'Codex'], selected: v, size: SegmentSize.xs, onChanged: set)),
-            _row([
-              Local(true, (v, set) => MSwitch(value: v, onChanged: set)),
-              Local(false, (v, set) => MSwitch(value: v, onChanged: set)),
-              Local(true, (v, set) => MChip('Important', count: 2, on: v, onTap: () => set(!v))),
-              Local(false, (v, set) => MChip('À répondre', count: 1, on: v, onTap: () => set(!v))),
-            ]),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Champs',
-          child: _Tray([
-            const SearchField(icon: 'search', placeholder: 'Chercher une session, un fichier…'),
-            SearchField(placeholder: 'Nom du projet', controller: TextEditingController(text: 'mikky')),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Champ de saisie',
-          note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle, ou Suivi | Chat.',
-          child: _Tray([
-            Composer(
-              placeholder: 'Que doit faire l’agent ?',
-              options: Row(mainAxisSize: MainAxisSize.min, children: [
-                ComposerChip('mikky', icon: 'folder', onTap: () {}),
-                const SizedBox(width: 6),
-                ComposerChip('Claude · Opus', leading: const BrandLogo(Brand.claude, size: 12), onTap: () {}),
+          ),
+        ],
+      ),
+    ]),
+    ('Navigation', [
+      BoardSection(
+        title: 'Navigation',
+        note: 'Ce qui fait passer d’un écran à l’autre.',
+        frames: [
+          BoardFrame(
+            label: 'Modes de l’accueil',
+            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px en haut, 52 px à droite ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
+            child: BoardPane(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Local(0, (v, set) => MTabBar(mini: true, height: 44, ink: true, selected: v, onChanged: set, items: _modes)),
+                const SizedBox(height: 16),
+                Local(0, (v, set) => MTabBar(mini: true, height: 52, ink: true, selected: v, onChanged: set, items: _modes)),
               ]),
             ),
-            const SizedBox(height: 4),
-            Local(0, (v, set) => Composer(
-              placeholder: 'Écris à cet agent…',
-              options: Segmented(options: const ['Suivi', 'Chat'], selected: v, size: SegmentSize.field, onChanged: set),
-            )),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Menu flottant',
-      note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il s’ouvre là où on a cliqué ; Échap ou un clic à côté le ferme.',
-      frames: [
-        const BoardFrame(label: 'Accueil · étoile grise', note: 'Les réglages de Mikky.', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
-        const BoardFrame(label: 'Un agent · étoile grise', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
-        const BoardFrame(label: 'À essayer', note: 'Clique sur l’étoile grise : le menu se déploie et se replie en elle (une seule étoile à la fois).', width: 300, child: _MenuTry(_homeMenu)),
-        const BoardFrame(
-          label: 'À essayer · Supprimer…',
-          note: 'Un menu qui en ouvre un autre : le panneau ne se replie pas, il prend sur place la taille de la confirmation (1er octobre).',
-          width: 300,
-          child: _MenuTry(_agentMenu, followUps: {7: _deleteMenu}),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Navigation',
-      frames: [
-        BoardFrame(
-          label: 'En-têtes',
-          note: 'L’accueil avec Mikky ; une page d’agent : sans titre, les boutons flottent sur le fil.',
-          child: _Tray([
-            SizedBox(
-              height: 60,
-              child: Stack(children: [SideHead(title: 'Agents', leading: const HeadMikky(), actions: [RoundButton.menu(size: 34, onPressed: () {})])]),
-            ),
-            SizedBox(
-              height: 60,
-              child: Stack(children: [
-                SideHead(
-                  leading: RoundButton('left', size: 34, onPressed: () {}),
-                  actions: [RoundButton('stop', size: 34, onPressed: () {}), RoundButton.menu(size: 34, onPressed: () {})],
-                ),
+          ),
+          BoardFrame(
+            label: 'Le même, en blanc · onglets',
+            note: 'Même composant (`MTabBar`), le carré blanc qui glisse : des onglets dans une page (pour plus tard). Le noir reste à la navigation de l’accueil.',
+            child: _Tray([
+              Local(0, (v, set) => MTabBar(selected: v, onChanged: set, items: const [
+                TabItem('agents', label: 'Agents', dot: true),
+                TabItem('share', label: 'Partage'),
+                TabItem('mail', label: 'Mails', count: 2),
+              ])),
+              Local(0, (v, set) => MTabBar(mini: true, selected: v, onChanged: set, items: const [TabItem('agents'), TabItem('share'), TabItem('mail'), TabItem('sliders')])),
+            ]),
+          ),
+          BoardFrame(
+            label: 'Pages',
+            note: 'Les pages d’applications : flèches rondes grises (effacées au bout) et points ; la pastille glisse sur le ressort des sélecteurs. Un clic sur un point y va.',
+            child: BoardPane(child: Local(0, (page, set) => PagerTry(page: page, set: set))),
+          ),
+          const BoardFrame(
+            label: 'Outils · sortis du bord',
+            note: 'Les outils (Claude, Codex) sur un rail sorti du bord de l’écran : plat côté écran, rond vers l’intérieur. Survol : les pastilles s’écartent ; pression : elles rétrécissent. Un clic : un nouvel agent.',
+            child: BoardPane(
+              edge: true,
+              child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                ToolsRail(onPressed: _nothing),
+                SizedBox(height: 16),
+                ToolsRail(tools: [Brand.claude, Brand.codex, Brand.opencode], onPressed: _nothing),
               ]),
             ),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Onglets (pour plus tard)',
-          child: _Tray([
-            Local(0, (v, set) => MTabBar(selected: v, onChanged: set, items: const [
-              TabItem('agents', label: 'Agents', dot: true),
-              TabItem('share', label: 'Partage'),
-              TabItem('mail', label: 'Mails', count: 2),
-            ])),
-            Local(0, (v, set) => MTabBar(mini: true, selected: v, onChanged: set, items: const [TabItem('agents'), TabItem('share'), TabItem('mail'), TabItem('sliders')])),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Lignes de l’accueil',
-      note: 'Pas de cartes : des lignes. Au survol, le carré blanc de Oui / Non glisse sous la ligne (ressort des sélecteurs) et revient sur la ligne choisie. Le logo de l’outil à gauche ; il tourne pendant le travail, sautille quand l’agent attend.',
-      frames: [
-        BoardFrame(
-          label: 'Titres de groupes',
-          child: _Tray([
-            GroupHeader(label: 'En attente', color: ui.amber, status: UiStatus.approval, count: 1, first: true, onTap: () {}),
-            GroupHeader(label: 'Travaillent', color: ui.blue, status: UiStatus.working, count: 2, onTap: () {}),
-            GroupHeader(label: 'Terminés', color: ui.green, status: UiStatus.finished, count: 3, onTap: () {}),
-            GroupHeader(label: 'Historique', color: ui.grey, count: 12, open: false, onTap: () {}),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Indicateur : le carré qui glisse',
-          note: 'Sur fond gris, le carré blanc marque le choix et glisse au clic ; au survol, le nom s’éclaire (colonne des planches). Dans une liste sans choix (accueil, étapes), le carré suit la souris.',
-          child: Container(
-            width: 260,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
-            child: Local(1, (picked, set) => SlidingHover(
-              radius: 12,
-              followHover: false,
-              hairline: false,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                for (final (i, t) in ['Marque', 'Composants', 'Accueil', 'Agent'].indexed)
-                  HoverTarget(
-                    selected: i == picked,
-                    child: HoverBuilder(
-                      builder: (context, hover) => GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => set(i),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                          child: Text(t, style: uiText(TextSize.body, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
+          ),
+          BoardFrame(
+            label: 'En-têtes',
+            note: 'Une page d’agent : sans titre, les boutons flottent sur le fil.',
+            child: _Tray([
+              SizedBox(
+                height: 60,
+                child: Stack(children: [
+                  SideHead(
+                    leading: RoundButton('left', size: 34, onPressed: () {}),
+                    actions: [RoundButton('stop', size: 34, onPressed: () {}), RoundButton.menu(size: 34, onPressed: () {})],
+                  ),
+                ]),
+              ),
+            ]),
+          ),
+        ],
+      ),
+    ]),
+    ('Sélecteurs', [
+      BoardSection(
+        title: 'Sélecteurs et champs',
+        frames: [
+          const BoardFrame(
+            label: 'Choisir l’environnement',
+            note: 'Ex « Choisir le lieu ». Le nom en noir, l’étoile grise des réglages ; aussi large que le plus long nom ; gris au survol, le relief d’une réponse à la pression ; notre menu flottant, étroit. VPS et Cloud dessinés, pas branchés.',
+            width: 300,
+            child: SelectorTry(),
+          ),
+          BoardFrame(
+            label: 'Sélecteurs',
+            note: 'Le carré glisse avec un ressort (380 / 0,70) ; les autres options foncent au survol.',
+            child: _Tray([
+              Local(0, (v, set) => Segmented(options: const ['Tous', 'En cours', 'Finis'], selected: v, onChanged: set)),
+              Local(0, (v, set) => Segmented(options: const ['Claude', 'Codex'], selected: v, size: SegmentSize.xs, onChanged: set)),
+              _row([
+                Local(true, (v, set) => MSwitch(value: v, onChanged: set)),
+                Local(false, (v, set) => MSwitch(value: v, onChanged: set)),
+                Local(true, (v, set) => MChip('Important', count: 2, on: v, onTap: () => set(!v))),
+                Local(false, (v, set) => MChip('À répondre', count: 1, on: v, onTap: () => set(!v))),
+              ]),
+            ]),
+          ),
+          BoardFrame(
+            label: 'Le carré qui glisse',
+            note: 'Le survol et le choix de Mikky. Sur fond gris, le carré blanc marque le choix et glisse au clic ; au survol, le nom s’éclaire (colonne des planches, menus). Dans une liste sans choix, il suit la souris.',
+            child: Container(
+              width: 260,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
+              child: Local(1, (picked, set) => SlidingHover(
+                radius: 12,
+                followHover: false,
+                hairline: false,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  for (final (i, t) in ['Marque', 'Composants', 'Accueil', 'Agent'].indexed)
+                    HoverTarget(
+                      selected: i == picked,
+                      child: HoverBuilder(
+                        builder: (context, hover) => GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => set(i),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                            child: Text(t, style: uiText(TextSize.body, weight: i == picked ? FontWeight.w600 : FontWeight.w500, color: i == picked || hover ? ui.text : ui.text3)),
+                          ),
                         ),
                       ),
                     ),
+                ]),
+              )),
+            ),
+          ),
+          BoardFrame(
+            label: 'Champ de saisie',
+            note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle, ou Suivi | Chat.',
+            child: _Tray([
+              Composer(
+                placeholder: 'Que doit faire l’agent ?',
+                options: Row(mainAxisSize: MainAxisSize.min, children: [
+                  ComposerChip('mikky', icon: 'folder', onTap: () {}),
+                  const SizedBox(width: 6),
+                  ComposerChip('Claude · Opus', leading: const BrandLogo(Brand.claude, size: 12), onTap: () {}),
+                ]),
+              ),
+              const SizedBox(height: 4),
+              Local(0, (v, set) => Composer(
+                placeholder: 'Écris à cet agent…',
+                options: Segmented(options: const ['Suivi', 'Chat'], selected: v, size: SegmentSize.field, onChanged: set),
+              )),
+            ]),
+          ),
+          BoardFrame(
+            label: 'Champs',
+            child: _Tray([
+              const SearchField(icon: 'search', placeholder: 'Chercher une session, un fichier…'),
+              SearchField(placeholder: 'Nom du projet', controller: TextEditingController(text: 'mikky')),
+            ]),
+          ),
+        ],
+      ),
+    ]),
+    ('Applications', [
+      BoardSection(
+        title: 'Applications',
+        note: 'Une application : un ou plusieurs agents qui font une tâche. Des tuiles, un seul arrondi pour toutes les tailles (27 % du côté), le bord clair et le trait fin de nos contrôles en relief ; au survol elles montent de 2 px, à la pression elles rétrécissent. Leur dessin viendra.',
+        frames: [
+          BoardFrame(
+            label: 'Tuiles',
+            note: '64 px en haut (8 par page), 100 px à droite (6 par page). Neutres tant qu’elles n’ont pas leur dessin.',
+            child: BoardPane(
+              width: 260,
+              child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
+                for (final s in const [64.0, 100.0]) ...[AppTile(size: s, label: 'Application', onTap: _nothing), const SizedBox(width: 24)],
+              ]),
+            ),
+          ),
+          BoardFrame(
+            label: 'Dans l’app aujourd’hui',
+            note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien pour l’historique et la pause.',
+            child: BoardPane(
+              width: 340,
+              child: Row(children: [
+                for (final a in sampleApps.take(4)) ...[
+                  AppTile(size: 56, status: a.status, onTap: _nothing, child: Center(child: BrandLogo(a.brand!, size: 19))),
+                  const SizedBox(width: 16),
+                ],
+              ]),
+            ),
+          ),
+          const BoardFrame(
+            label: 'Mikky',
+            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil, sans case. Au repos, au travail, fini.',
+            child: BoardPane(
+              width: 270,
+              child: Row(children: [
+                MiniMikky(size: 72, badge: false),
+                MiniMikky(size: 72, badge: false, state: MikkyState.working),
+                MiniMikky(size: 72, badge: false, state: MikkyState.finished),
+              ]),
+            ),
+          ),
+        ],
+      ),
+    ]),
+    ('Menus', [
+      const BoardSection(
+        title: 'Menu flottant',
+        note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il sort de l’étoile grise ; Échap ou un clic à côté le replie dedans.',
+        frames: [
+          BoardFrame(label: 'À essayer', note: 'Clique sur l’étoile grise : le menu se déploie et se replie en elle (une seule étoile à la fois).', width: 300, child: _MenuTry(_homeMenu)),
+          BoardFrame(
+            label: 'À essayer · Supprimer…',
+            note: 'Un menu qui en ouvre un autre : le panneau ne se replie pas, il prend sur place la taille de la confirmation.',
+            width: 300,
+            child: _MenuTry(_agentMenu, followUps: {7: _deleteMenu}),
+          ),
+          BoardFrame(label: 'Réglages · étoile grise', note: 'Les réglages de Mikky (clic droit sur l’île).', width: 264, child: FloatingMenuPanel(entries: _homeMenu)),
+          BoardFrame(label: 'Un agent · étoile grise', note: 'Ce qu’on fait de lui.', width: 264, child: FloatingMenuPanel(entries: _agentMenu)),
+        ],
+      ),
+    ]),
+    ('Retours', [
+      BoardSection(
+        title: 'Retours et notifications',
+        frames: [
+          BoardFrame(
+            label: 'États d’un agent',
+            note: 'Le feu d’artifice bleu pour tout le travail, « ! » pour ce qui attend ton feu vert ou ta réponse, « ! » rouge pour une erreur, le jaune pour la limite, le vert figé quand c’est fini ; rien en pause. Le violet est réservé à « Ensorcelé ».',
+            child: _Tray([
+              Wrap(spacing: 6, runSpacing: 6, children: [
+                for (final (s, name) in [
+                  (UiStatus.working, 'Travaille'),
+                  (UiStatus.approval, 'Attend'),
+                  (UiStatus.error, 'Erreur'),
+                  (UiStatus.limited, 'Limite'),
+                  (UiStatus.finished, 'Terminé'),
+                  (UiStatus.paused, 'En pause (rien)'),
+                ])
+                  SizedBox(
+                    width: 140,
+                    child: Row(children: [StatusDot(s), const SizedBox(width: 6), Text(name, style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text))]),
                   ),
               ]),
-            )),
-          ),
-        ),
-        BoardFrame(
-          label: 'Claude au travail : deux essais',
-          note: 'À gauche, son logo qui tourne et respire (dans l’app). À droite, l’étoile de Claude Code, comme dans son terminal : point, croix, astérisque, étoile, fleur, et retour.',
-          child: _Tray([
-            Row(children: [
-              const SizedBox(width: 34, child: Center(child: SpinningLogo(claude: true, child: BrandLogo(Brand.claude, size: 32)))),
-              const SizedBox(width: 40),
-              const SizedBox(width: 34, child: Center(child: ClaudeSpinner(size: 30))),
-              const SizedBox(width: 12),
-              Text('Pondering…', style: uiText(TextSize.label, color: const Color(0xFFD97757), weight: FontWeight.w500)),
             ]),
-          ], width: 300),
-        ),
-        BoardFrame(
-          label: 'Agents',
-          child: _Tray([
-            SlidingHover(
-              radius: 14,
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            AgentCard(
-              status: UiStatus.approval,
-              title: 'Met à jour le site',
-              who: 'WSL',
-              brand: Brand.codex,
-              subtitle: 'Veut lancer une commande',
-              style: AgentCardStyle.waiting,
-              onTap: () {},
-              actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
-            ),
-            AgentCard(status: UiStatus.working, title: 'Corrige les tests du moteur', who: '', brand: Brand.claude, subtitle: 'Modifie island_machine.dart', onTap: () {}),
-            AgentCard(status: UiStatus.working, title: 'Prépare le plan de l’API', who: '', brand: Brand.codex, subtitle: 'Réfléchit au plan', pinned: true, onTap: () {}),
-            AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
-            AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
+          ),
+          BoardFrame(
+            label: 'Notifications',
+            note: 'Un message qui arrive (toast) ; l’état du moteur, en haut de la fenêtre quand il manque.',
+            child: _Tray([
+              Toast(icon: 'file', title: 'IMG_2041.jpg reçue', subtitle: 'De Téléphone · rangée dans Téléchargements', action: MButton('Ouvrir', small: true, onPressed: () {})),
+              const SizedBox(width: 328, child: BackendStatus(title: 'Reconnexion en cours', message: 'Le dernier état reste visible.')),
+            ], width: 360),
+          ),
+          BoardFrame(
+            label: 'Attente, progrès, pastilles',
+            child: _Tray([
+              const ProgressBar(value: .4),
+              const ProgressBar(),
+              _row([
+                const Spinner(),
+                const TypingDots(),
+                Stack(clipBehavior: Clip.none, children: [RoundButton('mail', onPressed: () {}), Positioned(top: -4, right: -6, child: CountBadge(2, ring: ui.board))]),
+                Stack(clipBehavior: Clip.none, children: [RoundButton('agents', onPressed: () {}), Positioned(top: 0, right: 0, child: DotBadge(ring: ui.board))]),
+                const CodePill('npm run build'),
               ]),
-            ),
-          ], width: 320),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Retours',
-      frames: [
-        BoardFrame(
-          label: 'États d’un agent',
-          note: 'Seulement ce qui dit quelque chose (1er octobre) : le feu d’artifice bleu pour tout le travail (travaille, réfléchit, cherche), « ! » pour ce qui attend ton feu vert ou ta réponse, « ! » rouge pour une erreur, le jaune pour la limite, le vert figé quand c’est fini ; rien en pause. Le violet est réservé à « Ensorcelé ».',
-          child: _Tray([
-            Wrap(spacing: 6, runSpacing: 6, children: [
-              for (final (s, name) in [
-                (UiStatus.working, 'Travaille'),
-                (UiStatus.approval, 'Attend'),
-                (UiStatus.error, 'Erreur'),
-                (UiStatus.limited, 'Limite'),
-                (UiStatus.finished, 'Terminé'),
-                (UiStatus.paused, 'En pause (rien)'),
-              ])
-                SizedBox(
-                  width: 140,
-                  child: Row(children: [StatusDot(s), const SizedBox(width: 6), Text(name, style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text))]),
-                ),
             ]),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Attente, progrès, pastilles',
-          child: _Tray([
-            Toast(icon: 'file', title: 'IMG_2041.jpg reçue', subtitle: 'De Téléphone · rangée dans Téléchargements', action: MButton('Ouvrir', small: true, onPressed: () {})),
-            const ProgressBar(value: .4),
-            const ProgressBar(),
-            _row([
-              const Spinner(),
-              const TypingDots(),
-              Stack(clipBehavior: Clip.none, children: [RoundButton('mail', onPressed: () {}), Positioned(top: -4, right: -6, child: CountBadge(2, ring: ui.board))]),
-              Stack(clipBehavior: Clip.none, children: [RoundButton('agents', onPressed: () {}), Positioned(top: 0, right: 0, child: DotBadge(ring: ui.board))]),
-              const CodePill('npm run build'),
+          ),
+          const BoardFrame(
+            label: 'Suivi',
+            note: 'La ligne de métro : fait, en cours (trait bleu qui avance), à faire, message glissé.',
+            child: _Tray([
+              MetroStep(kind: StepKind.done, past: true, first: true, child: Text('Lancer les tests')),
+              MetroStep(kind: StepKind.me, past: true, meta: '14:02', child: Text('Regarde aussi le délai')),
+              MetroStep(kind: StepKind.now, child: Text('Corriger la fermeture auto')),
+              MetroStep(kind: StepKind.todo, child: Text('Relancer les tests')),
+              MetroStep(kind: StepKind.todo, last: true, child: Text('Terminé')),
+            ], width: 320),
+          ),
+        ],
+      ),
+    ]),
+    ('Couleurs', [interfaceColorsSection(ui)]),
+    ('Listes', [
+      BoardSection(
+        title: 'Lignes de l’ancien accueil',
+        note: 'Plus dans l’accueil depuis le 2 octobre (remplacé par les applications). Gardées : leurs actions — Oui / Non, questions, limite (« Terminer », « Relance auto »), reprendre, menu d’un agent — sont à refaire dans les applications à l’étape suivante.',
+        frames: [
+          BoardFrame(
+            label: 'Titres de groupes',
+            child: _Tray([
+              GroupHeader(label: 'En attente', color: ui.amber, status: UiStatus.approval, count: 1, first: true, onTap: () {}),
+              GroupHeader(label: 'Travaillent', color: ui.blue, status: UiStatus.working, count: 2, onTap: () {}),
+              GroupHeader(label: 'Terminés', color: ui.green, status: UiStatus.finished, count: 3, onTap: () {}),
+              GroupHeader(label: 'Historique', color: ui.grey, count: 12, open: false, onTap: () {}),
             ]),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Suivi',
-          note: 'La ligne de métro : fait, en cours (trait bleu qui avance), à faire, message glissé.',
-          child: const _Tray([
-            MetroStep(kind: StepKind.done, past: true, first: true, child: Text('Lancer les tests')),
-            MetroStep(kind: StepKind.me, past: true, meta: '14:02', child: Text('Regarde aussi le délai')),
-            MetroStep(kind: StepKind.now, child: Text('Corriger la fermeture auto')),
-            MetroStep(kind: StepKind.todo, child: Text('Relancer les tests')),
-            MetroStep(kind: StepKind.todo, last: true, child: Text('Terminé')),
-          ], width: 320),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Retirés et à faire',
-      frames: [
-        BoardFrame(
-          label: 'Doublons retirés des planches',
-          width: 520,
-          child: SizedBox(
+          ),
+          BoardFrame(
+            label: 'Agents',
+            note: 'Le logo de l’outil, qui tourne pendant le travail et sautille quand l’agent attend ; Oui / Non sous la ligne.',
+            child: _Tray([
+              SlidingHover(
+                radius: 14,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+                  AgentCard(
+                    status: UiStatus.approval,
+                    title: 'Met à jour le site',
+                    who: 'WSL',
+                    brand: Brand.codex,
+                    subtitle: 'Veut lancer une commande',
+                    style: AgentCardStyle.waiting,
+                    onTap: () {},
+                    actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
+                  ),
+                  AgentCard(status: UiStatus.working, title: 'Corrige les tests du moteur', who: '', brand: Brand.claude, subtitle: 'Modifie island_machine.dart', onTap: () {}),
+                  AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
+                  AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
+                ]),
+              ),
+            ], width: 320),
+          ),
+        ],
+      ),
+    ]),
+    ('Essais', [
+      BoardSection(
+        title: 'Essais et à faire',
+        frames: [
+          BoardFrame(
+            label: 'Claude au travail : deux essais',
+            note: 'À gauche, son logo qui tourne et respire (dans l’app). À droite, l’étoile de Claude Code, comme dans son terminal.',
+            child: _Tray([
+              Row(children: [
+                const SizedBox(width: 34, child: Center(child: SpinningLogo(claude: true, child: BrandLogo(Brand.claude, size: 32)))),
+                const SizedBox(width: 40),
+                const SizedBox(width: 34, child: Center(child: ClaudeSpinner(size: 30))),
+                const SizedBox(width: 12),
+                Text('Pondering…', style: uiText(TextSize.label, color: const Color(0xFFD97757), weight: FontWeight.w500)),
+              ]),
+            ], width: 300),
+          ),
+          BoardFrame(
+            label: 'Composants qui manquent',
             width: 520,
-            child: Text(
-              '• Les petits boutons Oui / Non en relief : remplacés par les Réponses à plat.\n'
-              '• La barre de titre flottante « Réglages » : c’est l’en-tête des pages.\n'
-              '• La barre d’actions « Envoyer à Téléphone » : pour LocalSend, plus tard.\n'
-              '• Les carrés d’état, le lanceur, les points d’état ronds : remplacés par les feux d’artifice.',
-              style: uiText(TextSize.label, color: ui.text2, height: 1.55),
+            child: SizedBox(
+              width: 520,
+              child: Text(
+                '• Le dessin des applications, et leurs actions rapides (Oui / Non, limite…).\n'
+                '• Le chat de l’accueil.\n'
+                '• Infobulle.\n'
+                '• Boîte de confirmation (aujourd’hui un menu qui redemande).\n'
+                '• Notification d’erreur (toast rouge).\n'
+                '• Écran de connexion et écran de réglages.',
+                style: uiText(TextSize.label, color: ui.text2, height: 1.55),
+              ),
             ),
           ),
-        ),
-        BoardFrame(
-          label: 'Composants qui manquent',
-          width: 520,
-          child: SizedBox(
-            width: 520,
-            child: Text(
-              '• Menu déroulant à nos couleurs (agent, modèle, dossier, clic droit sur une session) : aujourd’hui le menu de Windows.\n'
-              '• Infobulle.\n'
-              '• Boîte de confirmation (supprimer une session) : aujourd’hui celle de Windows.\n'
-              '• Notification d’erreur (toast rouge) et état vide d’une page.\n'
-              '• Écran de connexion et écran de réglages sur les planches.',
-              style: uiText(TextSize.label, color: ui.text2, height: 1.55),
-            ),
-          ),
-        ),
-      ],
-    ),
+        ],
+      ),
+    ]),
   ];
-});
+}
+
+const _modes = [TabItem('grid', label: 'Applications'), TabItem('chat', label: 'Chat')];
+
+void _nothing() {}
+
+/// The board's categories: a selector (its thumb slides to the one shown),
+/// then their sections, « Tout » by default.
+class ComponentsByCategory extends StatefulWidget {
+  const ComponentsByCategory({super.key, required this.categories});
+
+  final List<(String, List<Widget>)> categories;
+
+  @override
+  State<ComponentsByCategory> createState() => _ComponentsByCategoryState();
+}
+
+class _ComponentsByCategoryState extends State<ComponentsByCategory> {
+  int _shown = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final names = ['Tout', for (final (name, _) in widget.categories) name];
+    final sections = [
+      for (final (i, (_, list)) in widget.categories.indexed)
+        if (_shown == 0 || _shown == i + 1) ...list,
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Segmented(options: names, selected: _shown, onChanged: (i) => setState(() => _shown = i)),
+        const SizedBox(height: 8),
+        Text('Les plus utilisés d’abord. Choisis une catégorie : le carré glisse, la planche n’en montre que les composants.', style: uiText(TextSize.small, color: ui.text3)),
+        const SizedBox(height: 40),
+        AnimatedSwitcher(
+          duration: Motion.of(context, Motion.fade),
+          switchInCurve: Motion.enter,
+          layoutBuilder: (current, previous) => Stack(alignment: Alignment.topLeft, children: [...previous, ?current]),
+          child: Column(key: ValueKey(_shown), crossAxisAlignment: CrossAxisAlignment.start, children: sections),
+        ),
+      ],
+    );
+  }
+}
 
 const _homeMenu = [
   MenuEntry(1, 'Thème : automatique', checked: true),
