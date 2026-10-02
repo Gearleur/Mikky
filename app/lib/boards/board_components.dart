@@ -186,7 +186,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Pages · l’étoile',
-            note: 'Un petit pixel gris par page, une étoile en pixels sur la page montrée. Elle saute d’une page à l’autre sur un petit arc, grandit en vol, s’écrase en se posant et jette quatre étincelles ; la place ne bouge jamais. Clic sur un pixel ; flèches rondes grises, effacées au bout.',
+            note: 'Un petit pixel gris par page, une étoile en pixels sur la page montrée, dans nos bleus signature (un cran plus clairs en sombre). Elle glisse tout droit, très doucement, avec une courte traînée bleue qui s’efface ; la place ne bouge jamais. Clic sur un pixel ; flèches rondes grises, effacées au bout.',
             child: BoardPane(child: Local(0, (page, set) => PagerTry(page: page, set: set))),
           ),
           const BoardFrame(
