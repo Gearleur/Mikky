@@ -66,6 +66,32 @@ void main() {
     expect(find.byType(AppTile), findsNothing);
   });
 
+  testWidgets('« + » goes to the Chat; its foot fades; launched, back to the apps', (tester) async {
+    VoidCallback? toApps;
+    await tester.pumpWidget(host(HomeView(
+      layout: HomeLayout.top,
+      apps: HomeApp.placeholders(3),
+      animate: false,
+      onHistory: (_) {},
+      chat: (back) {
+        toApps = back;
+        return const Text('nouvelle tâche');
+      },
+    )));
+    expect(find.byType(AddTile), findsOneWidget);
+    await tester.tap(find.byType(AddTile));
+    await tester.pumpAndSettle();
+    expect(find.text('nouvelle tâche'), findsOneWidget);
+    expect(find.byType(AppTile), findsNothing);
+    final foot = tester.widget<AnimatedOpacity>(find.ancestor(of: find.byType(EnvironmentSelector), matching: find.byType(AnimatedOpacity)).first);
+    expect(foot.opacity, 0);
+
+    toApps!();
+    await tester.pumpAndSettle();
+    expect(find.text('nouvelle tâche'), findsNothing);
+    expect(find.byType(AddTile), findsOneWidget);
+  });
+
   testWidgets('right: six tiles a page in 2 × 3, sideways pages, and the environment menu', (tester) async {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(15), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);

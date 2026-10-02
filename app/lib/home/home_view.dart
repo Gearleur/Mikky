@@ -61,24 +61,6 @@ class HomeLayout {
     side: 12,
   );
 
-  /// Top, one row (trial, 2026-10-02): three bigger tiles (96 px) on one
-  /// line, and a lower island, 450 × 218 — the same 10 px between bar,
-  /// tiles, foot and edge.
-  static const topRow = HomeLayout._(
-    placement: HomePlacement.top,
-    size: Size(450, 218),
-    radius: 30,
-    columns: 3,
-    rows: 1,
-    tile: 96,
-    gap: 22,
-    rowGap: 0,
-    gridTop: barTop + barHeight + 10,
-    arrowInset: 18,
-    foot: 10,
-    side: 12,
-  );
-
   /// Right: the island opened to 344 × 520 (`IslandMetrics.right`), pages
   /// of six 104 px tiles (2 × 3, user request 2026-10-02), sliding sideways
   /// like the top's. Laid out as the top (2026-10-02: the modes at the
@@ -124,6 +106,11 @@ class HomeLayout {
   /// The bar at the top: Mikky, the modes, the tools.
   static const barTop = 12.0, barHeight = 44.0;
   double get mikkySize => 72;
+
+  /// A page over the home (an agent's Suivi / Chat): at the top, the
+  /// island grows a little for the conversation, 450 × 380 (user,
+  /// 2026-10-02); at the right, the same window. As `IslandMetrics.page`.
+  Size get pageSize => isTop ? const Size(450, 380) : size;
 }
 
 /// One app of the home: one or more agents doing a task (user, 2026-10-02).
@@ -159,12 +146,14 @@ class HomeView extends StatefulWidget {
     this.apps = const [],
     this.onOpen,
     this.onNew,
+    this.chat,
     this.onHistory,
     this.drawMikky = true,
     this.tools = const [Brand.claude, Brand.codex],
     this.environment = MikkyEnvironment.local,
     this.mikky = MikkyState.idle,
     this.animate = true,
+    this.inChat = false,
   });
 
   final HomeLayout layout;
@@ -174,9 +163,14 @@ class HomeView extends StatefulWidget {
   /// A tile pressed.
   final ValueChanged<HomeApp>? onOpen;
 
-  /// A new task: the tools' rail and the « + » tile. Null: cannot launch
-  /// (no « + »).
+  /// A new task: the tools' rail and the « + » tile, when there is no
+  /// [chat]. Neither: cannot launch (no « + »).
   final VoidCallback? onNew;
+
+  /// The Chat mode (2026-10-02, the old « Nouvel agent »), given a way
+  /// back to the apps (once launched). The tools' rail and « + » come to
+  /// it. Null: a placeholder.
+  final Widget Function(VoidCallback toApps)? chat;
 
   /// The history button, bottom left (trial on the Composants board,
   /// 2026-10-02), given the home's window to open its sheet in; null: no
@@ -195,6 +189,9 @@ class HomeView extends StatefulWidget {
   /// False: Mikky still (goldens).
   final bool animate;
 
+  /// Opens on the Chat (the boards).
+  final bool inChat;
+
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -202,7 +199,8 @@ class HomeView extends StatefulWidget {
 
 class _HomeViewState extends State<HomeView> {
   late MikkyEnvironment _environment = widget.environment;
-  int _mode = 0, _page = 0;
+  late int _mode = widget.inChat ? 1 : 0;
+  int _page = 0;
   final _pages = PageController();
   final _keys = FocusNode(debugLabel: 'home');
   late final _layer = OverlayEntry(builder: _window);
@@ -212,8 +210,10 @@ class _HomeViewState extends State<HomeView> {
   Duration? _wheelAt;
 
   HomeLayout get _l => widget.layout;
+  bool get _canStart => widget.chat != null || widget.onNew != null;
+
   /// The apps, then « + » when a task can be started.
-  int get _cells => widget.apps.length + (widget.onNew == null ? 0 : 1);
+  int get _cells => widget.apps.length + (_canStart ? 1 : 0);
   int get _pageCount => math.max(1, (_cells / _l.perPage).ceil());
 
   @override
@@ -239,6 +239,15 @@ class _HomeViewState extends State<HomeView> {
   void _set(VoidCallback f) {
     setState(f);
     _layer.markNeedsBuild();
+  }
+
+  /// « + » or a tool: the Chat, to say what to do.
+  void _start() {
+    if (widget.chat != null) {
+      _set(() => _mode = 1);
+    } else {
+      widget.onNew?.call();
+    }
   }
 
   void _goTo(int page) {
@@ -304,23 +313,31 @@ class _HomeViewState extends State<HomeView> {
   /// Both placements alike (2026-10-02): at the top, Mikky, the modes in
   /// the middle, the tools out of the edge; the pages of tiles; at the
   /// bottom, the history on the left, the pages' star in the middle, the
-  /// environment on the right (it unfolds up, straight).
+  /// environment on the right (it unfolds up, straight). In Chat, its
+  /// field takes the bottom: the foot fades away.
   Widget _window(BuildContext inner) {
     final l = _l;
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        _pagerArea(),
+        Positioned.fill(child: _modeSwitch()),
         Positioned(left: 4, top: -4, child: _mikkyWidget),
         Positioned(top: HomeLayout.barTop, left: 0, right: 0, child: Center(child: _modes(HomeLayout.barHeight))),
         Positioned(top: HomeLayout.barTop, right: 0, child: _tools()),
         // The star on the selector's middle line.
-        Positioned(left: 0, right: 0, bottom: l.foot + (EnvironmentSelector.height - PageDots.height) / 2, child: Center(child: _dots())),
-        Positioned(right: l.side, bottom: l.foot, child: _environmentSelector(inner)),
-        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (EnvironmentSelector.height - 34) / 2, child: _history(inner)),
+        Positioned(left: 0, right: 0, bottom: l.foot + (EnvironmentSelector.height - PageDots.height) / 2, child: Center(child: _foot(_dots()))),
+        Positioned(right: l.side, bottom: l.foot, child: _foot(_environmentSelector(inner))),
+        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (EnvironmentSelector.height - 34) / 2, child: _foot(_history(inner))),
       ],
     );
   }
+
+  /// A part of the foot: there on the apps, gone in Chat.
+  Widget _foot(Widget child) => AnimatedOpacity(
+    duration: Motion.of(context, Motion.fade),
+    opacity: _mode == 0 ? 1 : 0,
+    child: IgnorePointer(ignoring: _mode != 0, child: child),
+  );
 
   // ------------------------------------------------------------------ parts
 
@@ -339,7 +356,7 @@ class _HomeViewState extends State<HomeView> {
     items: const [TabItem('grid', label: 'Applications'), TabItem('chat', label: 'Chat')],
   );
 
-  Widget _tools() => ToolsRail(tools: widget.tools, edge: RailEdge.right, height: HomeLayout.barHeight, onPressed: widget.onNew);
+  Widget _tools() => ToolsRail(tools: widget.tools, edge: RailEdge.right, height: HomeLayout.barHeight, onPressed: _canStart ? _start : null);
 
   Widget _history(BuildContext inner) => RoundButton('history', size: 34, tooltip: 'Historique', onPressed: () => widget.onHistory!(inner));
 
@@ -364,7 +381,7 @@ class _HomeViewState extends State<HomeView> {
     final l = _l, apps = widget.apps;
     Widget cell(int i) {
       if (i < apps.length) return _tile(apps[i]);
-      if (i == apps.length && widget.onNew != null) return AddTile(key: const ValueKey('add'), size: l.tile, onTap: widget.onNew);
+      if (i == apps.length && _canStart) return AddTile(key: const ValueKey('add'), size: l.tile, onTap: _start);
       return AppSlot(size: l.tile);
     }
 
@@ -378,16 +395,24 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  /// The tiles or the chat, one fading into the other.
-  Widget _modeSwitch(Widget tiles) => AnimatedSwitcher(
+  /// The tiles or the chat, one fading into the other. The chat takes
+  /// everything under the bar.
+  Widget _modeSwitch() => AnimatedSwitcher(
     duration: Motion.of(context, Motion.fold),
     switchInCurve: Motion.enter,
     switchOutCurve: Motion.leave,
+    layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
     transitionBuilder: (child, t) => FadeTransition(
       opacity: t,
       child: ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(t), child: child),
     ),
-    child: _mode == 0 ? KeyedSubtree(key: const ValueKey('tiles'), child: tiles) : const _ChatSoon(key: ValueKey('chat')),
+    child: _mode == 0
+        ? Stack(key: const ValueKey('tiles'), children: [_pagerArea()])
+        : Padding(
+            key: const ValueKey('chat'),
+            padding: const EdgeInsets.only(top: HomeLayout.barTop + HomeLayout.barHeight),
+            child: widget.chat?.call(() => _set(() => _mode = 0)) ?? const _ChatSoon(),
+          ),
   );
 
   /// Room around the grid for the tiles' shadows and their lift.
@@ -453,13 +478,13 @@ class _HomeViewState extends State<HomeView> {
     right: 0,
     top: _l.gridTop - _air,
     height: _l.gridHeight + 2 * _air,
-    child: _modeSwitch(_pager()),
+    child: _pager(),
   );
 }
 
 /// The chat, not drawn yet.
 class _ChatSoon extends StatelessWidget {
-  const _ChatSoon({super.key});
+  const _ChatSoon();
 
   @override
   Widget build(BuildContext context) {
@@ -473,10 +498,13 @@ class _ChatSoon extends StatelessWidget {
 /// the right), round elsewhere. Drawn as the island: one rounded surface
 /// running past that edge, cut there.
 class HomeFrame extends StatelessWidget {
-  const HomeFrame({super.key, required this.layout, required this.child});
+  const HomeFrame({super.key, required this.layout, required this.child, this.size});
 
   final HomeLayout layout;
   final Widget child;
+
+  /// Another size than the home's (a page: [HomeLayout.pageSize]).
+  final Size? size;
 
   @override
   Widget build(BuildContext context) {
@@ -486,7 +514,7 @@ class HomeFrame extends StatelessWidget {
     return ClipRect(
       clipper: _ScreenEdge(top),
       child: SizedBox.fromSize(
-        size: layout.size,
+        size: size ?? layout.size,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -497,7 +525,7 @@ class HomeFrame extends StatelessWidget {
               bottom: 0,
               child: Surface(color: ui.island, radius: layout.radius, shadows: ui.islandShadow),
             ),
-            ClipRRect(borderRadius: top ? BorderRadius.vertical(bottom: r) : BorderRadius.horizontal(left: r), child: child),
+            Positioned.fill(child: ClipRRect(borderRadius: top ? BorderRadius.vertical(bottom: r) : BorderRadius.horizontal(left: r), child: child)),
           ],
         ),
       ),
