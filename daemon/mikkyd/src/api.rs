@@ -31,6 +31,8 @@ struct Agent {
     provider: String,
     host: String,
     cwd: String,
+    /// PID of the ACP adapter started on this daemon's host, not of its children.
+    adapter_pid: Option<u32>,
     run: Run,
     child: tokio::sync::Mutex<Child>,
     job: Option<Job>,
@@ -363,6 +365,7 @@ async fn dispatch(
                 .map(|(id, a)| {
                     json!({
                         "run": id, "provider": a.provider, "host": a.host, "cwd": a.cwd,
+                        "adapterPid": a.adapter_pid,
                         "sessionId": a.run.session_id(), "alive": a.run.alive(), "working": a.run.working(),
                     })
                 })
@@ -500,7 +503,8 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
     let mut child = target::command(&host, executable, &args, &cwd, &env)
         .spawn()
         .map_err(|e| RpcError::new(-32000, format!("could not start {executable}: {e}")))?;
-    let job = child.id().and_then(Job::for_process);
+    let adapter_pid = child.id();
+    let job = adapter_pid.and_then(Job::for_process);
     let (stdin, stdout) = (child.stdin.take().unwrap(), child.stdout.take().unwrap());
     let run = Run::start(stdout, stdin);
 
@@ -514,6 +518,7 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
         provider,
         host: host_name,
         cwd,
+        adapter_pid,
         run: run.clone(),
         child: tokio::sync::Mutex::new(child),
         job,
@@ -526,7 +531,7 @@ fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcError> {
         run.wait_closed().await;
         daemon.agents.lock().unwrap().remove(&run_id);
     });
-    Ok(json!({"run": id, "cwd": params["cwd"]}))
+    Ok(json!({"run": id, "cwd": params["cwd"], "adapterPid": adapter_pid}))
 }
 
 /// Ends an agent and everything it started: cancel the turn, close its
