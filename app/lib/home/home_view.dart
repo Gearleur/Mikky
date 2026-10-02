@@ -334,7 +334,7 @@ class _HomeViewState extends State<HomeView> {
 
   /// A part of the foot: there on the apps, gone in Chat.
   Widget _foot(Widget child) => AnimatedOpacity(
-    duration: Motion.of(context, Motion.fade),
+    duration: Motion.of(context, Motion.hover),
     opacity: _mode == 0 ? 1 : 0,
     child: IgnorePointer(ignoring: _mode != 0, child: child),
   );
@@ -396,9 +396,12 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// The tiles or the chat, one fading into the other. The chat takes
-  /// everything under the bar.
+  /// everything under the bar. The one leaving goes at once (110 ms),
+  /// the other comes in a little slower (180 ms) (user, 2026-10-02: « les
+  /// indications ne s'enlèvent pas assez vite »).
   Widget _modeSwitch() => AnimatedSwitcher(
-    duration: Motion.of(context, Motion.fold),
+    duration: Motion.of(context, Motion.fade),
+    reverseDuration: Motion.of(context, const Duration(milliseconds: 110)),
     switchInCurve: Motion.enter,
     switchOutCurve: Motion.leave,
     layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
