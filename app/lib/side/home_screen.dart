@@ -71,6 +71,6 @@ class HomeScreen extends StatelessWidget {
     apps: homeApps(entries, DateTime.now()),
     drawMikky: false,
     onOpen: (app) => open(app.id),
-    onTools: canLaunch ? () => open('new') : null,
+    onNew: canLaunch ? () => open('new') : null,
   );
 }

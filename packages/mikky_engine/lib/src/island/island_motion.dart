@@ -59,8 +59,8 @@ class IslandMetrics {
     compactRadius: 22,
     openRadius: 38,
     mikkyCompact: (x: 37, y: 32, radius: 15),
-    mikkyOpen: (x: 40, y: 37, radius: 21),
-    mikkyList: (x: 40, y: 37, radius: 21),
+    mikkyOpen: (x: 40, y: 35, radius: 21),
+    mikkyList: (x: 40, y: 35, radius: 21),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {

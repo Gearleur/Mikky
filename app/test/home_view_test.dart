@@ -95,7 +95,7 @@ void main() {
     expect(tester.widget<EnvironmentSelector>(find.byType(EnvironmentSelector)).selected, MikkyEnvironment.wsl);
   });
 
-  testWidgets('a tile opens its app, the tools a new agent; no app: a word instead', (tester) async {
+  testWidgets('a tile opens its app, the tools and « + » a new task; empty places keep a token', (tester) async {
     HomeApp? opened;
     var tools = 0;
     await tester.pumpWidget(host(HomeView(
@@ -103,7 +103,7 @@ void main() {
       apps: HomeApp.placeholders(3),
       animate: false,
       onOpen: (a) => opened = a,
-      onTools: () => tools++,
+      onNew: () => tools++,
     )));
     await tester.tap(find.byType(AppTile).at(1));
     await tester.pump();
@@ -111,9 +111,25 @@ void main() {
     await tester.tap(find.bySemanticsLabel(RegExp('^Outils')));
     await tester.pump();
     expect(tools, 1);
+    // « + » after the apps starts a task too; the free places keep a token.
+    await tester.tap(find.byKey(const ValueKey('add')));
+    await tester.pump();
+    expect(tools, 2);
+    expect(find.byType(AppSlot), findsNWidgets(2));
 
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, animate: false)));
+    // Nothing to launch from there: no « + », eight waiting tokens.
     expect(find.byType(AppTile), findsNothing);
-    expect(find.text('Aucun agent pour l’instant'), findsOneWidget);
+    expect(find.byType(AppSlot), findsNWidgets(8));
+  });
+
+  testWidgets('« + » takes a place: six apps and « + » make two pages at the right', (tester) async {
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(6), animate: false, onNew: () {})));
+    expect(tester.widget<PageDots>(find.byType(PageDots)).count, 2);
+    expect(find.byKey(const ValueKey('add')), findsNothing);
+    await tester.tap(find.bySemanticsLabel('Page suivante'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('add')), findsOneWidget);
+    expect(find.byType(AppSlot), findsNWidgets(5));
   });
 }

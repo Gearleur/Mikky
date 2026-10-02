@@ -86,7 +86,7 @@ void main() {
       expect((m.currentWidth, m.currentHeight), (344, 520));
       expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
       // Mikky at the top left of the home (2026-10-02).
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 37, 21));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
       expect(m.cornerRadius, 38);
     });
 

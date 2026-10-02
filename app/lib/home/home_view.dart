@@ -38,6 +38,8 @@ class HomeLayout {
     required this.rowGap,
     required this.gridTop,
     required this.arrowInset,
+    required this.foot,
+    required this.side,
   });
 
   /// Top: the island opened to 450 × 260 (taller than the old 450 × 180,
@@ -55,22 +57,28 @@ class HomeLayout {
     rowGap: 10,
     gridTop: barTop + barHeight + 10,
     arrowInset: 18,
+    foot: 10,
+    side: 12,
   );
 
   /// Right: the island opened to 344 × 520 (`IslandMetrics.right`), pages
-  /// of six 100 px tiles (2 × 3, user request 2026-10-02), sliding sideways
-  /// like the top's; in the middle between the bar and the dots.
+  /// of six 104 px tiles (2 × 3, user request 2026-10-02), sliding sideways
+  /// like the top's. Laid out as the top (2026-10-02: the modes at the
+  /// top, the environment at the bottom right): the tiles in the middle
+  /// between the bar (ends at 56) and the foot (starts at 470).
   static const right = HomeLayout._(
     placement: HomePlacement.right,
     size: Size(344, 520),
     radius: 38,
     columns: 2,
     rows: 3,
-    tile: 100,
+    tile: 104,
     gap: 24,
-    rowGap: 20,
-    gridTop: 72,
+    rowGap: 22,
+    gridTop: 85,
     arrowInset: 14,
+    foot: 14,
+    side: 16,
   );
 
   final HomePlacement placement;
@@ -86,16 +94,17 @@ class HomeLayout {
   /// Where the first row starts; the arrows' distance from the edges.
   final double gridTop, arrowInset;
 
+  /// The foot (history, the pages' star, the environment): from the
+  /// bottom, from the sides.
+  final double foot, side;
+
   bool get isTop => placement == HomePlacement.top;
   int get perPage => columns * rows;
   double get gridWidth => columns * tile + (columns - 1) * gap;
   double get gridHeight => rows * tile + (rows - 1) * rowGap;
 
-  /// The bar of the top: Mikky, the modes or the environment, the tools.
+  /// The bar at the top: Mikky, the modes, the tools.
   static const barTop = 12.0, barHeight = 44.0;
-
-  /// Right: the modes at the bottom.
-  static const dockHeight = 52.0, dockBottom = 16.0;
   double get mikkySize => 72;
 }
 
@@ -131,7 +140,8 @@ class HomeView extends StatefulWidget {
     this.layout = HomeLayout.top,
     this.apps = const [],
     this.onOpen,
-    this.onTools,
+    this.onNew,
+    this.onHistory,
     this.drawMikky = true,
     this.tools = const [Brand.claude, Brand.codex],
     this.environment = MikkyEnvironment.local,
@@ -146,8 +156,14 @@ class HomeView extends StatefulWidget {
   /// A tile pressed.
   final ValueChanged<HomeApp>? onOpen;
 
-  /// The tools' rail pressed: a new agent. Null: cannot launch.
-  final VoidCallback? onTools;
+  /// A new task: the tools' rail and the « + » tile. Null: cannot launch
+  /// (no « + »).
+  final VoidCallback? onNew;
+
+  /// The history button, bottom left (trial on the Composants board,
+  /// 2026-10-02), given the home's window to open its sheet in; null: no
+  /// button.
+  final ValueChanged<BuildContext>? onHistory;
 
   /// False: the island draws its own Mikky in his place (the app: he comes
   /// from the closed island to this spot, in the state of his agent).
@@ -178,7 +194,9 @@ class _HomeViewState extends State<HomeView> {
   Duration? _wheelAt;
 
   HomeLayout get _l => widget.layout;
-  int get _pageCount => math.max(1, (widget.apps.length / _l.perPage).ceil());
+  /// The apps, then « + » when a task can be started.
+  int get _cells => widget.apps.length + (widget.onNew == null ? 0 : 1);
+  int get _pageCount => math.max(1, (_cells / _l.perPage).ceil());
 
   @override
   void didUpdateWidget(HomeView old) {
@@ -265,7 +283,26 @@ class _HomeViewState extends State<HomeView> {
     ),
   );
 
-  Widget _window(BuildContext inner) => _l.isTop ? _top(inner) : _right(inner);
+  /// Both placements alike (2026-10-02): at the top, Mikky, the modes in
+  /// the middle, the tools out of the edge; the pages of tiles; at the
+  /// bottom, the history on the left, the pages' star in the middle, the
+  /// environment on the right (it unfolds up, straight).
+  Widget _window(BuildContext inner) {
+    final l = _l;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        _pagerArea(),
+        Positioned(left: 4, top: -4, child: _mikkyWidget),
+        Positioned(top: HomeLayout.barTop, left: 0, right: 0, child: Center(child: _modes(HomeLayout.barHeight))),
+        Positioned(top: HomeLayout.barTop, right: 0, child: _tools()),
+        // The star on the selector's middle line.
+        Positioned(left: 0, right: 0, bottom: l.foot + (EnvironmentSelector.height - PageDots.height) / 2, child: Center(child: _dots())),
+        Positioned(right: l.side, bottom: l.foot, child: _environmentSelector(inner)),
+        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (EnvironmentSelector.height - 34) / 2, child: _history(inner)),
+      ],
+    );
+  }
 
   // ------------------------------------------------------------------ parts
 
@@ -284,7 +321,9 @@ class _HomeViewState extends State<HomeView> {
     items: const [TabItem('grid', label: 'Applications'), TabItem('chat', label: 'Chat')],
   );
 
-  Widget _tools() => ToolsRail(tools: widget.tools, edge: RailEdge.right, height: HomeLayout.barHeight, onPressed: widget.onTools);
+  Widget _tools() => ToolsRail(tools: widget.tools, edge: RailEdge.right, height: HomeLayout.barHeight, onPressed: widget.onNew);
+
+  Widget _history(BuildContext inner) => RoundButton('history', size: 34, tooltip: 'Historique', onPressed: () => widget.onHistory!(inner));
 
   Widget _environmentSelector(BuildContext inner) => EnvironmentSelector(
     selected: _environment,
@@ -301,16 +340,25 @@ class _HomeViewState extends State<HomeView> {
     child: app.brand == null ? null : Center(child: BrandLogo(app.brand!, size: (_l.tile * .34).roundToDouble())),
   );
 
-  /// [count] tiles from [first], in rows of [HomeLayout.columns], the last
-  /// row from the left as in a launcher.
-  Widget _grid(int first, int count) => SizedBox(
-    width: _l.gridWidth,
-    child: Wrap(
-      spacing: _l.gap,
-      runSpacing: _l.rowGap,
-      children: [for (var i = first; i < first + count; i++) _tile(widget.apps[i])],
-    ),
-  );
+  /// Page [p], always full: its apps, then « + » in the first free
+  /// place, then small tokens where apps will come (2026-10-02).
+  Widget _grid(int p) {
+    final l = _l, apps = widget.apps;
+    Widget cell(int i) {
+      if (i < apps.length) return _tile(apps[i]);
+      if (i == apps.length && widget.onNew != null) return AddTile(key: const ValueKey('add'), size: l.tile, onTap: widget.onNew);
+      return AppSlot(size: l.tile);
+    }
+
+    return SizedBox(
+      width: l.gridWidth,
+      child: Wrap(
+        spacing: l.gap,
+        runSpacing: l.rowGap,
+        children: [for (var i = p * l.perPage; i < (p + 1) * l.perPage; i++) cell(i)],
+      ),
+    );
+  }
 
   /// The tiles or the chat, one fading into the other.
   Widget _modeSwitch(Widget tiles) => AnimatedSwitcher(
@@ -360,7 +408,7 @@ class _HomeViewState extends State<HomeView> {
           alignment: Alignment.topCenter,
           child: Padding(
             padding: const EdgeInsets.only(top: _air),
-            child: _grid(p * l.perPage, math.min(l.perPage, widget.apps.length - p * l.perPage)),
+            child: _grid(p),
           ),
         ),
       ),
@@ -387,64 +435,8 @@ class _HomeViewState extends State<HomeView> {
     right: 0,
     top: _l.gridTop - _air,
     height: _l.gridHeight + 2 * _air,
-    child: _modeSwitch(widget.apps.isEmpty ? const _NoApps() : _pager()),
+    child: _modeSwitch(_pager()),
   );
-
-  // -------------------------------------------------------------------- top
-
-  Widget _top(BuildContext inner) {
-    const foot = 10.0;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _pagerArea(),
-        Positioned(left: 4, top: -4, child: _mikkyWidget),
-        Positioned(top: HomeLayout.barTop, left: 0, right: 0, child: Center(child: _modes(HomeLayout.barHeight))),
-        Positioned(top: HomeLayout.barTop, right: 0, child: _tools()),
-        // The dots on the selector's middle line.
-        Positioned(left: 0, right: 0, bottom: foot + (EnvironmentSelector.height - PageDots.height) / 2, child: Center(child: _dots())),
-        Positioned(right: 12, bottom: foot, child: _environmentSelector(inner)),
-      ],
-    );
-  }
-
-  // ------------------------------------------------------------------ right
-
-  Widget _right(BuildContext inner) {
-    final l = _l;
-    // The dots halfway between the last row and the modes (from the
-    // bottom: a notice above the window may take some of its height).
-    final dockTop = l.size.height - HomeLayout.dockBottom - HomeLayout.dockHeight;
-    final dotsBottom = l.size.height - (l.gridTop + l.gridHeight + dockTop) / 2 - PageDots.height / 2;
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        _pagerArea(),
-        Positioned(left: 4, top: -2, child: _mikkyWidget),
-        Positioned(top: HomeLayout.barTop + (HomeLayout.barHeight - EnvironmentSelector.height) / 2, left: 0, right: 0, child: Center(child: _environmentSelector(inner))),
-        Positioned(top: HomeLayout.barTop, right: 0, child: _tools()),
-        Positioned(left: 0, right: 0, bottom: dotsBottom, child: Center(child: _dots())),
-        Positioned(left: 0, right: 0, bottom: HomeLayout.dockBottom, child: Center(child: _modes(HomeLayout.dockHeight))),
-      ],
-    );
-  }
-}
-
-/// No app yet.
-class _NoApps extends StatelessWidget {
-  const _NoApps();
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return Center(
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('Aucun agent pour l’instant', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
-        const SizedBox(height: 4),
-        Text('Les outils, en haut à droite, lancent Claude ou Codex.', style: uiText(TextSize.small, color: ui.text3)),
-      ]),
-    );
-  }
 }
 
 /// The chat, not drawn yet.

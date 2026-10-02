@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import 'icons.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
 import 'status.dart';
@@ -119,6 +120,49 @@ class _AppTileState extends State<AppTile> {
             child: RepaintBoundary(child: lifted),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The tile that starts a task (2026-10-02): an app's tile with « + »,
+/// after the apps, in the first free place.
+class AddTile extends StatelessWidget {
+  const AddTile({super.key, this.size = 64, this.onTap});
+
+  final double size;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return AppTile(
+      size: size,
+      label: 'Nouvelle tâche',
+      onTap: onTap,
+      child: Center(child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2)),
+    );
+  }
+}
+
+/// A free place on a page of apps (2026-10-02): a small hollow token in
+/// its middle, waiting for an app (the hollow of our tracks, not a tile).
+class AppSlot extends StatelessWidget {
+  const AppSlot({super.key, this.size = 64});
+
+  final double size;
+
+  /// The token's side.
+  static double tokenFor(double size) => (size * .16).clamp(9.0, 16.0).roundToDouble();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final t = tokenFor(size);
+    return ExcludeSemantics(
+      child: SizedBox.square(
+        dimension: size,
+        child: Center(child: Surface(width: t, height: t, color: ui.track, shadows: ui.inset)),
       ),
     );
   }
