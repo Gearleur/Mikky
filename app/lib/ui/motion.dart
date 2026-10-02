@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/physics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
 /// The animations table of `composants.html` (« Les animations »), values
@@ -307,4 +308,33 @@ class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
   Widget build(BuildContext context) => RepaintBoundary(
     child: widget.repeat ? widget.builder(context, _t) : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
   );
+}
+
+/// Whether the last thing the user did was on the keyboard: a focus ring
+/// shows only then (2026-10-02). Flutter's own highlight mode counts the
+/// mouse as « traditional » on Windows, so a ring stayed after a click.
+abstract final class KeyboardUse {
+  static bool _last = false;
+  static bool _tracking = false;
+
+  /// The last input was a key (not a press of the mouse or a finger).
+  static bool get last {
+    _track();
+    return _last;
+  }
+
+  /// Starts following the input (once); call before the first key counts.
+  static void start() => _track();
+
+  static void _track() {
+    if (_tracking) return;
+    _tracking = true;
+    HardwareKeyboard.instance.addHandler((event) {
+      if (event is KeyDownEvent) _last = true;
+      return false;
+    });
+    GestureBinding.instance.pointerRouter.addGlobalRoute((event) {
+      if (event is PointerDownEvent) _last = false;
+    });
+  }
 }

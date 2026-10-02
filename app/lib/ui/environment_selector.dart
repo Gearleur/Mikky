@@ -29,12 +29,18 @@ List<MenuEntry> environmentMenuEntries(MikkyEnvironment selected) => [
     ),
 ];
 
-/// « Choisir l'environnement » (2026-10-02, from « Choisir le lieu »): the
-/// name, flat, and the settings' grey star; both open our floating menu
-/// from the star. Grey under the mouse, the relief of an answer while
-/// pressed or open. As wide as the longest name, so it never moves when
-/// the choice changes. [menuWithin]: the enclosing window, below its
-/// Overlay, used as the menu's bounds.
+/// What the selector looks like: at rest (flat), under the mouse (grey),
+/// raised (pressed, or its menu open: the relief of an answer).
+enum _Look { rest, hover, raised }
+
+/// « Choisir l'environnement » (redone 2026-10-02): the name and the
+/// settings' grey star, flat; grey under the mouse; pressed or menu open,
+/// the relief of an answer, and back to flat as soon as the menu is gone.
+/// Both the name and the star open our floating menu out of the star. A
+/// new choice slides in from below, the old one out above. As wide as
+/// the longest name: it never moves. The focus ring only after the
+/// keyboard. [menuWithin]: the enclosing window, below its Overlay, used
+/// as the menu's bounds.
 class EnvironmentSelector extends StatefulWidget {
   const EnvironmentSelector({
     super.key,
@@ -62,13 +68,19 @@ class EnvironmentSelector extends StatefulWidget {
 
 class _EnvironmentSelectorState extends State<EnvironmentSelector> {
   final _star = GlobalKey();
-  final _focus = FocusNode();
-  bool _open = false, _pressed = false, _hover = false, _keyboardFocus = false;
+  final _focus = FocusNode(debugLabel: 'environment');
+  bool _open = false, _pressed = false, _hover = false, _focused = false;
+
+  _Look get _look => _open || _pressed ? _Look.raised : (_hover ? _Look.hover : _Look.rest);
+
+  /// A ring only when the keyboard brought the focus here.
+  bool get _ring => _focused && KeyboardUse.last && !_open;
 
   @override
   void initState() {
     super.initState();
     FloatingMenu.track();
+    KeyboardUse.start();
   }
 
   @override
@@ -79,8 +91,6 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
 
   Future<void> _openMenu() async {
     if (_open) return;
-    _focus.requestFocus();
-    // Label and star both open from the same settings star.
     final star = _star.currentContext;
     if (star != null) FloatingMenu.pressed(star);
     setState(() => _open = true);
@@ -90,38 +100,37 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
       width: EnvironmentSelector.menuWidth,
     );
     if (!mounted) return;
+    // Back to flat, whatever happened while the menu was open (the mouse
+    // left, the press ended under the menu).
     setState(() {
       _open = false;
       _pressed = false;
+      _hover = false;
     });
-    // Back to the selector for the keyboard; the ring shows only for it.
-    _focus.requestFocus();
     if (id != null) {
       final next = MikkyEnvironment.values[id - 1];
       if (next != widget.selected) widget.onChanged(next);
     }
+    // The keyboard comes back here, to go on with it.
+    if (KeyboardUse.last) _focus.requestFocus();
   }
 
   void _press(bool value) {
     if (_pressed != value) setState(() => _pressed = value);
   }
 
-  // The ring only for the keyboard: a mouse choice leaves no outline.
-  void _focusChanged(bool focused) {
-    final keyboard = focused && FocusManager.instance.highlightMode == FocusHighlightMode.traditional;
-    if (keyboard != _keyboardFocus) setState(() => _keyboardFocus = keyboard);
-  }
-
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final raised = _open || _pressed;
-    final label = uiText(TextSize.label, weight: FontWeight.w600, height: 1);
-    final width = EnvironmentSelector._padLeft + _widestLabel(label, MediaQuery.textScalerOf(context)) + 4 + EnvironmentSelector._star;
+    final style = uiText(TextSize.label, weight: FontWeight.w600, height: 1, color: ui.text);
+    final width = EnvironmentSelector._padLeft + _widestLabel(style, MediaQuery.textScalerOf(context)) + 4 + EnvironmentSelector._star;
+    final look = _look;
+    final raised = look == _Look.raised;
+    final clear = ui.thumb.withValues(alpha: 0);
     return RepaintBoundary(
       child: Focus(
         focusNode: _focus,
-        onFocusChange: _focusChanged,
+        onFocusChange: (f) => setState(() => _focused = f),
         onKeyEvent: (_, event) {
           if (event is KeyDownEvent &&
               (event.logicalKey == LogicalKeyboardKey.enter ||
@@ -151,40 +160,45 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
                 excludeFromSemantics: true,
                 behavior: HitTestBehavior.opaque,
                 onTap: _openMenu,
-                child: AnimatedContainer(
-                  duration: Motion.of(context, raised ? Motion.pressDown : Motion.hover),
-                  width: width,
-                  height: EnvironmentSelector.height,
-                  padding: const EdgeInsets.only(left: EnvironmentSelector._padLeft, right: 1),
-                  decoration: BoxDecoration(
-                    color: raised ? ui.thumb : (_hover ? ui.hover : ui.thumb.withValues(alpha: 0)),
-                    borderRadius: BorderRadius.circular(Radii.md),
-                    border: Border.all(
-                      color: raised ? ui.line : (_keyboardFocus ? ui.ink : ui.line.withValues(alpha: 0)),
-                      width: _keyboardFocus && !raised ? 1.5 : .8,
-                    ),
-                    boxShadow: [
-                      for (final s in ui.shThumb)
-                        if (!s.inset) s.box.copyWith(color: raised ? s.color : s.color.withValues(alpha: 0)),
-                    ],
-                  ),
-                  child: ExcludeSemantics(
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            widget.selected.label,
-                            maxLines: 1,
-                            style: label.copyWith(color: ui.text),
-                          ),
-                        ),
-                        RoundButton.menu(
-                          key: _star,
-                          size: EnvironmentSelector._star,
-                          tooltip: 'Choisir l’environnement',
-                          onPressed: _openMenu,
-                        ),
+                child: AnimatedScale(
+                  // A little smaller while pressed, back with a slight bounce.
+                  scale: _pressed ? .97 : 1,
+                  duration: _pressed ? Motion.pressDown : Motion.pressUp,
+                  curve: _pressed ? Curves.easeOut : Motion.release,
+                  child: AnimatedContainer(
+                    duration: Motion.of(context, raised ? Motion.pressDown : Motion.fade),
+                    curve: Motion.enter,
+                    width: width,
+                    height: EnvironmentSelector.height,
+                    padding: const EdgeInsets.only(left: EnvironmentSelector._padLeft, right: 1),
+                    decoration: BoxDecoration(
+                      color: switch (look) {
+                        _Look.raised => ui.thumb,
+                        _Look.hover => ui.hover,
+                        _Look.rest => clear,
+                      },
+                      borderRadius: BorderRadius.circular(Radii.md),
+                      border: Border.all(
+                        color: _ring ? ui.ink : (raised ? ui.line : ui.line.withValues(alpha: 0)),
+                        width: _ring ? 1.5 : .8,
+                      ),
+                      boxShadow: [
+                        for (final s in ui.shThumb)
+                          if (!s.inset) s.box.copyWith(color: raised ? s.color : s.color.withValues(alpha: 0)),
                       ],
+                    ),
+                    child: ExcludeSemantics(
+                      child: Row(
+                        children: [
+                          Expanded(child: _Name(widget.selected.label, style: style)),
+                          RoundButton.menu(
+                            key: _star,
+                            size: EnvironmentSelector._star,
+                            tooltip: 'Choisir l’environnement',
+                            onPressed: _openMenu,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -195,6 +209,31 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
       ),
     );
   }
+}
+
+/// The name: a new one slides in from below as the old one leaves above,
+/// both fading, clipped to the line.
+class _Name extends StatelessWidget {
+  const _Name(this.text, {required this.style});
+
+  final String text;
+  final TextStyle style;
+
+  @override
+  Widget build(BuildContext context) => ClipRect(
+    child: AnimatedSwitcher(
+      duration: Motion.of(context, Motion.slide),
+      switchInCurve: Motion.enter,
+      switchOutCurve: Motion.leave,
+      layoutBuilder: (current, previous) => Stack(alignment: Alignment.centerLeft, children: [...previous, ?current]),
+      transitionBuilder: (child, t) {
+        final incoming = child.key == ValueKey(text);
+        final slide = Tween(begin: Offset(0, incoming ? .9 : -.9), end: Offset.zero).animate(t);
+        return FadeTransition(opacity: t, child: SlideTransition(position: slide, child: child));
+      },
+      child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
+    ),
+  );
 }
 
 final Map<(double, double), double> _widest = {};

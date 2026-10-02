@@ -54,6 +54,11 @@ void main() {
       expect(FloatingMenu.covering.value, isNull);
       // As wide as the longest name: it does not move with the choice.
       expect(tester.getRect(find.byType(EnvironmentSelector)), resting);
+      // Back to flat after a mouse choice: no fill, no ring (2026-10-02).
+      final box = tester.widget<AnimatedContainer>(find.descendant(of: find.byType(EnvironmentSelector), matching: find.byType(AnimatedContainer)));
+      final look = box.decoration! as BoxDecoration;
+      expect(look.color!.a, 0);
+      expect((look.border! as Border).top.color, isNot(MikkyUi.light.ink));
 
       await tester.tap(find.byType(PixelStar));
       await tester.pumpAndSettle();
