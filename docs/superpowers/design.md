@@ -1,6 +1,6 @@
 # Mikky — le design
 
-Dernière mise à jour : 2026-10-01
+Dernière mise à jour : 2026-10-02
 
 > **Pour reprendre** : §12 (les prochaines étapes, dans l'ordre) ; ouvrir les planches (`.\Start-Mikky.ps1 -Boards`).
 
@@ -8,13 +8,15 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 ## 1. Comment on travaille le design
 
-- **La référence, ce sont les planches** : `mikky.exe --kit` (code : `app/lib/boards/`). Comme Figma : planches Marque, Composants, Petite île, Accueil, Agent, Messages, Technique ; chaque écran dans chacun de ses états, vivant (ça bouge, ça se clique), à partir de fausses sessions (`fake_sessions.dart`). Clair, sombre ou les deux. Glisser pour se déplacer (partout, Espace + glisser, bouton du milieu), molette pour défiler, Maj de côté, Ctrl pour zoomer.
+- **La référence, ce sont les planches** : `mikky.exe --kit` (code : `app/lib/boards/`). Comme Figma : planches Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique ; chaque écran dans chacun de ses états, vivant (ça bouge, ça se clique), à partir de fausses sessions (`fake_sessions.dart`). Clair, sombre ou les deux. Glisser pour se déplacer (partout, Espace + glisser, bouton du milieu), molette pour défiler, Maj de côté, Ctrl pour zoomer.
 - **On propose, l'utilisateur choisit** : plusieurs variantes côte à côte sur une planche, il dit laquelle garder (souvent en quelques mots), on retire les autres. Un composant n'apparaît qu'une fois sur la planche Composants (pas de doublons).
 - **Réglages en direct** : quand une valeur se juge à l'œil, des curseurs dans la colonne de gauche des planches ; l'utilisateur envoie ses valeurs (« Copier »), on les met dans l'app, puis on retire les curseurs (fait pour le flou du haut).
+- **Planche Composants rangée par catégories** (2026-10-02) : Boutons, Navigation, Sélecteurs, Applications, Menus, Retours (et notifications), Couleurs, Listes, Essais — les plus utilisés d'abord ; un sélecteur en haut (le carré qui glisse) n'en montre qu'une, « Tout » par défaut. Un composant à plusieurs formes les montre côte à côte, avec à quoi sert chacune (les onglets : noir pour les modes de l'accueil, blanc pour des onglets de page).
 - **Le fonctionnement s'écrit sur les planches** (2026-10-01) : une section « Fonctionnement » (`BoardRules`) donne les règles de l'écran, avec les valeurs du code (Petite île, Accueil). Une règle qui change se met à jour là.
 - **Vérifier avant de montrer** : images de test des planches (`app/test/boards_test.dart`, `test/goldens/boards/`), les regarder, corriger, puis relancer `--kit`.
 - **Planche Technique** : la séparation Rust / Flutter, le parcours d'une demande, les optimisations ; statuts écrits en plus de la couleur (vert en place, orange transition, violet prévu, bleu à mesurer). Un instantané documenté, pas de la télémétrie.
 - Les maquettes HTML de `design/prototypes/` sont **dépassées** depuis le 2026-09-30 (abandonnées par l'utilisateur) ; gardées pour l'historique.
+- **Maquettes de l'utilisateur** (`docs/notch_haut/`, 2026-10-02) : **seulement une image du résultat voulu** (disposition, proportions, style, interactions). Jamais reprises en code ; on refait proprement avec nos composants, couleurs, icônes, effets et Mikky, en nettoyant leurs imprécisions (marges, arrondis, centrages). **Les composants d'abord**, sur la planche Composants, puis les pages.
 
 ## 2. Direction artistique
 
@@ -39,7 +41,7 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 ## 4. Couleurs de l'interface
 
-Mêmes noms en clair et en sombre (`app/lib/ui/tokens.dart`, planche Marque) :
+Mêmes noms en clair et en sombre (`app/lib/ui/tokens.dart`, planche Composants, catégorie « Couleurs » depuis le 2026-10-02) :
 - **Fonds** : `board` (bureau), `island` (la fenêtre), `well` (creux, bulles), `track` (pistes, code, champ), `thumb` (curseur, Oui), `hover` (survol), `line` (traits).
 - **Encre et texte** : `ink` (bouton principal, tes bulles), `text`, `text2`, `text3`.
 - **États** (couleurs d'Apple) : bleu travaille · orange attend, commande · vert terminé, crée · rouge erreur, supprime · jaune limité, déplace · violet **Ensorcelé** seulement (et internet dans les étapes) · gris en pause, historique.
@@ -86,7 +88,8 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 
 ## 7. Les écrans de la petite fenêtre
 
-### Accueil
+### Ancien accueil (jusqu'au 2026-10-02)
+Remplacé par le nouvel accueil ci-dessous. **Ses fonctions sont à refaire dans les applications** (étape suivante, `reprise.md`) ; tant qu'elles n'y sont pas, elles restent dans la page d'un agent (à droite) et dans la vue d'un agent (en haut). Ses lignes restent sur la planche Composants, catégorie « Listes ».
 - Groupes repliables **En attente / Travaillent / Terminés / Historique** (et Archives) ; en tête de groupe, l'état en feu d'artifice (ou l'étoile grise), le nom, le nombre ; titres alignés avec les lignes.
 - **Des lignes, pas de cartes** :
   - au travail, en attente : le **logo de l'outil** (24 px) à gauche, au milieu des deux lignes de texte ; il tourne quand l'agent travaille (réfléchir compte comme travailler), il rebondit quand il attend ;
@@ -100,6 +103,21 @@ Code : `packages/mikky_engine/lib/src/mikky/`. Tous les états se voient dans l'
 - Claude au travail : son logo tourne et respire ; **en essai** sur la planche Composants, l'étoile de Claude Code (point, croix, astérisque, étoile, fleur, et retour, en orange), à choisir.
 - **Petite étoile grise à droite de chaque ligne** (demande de l'utilisateur, 2026-09-30) : l'étoile en pixels (`MenuStar`, 10 px, un peu pâle, plus nette au survol) ouvre le menu de l'agent (pause, reprendre, arrêter, VS Code, renommer, ranger…) sans ouvrir sa page ; le clic droit sur la ligne fait pareil.
 - **Agent en pause** (2026-09-30, proposé sur les planches) : dans « Travaillent », même s'il est en pause depuis longtemps ; étoile grise, « En pause », **Reprendre** à plat sous la ligne (même barre que Oui / Non).
+
+### Nouvel accueil : Top et Right (2026-10-02, dans l'app)
+Remplace l'accueil en lignes, dans les planches et dans l'app (planches « Accueil » et « Accueil haut » retirées). **Une seule vue, `HomeView`, deux dispositions (`HomeLayout`)** ; mêmes composants, montrés d'abord sur la planche Composants (Navigation, Sélecteurs, Applications).
+- **Une application = un ou plusieurs agents qui font une tâche** (l'utilisateur, 2026-10-02).
+- **Tailles réelles** : Top = l'île ouverte en haut, **450 × 260** (hauteur **validée** le 2026-10-02 : « parfaite » ; plus haute que 450 × 180), plate en haut, coins bas 30 ; Right = **344 × 520** (`IslandMetrics.right`), plate à droite, coins gauches 38. Recalculé pour ces tailles, pas agrandi depuis la maquette. Top : barre à 12 px du haut, 44 px de haut, puis **10 px** entre barre, tuiles, pied et bord. À l'intégration, la fenêtre de l'île en haut (560 × 320) prendra ~40 px de plus pour l'ombre.
+- **Mikky** : le vrai, vivant, en haut à gauche, sans case. Dans l'app, **c'est le Mikky de l'île** qui vient s'y poser en ouvrant (rayon 21, place `mikkyList` de `IslandMetrics`), dans l'état de l'agent qu'il suit ; sur les planches, `MiniMikky` à 72 px. Pas l'image des maquettes.
+- **Modes** (applications · chat) : **nos onglets mini** (`MTabBar`, le carré blanc qui glisse), en cercles : 44 px en haut au milieu, 52 px en bas à droite sur verre dépoli ; l'icône choisie fait un petit saut, les autres foncent au survol. Icônes `grid` et `chat` ajoutées au jeu existant (trait 1,8). **Le choix en noir** (choisi le 2026-10-02 : « ça donne de la profondeur ») : c'est le seul noir de l'accueil, ce qui respecte « un seul noir par écran » ; le même composant reste blanc pour des onglets de page. Le chat est à dessiner.
+- **Outils** (Claude, Codex) : `ToolsRail`, des pastilles blanches qui se chevauchent sur un **rail sorti du bord de l'écran** (`EdgeRail` : plat et coupé côté écran, rond vers l'intérieur, surface flottante des onglets, même hauteur). Survol : les pastilles s'écartent (ressort des sélecteurs) ; pression : elles rétrécissent. **Un clic : un nouvel agent** (à droite ; pas encore en haut).
+- **Applications** : tuiles **neutres** (`AppTile`), leur dessin plus tard. Un arrondi pour toutes les tailles (27 % du côté), blanc vers `well` en clair (jeton `tile`), le gris des contrôles en sombre ; bord clair, trait fin, ombre `shThumb`. Survol : +2 px et ombre `shBar` ; pression : 0,95. Top : 64 px, 4 × 2 par page ; Right : **100 px, 2 × 3 = 6 par page** (demande du 2026-10-02 ; avant : défilement vertical, 2 colonnes de 120 ou 3 de 80). **Dans l'app, en attendant leur dessin** : une application = un agent ; le logo de son outil au milieu, son état (`StatusFx`) dans une pastille au coin, rien pour l'historique et la pause ; ordre de l'ancien accueil (attend, travaille, terminé, historique ; épinglés d'abord ; archivés à part).
+- **Pages (Top et Right)** : elles **glissent de côté** sur toute la largeur (380 ms, `Motion.enter`) : glisser à la souris ou au pavé tactile, molette (une page par cran), flèches, points, ← → ; flèches = nos **boutons ronds gris** 28 px (choisi le 2026-10-02 : le noir reste aux modes), effacées au bout, plus de tour complet ; **points** (`PageDots`) dont la pastille glisse sur le ressort des sélecteurs ; clic sur un point, ← → au clavier.
+- **Choisir l'environnement** (ex « Choisir le lieu ») : le nom **en noir** (avant : couleurs d'état, dont le violet réservé à « Ensorcelé »), l'étoile grise des réglages ; aussi large que le plus long nom (ne bouge plus) ; gris au survol, relief d'une réponse pressé ou ouvert ; notre menu flottant, plus étroit (176 px) ; anneau de focus au clavier seulement. Top : en bas à droite ; Right : en haut au milieu. VPS et Cloud dessinés, pas branchés.
+- **Right** : barre en haut (Mikky, « Choisir l'environnement » au milieu, outils), 6 tuiles au milieu, les points puis les modes (52 px) en bas ; plus de flous (rien ne défile en hauteur).
+- **Dans l'île** : à droite, l'accueil de la petite fenêtre ; une tuile ouvre la page de l'agent, les outils un nouvel agent. En haut, l'île ouverte par l'utilisateur (survol, clic) montre l'accueil (450 × 260, fenêtre de l'île 560 × 360 pour l'ombre) ; un agent qui attend la fait passer à la vue d'un agent (430 × 178) avec Oui / Non, comme avant ; une tuile montre cet agent dans la même vue, Échap ou un clic ramène à l'accueil. Les réglages : clic droit (notre menu flottant), ou la zone de notification.
+- **Écarté** : les variantes en blanc des modes et en noir des flèches (2026-10-02) ; des maquettes : la case beige derrière Mikky, les étoiles et formes temporaires, la grille de points en clair, les flèches qui bouclent, le sélecteur de la maquette (on garde le nôtre), le rail « Mikkys au travail ».
+- **Prochaine étape** : le dessin des applications (images), leurs **actions rapides** (comment valider Oui / Non, une limite… depuis la tuile), et tout ce que faisait l'ancien accueil (liste dans `reprise.md`) ; le chat ; « Choisir l'environnement » branché sur le nouvel agent.
 
 ### L'île fermée, à droite
 Sous Mikky, **l'état de l'agent qu'il suit** (le plus pressant : attend « ! », erreur « ! » rouge, limite, travaille, terminé) ; son nom « Mikky » quand il n'y a pas d'agent ou qu'il est en pause. Tous les cas sont sur la planche **Petite île** (`--kit`, `app/lib/boards/board_island.dart`, même code que l'île : `app/lib/island/compact_view.dart`).
@@ -131,6 +149,8 @@ Un panneau **gris clair** (`well`), coins 16, ombre douce ; le **carré blanc qu
 Le feu d'artifice seulement pour « En attente » et « Travaillent » ; les titres de groupes en gris, le chevron au survol ; plus de « WSL », des heures courtes (« 2 min »). À valider avant de l'appliquer à l'app.
 
 ### Page d'un agent
+- **Session extérieure** (2026-10-01) : quand Mikky lit une transcription lancée ailleurs, indiquer « activité observée, processus non vérifié » sous le fil ; pas de champ tant que la session travaille ailleurs. Dans l'accueil, nommer la provenance « session extérieure ». Ce texte ne promet ni contrôle du processus ni permission depuis Mikky.
+- **Processus possédé** (2026-10-01) : la page d'un agent vivant lancé par Mikky peut montrer le PID de l'adaptateur ACP et son hôte (Windows ou WSL). Ce PID vient de `mikkyd` ; il ne désigne pas forcément les processus enfants de Claude ou Codex. La planche Agent montre ce repère.
 - **Pas de titre ni de bandeau** : le fil remplit la page. Les boutons **flottent** dessus : retour à gauche ; à droite **« ··· »** seulement (le bouton pause, qui faisait doublon avec le menu, a été retiré le 2026-09-30) (menu : mettre en pause ou reprendre, **arrêter l'agent** (fin de son processus et de tout ce qu'il a lancé ; la session reste), ouvrir dans VS Code, ouvrir le dossier, renommer, épingler, archiver, marquer l'erreur comme réglée, supprimer). Le clic droit sur une ligne de l'accueil ouvre le même menu.
 - **En pause** : sous le fil, une carte grise « En pause · Travail arrêté, session gardée » avec **Reprendre**, qui dit à l'agent de continuer là où il en était ; écrire un message reprend aussi.
 - **Flou en haut** (`TopBlur`) : le fil passe sous les boutons dans un flou progressif avec un voile de la couleur de la fenêtre. Valeurs choisies par l'utilisateur : **hauteur 65 · 3 couches · flou 0,90 · voile 0,38 · rampe 1,05**.
@@ -169,12 +189,15 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 - **Jetons** (couleurs, ombres, `TextSize`, `Radii`, texte `uiText`) : `app/lib/ui/tokens.dart` · **mouvement** (durées, ressorts, `Looping`, horloge à 30 i/s, `HoverBuilder`) : `motion.dart` · **états** (`UiStatus`, `statusColor`) : `status.dart`.
 - **Pixels** : `pixel_fx.dart` (palettes, grille de pixels, `PixelEffect` et le feu d'artifice calme, `StatusFx`, `PixelStar`).
 - **Essais** (seulement pour les planches, à trier une fois les choix faits) : `app/lib/ui/trials/` — `pixel_trials.dart` (étincelle, feu d'artifice complet, galaxie), `signature_fx.dart` (feux d'artifice signature), `pixel_map.dart` (`PixelMap`, Mikky en pixels), `claude_spinner.dart` (l'étoile de Claude Code).
-- **Composants** : `app/lib/ui/` — `cards.dart` (titres de groupes, lignes d'agents, Oui / Non `AnswerBar`, `MenuStar`), `feedback.dart` (indicateurs : `Spinner`, `StatusDot`, `SpinningLogo`, badges, `Toast`, `TypingDots`), le fil : `messages.dart` (bulles, messages), `tasks.dart` (tâches, étapes, outils), `metro.dart` (ligne de métro de Suivi), `code_card.dart` ; `field.dart` (champ, puces), `side.dart` (en-tête, `EdgeBlur`, `TopBlur`, Mikky en petit), `sliding_hover.dart` (le carré qui glisse, `HoverRow`), `floating_menu.dart` (notre menu), `selectors.dart`, `buttons.dart`, `markdown.dart`, `brand_logo.dart`, `icons.dart`.
+- **Nouvel accueil** : `app/lib/home/` — `home_view.dart` (`HomeView`, `HomeLayout`, `HomeFrame`), `tools_rail.dart` ; planches `app/lib/boards/board_home.dart`.
+- **Composants** : `app/lib/ui/` — `app_tile.dart` (tuile), `page_dots.dart`, `edge_rail.dart` (rail collé au bord, pastilles), `environment_selector.dart`, `cards.dart` (titres de groupes, lignes d'agents, Oui / Non `AnswerBar`, `MenuStar`), `feedback.dart` (indicateurs : `Spinner`, `StatusDot`, `SpinningLogo`, badges, `Toast`, `TypingDots`), le fil : `messages.dart` (bulles, messages), `tasks.dart` (tâches, étapes, outils), `metro.dart` (ligne de métro de Suivi), `code_card.dart` ; `field.dart` (champ, puces), `side.dart` (en-tête, `EdgeBlur`, `TopBlur`, Mikky en petit), `sliding_hover.dart` (le carré qui glisse, `HoverRow`), `floating_menu.dart` (notre menu), `selectors.dart`, `buttons.dart`, `markdown.dart`, `brand_logo.dart`, `icons.dart`.
 - **Fenêtre** : `app/lib/side/` — `session_steps.dart` (la logique : une session devient des étapes, des tâches ; testée sans écran, `test/session_steps_test.dart`), `session_views.dart` (Suivi, Chat), `session_cards.dart` (cartes de limite, de sort, d'attente, de pause, de question), `session_text.dart` (heures, noms, chiffres en mots), `agent_page.dart`, `side_app.dart` (accueil), `session_menu.dart` (menu d'un agent) ; **sorts** (relance auto) : `app/lib/agents/enchant.dart`.
 - **Île** : `app/lib/island/island_view.dart` (l'île, menus), `compact_view.dart` (la petite île : sous Mikky, la bulle ; partagé avec la planche) ; **Mikky** : `packages/mikky_engine/lib/src/mikky/` et `app/lib/mikky/mikky_painter.dart` ; **limite** (heure de reprise) : `packages/mikky_engine/lib/src/sessions/rate_limit.dart`.
-- **Planches** : `app/lib/boards/` (`board_brand.dart`, `board_components.dart`, `board_island.dart`, `board_screens.dart`, `board_technical.dart`, `canvas.dart`, `boards_app.dart`, `fake_sessions.dart`) ; images de test `app/test/goldens/boards/`.
+- **Planches** : `app/lib/boards/` (`board_brand.dart`, `board_components.dart`, `board_home.dart`, `board_island.dart`, `board_screens.dart`, `board_technical.dart`, `canvas.dart`, `boards_app.dart`, `fake_sessions.dart`) ; images de test `app/test/goldens/boards/`.
 
 ## 11. Le code du design : à remanier, bonnes pratiques
+
+**Nouvel accueil (2026-10-02)** : design system (`tokens.dart`, `motion.dart`) → composants (`app/lib/ui/` : `app_tile.dart`, `page_dots.dart`, `edge_rail.dart`, `environment_selector.dart`, `tabs.dart`) → widgets de Mikky (`app/lib/home/` : `tools_rail.dart`, `home_view.dart`) → les deux dispositions par `HomeLayout`, sans code dupliqué. L'ancien rail « Mikkys au travail » (`WorkingAgentsRail`) est retiré avec la planche Accueil haut.
 
 **À remanier** (par ordre d'intérêt) :
 1. **Jetons** : quelques valeurs en dur restent dans `side_app.dart`, `agent_page.dart`, `session_menu.dart`, `backend_status.dart` et la planche Technique ; les passer aux jetons.
@@ -194,7 +217,8 @@ Mikky au milieu, « Qu'est-ce qu'on lance ? », le champ avec le dossier et le m
 
 ## 12. Prochaines étapes (design et marque), dans l'ordre
 
-1. **Deux choix de l'utilisateur** : l'animation de Claude au travail (son logo qui tourne, ou l'étoile de Claude Code, planche Composants) ; l'accueil épuré (planche Accueil), à appliquer ou non.
+1. **Les applications** (2026-10-02) : ce qu'il y a dans une tuile (images), les actions rapides, les fonctions de l'ancien accueil (`reprise.md`).
+2. **Deux choix de l'utilisateur** : l'animation de Claude au travail (son logo qui tourne, ou l'étoile de Claude Code, planche Composants) ; l'accueil épuré (planche Accueil), à appliquer ou non.
 2. **Petite île validée** (2026-10-01) : la bulle qui se détache, le nom en Jacquard 24. Reste à la voir dans l'app avec les cinq états.
 3. **Jetons et remaniement** (§11, points 1 à 3) : c'est ce qui rendra les étapes suivantes rapides et cohérentes.
 4. **Icône** : l'icône de l'app et de la zone de notification à partir du logo C (et le « petit quelque chose de magique ») ; le nom « Mikky » en Jacquard 24 ailleurs, s'il le faut (écran « à propos »).

@@ -15,7 +15,7 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 
 - **Île** : overlay transparent avec clics traversants, forme SDF en shader, positions « en haut » et « à droite ». À droite, la petite île montre Mikky dans l'état de l'agent qu'il suit. Ce qui attend l'utilisateur sort dans une bulle gluante. Quand un agent a fini, la petite île sort 5,2 s. Au survol, l'île s'ouvre en petite fenêtre. 0 % de CPU quand l'île est cachée.
 - **Petite fenêtre** :
-  - accueil en groupes, limites Codex en haut ;
+  - accueil en applications (2026-10-02) : en haut et à droite, des pages de tuiles, une par agent ; une tuile ouvre l'agent, les outils un nouvel agent ;
   - page d'un agent (Suivi / Chat), nouvel agent (Windows ou WSL, Demander / Auto), connexion ;
   - menu étoile ; Oui / Non / Toujours, questions ; pause, reprise, arrêt ;
   - ranger les sessions, « Ensorcelé » (relance après la limite) ;
@@ -27,10 +27,22 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
   - SQLite, protocole 3, WebSocket sur 127.0.0.1 avec un jeton gardé dans le coffre de Windows ;
   - un moteur natif dans WSL.
   - Fermer l'app n'arrête pas les agents.
-- **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil, Agent, Messages, Technique.
+- **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique.
 
-## Dernière session (1er octobre)
+## Dernière session (2 octobre) : le nouvel accueil
 
+- Les maquettes HTML de `docs/notch_haut/` (Top 1 × 4 et 2 × 4, Right 2 × 2 et 3 × 3) servent seulement de référence visuelle ; rien n'en est repris techniquement.
+- Planches **Accueil** et **Accueil haut** retirées (le rail « Mikkys au travail » aussi) ; « Choisir le lieu » corrigé et renommé **« Choisir l'environnement »**, sur la planche Composants.
+- Planche Composants, sections « Accueil · … » : environnement, modes (nos onglets mini), outils sortis du bord, tuiles, pages, Mikky vivant ; variantes de la maquette (choix et flèches en noir) à côté, pour comparer.
+- Nouvelles planches **Accueil Top** (450 × 260, hauteur validée) et **Accueil Right** (344 × 520, 6 applications par page, pages de côté) : une seule vue, `HomeView`, deux dispositions (`HomeLayout`). Modes en noir, flèches grises. Une application = un ou plusieurs agents qui font une tâche.
+- Planche Composants rangée par catégories, les plus utilisés d'abord, avec un sélecteur ; les couleurs de l'interface y sont passées.
+- **Dans l'app** : l'ancien accueil (`HomePage`) est remplacé à droite (`HomeScreen`) et en haut (l'île ouverte par l'utilisateur). Le Mikky de l'île se pose à sa place dans l'accueil. Fenêtre du haut 560 × 360.
+- Détails et décisions : `design.md` §7 « Nouvel accueil ».
+
+## Session précédente (1er octobre)
+
+- **Essai réel Codex, 1er octobre** : lancement, réponse « ok », fermeture/reconnexion de l'écran et arrêt confirmé par `runs.list` sous Windows et WSL, avec le moteur Rust et les adaptateurs de production. Sous Windows et WSL, une écriture demandée en mode « Demander » est restée en attente après reconnexion ; le refus a été transmis et aucun fichier n'a été créé. Claude n'a pas été essayé (limite d'usage de l'utilisateur).
+- **PID WSL à déployer** : le backend Linux actuellement en service vient d'un ancien bundle et ne renvoie pas encore `adapterPid`. Le PID Windows est confirmé. Mettre à jour le binaire Linux et redémarrer son daemon seulement après avoir vérifié qu'il ne pilote aucun agent actif.
 - L'île et l'accueil suivent la même règle pour ce qui attend : plus d'étoile rouge qui reste.
 - La limite de Codex est reconnue (« Limite atteinte », 100 %), et les limites sont en haut de l'accueil.
 - Il ne reste que cinq états : travaille, « ! » attend, « ! » rouge erreur, limite, terminé ; rien en pause. Le violet ne sert plus qu'à « Ensorcelé ».
@@ -41,18 +53,38 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 
 - **Dans l'app** : la bulle, la petite île à la fin d'un agent, la confirmation de suppression.
 - **Choix en attente** (`design.md` §12) : l'animation de Claude au travail, l'accueil épuré.
+- **Nouvelle exploration UI/UX** (`idees.md` §9) : juste milieu mascotte/outil professionnel, accueil en tuiles inspiré de Cocoon et iiSU, réglages dédiés, vue Agent/Consommation et Projets. La direction actuelle en lignes plates reste la référence tant qu'une variante n'a pas été choisie sur les planches.
 
 ## Prochaines étapes, dans l'ordre
 
-1. **Fiabilité en usage réel**, sous Windows et dans WSL : lancer, chat, permissions, questions, pause, arrêt, fermeture puis reconnexion. Vraie reconnexion de session Windows. Claude dans WSL quand le quota le permet.
-2. **Performance** : la petite île au repos est passée de 56 à 28 images par seconde (`--bench`). Reste à mesurer l'île ouverte, un long chat et les flous (`--perf`). Peut-être un mode sans animation.
-3. **Mémoire de `mikkyd`** : résumés de sessions, détail chargé à la demande.
-4. **Relance automatique dans Rust**, si elle doit marcher sans écran (aujourd'hui, fermer l'app la suspend).
-5. **R5, nouveaux outils** : OpenCode, pi, OpenClaw, Gemini CLI. Ne garder que ceux qui marchent avec un abonnement sans clé ; vérifier qu'ils parlent ACP.
-6. **R6, agents qui se parlent** : lire d'abord la recherche (A2A, MCP, Agora, MAST), puis proposer une spec.
-7. **Fonctions suivantes**, à choisir avec l'utilisateur (`idees.md` §7) : routines, boîte de réception, modifier le dernier message, worktrees, pièces jointes, réglages, LocalSend, mails avec Laya, dictée.
+**Périmètre du MVP** : une île Windows fiable pour voir les sessions locales de Claude Code et Codex, lancer et piloter des agents sur Windows ou WSL, répondre aux permissions et retrouver les agents après fermeture de l'écran. Ne pas promettre qu'une session extérieure « tourne » tant que son processus n'a pas été vérifié : le JSONL prouve une activité, pas la vie d'un processus.
 
-Reportés : R4, la grande fenêtre (branche `feature/r4-workspace`) ; R7, le VPS par tunnel SSH.
+**Étape suivante : les applications** (design d'abord, sur les planches). Ce qu'il y a dans une tuile (images), comment valider ses **actions rapides** depuis l'accueil, et tout ce que faisait l'ancien accueil, à refaire (en attendant : page d'un agent à droite, vue d'un agent en haut) :
+- **Approbation** : Oui / Non / Toujours sous l'agent qui attend, la commande en pilule ; les **questions** (« Pose une question : … », formulaire) ; Y / N au clavier en haut.
+- **Erreur** : « ! » rouge, « Marquer l'erreur comme réglée ».
+- **Limite de l'abonnement** : « Limite atteinte · reprend à 17 h 10 », **« Terminer »** et **« Relance auto »** ; **Ensorcelé** (« se relance à 17 h 11 », étoile violette, « Terminer » pour refuser) ; la **relance automatique pour tous** (réglage, étoile violette après « Agents »).
+- **Pause** : « En pause », « Reprendre ».
+- **Limites de l'abonnement Codex** (« 69 % des 5 h, repart à 17 h 10 · 70 % de la semaine »), en haut de l'ancien accueil.
+- **Groupes** En attente / Travaillent / Terminés / Historique / Archives, repliables ; épinglés d'abord ; les 5 terminés les plus récents, le reste en historique.
+- **Menu d'un agent** (étoile grise ou clic droit sur la ligne) : pause / reprendre, arrêter, VS Code, dossier, renommer, épingler, archiver, supprimer (avec la confirmation sur place).
+- **Sessions extérieures** (« session extérieure »), WSL nommé sur la ligne, heures courtes.
+- Le **bouton noir « nouvel agent »** (aujourd'hui : les outils, à droite seulement), l'**étoile des réglages** (aujourd'hui : clic droit), l'état vide.
+- Aussi : le chat de l'accueil ; « Choisir l'environnement » branché sur l'hôte du nouvel agent (Local = Windows, WSL), VPS et Cloud plus tard.
+
+**Prochain chantier UI en parallèle du cœur MVP** : sur les planches, poser la navigation et une vraie page Réglages ; comparer ensuite trois accueils (lignes, tuiles, hybride) dans l'île en haut et à droite, puis dessiner Agent/Consommation et Projets. Les lieux Windows/WSL/VPS/Replicas sont d'abord des propriétés et filtres des agents/projets. Détails et références dans `idees.md` §9.
+
+1. **Fiabiliser le parcours réel** : Codex a passé le lancement, un tour simple, la reconnexion de l'écran, l'arrêt et une permission refusée sous Windows et WSL. Restent les questions, la pause, la vérification des processus enfants, la vraie reprise d'une session Windows, plusieurs agents et demandes simultanées, puis Claude après la fin de sa limite. Rejouer les tests automatisés et documenter chaque échec reproductible.
+2. **Dire et vérifier ce qui tourne** : distinguer dans l'interface un run contrôlé par `mikkyd` d'une session extérieure observée dans les fichiers. Les libellés des sessions extérieures et le PID de l'adaptateur ACP possédé par Mikky sont en place. Prochaine étape : vérifier la vie de ce processus et de ses enfants, puis étudier l'association fiable entre session extérieure et processus Windows/WSL. Ne proposer arrêt et permissions que lorsque Mikky contrôle réellement l'agent.
+3. **Borner la mémoire de `mikkyd`** : résumés par session, événements et détail paginés à la demande, limites de backlog et de files d'envoi ; mesurer un long chat et plusieurs sessions. La petite île au repos est passée de 56 à 28 images par seconde (`--bench`) ; mesurer aussi l'île ouverte, les flous et le CPU caché (`--perf`).
+4. **Soigner l'installation et la distribution** : vérifier le bundle Windows + binaire WSL, les dépendances et les mises à jour des adaptateurs, les erreurs et la reprise après échec ; ajouter une vérification de build et un parcours d'installation reproductible. S'inspirer de Coucou pour prévisualiser, sauvegarder et désinstaller proprement toute modification de configuration d'un outil.
+5. **Étudier des hooks Claude optionnels pour les sessions extérieures** : recevoir leurs événements et, si le protocole le permet, leurs permissions sans lancer l'agent depuis Mikky. Préserver les autres hooks, gérer plusieurs sessions et demandes à la fois, et laisser Claude suivre sa voie normale si Mikky est fermé. Garder ACP pour les agents lancés par Mikky et la lecture JSONL pour l'historique. Étudier séparément une solution équivalente pour Codex.
+6. **Faire évoluer SQLite sans changer de moteur** : `mikky.db` contient aujourd'hui une seule ligne d'état JSON, suffisante pour les métadonnées du MVP. Ajouter des migrations et des tables indexées quand les sessions, les événements et la mémoire deviennent interrogeables ; sauvegarde cohérente avec WAL et restauration vérifiée. DuckDB ne devient utile que si de vraies analyses volumineuses apparaissent.
+7. **Mémoire utilisateur locale, après le MVP** : historique recherchable (FTS), souvenirs retenus avec source, date, périmètre, correction et suppression. Les agents passent par une API de `mikkyd` avec des droits explicites, jamais directement par le fichier SQLite ; ne leur envoyer que les éléments pertinents. Préserver cette API pour un hébergement futur. Un `mikkyd` personnel sur VPS peut encore utiliser SQLite ; choisir une base serveur si un service multi-utilisateur l'exige.
+8. **Relance automatique dans Rust**, si elle doit marcher sans écran (aujourd'hui, fermer l'app la suspend). Tester reprise et annulation après redémarrage.
+9. **R5, nouveaux outils** : OpenCode, pi, OpenClaw, Gemini CLI. Garder les harnais qui marchent avec un abonnement sans clé et vérifier leur ACP. **R6, agents qui se parlent** : rechercher A2A, MCP, Agora et MAST, puis définir identités, droits et journal avant le canal.
+10. **Finition après le cœur** : accessibilité, réglages et découverte des fonctions, puis fonctions à choisir dans `idees.md` §7 (routines, boîte de réception, pièces jointes, LocalSend, dictée…). Coucou donne des pistes pour l'accueil, les sons et les intégrations ; les ajouter seulement après validation du parcours d'agent.
+
+Reportés : R4, la grande fenêtre (branche `feature/r4-workspace`) ; R7, le VPS par tunnel SSH et les agents entre machines.
 
 ## Le code
 
@@ -81,6 +113,7 @@ Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptat
   - pour les images : `flutter.bat test --update-goldens test/boards_test.dart`, **puis les regarder**.
 - **Mesure de l'île** : `mikky.exe --bench`, ou `--bench --fast` pour l'ancien rythme à 60 images par seconde. L'île sort avec un faux agent ; Mikky compte les images entre 4 et 16 s, les écrit dans `%TEMP%\mikky-bench.txt`, puis se ferme. Arrêter l'île ouverte d'abord. Le CPU mesuré de l'extérieur ne veut rien dire quand Windows ne cadence pas la fenêtre (île cachée, écran éteint).
 - **Diagnostic** : `dart run tool/state_check.dart` dans `packages/mikky_agents` compare ce que voit l'île et ce que voit l'accueil (lecture seule). `tool/smoke.dart` essaie de vrais agents : ça coûte deux messages, et il faut supprimer les sessions qu'il laisse.
+- **Essai réel Codex sans Claude** : dans `packages/mikky_agents`, `dart run tool/backend_smoke.dart --codex-only` lance un court tour sous Windows et WSL, ferme/reconnecte l'écran et vérifie l'arrêt des runs qu'il a créés. `dart run tool/codex_permission_smoke.dart` vérifie une permission Windows, la reconnexion et le refus sans écrire de fichier ; ajouter `--wsl` pour le même essai sous WSL. Ces essais créent des sessions dans l'historique de Codex.
 
 ## Pièges utiles
 
