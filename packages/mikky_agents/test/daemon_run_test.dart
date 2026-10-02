@@ -155,7 +155,10 @@ void main() {
     final runs = (await other.request('runs.list') as List).cast<Map<String, dynamic>>();
     final listed = runs.singleWhere((r) => r['run'] == run.runId);
     expect(listed['sessionId'], FakeAgent.sessionId);
-    final again = await DaemonAgentRun.attach(other, run.runId);
+    expect(run.adapterPid, isA<int>().having((pid) => pid, 'positive PID', greaterThan(0)));
+    expect(listed['adapterPid'], run.adapterPid);
+    final again = await DaemonAgentRun.attach(other, run.runId, adapterPid: listed['adapterPid'] as int?);
+    expect(again.adapterPid, run.adapterPid);
     expect(again.log.turns, hasLength(1));
     expect(again.log.detail, 'ok');
     final done = again.prompt('write');

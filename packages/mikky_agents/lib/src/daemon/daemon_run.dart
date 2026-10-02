@@ -11,7 +11,7 @@ import 'session_wire.dart';
 /// it sends every ACP message back, which [log] reads with the same
 /// [AcpReader] as a [LocalAgentRun].
 class DaemonAgentRun implements AgentRun {
-  DaemonAgentRun._(this._client, this.runId, this.workingDirectory) {
+  DaemonAgentRun._(this._client, this.runId, this.workingDirectory, this.adapterPid) {
     _listen();
   }
 
@@ -34,7 +34,7 @@ class DaemonAgentRun implements AgentRun {
       'cwd': cwd,
       'env': env,
     }) as Map;
-    return attach(client, r['run'] as String, cwd: cwd);
+    return attach(client, r['run'] as String, cwd: cwd, adapterPid: r['adapterPid'] as int?);
   }
 
   /// Production launch: the backend discovers and prepares its own tools.
@@ -45,19 +45,21 @@ class DaemonAgentRun implements AgentRun {
     required String cwd,
   }) async {
     final result = await client.request('tools.launch', {'provider': provider.name, 'host': host.name, 'cwd': cwd}) as Map;
-    return attach(client, result['run'] as String, cwd: result['cwd'] as String? ?? cwd);
+    return attach(client, result['run'] as String, cwd: result['cwd'] as String? ?? cwd, adapterPid: result['adapterPid'] as int?);
   }
 
   /// Follows run [runId] of `mikkyd`: what it did so far is replayed into
   /// [log] before this completes.
-  static Future<DaemonAgentRun> attach(DaemonClient client, String runId, {String? cwd}) async {
-    final run = DaemonAgentRun._(client, runId, cwd);
+  static Future<DaemonAgentRun> attach(DaemonClient client, String runId, {String? cwd, int? adapterPid}) async {
+    final run = DaemonAgentRun._(client, runId, cwd, adapterPid);
     await run._subscribe();
     return run;
   }
 
   DaemonClient _client;
   final String runId;
+  /// PID of the process spawned by mikkyd on the run's host. It may launch other processes.
+  final int? adapterPid;
   late StreamSubscription<DaemonNotification> _sub;
   int _sequence = 0;
 
