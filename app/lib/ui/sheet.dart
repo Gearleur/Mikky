@@ -11,13 +11,13 @@ import 'surface.dart';
 import 'tokens.dart';
 
 /// A page over the window (2026-10-02, the history first): the window
-/// behind darkens and blurs a little, and a panel rises from below on a
-/// soft spring, about two thirds of the window high (« trop grande »:
-/// the home's bar stays in sight above it), its title and a small round ×
-/// at the top. A click on the dark, Échap or × closes it: it sinks back,
-/// quicker. [within]: the window,
-/// below its own Overlay (the home has one), so the sheet stays inside it
-/// and its rounded corners. Done when it is closed.
+/// behind darkens and blurs a little, and a panel comes up in its middle
+/// on a soft spring — at most 316 wide, two thirds of a tall window, all
+/// but its margins in a low one (the top home) — its title and a small
+/// round × at the top. A click on the dark, Échap or × closes it: it
+/// sinks back, quicker. [within]: the window, below its own Overlay (the
+/// home has one), so the sheet stays inside it and its rounded corners.
+/// Done when it is closed.
 Future<void> showSheet(BuildContext within, {required String title, String? caption, required WidgetBuilder builder}) {
   final overlay = Overlay.maybeOf(within);
   final area = within.findRenderObject() as RenderBox?;
@@ -145,11 +145,16 @@ class SheetScene extends StatelessWidget {
   final Widget panel;
   final VoidCallback? onDismiss;
 
-  /// The panel's margins from the window's sides and bottom.
-  static const side = 14.0;
+  /// The panel's smallest margin from the window's edges, its widest.
+  static const margin = 14.0, maxWidth = 316.0;
 
-  /// Its top: a third of the window down, at least below the home's bar.
-  static double topOf(double height) => (height * .34).clamp(68.0, double.infinity).roundToDouble();
+  /// The panel's size in a window of [size]: centered, recentered by the
+  /// user (2026-10-02); two thirds of a tall window, nearly all of a low
+  /// one.
+  static Size panelFor(Size size) => Size(
+    (size.width - 2 * margin).clamp(0.0, maxWidth),
+    (size.height >= 400 ? size.height * .68 : size.height - 2 * margin).roundToDouble(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -174,16 +179,18 @@ class SheetScene extends StatelessWidget {
             ),
           ),
         ),
-        // The panel rises from below, a touch small at first.
+        // The panel comes up into the middle, a touch small at first.
         Positioned.fill(
           child: LayoutBuilder(
-            builder: (context, box) => Padding(
-              padding: EdgeInsets.fromLTRB(side, topOf(box.maxHeight), side, side),
-              child: Opacity(
-                opacity: (t * 1.8).clamp(0.0, 1.0),
-                child: Transform.translate(
-                  offset: Offset(0, (1 - t) * 48),
-                  child: Transform.scale(scale: .96 + .04 * t.clamp(0.0, 1.04), alignment: Alignment.bottomCenter, child: panel),
+            builder: (context, box) => Center(
+              child: SizedBox.fromSize(
+                size: panelFor(box.biggest),
+                child: Opacity(
+                  opacity: (t * 1.8).clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - t) * 28),
+                    child: Transform.scale(scale: .95 + .05 * t.clamp(0.0, 1.04), child: panel),
+                  ),
                 ),
               ),
             ),

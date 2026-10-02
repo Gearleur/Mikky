@@ -232,40 +232,47 @@ const sampleHistory = <HistoryRow>[
   (id: 'h9', title: 'Mesure le CPU de l’île', brand: Brand.codex, when: '25 sept.'),
 ];
 
-Widget _historyList() => const HistoryList(rows: sampleHistory, onMenu: _noId);
-
 void _noId(String _) {}
 
-/// The right home with its history button: the sheet opens over it, for
-/// real (trial, 2026-10-02).
+/// A home with its history button: the history opens over it, for real
+/// (trial, 2026-10-02), at the right or at the top.
 class HistoryTry extends StatelessWidget {
-  const HistoryTry({super.key});
+  const HistoryTry({super.key, this.layout = HomeLayout.right});
+
+  final HomeLayout layout;
 
   @override
   Widget build(BuildContext context) => HomeFrame(
-    layout: HomeLayout.right,
+    layout: layout,
     child: HomeView(
-      layout: HomeLayout.right,
+      layout: layout,
       apps: sampleApps,
       onNew: () {},
-      onHistory: (within) => showSheet(within, title: 'Historique', caption: '${sampleHistory.length}', builder: (_) => _historyList()),
+      onHistory: (within) => showHistory(within, rows: sampleHistory, onMenu: _noId),
     ),
   );
 }
 
-/// The same, the sheet open and still (for the pictures).
+/// The same, the history open and still (for the pictures).
 class HistoryOpen extends StatelessWidget {
-  const HistoryOpen({super.key});
+  const HistoryOpen({super.key, this.layout = HomeLayout.right});
+
+  final HomeLayout layout;
 
   @override
   Widget build(BuildContext context) => HomeFrame(
-    layout: HomeLayout.right,
+    layout: layout,
     child: Stack(children: [
-      HomeView(layout: HomeLayout.right, apps: sampleApps, onNew: () {}, onHistory: (_) {}),
+      HomeView(layout: layout, apps: sampleApps, onNew: () {}, onHistory: (_) {}),
       Positioned.fill(
         child: SheetScene(
           t: 1,
-          panel: SheetPanel(title: 'Historique', caption: '${sampleHistory.length}', onClose: () {}, child: _historyList()),
+          panel: SheetPanel(
+            title: 'Historique',
+            caption: '${sampleHistory.length}',
+            onClose: () {},
+            child: const HistoryBody(rows: sampleHistory, onMenu: _noId),
+          ),
         ),
       ),
     ]),

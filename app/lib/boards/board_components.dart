@@ -21,6 +21,7 @@ import '../ui/tabs.dart';
 import '../ui/tokens.dart';
 import '../ui/trials/claude_spinner.dart';
 import 'board_brand.dart';
+import '../home/home_view.dart' show HomeLayout;
 import 'board_home.dart';
 import 'canvas.dart';
 
@@ -360,13 +361,15 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         ],
       ),
     ]),
-    ('Feuilles', [
+    ('Historique', [
       const BoardSection(
-        title: 'Feuille par-dessus · l’historique (essai)',
-        note: 'Une page par-dessus l’accueil : le bouton Historique, en bas à gauche, l’ouvre. L’accueil derrière s’assombrit et se floute un peu ; la feuille monte d’en bas sur un ressort doux, sur les deux tiers de la fenêtre (la barre de l’accueil reste visible au-dessus), un en-tête léger : le titre, le nombre, un petit ×. Dedans, l’historique comme avant : les lignes, la petite étoile grise ; un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications. Un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
+        title: 'Historique (essai)',
+        note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la fenêtre en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
         frames: [
-          BoardFrame(label: 'À essayer', note: 'Le bouton en bas à gauche.', width: 344, child: HistoryTry()),
-          BoardFrame(label: 'Ouverte', width: 344, child: HistoryOpen()),
+          BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 344, child: HistoryTry()),
+          BoardFrame(label: 'À droite · ouvert', width: 344, child: HistoryOpen()),
+          BoardFrame(label: 'En haut · à essayer', width: 450, child: HistoryTry(layout: HomeLayout.top)),
+          BoardFrame(label: 'En haut · ouvert', width: 450, child: HistoryOpen(layout: HomeLayout.top)),
         ],
       ),
     ]),

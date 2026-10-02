@@ -59,7 +59,10 @@ class _Input extends StatelessWidget {
 /// `.field`: a hollow capsule, 44 px, up to 380 px wide; white with an
 /// ink ring while focused.
 class SearchField extends StatefulWidget {
-  const SearchField({super.key, this.controller, this.placeholder = '', this.icon, this.onSubmitted});
+  const SearchField({super.key, this.controller, this.placeholder = '', this.icon, this.onSubmitted, this.small = false});
+
+  /// 36 px instead of 44 (in a sheet, 2026-10-02).
+  final bool small;
 
   final TextEditingController? controller;
   final String placeholder;
@@ -98,15 +101,15 @@ class _SearchFieldState extends State<SearchField> {
         child: MouseRegion(
           cursor: SystemMouseCursors.text,
           child: Surface(
-            height: 44,
+            height: widget.small ? 36 : 44,
             color: focused ? ui.thumb : ui.track,
             shadows: focused ? ui.focusRing : ui.inset,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: widget.small ? 13 : 16),
             child: Row(
               children: [
-                if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: 18, color: ui.text2), const SizedBox(width: 8)],
+                if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: widget.small ? 16 : 18, color: ui.text2), SizedBox(width: widget.small ? 7 : 8)],
                 Expanded(
-                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(TextSize.body, height: 1.2), placeholder: widget.placeholder),
+                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(widget.small ? TextSize.label : TextSize.body, height: 1.2), placeholder: widget.placeholder),
                 ),
               ],
             ),
