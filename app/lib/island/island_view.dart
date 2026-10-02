@@ -31,7 +31,8 @@ Size windowSizeFor(IslandEdge edge) => switch (edge) {
       // The home at the top is 450 × 260, an agent's page 450 × 380
       // (2026-10-02): room for its shadow.
       IslandEdge.top => const Size(560, 480),
-      IslandEdge.right => const Size(400, 700),
+      // 380 wide at the right: room for its shadow on the left.
+      IslandEdge.right => const Size(460, 700),
     };
 
 /// The shader box goes this far past the screen edge: only the corners
@@ -118,12 +119,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool _sideHome = true;
 
   /// At the top: the focus view for an agent that needs the user (Oui /
-  /// Non, as before); else the home, a little taller under a page (an
-  /// agent's Suivi / Chat). At the right, always the same window.
+  /// Non, as before). Else, both edges: the home, taller under a page (an
+  /// agent's Suivi / Chat; at the right, the agent that asks opens there).
   IslandLayout get _layoutWanted => switch (_edge) {
-    IslandEdge.right => IslandLayout.focus,
     IslandEdge.top when _snap.openReason == OpenReason.alert => IslandLayout.focus,
-    IslandEdge.top => _sideHome ? IslandLayout.list : IslandLayout.page,
+    _ => _sideHome ? IslandLayout.list : IslandLayout.page,
   };
 
   /// The window is what the open island shows at the top (not an alert).

@@ -92,19 +92,22 @@ void main() {
     expect(find.byType(AddTile), findsOneWidget);
   });
 
-  testWidgets('right: six tiles a page in 2 × 3, sideways pages, and the environment menu', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(15), animate: false)));
+  testWidgets('right: as the top, eight tiles a page in 4 × 2, sideways pages, and the environment menu', (tester) async {
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(20), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
-    expect(find.byType(AppTile), findsNWidgets(6));
-    final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), c = tester.getRect(find.byType(AppTile).at(2));
+    expect(find.byType(AppTile), findsNWidgets(8));
+    final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), e = tester.getRect(find.byType(AppTile).at(4));
+    expect(a.size, const Size(64, 64));
     expect(a.top, b.top);
-    expect(c.left, a.left);
+    expect(e.left, a.left);
     expect(b.left - a.right, HomeLayout.right.gap);
-    // The whole page inside the island, above the dots.
-    expect(tester.getRect(find.byType(AppTile).at(5)).bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
+    // The whole page inside the island, above the dots; the arrows clear
+    // of the tiles.
+    expect(tester.getRect(find.byType(AppTile).at(7)).bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
+    expect(tester.getRect(find.bySemanticsLabel('Page suivante')).left, greaterThan(tester.getRect(find.byType(AppTile).at(3)).right));
 
     // Dragged to the left with the mouse: the next page.
-    await tester.dragFrom(a.center, const Offset(-200, 0), kind: PointerDeviceKind.mouse);
+    await tester.dragFrom(a.center, const Offset(-260, 0), kind: PointerDeviceKind.mouse);
     await tester.pumpAndSettle();
     expect(page(tester), 1);
 
@@ -141,7 +144,7 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('add')));
     await tester.pump();
     expect(tools, 2);
-    expect(find.byType(AppSlot), findsNWidgets(2));
+    expect(find.byType(AppSlot), findsNWidgets(4));
 
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, animate: false)));
     // Nothing to launch from there: no « + », eight waiting tokens.
@@ -149,13 +152,13 @@ void main() {
     expect(find.byType(AppSlot), findsNWidgets(8));
   });
 
-  testWidgets('« + » takes a place: six apps and « + » make two pages at the right', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(6), animate: false, onNew: () {})));
+  testWidgets('« + » takes a place: eight apps and « + » make two pages at the right', (tester) async {
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(8), animate: false, onNew: () {})));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 2);
     expect(find.byKey(const ValueKey('add')), findsNothing);
     await tester.tap(find.bySemanticsLabel('Page suivante'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('add')), findsOneWidget);
-    expect(find.byType(AppSlot), findsNWidgets(5));
+    expect(find.byType(AppSlot), findsNWidgets(7));
   });
 }

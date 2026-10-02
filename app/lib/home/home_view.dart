@@ -61,24 +61,23 @@ class HomeLayout {
     side: 12,
   );
 
-  /// Right: the island opened to 344 × 520 (`IslandMetrics.right`), pages
-  /// of six 104 px tiles (2 × 3, user request 2026-10-02), sliding sideways
-  /// like the top's. Laid out as the top (2026-10-02: the modes at the
-  /// top, the environment at the bottom right): the tiles in the middle
-  /// between the bar (ends at 56) and the foot (starts at 470).
+  /// Right: as the top (user, 2026-10-02: « trop grosse », « les mêmes
+  /// proportions que la version haut », 8 apps): 380 × 260
+  /// (`IslandMetrics.right`), two rows of four 64 px tiles; 380 wide, not
+  /// 344, for the arrows beside them. Before: 344 × 520, 2 × 3 of 104 px.
   static const right = HomeLayout._(
     placement: HomePlacement.right,
-    size: Size(344, 520),
-    radius: 38,
-    columns: 2,
-    rows: 3,
-    tile: 104,
-    gap: 24,
-    rowGap: 22,
-    gridTop: 85,
-    arrowInset: 14,
-    foot: 14,
-    side: 16,
+    size: Size(380, 260),
+    radius: 30,
+    columns: 4,
+    rows: 2,
+    tile: 64,
+    gap: 14,
+    rowGap: 10,
+    gridTop: barTop + barHeight + 10,
+    arrowInset: 8,
+    foot: 10,
+    side: 12,
   );
 
   final HomePlacement placement;
@@ -107,10 +106,10 @@ class HomeLayout {
   static const barTop = 12.0, barHeight = 44.0;
   double get mikkySize => 72;
 
-  /// A page over the home (an agent's Suivi / Chat): at the top, the
-  /// island grows a little for the conversation, 450 × 380 (user,
-  /// 2026-10-02); at the right, the same window. As `IslandMetrics.page`.
-  Size get pageSize => isTop ? const Size(450, 380) : size;
+  /// A page over the home (an agent's Suivi / Chat): the island grows for
+  /// the conversation — at the top a little, 450 × 380; at the right to a
+  /// phone's shape, 380 × 520 (2026-10-02). As `IslandMetrics.page`.
+  Size get pageSize => isTop ? const Size(450, 380) : const Size(380, 520);
 }
 
 /// One app of the home: one or more agents doing a task (user, 2026-10-02).

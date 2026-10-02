@@ -86,17 +86,23 @@ void main() {
     test('open is a portrait card, taller than wide', () {
       final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.compact);
       run(m, 2);
-      m.setShape(IslandShape.open);
+      m.setShape(IslandShape.open, layout: IslandLayout.page);
       run(m, 2 / 60);
       // The depth (width, away from the edge) waits for the length.
       expect(m.currentHeight, greaterThan(82));
       expect(m.currentWidth, 74);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (344, 520));
-      expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
-      // Mikky at the top left of the home (2026-10-02).
+      expect((m.currentWidth, m.currentHeight), (380, 520));
+      expect(m.currentHeight, greaterThan(m.currentWidth * 1.3));
       expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
-      expect(m.cornerRadius, 38);
+      expect(m.cornerRadius, 30);
+    });
+
+    test('the home at the right is the top one\'s size', () {
+      final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.open, layout: IslandLayout.list);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (380, 260));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
     });
 
     test('hides into the right edge', () {
