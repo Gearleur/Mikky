@@ -242,6 +242,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     };
   }
 
+  /// The island's corners: continuous while closed (the pill), round once
+  /// open, like the boards (user, 2026-10-02: « les bords des planches
+  /// sont mieux »), sliding from one to the other as it opens.
+  double get _corners => 4 - 2 * _motion.openness.clamp(0.0, 1.0);
+
   Rect get _shapeRect {
     final r = _islandRect;
     return switch (_edge) {
@@ -880,8 +885,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         offstage: !shown,
         child: TickerMode(
           enabled: shown,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_motion.cornerRadius),
+          // Cut to the island's own shape (the shader's continuous
+          // corners, flat against the screen's edge): a page over it — the
+          // history's dark — fills the island to its corners (2026-10-02).
+          child: ClipPath(
+            clipper: IslandClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius, _corners),
             child: OverflowBox(
               minWidth: open.width,
               maxWidth: open.width,
@@ -940,6 +948,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                     theme: theme,
                     devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
                     side: side,
+                    corners: _corners,
                   ),
                 ),
               ),
@@ -994,4 +1003,45 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       ),
     );
   }
+}
+
+/// The island's shape in a child of it: [shape] (in the child's
+/// coordinates, past the screen's edge) with the shader's corners — a
+/// curve of radius [radius] and power [power] (2: a circle's).
+class IslandClip extends CustomClipper<Path> {
+  const IslandClip(this.shape, this.radius, [this.power = 2]);
+
+  final Rect shape;
+  final double radius, power;
+
+  @override
+  Path getClip(Size size) {
+    final r = math.max(0.0, math.min(radius, shape.shortestSide / 2));
+    if (r == 0) return Path()..addRect(shape);
+    final path = Path();
+    // Each corner from its center: (cos t, sin t) raised to the power
+    // 2 / n lies on |x|ⁿ + |y|ⁿ = 1.
+    const steps = 12;
+    void corner(Offset c, double from) {
+      for (var i = 0; i <= steps; i++) {
+        final t = from + math.pi / 2 * i / steps;
+        final x = math.cos(t), y = math.sin(t);
+        final p = c + Offset(x.sign * math.pow(x.abs(), 2 / power), y.sign * math.pow(y.abs(), 2 / power)) * r;
+        if (i == 0 && from == math.pi) {
+          path.moveTo(p.dx, p.dy);
+        } else {
+          path.lineTo(p.dx, p.dy);
+        }
+      }
+    }
+
+    corner(Offset(shape.left + r, shape.top + r), math.pi);
+    corner(Offset(shape.right - r, shape.top + r), 1.5 * math.pi);
+    corner(Offset(shape.right - r, shape.bottom - r), 0);
+    corner(Offset(shape.left + r, shape.bottom - r), .5 * math.pi);
+    return path..close();
+  }
+
+  @override
+  bool shouldReclip(IslandClip old) => old.shape != shape || old.radius != radius || old.power != power;
 }

@@ -30,6 +30,7 @@ class IslandPainter extends CustomPainter {
     required this.theme,
     required this.devicePixelRatio,
     this.side,
+    this.corners = 4,
   });
 
   final ui.FragmentShader? shader;
@@ -42,6 +43,10 @@ class IslandPainter extends CustomPainter {
 
   /// Split bubble merged with the island, or null.
   final SideBubble? side;
+
+  /// The corners' power: 4 continuous (the closed pill), 2 round (open,
+  /// as the boards and every other surface; 2026-10-02).
+  final double corners;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -65,6 +70,7 @@ class IslandPainter extends CustomPainter {
       theme.isLight ? 1 : 0, // uLight
       1 / devicePixelRatio, // uPx
       visibility, // uVis
+      corners, // uN
     ];
     for (var i = 0; i < values.length; i++) {
       shader.setFloat(i, values[i]);
@@ -84,7 +90,8 @@ class IslandPainter extends CustomPainter {
       old.visibility != visibility ||
       old.theme != theme ||
       old.devicePixelRatio != devicePixelRatio ||
-      old.side != side;
+      old.side != side ||
+      old.corners != corners;
 }
 
 /// The split bubble (Dynamic Island style), as in the prototype: it slides
