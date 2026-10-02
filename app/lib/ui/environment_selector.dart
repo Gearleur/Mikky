@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
@@ -59,8 +61,9 @@ class EnvironmentSelector extends StatefulWidget {
   static const _star = 34.0;
   static const _padLeft = 13.0;
 
-  /// Narrow: four short names.
-  static const menuWidth = 176.0;
+  /// At least this wide: its menu, as wide as it, fits the names and
+  /// their check.
+  static const minWidth = 100.0;
 
   @override
   State<EnvironmentSelector> createState() => _EnvironmentSelectorState();
@@ -91,13 +94,18 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
 
   Future<void> _openMenu() async {
     if (_open) return;
-    final star = _star.currentContext;
-    if (star != null) FloatingMenu.pressed(star);
+    // The menu unfolds straight out of the whole selector, as wide as it:
+    // down, or up when there is no room below — never off to the side
+    // (user, 2026-10-02: at the right it went off to the left).
+    final box = context.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final from = box.localToGlobal(Offset.zero) & box.size;
     setState(() => _open = true);
     final id = await showFloatingMenu(
       widget.menuWithin,
       environmentMenuEntries(widget.selected),
-      width: EnvironmentSelector.menuWidth,
+      from: from,
+      width: from.width,
     );
     if (!mounted) return;
     // Back to flat, whatever happened while the menu was open (the mouse
@@ -123,7 +131,7 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final style = uiText(TextSize.label, weight: FontWeight.w600, height: 1, color: ui.text);
-    final width = EnvironmentSelector._padLeft + _widestLabel(style, MediaQuery.textScalerOf(context)) + 4 + EnvironmentSelector._star;
+    final width = math.max(EnvironmentSelector.minWidth, EnvironmentSelector._padLeft + _widestLabel(style, MediaQuery.textScalerOf(context)) + 4 + EnvironmentSelector._star);
     final look = _look;
     final raised = look == _Look.raised;
     final clear = ui.thumb.withValues(alpha: 0);
