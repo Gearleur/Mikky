@@ -209,7 +209,7 @@ class AgentsService extends ChangeNotifier {
         if (!run.connected) await run.reconnect(client);
         continue;
       }
-      final run = await DaemonAgentRun.attach(client, id, cwd: r['cwd'] as String?);
+      final run = await DaemonAgentRun.attach(client, id, cwd: r['cwd'] as String?, adapterPid: r['adapterPid'] as int?);
       source.adopt(run, provider: provider, host: host, cwd: r['cwd'] as String?);
     }
   }

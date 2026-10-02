@@ -98,12 +98,18 @@ class _AgentPageState extends State<AgentPage> {
     final log = e.log;
     final working = log.working;
     final external = e.origin == AgentOrigin.external;
+    final adapterPid = e.live && e.run is DaemonAgentRun ? (e.run as DaemonAgentRun).adapterPid : null;
     final suivi = working && _view == 0;
     if (!suivi) _follow(log);
 
     final usage = usageLine(log);
     final content = <Widget>[
       if (_sendError != null) Text(_sendError!, style: uiText(12, color: ui.red)),
+      if (adapterPid != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+          child: Text('Adaptateur ACP · PID $adapterPid · ${e.host == AgentHost.wsl ? 'WSL' : 'Windows'}', style: uiText(11.5, color: ui.text3, tabular: true)),
+        ),
       if (usage.isNotEmpty)
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
@@ -224,7 +230,7 @@ class _AgentPageState extends State<AgentPage> {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    'Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.',
+                    'Session extérieure : activité observée, processus non vérifié.',
                     style: uiText(11.5, color: ui.text3, height: 1.35),
                   ),
                 ),

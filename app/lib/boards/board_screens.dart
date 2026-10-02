@@ -284,6 +284,7 @@ class AgentMock extends StatefulWidget {
     required this.log,
     this.chat = false,
     this.external = false,
+    this.adapterPid,
     this.scrolled = false,
     this.paused = false,
     this.enchanted = false,
@@ -309,6 +310,9 @@ class AgentMock extends StatefulWidget {
 
   /// Started in VS Code or a terminal: followed, read only.
   final bool external;
+
+  /// PID of a Mikky-controlled ACP adapter, on its own host.
+  final int? adapterPid;
 
   /// Put on hold by the user: « En pause » and Reprendre under the thread.
   final bool paused;
@@ -349,6 +353,11 @@ class _AgentMockState extends State<AgentMock> {
     final suivi = working && _view == 0;
     final usage = usageLine(log);
     final content = <Widget>[
+      if (widget.adapterPid != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
+          child: Text('Adaptateur ACP · PID ${widget.adapterPid} · Windows', style: uiText(11.5, color: ui.text3, tabular: true)),
+        ),
       if (usage.isNotEmpty)
         Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(TextSize.caption, color: ui.text3, tabular: true))),
       ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: _limit)),
@@ -402,7 +411,7 @@ class _AgentMockState extends State<AgentMock> {
             child: Row(children: [
               MikkyIcon('lock', size: 13, color: ui.text3),
               const SizedBox(width: 6),
-              Expanded(child: Text('Ouverte dans VS Code ou un terminal : Mikky la suit sans y toucher.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
+              Expanded(child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
             ]),
           ),
       ]),
@@ -469,7 +478,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
     title: 'Au travail',
     note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
     frames: [
-      BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working())),
+      BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), adapterPid: 12345)),
       BoardFrame(label: 'Chat, avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true)),
       BoardFrame(
         label: 'Chat, sans plan',
@@ -478,7 +487,7 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
       ),
       BoardFrame(
         label: 'Session hors de Mikky',
-        note: 'Lancée dans VS Code : suivie, sans champ.',
+        note: 'Lancée ailleurs : Mikky lit son activité, sans confirmer que son processus tourne et sans pouvoir lui répondre.',
         child: AgentMock(title: 'Refactor du lecteur', log: FakeSessions.working(), external: true),
       ),
     ],
