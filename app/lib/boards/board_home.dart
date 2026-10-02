@@ -1,10 +1,12 @@
 import 'package:flutter/widgets.dart';
 
+import '../home/history_sheet.dart';
 import '../home/home_view.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/environment_selector.dart';
 import '../ui/page_dots.dart';
+import '../ui/sheet.dart';
 import '../ui/status.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
@@ -130,12 +132,12 @@ const sampleApps = [
 ];
 
 /// A home in its window, on a board.
-Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(layout: layout, child: HomeView(layout: layout, apps: apps, onTools: () {}));
+Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(layout: layout, child: HomeView(layout: layout, apps: apps, onNew: () {}));
 
 const _appRule = ('Application', 'Un ou plusieurs agents qui font une tâche. Dans l’app aujourd’hui : un agent, le logo de son outil et son état ; le dessin des applications viendra.');
 const _pagesRule = ('Pages', 'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, l’étoile des pages (clic sur un point), ← → au clavier.');
 const _whichRule = ('Lesquelles', 'Ceux qui attendent, ceux qui travaillent, puis les 5 derniers terminés du jour (épinglés d’abord). Pas l’historique ni les archives : ils auront leur place ailleurs.');
-const _modesRule = ('Modes', 'Applications ou chat, le choix en noir : le seul noir de l’écran, sa profondeur (2 octobre). Le contenu passe de l’un à l’autre en fondu (300 ms). Le chat reste à dessiner.');
+const _modesRule = ('Modes', 'En haut au milieu (aussi à droite depuis le 2 octobre). Applications ou chat, le choix en noir : le seul noir de l’écran, sa profondeur (2 octobre). Le contenu passe de l’un à l’autre en fondu (300 ms). Le chat reste à dessiner.');
 const _mikkyRule = ('Mikky', 'Dans l’app, le Mikky de l’île vient s’y poser en ouvrant (72 px) et garde l’état de l’agent qu’il suit ; sur les planches, le même Mikky en petit.');
 
 final homeTopBoard = BoardSpec(
@@ -178,7 +180,7 @@ final homeRightBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Accueil Right',
-      note: 'La même vue que l’accueil Top (mêmes composants, autre disposition) dans l’île ouverte à droite : 344 × 520, plate du côté de l’écran. Six applications par page (2 × 3), qui glissent de côté comme en haut ; « Choisir l’environnement » en haut au milieu, l’étoile des pages puis les modes en bas.',
+      note: 'La même vue et la même disposition que l’accueil Top, dans l’île ouverte à droite : 344 × 520, plate du côté de l’écran. En haut Mikky, les modes au milieu, les outils ; six applications par page (2 × 3), qui glissent de côté ; en bas l’étoile des pages et « Choisir l’environnement » à droite.',
       frames: [
         BoardFrame(label: 'Dans l’app', note: 'Un clic ouvre la page de l’agent ; les outils, un nouvel agent.', width: 344, child: _home(HomeLayout.right, sampleApps)),
         BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Quinze applications, 6 par page.', width: 344, child: _home(HomeLayout.right, HomeApp.placeholders(15))),
@@ -194,7 +196,7 @@ final homeRightBoard = BoardSpec(
             ('Taille', 'Île ouverte 344 × 520 (celle d’aujourd’hui), coins gauches 38 ; le côté droit dépasse de l’écran.'),
             _appRule,
             _whichRule,
-            ('Tuiles', '100 px, 2 colonnes (24 d’écart) × 3 rangées (20 d’écart) : 6 par page, au milieu entre la barre et l’étoile des pages.'),
+            ('Tuiles', '104 px, 2 colonnes (24 d’écart) × 3 rangées (22 d’écart) : 6 par page, au milieu entre la barre du haut et le pied (14 px du bas, 16 px des côtés).'),
             _pagesRule,
             ('Actions', 'Une tuile : la page de l’agent (Suivi, Chat, Oui / Non, limite…). Les outils : un nouvel agent. Clic droit : le menu de Mikky (thème, position, notifications…).'),
             _modesRule,
@@ -205,3 +207,63 @@ final homeRightBoard = BoardSpec(
     ),
   ],
 );
+
+// ---------------------------------------------------------------- history
+
+/// The history's rows, as sample data.
+const sampleHistory = <HistoryRow>[
+  (id: 'h1', title: 'Ajoute la position à droite', brand: Brand.claude, when: 'Hier'),
+  (id: 'h2', title: 'Traduis le README', brand: Brand.codex, when: 'Hier · WSL'),
+  (id: 'h3', title: 'Corrige le hook souris', brand: Brand.claude, when: 'Lundi'),
+  (id: 'h4', title: 'Prépare la démo de l’île', brand: Brand.claude, when: 'Lundi'),
+  (id: 'h5', title: 'Nettoie les imports du moteur', brand: Brand.codex, when: '28 sept.'),
+  (id: 'h6', title: 'Écris les tests du lecteur Codex', brand: Brand.codex, when: '28 sept. · WSL'),
+  (id: 'h7', title: 'Résume la spec de mikkyd', brand: Brand.claude, when: '27 sept.'),
+  (id: 'h8', title: 'Ajoute le menu flottant', brand: Brand.claude, when: '26 sept.'),
+  (id: 'h9', title: 'Mesure le CPU de l’île', brand: Brand.codex, when: '25 sept.'),
+];
+
+Widget _historyList() => const HistoryList(rows: sampleHistory, onMenu: _noId);
+
+void _noId(String _) {}
+
+/// The right home with its history button: the sheet opens over it, for
+/// real (trial, 2026-10-02).
+class HistoryTry extends StatelessWidget {
+  const HistoryTry({super.key, this.backdrop = SheetBackdrop.dim});
+
+  final SheetBackdrop backdrop;
+
+  @override
+  Widget build(BuildContext context) => HomeFrame(
+    layout: HomeLayout.right,
+    child: HomeView(
+      layout: HomeLayout.right,
+      apps: sampleApps,
+      onNew: () {},
+      onHistory: (within) => showSheet(within, title: 'Historique', caption: '${sampleHistory.length}', backdrop: backdrop, builder: (_) => _historyList()),
+    ),
+  );
+}
+
+/// The same, the sheet open and still (for the pictures).
+class HistoryOpen extends StatelessWidget {
+  const HistoryOpen({super.key, this.backdrop = SheetBackdrop.dim});
+
+  final SheetBackdrop backdrop;
+
+  @override
+  Widget build(BuildContext context) => HomeFrame(
+    layout: HomeLayout.right,
+    child: Stack(children: [
+      HomeView(layout: HomeLayout.right, apps: sampleApps, onNew: () {}, onHistory: (_) {}),
+      Positioned.fill(
+        child: SheetScene(
+          t: 1,
+          backdrop: backdrop,
+          panel: SheetPanel(title: 'Historique', caption: '${sampleHistory.length}', onClose: () {}, child: _historyList()),
+        ),
+      ),
+    ]),
+  );
+}

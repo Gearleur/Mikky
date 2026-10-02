@@ -14,6 +14,7 @@ import '../ui/floating_menu.dart';
 import '../ui/metro.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
+import '../ui/sheet.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
 import '../ui/status.dart';
@@ -106,7 +107,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Ronds',
-            note: 'Les plus utilisés : retour, menu (l’étoile grise), envoyer, flèches des pages (28 px, gris).',
+            note: 'Les plus utilisés : retour, menu (l’étoile grise), envoyer, flèches des pages et historique (28 et 34 px, gris).',
             child: _Tray([
               _row([
                 for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
@@ -122,6 +123,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               _row([
                 RoundButton('left', size: 28, onPressed: () {}),
                 RoundButton('right', size: 28, onPressed: () {}),
+                RoundButton('history', size: 34, onPressed: () {}),
               ]),
             ]),
           ),
@@ -163,12 +165,10 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Modes de l’accueil',
-            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px en haut, 52 px à droite ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
+            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px, en haut au milieu dans les deux accueils ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
             child: BoardPane(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Local(0, (v, set) => MTabBar(mini: true, height: 44, ink: true, selected: v, onChanged: set, items: _modes)),
-                const SizedBox(height: 16),
-                Local(0, (v, set) => MTabBar(mini: true, height: 52, ink: true, selected: v, onChanged: set, items: _modes)),
               ]),
             ),
           ),
@@ -225,7 +225,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           const BoardFrame(
             label: 'Choisir l’environnement',
-            note: 'Refait le 2 octobre. Le nom en noir et l’étoile grise des réglages, à plat ; gris au survol ; pressé ou menu ouvert, le relief d’une réponse, puis de nouveau à plat dès que le menu part (avant, un contour restait). Le nouveau nom monte, l’ancien s’en va par le haut. Aussi large que le plus long nom ; contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
+            note: 'Refait le 2 octobre. Le nom en noir et l’étoile grise des réglages, à plat ; gris au survol ; pressé ou menu ouvert, le relief d’une réponse, puis de nouveau à plat dès que le menu part (avant, un contour restait). Le menu sort du sélecteur entier, à sa largeur, et se déroule tout droit (vers le haut en bas de l’accueil). Le nouveau nom monte, l’ancien s’en va par le haut. Contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
             width: 300,
             child: SelectorTry(),
           ),
@@ -309,11 +309,11 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Tuiles',
-            note: '64 px en haut (8 par page), 100 px à droite (6 par page). Neutres tant qu’elles n’ont pas leur dessin.',
+            note: '64 px en haut (8 par page), 104 px à droite (6 par page). Neutres tant qu’elles n’ont pas leur dessin.',
             child: BoardPane(
               width: 260,
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                for (final s in const [64.0, 100.0]) ...[AppTile(size: s, label: 'Application', onTap: _nothing), const SizedBox(width: 24)],
+                for (final s in const [64.0, 104.0]) ...[AppTile(size: s, label: 'Application', onTap: _nothing), const SizedBox(width: 24)],
               ]),
             ),
           ),
@@ -331,6 +331,22 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             ),
           ),
           const BoardFrame(
+            label: 'Commencer une tâche, places libres',
+            note: 'Après les applications, la première place libre devient « + » (une nouvelle tâche) ; les autres gardent un petit jeton creusé au milieu, qui attend une application. Une page est toujours pleine.',
+            child: BoardPane(
+              width: 360,
+              child: Row(children: [
+                AddTile(size: 64, onTap: _nothing),
+                SizedBox(width: 16),
+                AppSlot(size: 64),
+                SizedBox(width: 16),
+                AppSlot(size: 64),
+                SizedBox(width: 16),
+                AppSlot(size: 64),
+              ]),
+            ),
+          ),
+          const BoardFrame(
             label: 'Mikky',
             note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil, sans case. Au repos, au travail, fini.',
             child: BoardPane(
@@ -342,6 +358,18 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               ]),
             ),
           ),
+        ],
+      ),
+    ]),
+    ('Feuilles', [
+      const BoardSection(
+        title: 'Feuille par-dessus · l’historique (essai)',
+        note: 'Une page par-dessus l’accueil : le bouton Historique, en bas à gauche, l’ouvre. L’accueil derrière s’assombrit et se floute un peu ; la feuille, presque aussi grande que la fenêtre, monte d’en bas sur un ressort doux. Dedans, l’historique comme avant : les lignes, la petite étoile grise (son menu) ; un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications. Un clic dans le sombre, Échap ou × la referme. Deux fonds à comparer ; pas encore dans l’accueil.',
+        frames: [
+          BoardFrame(label: 'À essayer · fond assombri', note: 'Le bouton en bas à gauche.', width: 344, child: HistoryTry()),
+          BoardFrame(label: 'Ouverte · fond assombri', width: 344, child: HistoryOpen()),
+          BoardFrame(label: 'À essayer · fond avec points', note: 'Le même, une grille de petits pixels clairs sur le sombre.', width: 344, child: HistoryTry(backdrop: SheetBackdrop.dots)),
+          BoardFrame(label: 'Ouverte · fond avec points', width: 344, child: HistoryOpen(backdrop: SheetBackdrop.dots)),
         ],
       ),
     ]),
