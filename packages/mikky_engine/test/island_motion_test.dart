@@ -54,6 +54,15 @@ void main() {
       expect(m.mikkyRadius, 28);
     });
 
+    test('a page over the home grows a little for the conversation', () {
+      final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
+      run(m, 2);
+      m.setShape(IslandShape.open, layout: IslandLayout.page);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (450, 380));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+    });
+
     test('hiding slides Mikky up with the island', () {
       final m = IslandMotion()..setShape(IslandShape.compact);
       run(m, 2);

@@ -4,7 +4,10 @@ import '../anim/spring.dart';
 
 enum IslandShape { hidden, compact, open }
 
-enum IslandLayout { focus, list }
+/// What the open island shows: [focus], one agent and its answers (an
+/// alert at the top); [list], the home; [page], a page over the home (an
+/// agent's Suivi / Chat), a little taller at the top (2026-10-02).
+enum IslandLayout { focus, list, page }
 
 /// The screen edge the island is glued to.
 enum IslandEdge {
@@ -25,6 +28,7 @@ class IslandMetrics {
     required this.compact,
     required this.focus,
     required this.list,
+    required this.page,
     required this.hidden,
     required this.compactRadius,
     required this.openRadius,
@@ -35,11 +39,13 @@ class IslandMetrics {
 
   /// Spec §3: closed 186 × 36, open Focus 430 × 178. List: the home,
   /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
-  /// validated by the user).
+  /// validated by the user). Page: an agent's Suivi / Chat, 450 × 380 —
+  /// the home grows a little for the conversation (user, 2026-10-02).
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
     focus: (width: 430, height: 178),
     list: (width: 450, height: 260),
+    page: (width: 450, height: 380),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
@@ -55,6 +61,7 @@ class IslandMetrics {
     compact: (width: 74, height: 82),
     focus: (width: 344, height: 520),
     list: (width: 344, height: 520),
+    page: (width: 344, height: 520),
     hidden: (width: 0, height: 80),
     compactRadius: 22,
     openRadius: 38,
@@ -68,16 +75,21 @@ class IslandMetrics {
         IslandEdge.right => right,
       };
 
-  final IslandSize compact, focus, list, hidden;
+  final IslandSize compact, focus, list, page, hidden;
   final double compactRadius, openRadius;
   final MikkySpot mikkyCompact, mikkyOpen;
 
-  /// Mikky's place when open in the [IslandLayout.list] layout (the home).
+  /// Mikky's place when open on the home ([IslandLayout.list]), and on a
+  /// page over it (hidden there, behind the page's back button).
   final MikkySpot mikkyList;
 
-  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.list ? mikkyList : mikkyOpen;
+  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.focus ? mikkyOpen : mikkyList;
 
-  IslandSize open(IslandLayout layout) => layout == IslandLayout.focus ? focus : list;
+  IslandSize open(IslandLayout layout) => switch (layout) {
+        IslandLayout.focus => focus,
+        IslandLayout.list => list,
+        IslandLayout.page => page,
+      };
 }
 
 /// The island's size and the place of Mikky in it, driven by springs
