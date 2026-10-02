@@ -153,6 +153,15 @@ final homeTopBoard = BoardSpec(
         BoardFrame(label: 'Aucun agent', width: 450, child: _home(HomeLayout.top, const [])),
       ],
     ),
+    BoardSection(
+      title: 'Variante · une rangée de trois',
+      note: 'Pour comparer (2 octobre) : trois applications plus grosses (96 px) sur une seule ligne, et l’île moins haute, 450 × 218 au lieu de 450 × 260 ; toujours 10 px entre la barre, les tuiles, le pied et le bord. Trois par page : plus de pages.',
+      frames: [
+        BoardFrame(label: 'Dans l’app', width: 450, child: _home(HomeLayout.topRow, sampleApps)),
+        BoardFrame(label: 'Tuiles neutres', note: 'Neuf applications, 3 par page.', width: 450, child: _home(HomeLayout.topRow, HomeApp.placeholders(9))),
+        BoardFrame(label: 'Aucun agent', width: 450, child: _home(HomeLayout.topRow, const [])),
+      ],
+    ),
     const BoardSection(
       title: 'Fonctionnement',
       frames: [

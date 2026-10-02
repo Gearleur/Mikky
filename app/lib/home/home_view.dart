@@ -61,6 +61,24 @@ class HomeLayout {
     side: 12,
   );
 
+  /// Top, one row (trial, 2026-10-02): three bigger tiles (96 px) on one
+  /// line, and a lower island, 450 × 218 — the same 10 px between bar,
+  /// tiles, foot and edge.
+  static const topRow = HomeLayout._(
+    placement: HomePlacement.top,
+    size: Size(450, 218),
+    radius: 30,
+    columns: 3,
+    rows: 1,
+    tile: 96,
+    gap: 22,
+    rowGap: 0,
+    gridTop: barTop + barHeight + 10,
+    arrowInset: 18,
+    foot: 10,
+    side: 12,
+  );
+
   /// Right: the island opened to 344 × 520 (`IslandMetrics.right`), pages
   /// of six 104 px tiles (2 × 3, user request 2026-10-02), sliding sideways
   /// like the top's. Laid out as the top (2026-10-02: the modes at the
