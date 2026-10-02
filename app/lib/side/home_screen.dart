@@ -24,9 +24,22 @@ List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> reca
       id: e.id,
       name: e.name,
       brand: Brand.of(e.provider),
-      status: e.status == AgentStatus.paused ? null : UiStatus.of(e.homeStatus),
+      status: appStatus(e.status, e.homeStatus),
     ),
 ];
+
+/// An app's state on its tile, from its agent's [status] and the one the
+/// home sorts it by ([home]). Paused by the user: nothing. An agent whose
+/// turn is over (idle, waiting for a new message) has finished: green
+/// (2026-10-02: « le vert n'apparaît pas »), as a limit or an error the
+/// user settled.
+UiStatus? appStatus(AgentStatus status, AgentStatus home) {
+  if (status == AgentStatus.paused) return null;
+  return switch (UiStatus.of(home)) {
+    UiStatus.paused => UiStatus.finished,
+    final s => s,
+  };
+}
 
 /// The history (2026-10-02): every agent the home does not show, but the
 /// archives — the most recent first, with when and where it last ran.
