@@ -92,16 +92,16 @@ void main() {
       expect(m.currentHeight, greaterThan(82));
       expect(m.currentWidth, 74);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (380, 520));
-      expect(m.currentHeight, greaterThan(m.currentWidth * 1.3));
+      expect((m.currentWidth, m.currentHeight), (344, 520));
+      expect(m.currentHeight, greaterThan(m.currentWidth * 1.4));
       expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
       expect(m.cornerRadius, 30);
     });
 
-    test('the home at the right is the top one\'s size', () {
+    test('the home at the right is the top one, upright', () {
       final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (380, 260));
+      expect((m.currentWidth, m.currentHeight), (290, 408));
       expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
     });
 

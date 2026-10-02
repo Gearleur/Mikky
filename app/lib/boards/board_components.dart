@@ -366,8 +366,8 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         title: 'Historique (essai)',
         note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la fenêtre en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
         frames: [
-          BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 380, child: HistoryTry()),
-          BoardFrame(label: 'À droite · ouvert', width: 380, child: HistoryOpen()),
+          BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 290, child: HistoryTry()),
+          BoardFrame(label: 'À droite · ouvert', width: 290, child: HistoryOpen()),
           BoardFrame(label: 'En haut · à essayer', width: 450, child: HistoryTry(layout: HomeLayout.top)),
           BoardFrame(label: 'En haut · ouvert', width: 450, child: HistoryOpen(layout: HomeLayout.top)),
         ],

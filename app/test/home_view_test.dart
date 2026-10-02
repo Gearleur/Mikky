@@ -92,19 +92,20 @@ void main() {
     expect(find.byType(AddTile), findsOneWidget);
   });
 
-  testWidgets('right: as the top, eight tiles a page in 4 × 2, sideways pages, and the environment menu', (tester) async {
+  testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (tester) async {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(20), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     expect(find.byType(AppTile), findsNWidgets(8));
-    final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), e = tester.getRect(find.byType(AppTile).at(4));
+    final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), c = tester.getRect(find.byType(AppTile).at(2));
     expect(a.size, const Size(64, 64));
     expect(a.top, b.top);
-    expect(e.left, a.left);
-    expect(b.left - a.right, HomeLayout.right.gap);
+    expect(c.left, a.left);
+    expect(c.top - a.bottom, HomeLayout.right.rowGap);
+    expect(b.left - a.right, HomeLayout.top.gap);
     // The whole page inside the island, above the dots; the arrows clear
     // of the tiles.
     expect(tester.getRect(find.byType(AppTile).at(7)).bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
-    expect(tester.getRect(find.bySemanticsLabel('Page suivante')).left, greaterThan(tester.getRect(find.byType(AppTile).at(3)).right));
+    expect(tester.getRect(find.bySemanticsLabel('Page suivante')).left, greaterThan(tester.getRect(find.byType(AppTile).at(1)).right));
 
     // Dragged to the left with the mouse: the next page.
     await tester.dragFrom(a.center, const Offset(-260, 0), kind: PointerDeviceKind.mouse);

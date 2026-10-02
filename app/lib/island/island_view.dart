@@ -31,8 +31,9 @@ Size windowSizeFor(IslandEdge edge) => switch (edge) {
       // The home at the top is 450 × 260, an agent's page 450 × 380
       // (2026-10-02): room for its shadow.
       IslandEdge.top => const Size(560, 480),
-      // 380 wide at the right: room for its shadow on the left.
-      IslandEdge.right => const Size(460, 700),
+      // At the right, up to 344 × 520 (an agent's page): room for its
+      // shadow on the left.
+      IslandEdge.right => const Size(420, 700),
     };
 
 /// The shader box goes this far past the screen edge: only the corners

@@ -213,28 +213,28 @@ final homeRightBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Accueil Right',
-      note: 'Comme l’accueil Top (2 octobre : « trop grosse », « les mêmes proportions que la version haut ») : la même vue, la même grille de huit applications de 64 px (4 × 2), dans l’île ouverte à droite, 380 × 260, plate du côté de l’écran. Sur la page d’un agent, elle grandit en forme de téléphone, 380 × 520.',
+      note: 'L’accueil Top, debout (2 octobre : « une version verticale de la version haut ») : la même vue, les mêmes tuiles de 64 px, les mêmes écarts et les mêmes flèches, huit applications par page en 2 × 4, dans l’île ouverte à droite, 290 × 408, plate du côté de l’écran. Sur la page d’un agent, elle grandit en forme de téléphone, 344 × 520.',
       frames: [
-        BoardFrame(label: 'Dans l’app', note: 'Un clic : la page de l’agent (Suivi, Chat) ; « + » et les outils : le Chat.', width: 380, child: _home(HomeLayout.right, sampleApps)),
-        BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 380, child: _home(HomeLayout.right, HomeApp.placeholders(20))),
-        BoardFrame(label: 'Aucun agent', width: 380, child: _home(HomeLayout.right, const [])),
+        BoardFrame(label: 'Dans l’app', note: 'Un clic : la page de l’agent (Suivi, Chat) ; « + » et les outils : le Chat.', width: 290, child: _home(HomeLayout.right, sampleApps)),
+        BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 290, child: _home(HomeLayout.right, HomeApp.placeholders(20))),
+        BoardFrame(label: 'Aucun agent', width: 290, child: _home(HomeLayout.right, const [])),
       ],
     ),
     BoardSection(
       title: 'Chat',
       note: 'Le même Chat qu’en haut : le « Nouvel agent » d’avant, dans l’accueil.',
       frames: [
-        BoardFrame(label: 'Au départ', width: 380, child: _chat(HomeLayout.right)),
-        BoardFrame(label: 'Démarrage', width: 380, child: _chat(HomeLayout.right, status: 'Démarrage…')),
+        BoardFrame(label: 'Au départ', width: 290, child: _chat(HomeLayout.right)),
+        BoardFrame(label: 'Démarrage', width: 290, child: _chat(HomeLayout.right, status: 'Démarrage…')),
       ],
     ),
     BoardSection(
       title: 'La page d’un agent',
-      note: 'Comme en haut : une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 380 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à 260.',
+      note: 'Comme en haut : une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 344 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à 290 × 408.',
       frames: [
-        BoardFrame(label: 'Suivi', width: 380, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
-        BoardFrame(label: 'Chat', width: 380, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true, framed: false))),
-        BoardFrame(label: 'Feu vert', width: 380, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), chat: true, framed: false))),
+        BoardFrame(label: 'Suivi', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
+        BoardFrame(label: 'Chat', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true, framed: false))),
+        BoardFrame(label: 'Feu vert', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), chat: true, framed: false))),
       ],
     ),
     const BoardSection(
@@ -243,10 +243,10 @@ final homeRightBoard = BoardSpec(
         BoardFrame(
           label: 'Règles de l’accueil Right',
           child: BoardRules([
-            ('Taille', 'Île ouverte 380 × 260, comme en haut, coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 460 × 700). Sur la page d’un agent : 380 × 520, sur le même ressort.'),
+            ('Taille', 'Île ouverte 290 × 408 : celle du haut, debout ; coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 420 × 700). Barre à 12 px du haut, 44 px de haut, puis 10 px entre la barre, les tuiles, le pied et le bord, comme en haut. Sur la page d’un agent : 344 × 520, sur le même ressort.'),
             _appRule,
             _whichRule,
-            ('Tuiles', 'Comme en haut : 64 px, 4 colonnes (14 d’écart) × 2 rangées (10 d’écart), 8 par page ; 10 px entre la barre, les tuiles, le pied et le bord.'),
+            ('Tuiles', 'Celles du haut, debout : 64 px, 2 colonnes (16 d’écart) × 4 rangées (10 d’écart), 8 par page ; flèches à 18 px des bords.'),
             _pagesRule,
             ('Actions', 'Une tuile : la page de l’agent (Suivi, Chat, Oui / Non, limite…). « + » et les outils : le Chat. L’historique, en bas à gauche : la liste par-dessus ; un agent rouvert revient parmi les applications. Clic droit : le menu de Mikky (thème, position, notifications…).'),
             _modesRule,

@@ -61,21 +61,22 @@ class HomeLayout {
     side: 12,
   );
 
-  /// Right: as the top (user, 2026-10-02: « trop grosse », « les mêmes
-  /// proportions que la version haut », 8 apps): 380 × 260
-  /// (`IslandMetrics.right`), two rows of four 64 px tiles; 380 wide, not
-  /// 344, for the arrows beside them. Before: 344 × 520, 2 × 3 of 104 px.
+  /// Right: the top's home upright (user, 2026-10-02: « une version
+  /// verticale de la version haut »): the same 64 px tiles, gaps and
+  /// arrows, four rows of two — 8 a page — so 290 × 408
+  /// (`IslandMetrics.right`): the bar, 10, the tiles, 10, the foot.
+  /// Before: 344 × 520 with 2 × 3 tiles of 104 px, then 380 × 260.
   static const right = HomeLayout._(
     placement: HomePlacement.right,
-    size: Size(380, 260),
+    size: Size(290, 408),
     radius: 30,
-    columns: 4,
-    rows: 2,
+    columns: 2,
+    rows: 4,
     tile: 64,
-    gap: 14,
+    gap: 16,
     rowGap: 10,
     gridTop: barTop + barHeight + 10,
-    arrowInset: 8,
+    arrowInset: 18,
     foot: 10,
     side: 12,
   );
@@ -107,9 +108,9 @@ class HomeLayout {
   double get mikkySize => 72;
 
   /// A page over the home (an agent's Suivi / Chat): the island grows for
-  /// the conversation — at the top a little, 450 × 380; at the right to a
-  /// phone's shape, 380 × 520 (2026-10-02). As `IslandMetrics.page`.
-  Size get pageSize => isTop ? const Size(450, 380) : const Size(380, 520);
+  /// the conversation — at the top a little, 450 × 380; at the right to
+  /// the phone-shaped 344 × 520 (2026-10-02). As `IslandMetrics.page`.
+  Size get pageSize => isTop ? const Size(450, 380) : const Size(344, 520);
 }
 
 /// One app of the home: one or more agents doing a task (user, 2026-10-02).

@@ -55,15 +55,15 @@ class IslandMetrics {
     mikkyList: (x: 40, y: 35, radius: 21),
   );
 
-  /// A small tab when closed. Open, the home as at the top, 380 × 260
-  /// (user, 2026-10-02: « trop grosse », « les mêmes proportions que la
-  /// version haut »), growing to a phone-shaped 380 × 520 for an agent's
-  /// page; Mikky at the top left.
+  /// A small tab when closed. Open, the home: the top's, upright (user,
+  /// 2026-10-02: « une version verticale de la version haut »), 290 × 408;
+  /// an agent's page grows to the phone-shaped 344 × 520. Mikky at the
+  /// top left.
   static const right = IslandMetrics._(
     compact: (width: 74, height: 82),
-    focus: (width: 380, height: 520),
-    list: (width: 380, height: 260),
-    page: (width: 380, height: 520),
+    focus: (width: 344, height: 520),
+    list: (width: 290, height: 408),
+    page: (width: 344, height: 520),
     hidden: (width: 0, height: 80),
     compactRadius: 22,
     openRadius: 30,
