@@ -125,16 +125,16 @@ const sampleApps = [
   HomeApp(id: 'a4', name: 'Traduis la documentation', brand: Brand.claude, status: UiStatus.limited),
   HomeApp(id: 'a5', name: 'Résume la spec', brand: Brand.claude, status: UiStatus.finished),
   HomeApp(id: 'a6', name: 'Ajoute les tests du lecteur', brand: Brand.codex, status: UiStatus.finished),
-  HomeApp(id: 'a7', name: 'Corrige le clic en dehors', brand: Brand.claude),
-  HomeApp(id: 'a8', name: 'Traduis le README', brand: Brand.codex),
-  HomeApp(id: 'a9', name: 'Ajoute la position à droite', brand: Brand.claude),
+  HomeApp(id: 'a7', name: 'Nettoie les imports', brand: Brand.codex, status: UiStatus.working),
+  HomeApp(id: 'a8', name: 'Corrige le clic en dehors', brand: Brand.claude, status: UiStatus.finished),
 ];
 
 /// A home in its window, on a board.
 Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(layout: layout, child: HomeView(layout: layout, apps: apps, onTools: () {}));
 
 const _appRule = ('Application', 'Un ou plusieurs agents qui font une tâche. Dans l’app aujourd’hui : un agent, le logo de son outil et son état ; le dessin des applications viendra.');
-const _pagesRule = ('Pages', 'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, points (clic), ← → au clavier.');
+const _pagesRule = ('Pages', 'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, l’étoile des pages (clic sur un point), ← → au clavier.');
+const _whichRule = ('Lesquelles', 'Ceux qui attendent, ceux qui travaillent, puis les 5 derniers terminés du jour (épinglés d’abord). Pas l’historique ni les archives : ils auront leur place ailleurs.');
 const _modesRule = ('Modes', 'Applications ou chat, le choix en noir : le seul noir de l’écran, sa profondeur (2 octobre). Le contenu passe de l’un à l’autre en fondu (300 ms). Le chat reste à dessiner.');
 const _mikkyRule = ('Mikky', 'Dans l’app, le Mikky de l’île vient s’y poser en ouvrant (72 px) et garde l’état de l’agent qu’il suit ; sur les planches, le même Mikky en petit.');
 
@@ -144,7 +144,7 @@ final homeTopBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Accueil Top',
-      note: 'L’île ouverte en haut par l’utilisateur (survol, clic), collée au bord de l’écran (plate en haut), à sa vraie taille : 450 × 260 (hauteur validée). Mikky vivant en haut à gauche, les modes au milieu, les outils sortis du bord à droite ; deux rangées de quatre applications par page ; les points et « Choisir l’environnement » en bas.',
+      note: 'L’île ouverte en haut par l’utilisateur (survol, clic), collée au bord de l’écran (plate en haut), à sa vraie taille : 450 × 260 (hauteur validée). Mikky vivant en haut à gauche, les modes au milieu, les outils sortis du bord à droite ; deux rangées de quatre applications par page ; l’étoile des pages et « Choisir l’environnement » en bas.',
       frames: [
         BoardFrame(label: 'Dans l’app', note: 'Les agents : logo de l’outil, état au coin. Un clic : l’agent en grand (ses réponses), Échap ou un clic : retour.', width: 450, child: _home(HomeLayout.top, sampleApps)),
         BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 450, child: _home(HomeLayout.top, HomeApp.placeholders(20))),
@@ -160,6 +160,7 @@ final homeTopBoard = BoardSpec(
             ('Taille', 'Île ouverte 450 × 260, coins bas 30 ; le haut dépasse de l’écran (fenêtre de l’île 560 × 360 pour l’ombre). Barre à 12 px du haut, 44 px de haut ; puis 10 px entre la barre, les tuiles, le pied et le bord.'),
             ('Quand', 'Ouverte par l’utilisateur : l’accueil. Un agent qui attend : l’île prend la taille de la vue d’un agent (430 × 178) avec Oui / Non, comme avant.'),
             _appRule,
+            _whichRule,
             ('Tuiles', '64 px, 16 px entre les colonnes, 10 entre les rangées ; 8 par page, la dernière page remplie depuis la gauche.'),
             _pagesRule,
             _modesRule,
@@ -177,7 +178,7 @@ final homeRightBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Accueil Right',
-      note: 'La même vue que l’accueil Top (mêmes composants, autre disposition) dans l’île ouverte à droite : 344 × 520, plate du côté de l’écran. Six applications par page (2 × 3), qui glissent de côté comme en haut ; « Choisir l’environnement » en haut au milieu, les points puis les modes en bas.',
+      note: 'La même vue que l’accueil Top (mêmes composants, autre disposition) dans l’île ouverte à droite : 344 × 520, plate du côté de l’écran. Six applications par page (2 × 3), qui glissent de côté comme en haut ; « Choisir l’environnement » en haut au milieu, l’étoile des pages puis les modes en bas.',
       frames: [
         BoardFrame(label: 'Dans l’app', note: 'Un clic ouvre la page de l’agent ; les outils, un nouvel agent.', width: 344, child: _home(HomeLayout.right, sampleApps)),
         BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Quinze applications, 6 par page.', width: 344, child: _home(HomeLayout.right, HomeApp.placeholders(15))),
@@ -192,7 +193,8 @@ final homeRightBoard = BoardSpec(
           child: BoardRules([
             ('Taille', 'Île ouverte 344 × 520 (celle d’aujourd’hui), coins gauches 38 ; le côté droit dépasse de l’écran.'),
             _appRule,
-            ('Tuiles', '100 px, 2 colonnes (24 d’écart) × 3 rangées (20 d’écart) : 6 par page, au milieu entre la barre et les points.'),
+            _whichRule,
+            ('Tuiles', '100 px, 2 colonnes (24 d’écart) × 3 rangées (20 d’écart) : 6 par page, au milieu entre la barre et l’étoile des pages.'),
             _pagesRule,
             ('Actions', 'Une tuile : la page de l’agent (Suivi, Chat, Oui / Non, limite…). Les outils : un nouvel agent. Clic droit : le menu de Mikky (thème, position, notifications…).'),
             _modesRule,

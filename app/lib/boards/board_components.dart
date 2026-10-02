@@ -185,8 +185,8 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             ]),
           ),
           BoardFrame(
-            label: 'Pages',
-            note: 'Les pages d’applications : flèches rondes grises (effacées au bout) et points ; la pastille glisse sur le ressort des sélecteurs. Un clic sur un point y va.',
+            label: 'Pages · l’étoile',
+            note: 'Un petit pixel gris par page, une étoile en pixels sur la page montrée. Elle saute d’une page à l’autre sur un petit arc, grandit en vol, s’écrase en se posant et jette quatre étincelles ; la place ne bouge jamais. Clic sur un pixel ; flèches rondes grises, effacées au bout.',
             child: BoardPane(child: Local(0, (page, set) => PagerTry(page: page, set: set))),
           ),
           const BoardFrame(
@@ -225,7 +225,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           const BoardFrame(
             label: 'Choisir l’environnement',
-            note: 'Ex « Choisir le lieu ». Le nom en noir, l’étoile grise des réglages ; aussi large que le plus long nom ; gris au survol, le relief d’une réponse à la pression ; notre menu flottant, étroit. VPS et Cloud dessinés, pas branchés.',
+            note: 'Refait le 2 octobre. Le nom en noir et l’étoile grise des réglages, à plat ; gris au survol ; pressé ou menu ouvert, le relief d’une réponse, puis de nouveau à plat dès que le menu part (avant, un contour restait). Le nouveau nom monte, l’ancien s’en va par le haut. Aussi large que le plus long nom ; contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
             width: 300,
             child: SelectorTry(),
           ),
@@ -319,7 +319,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Dans l’app aujourd’hui',
-            note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien pour l’historique et la pause.',
+            note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien en pause. Ceux qui attendent, travaillent et les derniers terminés ; pas l’historique.',
             child: BoardPane(
               width: 340,
               child: Row(children: [
