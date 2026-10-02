@@ -35,6 +35,26 @@ fn command(raw: &Value) -> Value {
         _ => Value::Null,
     }
 }
+/// A prompt that failed: its end, a limit or an error. codex-acp answers a
+/// subscription limit with « Internal error » and puts the agent's text and
+/// `codexErrorInfo: usageLimitExceeded` in `data` (seen 2026-10-02).
+fn prompt_error(error: &Value) -> Value {
+    let data = &error["data"];
+    let message = data
+        .get("message")
+        .filter(|m| m.as_str().is_some_and(|s| !s.is_empty()))
+        .or(error.get("message"))
+        .cloned()
+        .unwrap_or(json!("Erreur"));
+    let lower = string(&message).to_lowercase();
+    let info = data["codexErrorInfo"].to_string().to_lowercase();
+    let limited = info.contains("usagelimit")
+        || info.contains("usage_limit")
+        || ["rate limit", "usage limit", "limit reached"]
+            .iter()
+            .any(|s| lower.contains(s));
+    json!({"type":"end","reason":if limited {"rateLimited"} else {"error"},"message":message})
+}
 fn stop_reason(v: &Value) -> &str {
     match string(v) {
         "cancelled" => "cancelled",
@@ -174,14 +194,7 @@ impl Reader {
                     return vec![];
                 }
                 if !error.is_null() {
-                    let message = error.get("message").cloned().unwrap_or(json!("Erreur"));
-                    let lower = string(&message).to_lowercase();
-                    let limited = ["rate limit", "usage limit", "limit reached"]
-                        .iter()
-                        .any(|s| lower.contains(s));
-                    return vec![
-                        json!({"type":"end","reason":if limited {"rateLimited"} else {"error"},"message":message}),
-                    ];
+                    return vec![prompt_error(error)];
                 }
                 let mut out = vec![];
                 let usage = &r["usage"];
@@ -287,4 +300,37 @@ fn tool(u: &Value) -> Value {
         Value::Null
     };
     json!({"type":"tool","id":u["toolCallId"],"name":u.get("name").unwrap_or(&u["_meta"]["claudeCode"]["toolName"]),"kind":kind,"title":title,"status":match string(&u["status"]) {"pending"=>json!("pending"),"in_progress"=>json!("running"),"completed"=>json!("completed"),"failed"=>json!("failed"),_=>Value::Null},"command":command(raw),"path":raw.get("file_path").unwrap_or(&u["locations"][0]["path"]),"diff":diff,"output":if output.is_empty() {Value::Null} else {json!(output.join("\n"))}})
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn failed_prompt(error: Value) -> Vec<Value> {
+        let mut r = Reader::default();
+        r.read(&json!({"jsonrpc":"2.0","id":7,"method":"session/prompt","params":{"prompt":[{"type":"text","text":"ok ?"}]}}), true, "t0");
+        r.read(&json!({"jsonrpc":"2.0","id":7,"error":error}), false, "t1")
+    }
+
+    #[test]
+    fn codex_usage_limit_in_data_is_a_limit() {
+        let out = failed_prompt(json!({"code":-32603,"message":"Internal error","data":{
+            "message":"You've hit your usage limit. Try again at 12:51 AM.",
+            "codexErrorInfo":"usageLimitExceeded"}}));
+        assert_eq!(out[0]["reason"], "rateLimited");
+        assert_eq!(out[0]["message"], "You've hit your usage limit. Try again at 12:51 AM.");
+    }
+
+    #[test]
+    fn limit_words_in_the_message_are_a_limit() {
+        let out = failed_prompt(json!({"code":-32603,"message":"Claude AI usage limit reached|1759248000"}));
+        assert_eq!(out[0]["reason"], "rateLimited");
+    }
+
+    #[test]
+    fn another_failure_stays_an_error() {
+        let out = failed_prompt(json!({"code":-32603,"message":"Internal error","data":{"details":"boom"}}));
+        assert_eq!(out[0]["reason"], "error");
+        assert_eq!(out[0]["message"], "Internal error");
+    }
 }
