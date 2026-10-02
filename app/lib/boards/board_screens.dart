@@ -36,7 +36,11 @@ class AgentMock extends StatefulWidget {
     this.paused = false,
     this.enchanted = false,
     this.finished = false,
+    this.framed = true,
   });
+
+  /// In its own window (else in the caller's: the top's island).
+  final bool framed;
 
   /// Stopped by its limit, and already under the spell (« Ensorceler »).
   final bool enchanted;
@@ -116,8 +120,7 @@ class _AgentMockState extends State<AgentMock> {
         Padding(padding: const EdgeInsets.only(top: 12), child: AskCard(log: log, onAnswer: (_) {})),
     ];
     final readOnly = widget.external && working;
-    return SideFrame(
-      child: Stack(children: [
+    final page = Stack(children: [
         // As the app: no title, the thread up to the top, the buttons over it.
         Positioned.fill(
           child: SingleChildScrollView(
@@ -161,8 +164,8 @@ class _AgentMockState extends State<AgentMock> {
               Expanded(child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
             ]),
           ),
-      ]),
-    );
+      ]);
+    return widget.framed ? SideFrame(child: page) : page;
   }
 }
 

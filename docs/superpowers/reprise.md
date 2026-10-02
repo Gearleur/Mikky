@@ -36,7 +36,8 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 - Planche Composants, sections « Accueil · … » : environnement, modes (nos onglets mini), outils sortis du bord, tuiles, pages, Mikky vivant ; variantes de la maquette (choix et flèches en noir) à côté, pour comparer.
 - Nouvelles planches **Accueil Top** (450 × 260, hauteur validée) et **Accueil Right** (344 × 520, 6 applications par page, pages de côté) : une seule vue, `HomeView`, deux dispositions (`HomeLayout`). Modes en noir, flèches grises. Une application = un ou plusieurs agents qui font une tâche.
 - Planche Composants rangée par catégories, les plus utilisés d'abord, avec un sélecteur ; les couleurs de l'interface y sont passées.
-- **Dans l'app** : l'ancien accueil (`HomePage`) est remplacé à droite (`HomeScreen`) et en haut (l'île ouverte par l'utilisateur). Le Mikky de l'île se pose à sa place dans l'accueil. Fenêtre du haut 560 × 360.
+- **Dans l'app** : l'ancien accueil (`HomePage`) est remplacé à droite (`HomeScreen`) et en haut (l'île ouverte par l'utilisateur). Le Mikky de l'île se pose à sa place dans l'accueil.
+- **Ensuite, même jour** : on garde 8 applications en haut. Le haut utilise la même fenêtre que la droite (`SideApp` avec `HomeLayout.top`) : une tuile ouvre la page de l'agent (Suivi / Chat) et l'île grandit à 450 × 380 (`IslandLayout.page`, fenêtre 560 × 480). Le mode **Chat** de l'accueil est l'ancien « Nouvel agent » ; « + » et les outils y mènent, en haut aussi. L'**historique** (bouton en bas à gauche, feuille par-dessus, recherche dans les titres) est branché ; un agent rouvert revient parmi les applications. Planches Accueil Top et Right : sections Chat et page d'un agent.
 - Détails et décisions : `design.md` §7 « Nouvel accueil ».
 
 ## Session précédente (1er octobre)
@@ -59,7 +60,9 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 
 **Périmètre du MVP** : une île Windows fiable pour voir les sessions locales de Claude Code et Codex, lancer et piloter des agents sur Windows ou WSL, répondre aux permissions et retrouver les agents après fermeture de l'écran. Ne pas promettre qu'une session extérieure « tourne » tant que son processus n'a pas été vérifié : le JSONL prouve une activité, pas la vie d'un processus.
 
-**Étape suivante : les applications** (design d'abord, sur les planches). Ce qu'il y a dans une tuile (images), comment valider ses **actions rapides** depuis l'accueil, et tout ce que faisait l'ancien accueil, à refaire (en attendant : page d'un agent à droite, vue d'un agent en haut) :
+**Tout de suite : le menu du clic droit** (les réglages de Mikky) : depuis que c'est notre menu flottant dans l'accueil, il est devenu grand et « trop gluant, bouncy, perturbant » (l'utilisateur, 2026-10-02). À reprendre sur les planches : plus petit, moins de rebond, peut-être une vraie page Réglages.
+
+**Étape suivante : les applications** (design d'abord, sur les planches). Ce qu'il y a dans une tuile (images), comment valider ses **actions rapides** depuis l'accueil, et tout ce que faisait l'ancien accueil, à refaire (en attendant : la page de l'agent, en haut comme à droite) :
 - **Approbation** : Oui / Non / Toujours sous l'agent qui attend, la commande en pilule ; les **questions** (« Pose une question : … », formulaire) ; Y / N au clavier en haut.
 - **Erreur** : « ! » rouge, « Marquer l'erreur comme réglée ».
 - **Limite de l'abonnement** : « Limite atteinte · reprend à 17 h 10 », **« Terminer »** et **« Relance auto »** ; **Ensorcelé** (« se relance à 17 h 11 », étoile violette, « Terminer » pour refuser) ; la **relance automatique pour tous** (réglage, étoile violette après « Agents »).
@@ -68,8 +71,8 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 - **Groupes** En attente / Travaillent / Terminés / Historique / Archives, repliables ; épinglés d'abord ; les 5 terminés les plus récents, le reste en historique.
 - **Menu d'un agent** (étoile grise ou clic droit sur la ligne) : pause / reprendre, arrêter, VS Code, dossier, renommer, épingler, archiver, supprimer (avec la confirmation sur place).
 - **Sessions extérieures** (« session extérieure »), WSL nommé sur la ligne, heures courtes.
-- Le **bouton noir « nouvel agent »** (aujourd'hui : les outils, à droite seulement), l'**étoile des réglages** (aujourd'hui : clic droit), l'état vide.
-- Aussi : le chat de l'accueil ; « Choisir l'environnement » branché sur l'hôte du nouvel agent (Local = Windows, WSL), VPS et Cloud plus tard.
+- L'**étoile des réglages** (aujourd'hui : clic droit), l'état vide. (Le nouvel agent : fait, le Chat de l'accueil.)
+- Aussi : « Choisir l'environnement » branché sur l'hôte du nouvel agent (Local = Windows, WSL), VPS et Cloud plus tard ; la recherche de l'historique par `mikkyd` (dossiers, ce qui a été dit).
 
 **Prochain chantier UI en parallèle du cœur MVP** : sur les planches, poser la navigation et une vraie page Réglages ; comparer ensuite trois accueils (lignes, tuiles, hybride) dans l'île en haut et à droite, puis dessiner Agent/Consommation et Projets. Les lieux Windows/WSL/VPS/Replicas sont d'abord des propriétés et filtres des agents/projets. Détails et références dans `idees.md` §9.
 
