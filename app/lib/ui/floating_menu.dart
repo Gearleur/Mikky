@@ -25,7 +25,8 @@ import 'tokens.dart';
 /// asks again) takes the same panel over, in place (user request,
 /// 2026-10-01: « elle doit arriver beaucoup plus vite », not at the
 /// bottom).
-Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rect? from}) {
+/// [width]: the panel's; narrower for a few short choices.
+Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rect? from, double width = 264}) {
   final done = Completer<int?>();
   if (FloatingMenu._chosen case final panel? when panel.mounted) {
     FloatingMenu._button = null;
@@ -57,6 +58,7 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
         origin: origin,
         entries: entries,
         star: star,
+        width: width,
         done: done,
         onGone: () {
           entry.remove();
@@ -123,7 +125,7 @@ abstract final class FloatingMenu {
 }
 
 class _MorphMenu extends StatefulWidget {
-  const _MorphMenu({required this.bounds, required this.origin, required this.entries, required this.star, required this.done, required this.onGone});
+  const _MorphMenu({required this.bounds, required this.origin, required this.entries, required this.star, required this.width, required this.done, required this.onGone});
 
   final Rect bounds;
   final Rect origin;
@@ -131,6 +133,7 @@ class _MorphMenu extends StatefulWidget {
 
   /// Grows out of a menu button: its star shows at both ends.
   final bool star;
+  final double width;
 
   /// Completed with the choice as soon as it is made.
   final Completer<int?> done;
@@ -286,7 +289,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
           Positioned(
             left: 0,
             top: 0,
-            child: Offstage(child: KeyedSubtree(key: _measure, child: _PanelBox(child: _MenuList(entries: _entries)))),
+            child: Offstage(child: KeyedSubtree(key: _measure, child: _PanelBox(width: widget.width, child: _MenuList(entries: _entries)))),
           ),
       ]),
     );

@@ -13,6 +13,7 @@ import '../agents/enchant.dart';
 import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
+import '../home/home_view.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
 import '../ui/floating_menu.dart';
@@ -27,8 +28,12 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      IslandEdge.top => const Size(560, 320),
-      IslandEdge.right => const Size(400, 700),
+      // The home at the top is 450 × 260, an agent's page 450 × 380
+      // (2026-10-02): room for its shadow.
+      IslandEdge.top => const Size(560, 480),
+      // At the right, up to 344 × 520 (an agent's page): room for its
+      // shadow on the left.
+      IslandEdge.right => const Size(420, 700),
     };
 
 /// The shader box goes this far past the screen edge: only the corners
@@ -92,24 +97,38 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   AgentSource get _source => _demo ? _demoSource : widget.agents.source;
   StreamSubscription<void>? _agentsSub;
 
-  /// The small window at the right edge. Kept while the island is closed
-  /// (not drawn, not ticking), so its page and drafts stay.
+  /// The island's window — the home and its pages — at the right and,
+  /// since 2026-10-02, at the top. Kept while the island is closed (not
+  /// drawn, not ticking), so its page and drafts stay.
   final _sideKey = GlobalKey<SideAppState>();
-  late final SideApp _side = SideApp(
+  late final _sideHost = SideHost(
+    service: widget.agents,
+    answer: _answerId,
+    pickFolder: _overlay.pickFolder,
+    showMenu: _menu,
+    islandMenu: _showMenu,
+  );
+  Widget get _side => SideApp(
     key: _sideKey,
-    host: SideHost(
-      service: widget.agents,
-      answer: _answerId,
-      pickFolder: _overlay.pickFolder,
-      showMenu: _menu,
-      islandMenu: _showMenu,
-    ),
+    host: _sideHost,
+    layout: _edge == IslandEdge.top ? HomeLayout.top : HomeLayout.right,
     onHome: (home) {
       _sideHome = home;
-      _wake();
+      _apply();
     },
   );
   bool _sideHome = true;
+
+  /// At the top: the focus view for an agent that needs the user (Oui /
+  /// Non, as before). Else, both edges: the home, taller under a page (an
+  /// agent's Suivi / Chat; at the right, the agent that asks opens there).
+  IslandLayout get _layoutWanted => switch (_edge) {
+    IslandEdge.top when _snap.openReason == OpenReason.alert => IslandLayout.focus,
+    _ => _sideHome ? IslandLayout.list : IslandLayout.page,
+  };
+
+  /// The window is what the open island shows at the top (not an alert).
+  bool get _topHomeShown => _edge == IslandEdge.top && _motion.layout != IslandLayout.focus;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
 
@@ -224,6 +243,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     };
   }
 
+  /// The island's corners: continuous while closed (the pill), round once
+  /// open, like the boards (user, 2026-10-02: « les bords des planches
+  /// sont mieux »), sliding from one to the other as it opens.
+  double get _corners => 4 - 2 * _motion.openness.clamp(0.0, 1.0);
+
   Rect get _shapeRect {
     final r = _islandRect;
     return switch (_edge) {
@@ -294,9 +318,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     // The small window closes: its menus with it.
     if (prev.shape == IslandShape.open && s.shape != IslandShape.open) FloatingMenu.dismissAll();
-    if (s.shape != _motion.shape) {
-      _motion.setShape(s.shape);
-      if (s.shape == IslandShape.open) _mikky.blink();
+    final layout = _layoutWanted;
+    final relaid = layout != _motion.layout;
+    if (s.shape != _motion.shape || relaid) {
+      final opening = s.shape != _motion.shape && s.shape == IslandShape.open;
+      _motion.setShape(s.shape, layout: layout);
+      if (opening) _mikky.blink();
+      if (relaid) FloatingMenu.dismissAll();
     }
     // Mikky stands for the agent in focus (rule 10).
     _mikky.setState(mikkyStateFor(s.focus?.status));
@@ -311,7 +339,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (s.bubble && !prev.bubble) _mikky.twitch();
     _bubble.target = s.bubble ? 1 : 0;
     _notify(s);
-    final changed = s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
+    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
     if (changed || !_settled) {
       _wake();
     } else {
@@ -414,7 +442,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (_snap.shape != IslandShape.open) _machine.click(_clock.now);
     _overlay.activate();
     _apply();
-    if (id != null && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
+    if (id != null) _sideKey.currentState?.openAgent(id);
   }
 
   /// Closing hides the screen, never answers or cancels a pending permission.
@@ -424,8 +452,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _apply();
   }
 
-  /// The small window is open: it is an app, clicks in it do not close it.
-  bool get _sideOpen => _edge == IslandEdge.right && _snap.shape == IslandShape.open;
+  /// The small window (or the top home) is open: it is an app, clicks in
+  /// it do not close it.
+  bool get _sideOpen => _snap.shape == IslandShape.open && (_edge == IslandEdge.right || _topHomeShown);
 
   /// Any press on the open small window: activity (it stays open), and the
   /// keyboard for its field.
@@ -500,6 +529,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (typing) {
         // First Escape leaves the field, the second closes.
         _keys.requestFocus();
+      } else if (_sideOpen && !_sideHome) {
+        // A page: back to the home.
+        _sideKey.currentState?.back();
       } else {
         _machine.close(_clock.now);
       }
@@ -527,7 +559,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// closed island, the notification area).
   Future<int?> _menu(List<MenuEntry> entries) {
     final side = _sideArea.currentContext;
-    if (side != null && _motion.openness > .9) return showFloatingMenu(side, entries);
+    final inWindow = _edge == IslandEdge.right || _topHomeShown;
+    if (side != null && inWindow && _motion.openness > .9) return showFloatingMenu(side, entries);
     return _overlay.showMenu(entries);
   }
 
@@ -716,7 +749,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
     _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
-    final mikkyTarget = _edge == IslandEdge.right && _motion.openness > .3 && !_sideHome ? 0.0 : 1.0;
+    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
@@ -843,7 +876,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// The small window, cut to the island's current shape while it grows.
   /// [shown]: drawn and ticking; otherwise kept, not drawn, not ticking
   /// (0 % CPU when the island is hidden).
-  Widget _sideWindow(MikkyTheme theme, Rect rect, double opacity) {
+  Widget _sideWindow(MikkyTheme theme, Rect rect, double opacity, Widget content) {
     final shown = opacity > 0;
     final ui = theme.isLight ? MikkyUi.light : MikkyUi.dark;
     final open = _motion.metrics.open(_motion.layout);
@@ -853,8 +886,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         offstage: !shown,
         child: TickerMode(
           enabled: shown,
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(_motion.cornerRadius),
+          // Cut to the island's own shape (the shader's continuous
+          // corners, flat against the screen's edge): a page over it — the
+          // history's dark — fills the island to its corners (2026-10-02).
+          child: ClipPath(
+            clipper: IslandClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius, _corners),
             child: OverflowBox(
               minWidth: open.width,
               maxWidth: open.width,
@@ -866,7 +902,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   offset: Offset(0, (1 - opacity) * 6),
                   child: MikkyUiTheme(
                     ui: ui,
-                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: _side)),
+                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
                   ),
                 ),
               ),
@@ -881,7 +917,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     if (_motion.isGone && _bubble.isAtRest() && _bubble.value == 0) {
       // Nothing to draw; the small window stays alive, asleep.
-      return _edge == IslandEdge.right ? Stack(children: [_sideWindow(_theme, _islandRect, 0)]) : const SizedBox.expand();
+      return Stack(children: [_sideWindow(_theme, _islandRect, 0, _side)]);
     }
     final theme = _theme;
     final rect = _islandRect;
@@ -913,6 +949,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                     theme: theme,
                     devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
                     side: side,
+                    corners: _corners,
                   ),
                 ),
               ),
@@ -929,7 +966,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                     _machine.click(_clock.now);
                     _apply();
                     _overlay.activate();
-                    if (id != null && !_demo && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
+                    if (id != null && !_demo) _sideKey.currentState?.openAgent(id);
                   },
                   child: Opacity(
                     opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
@@ -938,8 +975,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                 ),
               ),
             ..._compactContent(theme, rect),
-            if (_edge == IslandEdge.right) _sideWindow(theme, rect, openOpacity),
-            if (openOpacity > 0 && _edge == IslandEdge.top)
+            _sideWindow(theme, rect, _edge == IslandEdge.right || _topHomeShown ? openOpacity : 0, _side),
+            if (openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
               Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
             ?countdown,
             if (_mikkyOpacity > 0)
@@ -967,4 +1004,45 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       ),
     );
   }
+}
+
+/// The island's shape in a child of it: [shape] (in the child's
+/// coordinates, past the screen's edge) with the shader's corners — a
+/// curve of radius [radius] and power [power] (2: a circle's).
+class IslandClip extends CustomClipper<Path> {
+  const IslandClip(this.shape, this.radius, [this.power = 2]);
+
+  final Rect shape;
+  final double radius, power;
+
+  @override
+  Path getClip(Size size) {
+    final r = math.max(0.0, math.min(radius, shape.shortestSide / 2));
+    if (r == 0) return Path()..addRect(shape);
+    final path = Path();
+    // Each corner from its center: (cos t, sin t) raised to the power
+    // 2 / n lies on |x|ⁿ + |y|ⁿ = 1.
+    const steps = 12;
+    void corner(Offset c, double from) {
+      for (var i = 0; i <= steps; i++) {
+        final t = from + math.pi / 2 * i / steps;
+        final x = math.cos(t), y = math.sin(t);
+        final p = c + Offset(x.sign * math.pow(x.abs(), 2 / power), y.sign * math.pow(y.abs(), 2 / power)) * r;
+        if (i == 0 && from == math.pi) {
+          path.moveTo(p.dx, p.dy);
+        } else {
+          path.lineTo(p.dx, p.dy);
+        }
+      }
+    }
+
+    corner(Offset(shape.left + r, shape.top + r), math.pi);
+    corner(Offset(shape.right - r, shape.top + r), 1.5 * math.pi);
+    corner(Offset(shape.right - r, shape.bottom - r), 0);
+    corner(Offset(shape.left + r, shape.bottom - r), .5 * math.pi);
+    return path..close();
+  }
+
+  @override
+  bool shouldReclip(IslandClip old) => old.shape != shape || old.radius != radius || old.power != power;
 }

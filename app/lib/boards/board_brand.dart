@@ -296,49 +296,6 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
       ],
     ),
     BoardSection(
-      title: 'Couleurs de l’interface',
-      note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
-      frames: [
-        BoardFrame(
-          label: 'Fonds',
-          width: 640,
-          child: _grid([
-            _Swatch('board', ui.board, use: 'fond du bureau'),
-            _Swatch('island', ui.island, use: 'la fenêtre'),
-            _Swatch('well', ui.well, use: 'creux, bulles'),
-            _Swatch('track', ui.track, use: 'pistes, code'),
-            _Swatch('thumb', ui.thumb, use: 'curseur, Oui'),
-            _Swatch('hover', ui.hover, use: 'survol'),
-            _Swatch('line', ui.line, use: 'traits'),
-            _Swatch('ctlA → ctlB', ui.ctlA, use: 'boutons en relief'),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Encre et texte',
-          width: 480,
-          child: _grid([
-            _Swatch('ink', ui.ink, use: 'bouton principal'),
-            _Swatch('text', ui.text, use: 'titres, texte'),
-            _Swatch('text2', ui.text2, use: 'second plan'),
-            _Swatch('text3', ui.text3, use: 'légendes'),
-          ], width: 480),
-        ),
-        BoardFrame(
-          label: 'États',
-          width: 640,
-          child: _grid([
-            _Swatch('blue', ui.blue, use: 'travaille'),
-            _Swatch('purple', ui.purple, use: 'Ensorcelé (la magie)'),
-            _Swatch('amber', ui.amber, use: 'attend, commande'),
-            _Swatch('green', ui.green, use: 'terminé, crée'),
-            _Swatch('red', ui.red, use: 'erreur, supprime'),
-            _Swatch('yellow', ui.yellow, use: 'limité, déplace'),
-            _Swatch('grey', ui.grey, use: 'en pause, historique'),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
       title: 'Pixels',
       note: 'La direction : Mikky, le chat magique, avec de l’informatique et des pixels. Chaque état est un petit dessin de pixels, à son rythme : le feu d’artifice (travaille 1,6 s, limite 2,4 s, terminé figé) et « ! » pour ce qui demande ton attention (attend 1,2 s, erreur 2,4 s) ; rien en pause. Le violet ne sert qu’à « Ensorcelé ».',
       frames: [
@@ -549,3 +506,48 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
 
 /// « 12,5 », « 14 ».
 String _px(double v) => (v == v.roundToDouble() ? v.toStringAsFixed(0) : '$v').replaceAll('.', ',');
+
+/// The window's colors, by role (shown on the Composants board, « Couleurs »).
+BoardSection interfaceColorsSection(MikkyUi ui) => BoardSection(
+      title: 'Couleurs de l’interface',
+      note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
+      frames: [
+        BoardFrame(
+          label: 'Fonds',
+          width: 640,
+          child: _grid([
+            _Swatch('board', ui.board, use: 'fond du bureau'),
+            _Swatch('island', ui.island, use: 'la fenêtre'),
+            _Swatch('well', ui.well, use: 'creux, bulles'),
+            _Swatch('track', ui.track, use: 'pistes, code'),
+            _Swatch('thumb', ui.thumb, use: 'curseur, Oui'),
+            _Swatch('hover', ui.hover, use: 'survol'),
+            _Swatch('line', ui.line, use: 'traits'),
+            _Swatch('ctlA → ctlB', ui.ctlA, use: 'boutons en relief'),
+          ]),
+        ),
+        BoardFrame(
+          label: 'Encre et texte',
+          width: 480,
+          child: _grid([
+            _Swatch('ink', ui.ink, use: 'bouton principal'),
+            _Swatch('text', ui.text, use: 'titres, texte'),
+            _Swatch('text2', ui.text2, use: 'second plan'),
+            _Swatch('text3', ui.text3, use: 'légendes'),
+          ], width: 480),
+        ),
+        BoardFrame(
+          label: 'États',
+          width: 640,
+          child: _grid([
+            _Swatch('blue', ui.blue, use: 'travaille'),
+            _Swatch('purple', ui.purple, use: 'Ensorcelé (la magie)'),
+            _Swatch('amber', ui.amber, use: 'attend, commande'),
+            _Swatch('green', ui.green, use: 'terminé, crée'),
+            _Swatch('red', ui.red, use: 'erreur, supprime'),
+            _Swatch('yellow', ui.yellow, use: 'limité, déplace'),
+            _Swatch('grey', ui.grey, use: 'en pause, historique'),
+          ]),
+        ),
+      ],
+    );

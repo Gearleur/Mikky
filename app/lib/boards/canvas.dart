@@ -15,7 +15,7 @@ class BoardSpec {
   final String note;
 
   /// Built in the theme of the band that shows it.
-  final List<BoardSection> Function(BuildContext context) sections;
+  final List<Widget> Function(BuildContext context) sections;
 }
 
 /// A row of frames on a board, with its title.

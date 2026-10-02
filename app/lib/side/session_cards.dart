@@ -87,6 +87,7 @@ class _LimitBlockState extends State<LimitBlock> {
     final h = widget.hooks;
     final resets = widget.log.limitResetsAt;
     return LimitCard(
+      seen: widget.log.lastEventAt,
       resetsAt: resets,
       message: widget.message,
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
@@ -156,7 +157,7 @@ class LimitedAgentCard extends StatelessWidget {
         mark: mark,
         subtitle: spell
             ? (at == null ? 'Ensorcelé · relancé' : 'Ensorcelé · se relance à ${hourText(at)}')
-            : limitLine(resets),
+            : limitLine(resets, seen: log.lastEventAt),
         onTap: onTap,
         onMenu: onMenu,
         actions: LimitActions(onFinish: onFinish, onSpell: spell ? null : () => spells.enchant(id, resets, send)),
@@ -212,7 +213,10 @@ class AutoRelaunchMark extends StatelessWidget {
 /// (2026-10-01): one line, like under the spell, « Ensorcelé · se relance
 /// à 17 h 11 » with the violet star, then the flat answer bar.
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.message, this.relaunchAt, this.relaunched = false, this.onFinish, this.onSpell});
+  const LimitCard({super.key, this.resetsAt, this.seen, this.message, this.relaunchAt, this.relaunched = false, this.onFinish, this.onSpell});
+
+  /// When it stopped: a reset another day says its day.
+  final DateTime? seen;
 
   final DateTime? resetsAt;
   final String? message;
@@ -245,7 +249,7 @@ class LimitCard extends StatelessWidget {
               TextSpan(
                 text: spell
                     ? (relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}')
-                    : (resetsAt == null ? ' · ${message ?? 'réessaie plus tard'}' : ' · reprend à ${hourText(resetsAt!)}'),
+                    : (resetsAt == null ? ' · ${message ?? 'réessaie plus tard'}' : ' · ${limitWhen(resetsAt!, seen: seen)}'),
                 style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
               ),
             ]),

@@ -6,6 +6,7 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
+import '../home/new_task.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
@@ -20,15 +21,22 @@ import 'side_app.dart';
 /// The new agent (UX `ux-a.html`, « Nouvel agent »): an empty chat, the
 /// field, and half inside it the folder and the model. The model's menu
 /// also holds where it runs (Windows / WSL, from the folder) and the
-/// permissions (Demander by default, or Auto).
+/// permissions (Demander by default, or Auto). [inHome]: the home's Chat
+/// (2026-10-02), without its head; a sign-in then goes through [login].
 class NewAgentPage extends StatefulWidget {
-  const NewAgentPage({super.key, required this.host, required this.back, required this.launched});
+  const NewAgentPage({super.key, required this.host, required this.back, required this.launched, this.inHome = false, this.login});
 
   final SideHost host;
   final VoidCallback back;
 
   /// The agent started: its page takes this one's place.
   final ValueChanged<String> launched;
+
+  final bool inHome;
+
+  /// In the home: the sign-in to [provider] on [target], as a page of its
+  /// own; [done] once signed in.
+  final void Function(AgentHost target, AgentProvider provider, VoidCallback done)? login;
 
   @override
   State<NewAgentPage> createState() => _NewAgentPageState();
@@ -165,10 +173,12 @@ class _NewAgentPageState extends State<NewAgentPage> {
       final host = _hostChosen ? _host : hostOfFolder(_folder!);
       final auth = _service.auth[(host, _provider)] ?? await _service.checkAuth(host, _provider);
       if (!auth.installed || !auth.loggedIn) {
+        final login = widget.login;
         setState(() {
-          _pending = text;
+          if (login == null) _pending = text;
           _starting = false;
         });
+        login?.call(host, _provider, () => _send(text));
         return;
       }
       final id = await _service.launch(LaunchRequest(
@@ -180,6 +190,8 @@ class _NewAgentPageState extends State<NewAgentPage> {
         model: _model,
       ));
       widget.launched(id);
+      // In the home, the Chat stays: ready for the next one.
+      if (mounted) setState(() => _starting = false);
     } catch (e) {
       setState(() {
         _error = '$e';
@@ -206,6 +218,23 @@ class _NewAgentPageState extends State<NewAgentPage> {
       );
     }
     final installing = _service.target(_hostChosen ? _host : hostOfFolder(_folder ?? '')).state == TargetState.installing;
+    final composer = Composer(
+      placeholder: 'Que doit faire l’agent ?',
+      autofocus: true,
+      onSend: _send,
+      options: Row(mainAxisSize: MainAxisSize.min, children: [
+        ComposerChip(_folder == null ? 'Dossier' : folderName(_folder), icon: 'folder', onTap: _folderMenu),
+        const SizedBox(width: 6),
+        ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
+      ]),
+    );
+    if (widget.inHome) {
+      return NewTaskView(
+        composer: composer,
+        status: installing ? 'Mikky installe ses adaptateurs…' : (_starting ? 'Démarrage…' : null),
+        error: _error,
+      );
+    }
     return Stack(children: [
       SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
       Positioned.fill(
@@ -230,21 +259,7 @@ class _NewAgentPageState extends State<NewAgentPage> {
             ),
         ]),
       ),
-      Positioned(
-        left: 20,
-        right: 20,
-        bottom: 12,
-        child: Composer(
-          placeholder: 'Que doit faire l’agent ?',
-          autofocus: true,
-          onSend: _send,
-          options: Row(mainAxisSize: MainAxisSize.min, children: [
-            ComposerChip(_folder == null ? 'Dossier' : folderName(_folder), icon: 'folder', onTap: _folderMenu),
-            const SizedBox(width: 6),
-            ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
-          ]),
-        ),
-      ),
+      Positioned(left: 20, right: 20, bottom: 12, child: composer),
     ]);
   }
 }
