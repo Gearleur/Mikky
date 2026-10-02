@@ -14,7 +14,6 @@ import '../ui/floating_menu.dart';
 import '../ui/metro.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
-import '../ui/sheet.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
 import '../ui/status.dart';
@@ -364,12 +363,10 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
     ('Feuilles', [
       const BoardSection(
         title: 'Feuille par-dessus · l’historique (essai)',
-        note: 'Une page par-dessus l’accueil : le bouton Historique, en bas à gauche, l’ouvre. L’accueil derrière s’assombrit et se floute un peu ; la feuille, presque aussi grande que la fenêtre, monte d’en bas sur un ressort doux. Dedans, l’historique comme avant : les lignes, la petite étoile grise (son menu) ; un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications. Un clic dans le sombre, Échap ou × la referme. Deux fonds à comparer ; pas encore dans l’accueil.',
+        note: 'Une page par-dessus l’accueil : le bouton Historique, en bas à gauche, l’ouvre. L’accueil derrière s’assombrit et se floute un peu ; la feuille monte d’en bas sur un ressort doux, sur les deux tiers de la fenêtre (la barre de l’accueil reste visible au-dessus), un en-tête léger : le titre, le nombre, un petit ×. Dedans, l’historique comme avant : les lignes, la petite étoile grise ; un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications. Un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
         frames: [
-          BoardFrame(label: 'À essayer · fond assombri', note: 'Le bouton en bas à gauche.', width: 344, child: HistoryTry()),
-          BoardFrame(label: 'Ouverte · fond assombri', width: 344, child: HistoryOpen()),
-          BoardFrame(label: 'À essayer · fond avec points', note: 'Le même, une grille de petits pixels clairs sur le sombre.', width: 344, child: HistoryTry(backdrop: SheetBackdrop.dots)),
-          BoardFrame(label: 'Ouverte · fond avec points', width: 344, child: HistoryOpen(backdrop: SheetBackdrop.dots)),
+          BoardFrame(label: 'À essayer', note: 'Le bouton en bas à gauche.', width: 344, child: HistoryTry()),
+          BoardFrame(label: 'Ouverte', width: 344, child: HistoryOpen()),
         ],
       ),
     ]),

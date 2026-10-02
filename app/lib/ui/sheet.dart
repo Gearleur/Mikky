@@ -10,29 +10,15 @@ import 'motion.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
-/// What is behind an open sheet (trials, 2026-10-02).
-enum SheetBackdrop {
-  /// The window darkens and blurs a little.
-  dim,
-
-  /// The same, with a grid of small light pixels (after the user's
-  /// picture of a console's menu).
-  dots,
-}
-
 /// A page over the window (2026-10-02, the history first): the window
-/// behind darkens, and a panel nearly as big as it rises from below on a
-/// soft spring, its title and a round × at the top. A click on the dark,
-/// Échap or × closes it: it sinks back, quicker. [within]: the window,
+/// behind darkens and blurs a little, and a panel rises from below on a
+/// soft spring, about two thirds of the window high (« trop grande »:
+/// the home's bar stays in sight above it), its title and a small round ×
+/// at the top. A click on the dark, Échap or × closes it: it sinks back,
+/// quicker. [within]: the window,
 /// below its own Overlay (the home has one), so the sheet stays inside it
 /// and its rounded corners. Done when it is closed.
-Future<void> showSheet(
-  BuildContext within, {
-  required String title,
-  String? caption,
-  required WidgetBuilder builder,
-  SheetBackdrop backdrop = SheetBackdrop.dim,
-}) {
+Future<void> showSheet(BuildContext within, {required String title, String? caption, required WidgetBuilder builder}) {
   final overlay = Overlay.maybeOf(within);
   final area = within.findRenderObject() as RenderBox?;
   final overlayBox = overlay?.context.findRenderObject() as RenderBox?;
@@ -49,7 +35,6 @@ Future<void> showSheet(
         title: title,
         caption: caption,
         builder: builder,
-        backdrop: backdrop,
         onGone: () {
           entry.remove();
           entry.dispose();
@@ -72,13 +57,12 @@ const _openSpring = SpringDescription(mass: 1, stiffness: 260, damping: 25);
 const _closeSpring = SpringDescription(mass: 1, stiffness: 420, damping: 42);
 
 class _SheetLayer extends StatefulWidget {
-  const _SheetLayer({required this.bounds, required this.title, required this.caption, required this.builder, required this.backdrop, required this.onGone});
+  const _SheetLayer({required this.bounds, required this.title, required this.caption, required this.builder, required this.onGone});
 
   final Rect bounds;
   final String title;
   final String? caption;
   final WidgetBuilder builder;
-  final SheetBackdrop backdrop;
   final VoidCallback onGone;
 
   @override
@@ -136,11 +120,15 @@ class _SheetLayerState extends State<_SheetLayer> with SingleTickerProviderState
         },
         child: SheetScene(
           t: t,
-          backdrop: widget.backdrop,
           onDismiss: _close,
           panel: IgnorePointer(
             ignoring: _closing,
-            child: SheetPanel(title: widget.title, caption: widget.caption, onClose: _close, child: Builder(builder: widget.builder)),
+            child: SheetPanel(
+              title: widget.title,
+              caption: widget.caption,
+              onClose: _close,
+              child: Builder(builder: widget.builder),
+            ),
           ),
         ),
       ),
@@ -151,15 +139,17 @@ class _SheetLayerState extends State<_SheetLayer> with SingleTickerProviderState
 /// The sheet at [t] (0 gone, 1 open), over a window: the darkened
 /// window, and the panel. Also used still, on the boards.
 class SheetScene extends StatelessWidget {
-  const SheetScene({super.key, required this.t, required this.panel, this.backdrop = SheetBackdrop.dim, this.onDismiss});
+  const SheetScene({super.key, required this.t, required this.panel, this.onDismiss});
 
   final double t;
   final Widget panel;
-  final SheetBackdrop backdrop;
   final VoidCallback? onDismiss;
 
-  /// The panel's margins from the window's edges: nearly all of it.
-  static const inset = EdgeInsets.fromLTRB(10, 22, 10, 10);
+  /// The panel's margins from the window's sides and bottom.
+  static const side = 14.0;
+
+  /// Its top: a third of the window down, at least below the home's bar.
+  static double topOf(double height) => (height * .34).clamp(68.0, double.infinity).roundToDouble();
 
   @override
   Widget build(BuildContext context) {
@@ -177,10 +167,7 @@ class SheetScene extends StatelessWidget {
               child: BackdropFilter(
                 filter: dui.ImageFilter.blur(sigmaX: 1.6 * shade, sigmaY: 1.6 * shade),
                 child: CustomPaint(
-                  painter: _Backdrop(
-                    dim: const Color(0xFF000000).withValues(alpha: dim),
-                    dots: backdrop == SheetBackdrop.dots ? const Color(0xFFFFFFFF).withValues(alpha: (ui.isLight ? .34 : .14) * shade) : null,
-                  ),
+                  painter: _Backdrop(const Color(0xFF000000).withValues(alpha: dim)),
                   child: const SizedBox.expand(),
                 ),
               ),
@@ -189,13 +176,15 @@ class SheetScene extends StatelessWidget {
         ),
         // The panel rises from below, a touch small at first.
         Positioned.fill(
-          child: Padding(
-            padding: inset,
-            child: Opacity(
-              opacity: (t * 1.8).clamp(0.0, 1.0),
-              child: Transform.translate(
-                offset: Offset(0, (1 - t) * 48),
-                child: Transform.scale(scale: .96 + .04 * t.clamp(0.0, 1.04), alignment: Alignment.bottomCenter, child: panel),
+          child: LayoutBuilder(
+            builder: (context, box) => Padding(
+              padding: EdgeInsets.fromLTRB(side, topOf(box.maxHeight), side, side),
+              child: Opacity(
+                opacity: (t * 1.8).clamp(0.0, 1.0),
+                child: Transform.translate(
+                  offset: Offset(0, (1 - t) * 48),
+                  child: Transform.scale(scale: .96 + .04 * t.clamp(0.0, 1.04), alignment: Alignment.bottomCenter, child: panel),
+                ),
               ),
             ),
           ),
@@ -206,33 +195,20 @@ class SheetScene extends StatelessWidget {
 }
 
 class _Backdrop extends CustomPainter {
-  _Backdrop({required this.dim, this.dots});
+  _Backdrop(this.dim);
 
   final Color dim;
-  final Color? dots;
-
-  /// Pixels this far apart, this big.
-  static const _step = 9.0, _pixel = 1.6;
 
   @override
-  void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = dim);
-    final c = dots;
-    if (c == null || c.a == 0) return;
-    final paint = Paint()..color = c;
-    for (var y = _step / 2; y < size.height; y += _step) {
-      for (var x = _step / 2; x < size.width; x += _step) {
-        canvas.drawRect(Rect.fromCenter(center: Offset(x, y), width: _pixel, height: _pixel), paint);
-      }
-    }
-  }
+  void paint(Canvas canvas, Size size) => canvas.drawRect(Offset.zero & size, Paint()..color = dim);
 
   @override
-  bool shouldRepaint(_Backdrop old) => old.dim != dim || old.dots != dots;
+  bool shouldRepaint(_Backdrop old) => old.dim != dim;
 }
 
-/// The sheet's panel: the window's color, the floating shadow, a title, a
-/// line under it, × at the top right, then [child] (it scrolls by itself).
+/// The sheet's panel: the window's color, the floating shadow, a light
+/// head (the title, a grey count, a small ×), then [child] (it scrolls by
+/// itself).
 class SheetPanel extends StatelessWidget {
   const SheetPanel({super.key, required this.title, this.caption, this.onClose, required this.child});
 
@@ -256,21 +232,26 @@ class SheetPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 14, 12, 10),
+              padding: const EdgeInsets.fromLTRB(18, 12, 10, 2),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Text(title, style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, tracking: -.01, height: 1.2)),
+                  Text(
+                    title,
+                    style: uiText(TextSize.lead, weight: FontWeight.w600, color: ui.text, tracking: -.01, height: 1.2),
+                  ),
                   if (caption != null) ...[
                     const SizedBox(width: 8),
-                    Text(caption!, style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true, height: 1.2)),
+                    Text(
+                      caption!,
+                      style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true, height: 1.2),
+                    ),
                   ],
                   const Spacer(),
-                  RoundButton('x', size: 30, tooltip: 'Fermer', onPressed: onClose),
+                  RoundButton('x', size: 26, ghost: true, tooltip: 'Fermer', onPressed: onClose),
                 ],
               ),
             ),
-            Container(height: 1, color: ui.line),
             Expanded(child: child),
           ],
         ),

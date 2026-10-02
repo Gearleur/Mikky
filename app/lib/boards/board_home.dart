@@ -239,9 +239,7 @@ void _noId(String _) {}
 /// The right home with its history button: the sheet opens over it, for
 /// real (trial, 2026-10-02).
 class HistoryTry extends StatelessWidget {
-  const HistoryTry({super.key, this.backdrop = SheetBackdrop.dim});
-
-  final SheetBackdrop backdrop;
+  const HistoryTry({super.key});
 
   @override
   Widget build(BuildContext context) => HomeFrame(
@@ -250,16 +248,14 @@ class HistoryTry extends StatelessWidget {
       layout: HomeLayout.right,
       apps: sampleApps,
       onNew: () {},
-      onHistory: (within) => showSheet(within, title: 'Historique', caption: '${sampleHistory.length}', backdrop: backdrop, builder: (_) => _historyList()),
+      onHistory: (within) => showSheet(within, title: 'Historique', caption: '${sampleHistory.length}', builder: (_) => _historyList()),
     ),
   );
 }
 
 /// The same, the sheet open and still (for the pictures).
 class HistoryOpen extends StatelessWidget {
-  const HistoryOpen({super.key, this.backdrop = SheetBackdrop.dim});
-
-  final SheetBackdrop backdrop;
+  const HistoryOpen({super.key});
 
   @override
   Widget build(BuildContext context) => HomeFrame(
@@ -269,7 +265,6 @@ class HistoryOpen extends StatelessWidget {
       Positioned.fill(
         child: SheetScene(
           t: 1,
-          backdrop: backdrop,
           panel: SheetPanel(title: 'Historique', caption: '${sampleHistory.length}', onClose: () {}, child: _historyList()),
         ),
       ),
