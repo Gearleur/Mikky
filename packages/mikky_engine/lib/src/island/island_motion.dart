@@ -4,7 +4,10 @@ import '../anim/spring.dart';
 
 enum IslandShape { hidden, compact, open }
 
-enum IslandLayout { focus, list }
+/// What the open island shows: [focus], one agent and its answers (an
+/// alert at the top); [list], the home; [page], a page over the home (an
+/// agent's Suivi / Chat), a little taller at the top (2026-10-02).
+enum IslandLayout { focus, list, page }
 
 /// The screen edge the island is glued to.
 enum IslandEdge {
@@ -25,36 +28,48 @@ class IslandMetrics {
     required this.compact,
     required this.focus,
     required this.list,
+    required this.page,
     required this.hidden,
     required this.compactRadius,
     required this.openRadius,
     required this.mikkyCompact,
     required this.mikkyOpen,
+    required this.mikkyList,
   });
 
-  /// Spec §3: closed 186 × 36, open Focus 430 × 178, List 450 × 180.
+  /// Spec §3: closed 186 × 36, open Focus 430 × 178. List: the home,
+  /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
+  /// validated by the user). Page: an agent's Suivi / Chat, 450 × 380 —
+  /// the home grows a little for the conversation (user, 2026-10-02).
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
     focus: (width: 430, height: 178),
-    list: (width: 450, height: 180),
+    list: (width: 450, height: 260),
+    page: (width: 450, height: 380),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
+    // Top left of the home, where its 72 px Mikky is drawn.
+    mikkyList: (x: 40, y: 35, radius: 21),
   );
 
-  /// A small tab when closed, a phone-shaped card when open: the small
-  /// window of `ux-a.html`, Mikky in small at the top left of its head.
+  /// A small tab when closed. Open, the home: the top's, upright (user,
+  /// 2026-10-02: « une version verticale de la version haut »), 290 × 408;
+  /// an agent's page grows to the phone-shaped 344 × 520. Mikky at the
+  /// top left.
   static const right = IslandMetrics._(
     compact: (width: 74, height: 82),
     focus: (width: 344, height: 520),
-    list: (width: 344, height: 520),
+    list: (width: 290, height: 408),
+    page: (width: 344, height: 520),
     hidden: (width: 0, height: 80),
     compactRadius: 22,
-    openRadius: 38,
+    openRadius: 30,
     mikkyCompact: (x: 37, y: 32, radius: 15),
-    mikkyOpen: (x: 30, y: 39, radius: 16),
+    mikkyOpen: (x: 40, y: 35, radius: 21),
+    mikkyList: (x: 40, y: 35, radius: 21),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
@@ -62,11 +77,21 @@ class IslandMetrics {
         IslandEdge.right => right,
       };
 
-  final IslandSize compact, focus, list, hidden;
+  final IslandSize compact, focus, list, page, hidden;
   final double compactRadius, openRadius;
   final MikkySpot mikkyCompact, mikkyOpen;
 
-  IslandSize open(IslandLayout layout) => layout == IslandLayout.focus ? focus : list;
+  /// Mikky's place when open on the home ([IslandLayout.list]), and on a
+  /// page over it (hidden there, behind the page's back button).
+  final MikkySpot mikkyList;
+
+  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.focus ? mikkyOpen : mikkyList;
+
+  IslandSize open(IslandLayout layout) => switch (layout) {
+        IslandLayout.focus => focus,
+        IslandLayout.list => list,
+        IslandLayout.page => page,
+      };
 }
 
 /// The island's size and the place of Mikky in it, driven by springs
@@ -173,15 +198,17 @@ class IslandMotion {
   double get openContentOpacity => ((openness - .5) * 2.4).clamp(0.0, 1.0);
 
   double get mikkyRadius =>
-      _lerp(metrics.mikkyCompact.radius, metrics.mikkyOpen.radius, openness.clamp(0.0, 1.05));
+      _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
+
+  MikkySpot get _open => metrics.mikkyAt(_layout);
 
   /// Mikky's center, from the island's left edge.
-  double get mikkyX => _lerp(metrics.mikkyCompact.x, metrics.mikkyOpen.x, openness.clamp(0.0, 1.0));
+  double get mikkyX => _lerp(metrics.mikkyCompact.x, _open.x, openness.clamp(0.0, 1.0));
 
   /// Mikky's center, from the island's top edge. At the top of the screen,
   /// Mikky slides up with the island while it hides.
   double get mikkyY =>
-      _lerp(metrics.mikkyCompact.y, metrics.mikkyOpen.y, openness.clamp(0.0, 1.0)) +
+      _lerp(metrics.mikkyCompact.y, _open.y, openness.clamp(0.0, 1.0)) +
       (edge == IslandEdge.top ? math.min(0, currentHeight - metrics.compact.height) : 0);
 }
 

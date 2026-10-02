@@ -293,7 +293,7 @@ class SessionLog {
     }
     if (_turns.isEmpty) return '';
     final turn = _turns.last;
-    if (!turn.running && turn.reason == StopReason.rateLimited) return limitLine(limitResetsAt);
+    if (!turn.running && turn.reason == StopReason.rateLimited) return limitLine(limitResetsAt, seen: lastEventAt);
     if (!turn.running && turn.message != null) return _line(turn.message!);
     if (turn.reason == StopReason.cancelled) return '';
     for (var i = _items.length - 1; i >= turn.start; i--) {

@@ -41,11 +41,26 @@ void main() {
       expect(m.openContentOpacity, 1);
     });
 
-    test('the list layout is a bit bigger', () {
+    test('the list layout is the home: taller, Mikky at its top left', () {
       final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
       expect(m.currentWidth, 450);
-      expect(m.currentHeight, 180);
+      expect(m.currentHeight, 260);
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      // An alert: the same island takes the focus size, Mikky its place.
+      m.setShape(IslandShape.open, layout: IslandLayout.focus);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (430, 178));
+      expect(m.mikkyRadius, 28);
+    });
+
+    test('a page over the home grows a little for the conversation', () {
+      final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
+      run(m, 2);
+      m.setShape(IslandShape.open, layout: IslandLayout.page);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (450, 380));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
     });
 
     test('hiding slides Mikky up with the island', () {
@@ -71,17 +86,23 @@ void main() {
     test('open is a portrait card, taller than wide', () {
       final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.compact);
       run(m, 2);
-      m.setShape(IslandShape.open);
+      m.setShape(IslandShape.open, layout: IslandLayout.page);
       run(m, 2 / 60);
       // The depth (width, away from the edge) waits for the length.
       expect(m.currentHeight, greaterThan(82));
       expect(m.currentWidth, 74);
       run(m, 2);
       expect((m.currentWidth, m.currentHeight), (344, 520));
-      expect(m.currentHeight, greaterThan(m.currentWidth * 1.5));
-      // Mikky in small, top left of the small window's head (ux-a.html).
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (30, 39, 16));
-      expect(m.cornerRadius, 38);
+      expect(m.currentHeight, greaterThan(m.currentWidth * 1.4));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      expect(m.cornerRadius, 30);
+    });
+
+    test('the home at the right is the top one, upright', () {
+      final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.open, layout: IslandLayout.list);
+      run(m, 2);
+      expect((m.currentWidth, m.currentHeight), (290, 408));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
     });
 
     test('hides into the right edge', () {
