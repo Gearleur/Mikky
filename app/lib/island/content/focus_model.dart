@@ -104,21 +104,6 @@ class IslandText {
     );
   }
 
-  /// [agent] in focus, picked on the home's tiles at the top (2026-10-02).
-  factory IslandText.agent(Agent agent, IslandSnapshot s, double now) {
-    final all = [for (final a in s.agents) AgentText.of(a, now)];
-    return IslandText._(
-      content: IslandContent.focus,
-      focus: AgentText.of(agent, now),
-      others: [
-        for (final t in all)
-          if (t.agent.id != agent.id) t,
-      ],
-      all: all,
-      header: _header(s),
-    );
-  }
-
   final IslandContent content;
   final AgentText? focus;
 

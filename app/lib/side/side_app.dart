@@ -3,6 +3,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
+import '../home/home_view.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/backend_status.dart';
 import '../ui/motion.dart';
@@ -27,14 +28,16 @@ class SideHost {
   final VoidCallback islandMenu;
 }
 
-/// The small window at the right edge: the home (`HomeScreen`, 2026-10-02),
-/// an agent's page (Suivi / Chat), the new agent. Pages are stacked; a new
-/// one slides in from the right (380 ms), the one below moves 28 % left
-/// and dims.
+/// The island's window, at the right edge or at the top (2026-10-02): the
+/// home (`HomeScreen`, its Chat the new agent), an agent's page (Suivi /
+/// Chat). Pages are stacked; a new one slides in from the right (380 ms),
+/// the one below moves 28 % left and dims. At the top, the island grows
+/// a little under a page ([HomeLayout.pageSize]).
 class SideApp extends StatefulWidget {
-  const SideApp({super.key, required this.host, this.onHome});
+  const SideApp({super.key, required this.host, this.layout = HomeLayout.right, this.onHome});
 
   final SideHost host;
+  final HomeLayout layout;
 
   /// On the home or not: the island shows Mikky in the head only there.
   final ValueChanged<bool>? onHome;
@@ -54,9 +57,55 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   static const _push = Duration(milliseconds: 380);
   static const _curve = Cubic(.2, .9, .25, 1);
 
-  late final List<_Page> _pages = [
-    _Page('home', () => HomeScreen(entries: host.service.source.homeEntries, canLaunch: host.service.canLaunch, open: _open)),
-  ];
+  late final List<_Page> _pages = [_Page('home', _home)];
+
+  /// Agents opened from the history: back among the apps.
+  final _recalled = <String>{};
+
+  /// The home keeps its own size under a taller page.
+  Widget _home() => Align(
+    alignment: Alignment.topLeft,
+    child: HomeScreen(
+      layout: widget.layout,
+      entries: host.service.source.homeEntries,
+      canLaunch: host.service.canLaunch,
+      open: _open,
+      recalled: _recalled,
+      recall: (id) {
+        setState(() => _recalled.add(id));
+        _open(id);
+      },
+      onMenu: _menu,
+      chat: (toApps) => NewAgentPage(
+        host: host,
+        inHome: true,
+        back: toApps,
+        launched: (id) {
+          toApps();
+          _open(id);
+        },
+        login: (target, provider, done) => _pushPage(_Page(
+          'login',
+          () => LoginPage(
+            host: host,
+            target: target,
+            provider: provider,
+            back: back,
+            done: () {
+              back();
+              done();
+            },
+          ),
+        )),
+      ),
+    ),
+  );
+
+  /// An agent's ··· menu, from a row of the history.
+  void _menu(String id) {
+    final e = host.service.source.entry(id);
+    if (e != null) showSessionMenu(host, e, rename: () => _open('rename:$id'));
+  }
   late final AnimationController _t = AnimationController(vsync: this, duration: _push, value: 1);
   _Page? _leaving;
 
@@ -127,6 +176,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         builder: (context, _) {
           final t = _t.value;
           final moving = t < 1;
+          final width = widget.layout.pageSize.width;
           final notice = switch (host.service.backend) {
             BackendState.online => null,
             BackendState.connecting => const BackendStatus(title: 'Connexion à Mikky', message: 'Tes sessions arrivent…'),
@@ -155,11 +205,11 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
                     if (below != null)
                       moving
                           ? Transform.translate(
-                              offset: Offset(-.28 * 320 * t, 0),
+                              offset: Offset(-.28 * width * t, 0),
                               child: Opacity(opacity: 1 - .5 * t, child: page(below)),
                             )
                           : Offstage(child: TickerMode(enabled: false, child: page(below))),
-                    Transform.translate(offset: Offset((1 - t) * 320, 0), child: page(top)),
+                    Transform.translate(offset: Offset((1 - t) * width, 0), child: page(top)),
                   ],
                 ),
               ),

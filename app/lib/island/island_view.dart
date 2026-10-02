@@ -14,7 +14,6 @@ import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../home/home_view.dart';
-import '../side/home_screen.dart';
 import '../side/side_app.dart';
 import '../theme.dart';
 import '../ui/floating_menu.dart';
@@ -29,8 +28,9 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      // The home at the top is 450 × 260 (2026-10-02): room for its shadow.
-      IslandEdge.top => const Size(560, 360),
+      // The home at the top is 450 × 260, an agent's page 450 × 380
+      // (2026-10-02): room for its shadow.
+      IslandEdge.top => const Size(560, 480),
       IslandEdge.right => const Size(400, 700),
     };
 
@@ -95,51 +95,39 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   AgentSource get _source => _demo ? _demoSource : widget.agents.source;
   StreamSubscription<void>? _agentsSub;
 
-  /// The small window at the right edge. Kept while the island is closed
-  /// (not drawn, not ticking), so its page and drafts stay.
+  /// The island's window — the home and its pages — at the right and,
+  /// since 2026-10-02, at the top. Kept while the island is closed (not
+  /// drawn, not ticking), so its page and drafts stay.
   final _sideKey = GlobalKey<SideAppState>();
-  late final SideApp _side = SideApp(
+  late final _sideHost = SideHost(
+    service: widget.agents,
+    answer: _answerId,
+    pickFolder: _overlay.pickFolder,
+    showMenu: _menu,
+    islandMenu: _showMenu,
+  );
+  Widget get _side => SideApp(
     key: _sideKey,
-    host: SideHost(
-      service: widget.agents,
-      answer: _answerId,
-      pickFolder: _overlay.pickFolder,
-      showMenu: _menu,
-      islandMenu: _showMenu,
-    ),
+    host: _sideHost,
+    layout: _edge == IslandEdge.top ? HomeLayout.top : HomeLayout.right,
     onHome: (home) {
       _sideHome = home;
-      _wake();
+      _apply();
     },
   );
   bool _sideHome = true;
 
-  /// The home at the top (2026-10-02), on the real agents. Kept while the
-  /// island is closed (not drawn, not ticking), like the small window.
-  late final Widget _topHome = ListenableBuilder(
-    listenable: widget.agents,
-    builder: (context, _) => HomeView(
-      layout: HomeLayout.top,
-      apps: homeApps(widget.agents.source.homeEntries, DateTime.now()),
-      drawMikky: false,
-      onOpen: (app) => _openTopAgent(app.id),
-    ),
-  );
+  /// At the top: the focus view for an agent that needs the user (Oui /
+  /// Non, as before); else the home, a little taller under a page (an
+  /// agent's Suivi / Chat). At the right, always the same window.
+  IslandLayout get _layoutWanted => switch (_edge) {
+    IslandEdge.right => IslandLayout.focus,
+    IslandEdge.top when _snap.openReason == OpenReason.alert => IslandLayout.focus,
+    IslandEdge.top => _sideHome ? IslandLayout.list : IslandLayout.page,
+  };
 
-  /// At the top, the agent picked on the home: shown in focus (its
-  /// answers), until Échap or a click brings the home back.
-  String? _topAgent;
-
-  Agent? get _topAgentShown => _topAgent == null ? null : _snap.agents.where((a) => a.id == _topAgent).firstOrNull;
-
-  /// At the top, the home when the user opened the island; the focus view
-  /// for an agent that needs them, or the one picked on the home.
-  IslandLayout get _layoutWanted => _edge == IslandEdge.top && _snap.openReason != OpenReason.alert && _topAgentShown == null
-      ? IslandLayout.list
-      : IslandLayout.focus;
-
-  /// The home is what the open island shows at the top.
-  bool get _topHomeShown => _edge == IslandEdge.top && _motion.layout == IslandLayout.list;
+  /// The window is what the open island shows at the top (not an alert).
+  bool get _topHomeShown => _edge == IslandEdge.top && _motion.layout != IslandLayout.focus;
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
 
@@ -324,8 +312,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     // The small window closes: its menus with it.
     if (prev.shape == IslandShape.open && s.shape != IslandShape.open) FloatingMenu.dismissAll();
-    // Closed, or an agent asks: the agent picked on the top home is let go.
-    if (s.shape != IslandShape.open || s.openReason == OpenReason.alert) _topAgent = null;
     final layout = _layoutWanted;
     final relaid = layout != _motion.layout;
     if (s.shape != _motion.shape || relaid) {
@@ -450,28 +436,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (_snap.shape != IslandShape.open) _machine.click(_clock.now);
     _overlay.activate();
     _apply();
-    if (id != null && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
-    if (id != null && _edge == IslandEdge.top) _openTopAgent(id);
-  }
-
-  /// A tile of the top home: that agent in focus, with its answers. Only
-  /// agents the island follows (not the old ones).
-  void _openTopAgent(String id) {
-    if (!_snap.agents.any((a) => a.id == id)) {
-      _mikky.twitch();
-      _wake();
-      return;
-    }
-    _topAgent = id;
-    _machine.click(_clock.now);
-    _apply();
-  }
-
-  /// Back from the picked agent to the top home.
-  void _backToTopHome() {
-    _topAgent = null;
-    _machine.click(_clock.now);
-    _apply();
+    if (id != null) _sideKey.currentState?.openAgent(id);
   }
 
   /// Closing hides the screen, never answers or cancels a pending permission.
@@ -505,8 +470,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     } else if (_sideOpen) {
       // A click in the small window: its widgets answer it.
       return;
-    } else if (_topAgentShown != null) {
-      return _backToTopHome();
     } else {
       _machine.close(now);
     }
@@ -560,9 +523,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (typing) {
         // First Escape leaves the field, the second closes.
         _keys.requestFocus();
-      } else if (_topAgentShown != null) {
-        _topAgent = null;
-        _machine.click(_clock.now);
+      } else if (_sideOpen && !_sideHome) {
+        // A page: back to the home.
+        _sideKey.currentState?.back();
       } else {
         _machine.close(_clock.now);
       }
@@ -780,7 +743,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
     _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
-    final mikkyTarget = _edge == IslandEdge.right && _motion.openness > .3 && !_sideHome ? 0.0 : 1.0;
+    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
@@ -802,14 +765,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       s.content,
       s.focus?.id,
       s.pendingAlerts,
-      _topAgent,
       [for (final a in s.agents) '${a.id}:${a.status.index}:${a.detail}'].join('|'),
       now.floor(),
     );
     if (key != _openContentKey || _openContent == null) {
       _openContentKey = key;
-      final picked = _topAgentShown;
-      final text = picked == null ? IslandText.of(s, now) : IslandText.agent(picked, s, now);
+      final text = IslandText.of(s, now);
       final open = _motion.metrics.open(_motion.layout);
       // At the top only: on the right, the island shows the small window.
       _openContent = RepaintBoundary(
@@ -947,7 +908,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   Widget build(BuildContext context) {
     if (_motion.isGone && _bubble.isAtRest() && _bubble.value == 0) {
       // Nothing to draw; the small window stays alive, asleep.
-      return Stack(children: [_sideWindow(_theme, _islandRect, 0, _edge == IslandEdge.right ? _side : _topHome)]);
+      return Stack(children: [_sideWindow(_theme, _islandRect, 0, _side)]);
     }
     final theme = _theme;
     final rect = _islandRect;
@@ -995,7 +956,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                     _machine.click(_clock.now);
                     _apply();
                     _overlay.activate();
-                    if (id != null && !_demo && _edge == IslandEdge.right) _sideKey.currentState?.openAgent(id);
+                    if (id != null && !_demo) _sideKey.currentState?.openAgent(id);
                   },
                   child: Opacity(
                     opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
@@ -1004,8 +965,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                 ),
               ),
             ..._compactContent(theme, rect),
-            if (_edge == IslandEdge.right) _sideWindow(theme, rect, openOpacity, _side),
-            if (_edge == IslandEdge.top) _sideWindow(theme, rect, _topHomeShown ? openOpacity : 0, _topHome),
+            _sideWindow(theme, rect, _edge == IslandEdge.right || _topHomeShown ? openOpacity : 0, _side),
             if (openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
               Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
             ?countdown,
