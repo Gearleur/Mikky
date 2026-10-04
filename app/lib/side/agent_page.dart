@@ -3,12 +3,14 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/buttons.dart';
+import '../ui/cards.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
 import '../ui/motion.dart';
 import '../ui/selection.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
+import '../ui/status.dart';
 import '../ui/tokens.dart';
 import 'session_cards.dart';
 import 'session_menu.dart';
@@ -126,6 +128,23 @@ class _AgentPageState extends State<AgentPage> {
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: PausedCard(onResume: () => _source.unpause(e.id)),
+        )
+      else if (_source.hookAskOf(e.id) case final hook?)
+        // A session outside Mikky, asking through Claude's hooks.
+        Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: AgentCard(
+            status: UiStatus.approval,
+            title: 'Attend ton feu vert',
+            who: '',
+            subtitle: hook.description,
+            style: AgentCardStyle.waiting,
+            actions: WaitActions(
+              command: hook.request,
+              onYes: () => widget.host.answer(e.id, AgentAnswer.allow),
+              onNo: () => widget.host.answer(e.id, AgentAnswer.deny),
+            ),
+          ),
         )
       else if ((log.pending.isNotEmpty || log.question != null) && e.live)
         Padding(

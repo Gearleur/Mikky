@@ -27,6 +27,9 @@ class OverlayChannel {
   void Function()? onTrayMenu;
   void Function()? onNotificationClick;
 
+  /// A global shortcut set by [setHotkeys] was pressed: its id.
+  void Function(int id)? onHotkey;
+
   Rect? _hitRect;
 
   Future<void> _handle(MethodCall call) async {
@@ -38,6 +41,8 @@ class OverlayChannel {
       onTrayMenu?.call();
     } else if (call.method == 'notificationClick') {
       onNotificationClick?.call();
+    } else if (call.method == 'hotkey') {
+      onHotkey?.call(call.arguments as int);
     } else if (call.method == 'cursor') {
       final args = call.arguments as List<Object?>;
       onCursor?.call(Offset((args[0]! as num).toDouble(), (args[1]! as num).toDouble()));
@@ -78,6 +83,23 @@ class OverlayChannel {
 
   /// A Windows notification (from the icon in the notification area).
   void notify(String title, String body) => _channel.invokeMethod<void>('notify', [title, body]);
+
+  /// Plays `assets/sounds/<name>.mp3` at [volume] (0..1); silent if the
+  /// file is missing.
+  void playSound(String name, double volume) => _channel.invokeMethod<void>('playSound', [name, volume]);
+
+  /// Opens these sounds ahead, so their first play is on time.
+  void preloadSounds(Iterable<String> names) => _channel.invokeMethod<void>('preloadSounds', names.toList());
+
+  /// Global shortcuts, replacing the previous ones: (id, modifiers, virtual
+  /// key) with Windows' MOD_ALT 1, MOD_CONTROL 2, MOD_SHIFT 4, MOD_WIN 8.
+  /// Returns the ids Windows refused (taken by another app).
+  Future<List<int>> setHotkeys(List<(int, int, int)> keys) async {
+    final refused = await _channel.invokeMethod<List<Object?>>('setHotkeys', [
+      for (final (id, mods, key) in keys) [id, mods, key],
+    ]);
+    return [for (final id in refused ?? const []) id! as int];
+  }
 
   void quit() => _channel.invokeMethod<void>('quit');
 }

@@ -9,7 +9,15 @@ import 'theme.dart';
 /// User settings kept between launches, in `%APPDATA%\Mikky\settings.json`.
 /// Nothing secret goes here.
 class Settings {
-  Settings({this.theme = ThemeChoice.auto, this.edge = IslandEdge.top, this.notifications = true, this.autoRelaunch = false});
+  Settings({
+    this.theme = ThemeChoice.auto,
+    this.edge = IslandEdge.top,
+    this.notifications = true,
+    this.autoRelaunch = false,
+    this.sound = true,
+    this.volume = .5,
+    this.hotkeys = true,
+  });
 
   ThemeChoice theme;
 
@@ -22,6 +30,13 @@ class Settings {
 
   /// Where the island lives: top center or right edge.
   IslandEdge edge;
+
+  /// Mikky's sounds, and how loud (0..1).
+  bool sound;
+  double volume;
+
+  /// The global shortcuts (Ctrl + Alt + A, Espace, M).
+  bool hotkeys;
 
   static File? get _file {
     final appData = Platform.environment['APPDATA'];
@@ -38,6 +53,9 @@ class Settings {
         edge: IslandEdge.values.asNameMap()[json['edge']] ?? IslandEdge.top,
         notifications: json['notifications'] as bool? ?? true,
         autoRelaunch: json['autoRelaunch'] as bool? ?? false,
+        sound: json['sound'] as bool? ?? true,
+        volume: ((json['volume'] as num?)?.toDouble() ?? .5).clamp(0.0, 1.0),
+        hotkeys: json['hotkeys'] as bool? ?? true,
       );
     } catch (e) {
       debugPrint('mikky: settings unreadable, using defaults ($e)');
@@ -75,7 +93,15 @@ class Settings {
       if (file == null) return;
       await file.parent.create(recursive: true);
       await file.writeAsString(
-        jsonEncode({'theme': theme.name, 'edge': edge.name, 'notifications': notifications, 'autoRelaunch': autoRelaunch}),
+        jsonEncode({
+          'theme': theme.name,
+          'edge': edge.name,
+          'notifications': notifications,
+          'autoRelaunch': autoRelaunch,
+          'sound': sound,
+          'volume': volume,
+          'hotkeys': hotkeys,
+        }),
       );
     } catch (e) {
       debugPrint('mikky: settings not saved ($e)');

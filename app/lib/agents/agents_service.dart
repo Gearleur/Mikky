@@ -44,6 +44,11 @@ class AgentsService extends ChangeNotifier {
       },
     );
     _sub = source.changes.listen((_) => _changed());
+    source.answerHook = (id, decision) {
+      final client = daemon;
+      if (client == null || client.isClosed) return;
+      unawaited(client.request('hooks.answer', {'id': id, 'decision': decision}).catchError((Object _) => null));
+    };
   }
 
   final AgentStore store;
@@ -135,6 +140,9 @@ class AgentsService extends ChangeNotifier {
                 .catchError((Object _) {}),
           );
         }
+        if (n.method == 'hooks.changed' && daemon == active && !_closing) {
+          _hookAsks(n.params['requests']);
+        }
         if (n.method == 'machine.disconnected' && daemon == active && !_closing) {
           unawaited(active.close());
         }
@@ -147,6 +155,7 @@ class AgentsService extends ChangeNotifier {
       source.follow(watcher);
       unawaited(watcher.start());
       await _syncRuns(client);
+      unawaited(client.request('hooks.list').then(_hookAsks).catchError((Object _) {}));
       backend = BackendState.online;
       for (final host in AgentHost.values) {
         unawaited(_remoteTarget(client, host));
@@ -212,6 +221,31 @@ class AgentsService extends ChangeNotifier {
       final run = await DaemonAgentRun.attach(client, id, cwd: r['cwd'] as String?, adapterPid: r['adapterPid'] as int?);
       source.adopt(run, provider: provider, host: host, cwd: r['cwd'] as String?);
     }
+  }
+
+  /// The permissions asked through Claude's hooks, as `mikkyd` lists them.
+  void _hookAsks(Object? list) {
+    if (list is! List) return;
+    source.hookAsks([
+      for (final r in list)
+        if (r is Map) HookAsk.fromJson(r.cast<String, Object?>()),
+    ]);
+  }
+
+  /// Claude Code's hooks for sessions started outside Mikky
+  /// (`daemon/mikkyd/src/claude_settings.rs`): installed or not.
+  Future<Map<String, Object?>> hooksStatus() async => ((await _client.request('hooks.status')) as Map).cast();
+
+  /// What installing ([install]) or uninstalling would change in Claude's
+  /// `settings.json`: `diff`, `changes`, `settingsPath`, `fingerprint`.
+  Future<Map<String, Object?>> hooksPreview({required bool install}) async =>
+      ((await _client.request('hooks.preview', {'install': install})) as Map).cast();
+
+  /// Writes it, only if the file is still the one of [fingerprint].
+  /// Returns where the old one was saved.
+  Future<String?> hooksWrite({required bool install, required String fingerprint}) async {
+    final r = (await _client.request('hooks.write', {'install': install, 'fingerprint': fingerprint})) as Map;
+    return r['backup'] as String?;
   }
 
   void _scheduleReconnect() {

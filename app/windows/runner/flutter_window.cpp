@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <optional>
+#include <set>
 
 #include "flutter/generated_plugin_registrant.h"
 #include "resource.h"
@@ -21,6 +22,9 @@ constexpr UINT kCursorTimerMs = 16;
 // (user report, 2026-09-30). Every 1.5 s, if the cursor moved without the
 // hook hearing it, the hook is put back.
 constexpr UINT_PTR kHookWatchTimerId = 2;
+// When the sounds playing should be over: their voices are freed, and the
+// audio engine stops once none is left.
+constexpr UINT_PTR kSoundTimerId = 3;
 constexpr UINT kHookWatchMs = 1500;
 // Posted by the hook, handled in the window procedure: the hook itself must
 // not call into Flutter.
@@ -202,6 +206,8 @@ void FlutterWindow::ShowNotification(const std::wstring& title,
 
 void FlutterWindow::OnDestroy() {
   RemoveTrayIcon();
+  for (const int id : hotkeys_) UnregisterHotKey(GetHandle(), id);
+  hotkeys_.clear();
   KillTimer(GetHandle(), kHookWatchTimerId);
   if (mouse_hook_) {
     UnhookWindowsHookEx(mouse_hook_);
@@ -430,6 +436,50 @@ void FlutterWindow::HandleMethodCall(
       }
     }
     result->Success();
+  } else if (call.method_name() == "playSound") {
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    if (args && args->size() == 2) {
+      const auto* name = std::get_if<std::string>(&(*args)[0]);
+      const auto* volume = std::get_if<double>(&(*args)[1]);
+      if (name && volume) {
+        const int ms = sound_.Play(*name, *volume);
+        if (ms > 0) SetTimer(GetHandle(), kSoundTimerId, ms + 60, nullptr);
+      }
+    }
+    result->Success();
+  } else if (call.method_name() == "preloadSounds") {
+    std::set<std::string> names;
+    if (const auto* args = std::get_if<flutter::EncodableList>(call.arguments())) {
+      for (const auto& v : *args) {
+        if (const auto* name = std::get_if<std::string>(&v)) names.insert(*name);
+      }
+    }
+    sound_.Preload(names);
+    result->Success();
+  } else if (call.method_name() == "setHotkeys") {
+    // Only the overlay has global shortcuts.
+    HWND hwnd = GetHandle();
+    for (const int id : hotkeys_) UnregisterHotKey(hwnd, id);
+    hotkeys_.clear();
+    flutter::EncodableList refused;
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    if (args && is_overlay()) {
+      for (const auto& entry : *args) {
+        const auto* fields = std::get_if<flutter::EncodableList>(&entry);
+        if (!fields || fields->size() != 3) continue;
+        const auto* id = std::get_if<int32_t>(&(*fields)[0]);
+        const auto* mods = std::get_if<int32_t>(&(*fields)[1]);
+        const auto* key = std::get_if<int32_t>(&(*fields)[2]);
+        if (!id || !mods || !key) continue;
+        if (RegisterHotKey(hwnd, *id, static_cast<UINT>(*mods) | MOD_NOREPEAT,
+                           static_cast<UINT>(*key))) {
+          hotkeys_.push_back(*id);
+        } else {
+          refused.push_back(flutter::EncodableValue(*id));
+        }
+      }
+    }
+    result->Success(flutter::EncodableValue(refused));
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);
@@ -471,6 +521,11 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
         WatchHook();
         return 0;
       }
+      if (wparam == kSoundTimerId) {
+        KillTimer(hwnd, kSoundTimerId);
+        if (sound_.Reap()) SetTimer(hwnd, kSoundTimerId, 150, nullptr);
+        return 0;
+      }
       break;
     case kTrayMessage:
       if (channel_) {
@@ -486,6 +541,12 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
             channel_->InvokeMethod("notificationClick", nullptr);
             break;
         }
+      }
+      return 0;
+    case WM_HOTKEY:
+      if (channel_) {
+        channel_->InvokeMethod("hotkey", std::make_unique<flutter::EncodableValue>(
+                                             static_cast<int32_t>(wparam)));
       }
       return 0;
     case kOutsideClickMessage:

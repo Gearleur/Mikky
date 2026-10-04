@@ -17,7 +17,7 @@ try {
     & $mikkyDart $mikkyFlutter --suppress-analytics build windows --release --no-pub
     if ($LASTEXITCODE -ne 0) { throw 'Windows build failed' }
     $mikkyBundle = Join-Path $mikkyApp 'build\release-ready\windows\x64\runner\Release'
-    foreach ($name in @('mikky.exe','mikkyd.exe','mikkyd-linux','flutter_windows.dll','data')) {
+    foreach ($name in @('mikky.exe','mikkyd.exe','mikky-hook.exe','mikkyd-linux','flutter_windows.dll','data')) {
         if (!(Test-Path -LiteralPath (Join-Path $mikkyBundle $name))) { throw "Incomplete bundle: $name" }
     }
     # Versioned directories preserve binaries used by already-running windows.

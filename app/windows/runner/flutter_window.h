@@ -11,7 +11,9 @@
 #include <shellapi.h>
 
 #include <memory>
+#include <vector>
 
+#include "sound.h"
 #include "win32_window.h"
 
 // Mikky's overlay: hosts the Flutter view, lets clicks through everywhere
@@ -28,9 +30,17 @@
 //                                            id, 0 if dismissed.
 //                   activate                 take the keyboard focus (only
 //                                            after a click on the island)
+//                   playSound [name, volume]  a sound of assets/sounds,
+//                                            volume 0..1 (sound.h)
+//                   preloadSounds [name, ...]
+//                   setHotkeys [[id, modifiers, key], ...]  global
+//                                            shortcuts (RegisterHotKey),
+//                                            the old ones dropped. Returns
+//                                            the ids Windows refused.
 //                   quit
 //   native -> Dart  cursor [x, y]            logical px, window-relative;
 //                                            may be outside the window.
+//                   hotkey id                a global shortcut was pressed
 class FlutterWindow : public Win32Window {
  public:
   // Creates a new FlutterWindow hosting a Flutter view running |project|.
@@ -85,6 +95,11 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
 
   HHOOK mouse_hook_ = nullptr;
+
+  SoundPlayer sound_;
+
+  // Ids of the global shortcuts registered now.
+  std::vector<int> hotkeys_;
 
   NOTIFYICONDATAW tray_ = {};
   bool tray_added_ = false;

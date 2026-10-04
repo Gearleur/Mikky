@@ -10,3 +10,7 @@ dist/
 app/test/failures/
 docs/onboarding/
 docs/notch_haut/
+# Mikky's sounds: the user's own files (PSP theme, not ours to publish).
+app/assets/sounds/*
+!app/assets/sounds/README.md
+app/assets/metadata.json

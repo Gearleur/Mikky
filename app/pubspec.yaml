@@ -23,6 +23,8 @@ dev_dependencies:
 flutter:
   assets:
     - assets/brands/
+    # Mikky's sounds: not in git (see assets/sounds/README.md).
+    - assets/sounds/
   shaders:
     - shaders/island.frag
   # Geist and Geist Mono, SIL Open Font License (assets/fonts/OFL.txt).

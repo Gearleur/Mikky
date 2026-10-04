@@ -9,13 +9,22 @@ import '../ui/backend_status.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'agent_page.dart';
+import 'brief_page.dart';
+import 'hooks_page.dart';
 import 'home_screen.dart';
 import 'new_agent_page.dart';
 import 'session_menu.dart';
 
 /// What the small window needs from the island around it.
 class SideHost {
-  const SideHost({required this.service, required this.answer, required this.pickFolder, required this.showMenu, required this.islandMenu});
+  const SideHost({
+    required this.service,
+    required this.answer,
+    required this.pickFolder,
+    required this.showMenu,
+    required this.islandMenu,
+    this.sound,
+  });
 
   final AgentsService service;
 
@@ -26,6 +35,9 @@ class SideHost {
 
   /// The island's own menu (theme, position, quit…).
   final VoidCallback islandMenu;
+
+  /// Plays one of Mikky's sounds (pages that come and go).
+  final void Function(MikkyCue cue)? sound;
 }
 
 /// The island's window, at the right edge or at the top (2026-10-02): the
@@ -120,16 +132,28 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   }
 
   void _open(String what) => switch (what) {
+    final w when w.startsWith('alert:') => _pushPage(_Page(
+      w,
+      () => BriefPage(
+        host: host,
+        id: w.substring(6),
+        back: back,
+        openAgent: () => _replaceTop(_agentPage(w.substring(6))),
+      ),
+    )),
+    'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
     'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
     final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
     _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
   };
 
-  void _launched(String id) =>
-      _replaceTop(_Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'))));
+  _Page _agentPage(String id) => _Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id')));
+
+  void _launched(String id) => _replaceTop(_agentPage(id));
 
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;
+    host.sound?.call(MikkyCue.navigate);
     setState(() => _pages.add(page));
     widget.onHome?.call(false);
     _t.value = 0;
@@ -138,6 +162,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   void back() {
     if (_pages.length < 2 || _leaving != null) return;
+    host.sound?.call(MikkyCue.back);
     setState(() => _leaving = _pages.removeLast());
     if (_pages.length == 1) widget.onHome?.call(true);
     _t.animateBack(0, curve: _curve.flipped, duration: Motion.reduced(context) ? Duration.zero : _push).whenComplete(() {
@@ -145,6 +170,32 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       setState(() => _leaving = null);
       _t.value = 1;
     });
+  }
+
+  /// The page on top: `home`, `agent:<id>`, `alert:<id>`…
+  String get topKey => _pages.last.key;
+
+  /// What agent [id] asks, with its context, from anywhere (an alert at
+  /// the right edge).
+  void openAlert(String id) {
+    if (_pages.last.key == 'alert:$id') return;
+    setState(() => _pages.removeRange(1, _pages.length));
+    _open('alert:$id');
+  }
+
+  /// A page of its own from anywhere (`hooks`: Claude Code's hooks).
+  void openPage(String what) {
+    if (_pages.last.key == what) return;
+    setState(() => _pages.removeRange(1, _pages.length));
+    _open(what);
+  }
+
+  /// Back to the home without sliding (the island closed under a page
+  /// that no longer applies).
+  void home() {
+    if (_pages.length < 2) return;
+    setState(() => _pages.removeRange(1, _pages.length));
+    widget.onHome?.call(true);
   }
 
   /// Opens agent [id]'s page from anywhere (a click on its notification).
