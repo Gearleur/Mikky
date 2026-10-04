@@ -34,8 +34,8 @@ void main() {
       expect(m.currentWidth, greaterThan(186));
       expect(m.currentHeight, 36);
       run(m, 2);
-      expect(m.currentWidth, 430);
-      expect(m.currentHeight, 178);
+      expect(m.currentWidth, 450);
+      expect(m.currentHeight, 260);
       expect(m.cornerRadius, 30);
       expect(m.mikkyRadius, 28);
       expect(m.openContentOpacity, 1);
@@ -47,10 +47,11 @@ void main() {
       expect(m.currentWidth, 450);
       expect(m.currentHeight, 260);
       expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
-      // An alert: the same island takes the focus size, Mikky its place.
+      // An alert: the request Mikky brings, as big as the home (2026-10-04),
+      // Mikky at his focus place.
       m.setShape(IslandShape.open, layout: IslandLayout.focus);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (430, 178));
+      expect((m.currentWidth, m.currentHeight), (450, 260));
       expect(m.mikkyRadius, 28);
     });
 

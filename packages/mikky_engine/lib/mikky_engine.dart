@@ -14,9 +14,11 @@ export 'src/island/island_motion.dart';
 export 'src/mikky/mikky.dart';
 export 'src/mikky/mikky_geometry.dart';
 export 'src/mikky/mikky_tuning.dart';
+export 'src/mikky/reactions.dart';
 
 
 
+export 'src/sessions/brief.dart';
 export 'src/sessions/home_groups.dart';
 export 'src/sessions/rate_limit.dart';
 export 'src/sessions/session_event.dart';

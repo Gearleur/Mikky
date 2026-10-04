@@ -5,6 +5,7 @@ import '../anim/easing.dart';
 import '../anim/keyframes.dart';
 import '../anim/smoothing.dart';
 import '../anim/spring.dart';
+import 'reactions.dart';
 
 /// Animated properties of Mikky's pose.
 enum MikkyProp {
@@ -179,6 +180,10 @@ class Mikky {
   final List<(double, void Function())> _scheduled = [];
   final List<_Particle> _particles = [];
 
+  /// Mikky makes a sound by himself (loved, slapped, dizzy): the app plays
+  /// it. Reactions to agents give theirs to the app directly.
+  void Function(MikkyCue cue)? onSound;
+
   /// Seconds since creation.
   double get time => _time;
   double _time = 0;
@@ -307,14 +312,30 @@ class Mikky {
   void boop() {
     squash();
     blink();
+    _countClick();
+  }
+
+  /// Click on Mikky once the island is open: a little slap, he is annoyed
+  /// (Mochi's rule). Three within 1.7 s make him dizzy.
+  void slap() {
+    squash();
+    if (_countClick()) return;
+    play(MikkyEmote.annoyed);
+    onSound?.call(MikkyCue.slap);
+  }
+
+  /// True if this click made him dizzy.
+  bool _countClick() {
     _clicks
       ..add(_time)
       ..removeWhere((t) => _time - t > 1.7);
-    if (_clicks.length >= 3) {
-      _clicks.clear();
-      _dizzyUntil = _time + 2.6;
-      roll(turns: 2, ms: 1100);
-    }
+    if (_clicks.length < 3) return false;
+    _clicks.clear();
+    _dizzyUntil = _time + 2.6;
+    _emote = null;
+    roll(turns: 2, ms: 1100);
+    onSound?.call(MikkyCue.dizzy);
+    return true;
   }
 
   /// Something needs attention: eyes widen, ears go up.
@@ -642,6 +663,7 @@ class Mikky {
     if (_hovered && !_lovedThisHover && _time - _lastMove >= 1.9) {
       _lovedThisHover = true;
       play(MikkyEmote.love);
+      onSound?.call(MikkyCue.love);
     }
 
     final calm = st == MikkyState.sleeping || st == MikkyState.dizzy;
