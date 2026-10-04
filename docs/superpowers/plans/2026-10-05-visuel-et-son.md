@@ -60,7 +60,7 @@ Aujourd'hui (un seul tableau, `sound_board.dart`) :
 | `sleep` / `wake` | il s'endort / se réveille | `folder_close` / `folder_open` |
 
 À décider ensemble :
-- quels signaux restent **muets** (Mochi ne fait aucun bruit pour ce qui change sans rien demander) ; « un agent se met au travail » à chaque tour risque d'être trop fréquent ;
+- quels signaux restent **muets** (Mochi ne fait aucun bruit pour ce qui change sans rien demander) ; « un agent se met au travail » à chaque tour risque d'être trop fréquent, et **l'ouverture / la fermeture jouent aussi à chaque survol** de l'île ;
 - un son **à part pour ce qui te demande quelque chose** (aujourd'hui `folder_open`, le même que l'ouverture) ;
 - le volume par défaut (moyen, 50 %) ;
 - **les sons pour la distribution** : les fichiers PSP (Sony) et `retroachievements` ne sont pas à nous. Ils restent sur ton PC, hors de git (le dépôt est public, voir `app/assets/sounds/README.md`). Avant de distribuer Mikky : des sons libres (CC0) ou faits pour lui, dans la même ambiance.
