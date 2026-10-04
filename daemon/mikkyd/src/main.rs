@@ -11,7 +11,9 @@
 
 mod api;
 mod autostart;
+mod claude_settings;
 mod endpoint;
+mod hooks;
 mod job;
 #[cfg(unix)]
 mod linux;

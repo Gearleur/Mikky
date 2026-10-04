@@ -1,0 +1,13 @@
+[package]
+name = "mikky-hook"
+description = "Relays Claude Code's hook events to mikkyd (permissions of sessions started outside Mikky)"
+edition.workspace = true
+version.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+tungstenite = "0.30"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true

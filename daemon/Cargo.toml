@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["mikky-acp", "mikkyd"]
+members = ["mikky-acp", "mikkyd", "mikky-hook"]
 
 [workspace.package]
 edition = "2024"
