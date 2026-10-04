@@ -97,6 +97,10 @@ install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
 install(FILES "${MIKKY_DAEMON_TARGET}/release/mikkyd.exe"
   DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
+# The relay of Claude Code's hooks (daemon/mikky-hook), copied to a fixed
+# place when the user installs the hooks.
+install(FILES "${MIKKY_DAEMON_TARGET}/release/mikky-hook.exe"
+  DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 install(FILES "${MIKKY_DAEMON_DIR}/target/linux-release/mikkyd-linux"
   DESTINATION "${CMAKE_INSTALL_PREFIX}" COMPONENT Runtime)
 

@@ -333,8 +333,9 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// A part of the foot: there on the apps, gone in Chat.
+  /// Out with the chat's soft fade; back quickly with the apps.
   Widget _foot(Widget child) => AnimatedOpacity(
-    duration: Motion.of(context, Motion.hover),
+    duration: Motion.of(context, _mode == 0 ? const Duration(milliseconds: 120) : Motion.fade),
     opacity: _mode == 0 ? 1 : 0,
     child: IgnorePointer(ignoring: _mode != 0, child: child),
   );
@@ -396,19 +397,23 @@ class _HomeViewState extends State<HomeView> {
   }
 
   /// The tiles or the chat, one fading into the other. The chat takes
-  /// everything under the bar. The one leaving goes at once (110 ms),
-  /// the other comes in a little slower (180 ms) (user, 2026-10-02: « les
-  /// indications ne s'enlèvent pas assez vite »).
-  Widget _modeSwitch() => AnimatedSwitcher(
-    duration: Motion.of(context, Motion.fade),
-    reverseDuration: Motion.of(context, const Duration(milliseconds: 110)),
-    switchInCurve: Motion.enter,
-    switchOutCurve: Motion.leave,
-    layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
-    transitionBuilder: (child, t) => FadeTransition(
-      opacity: t,
-      child: ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(t), child: child),
-    ),
+  /// everything under the bar. To the chat: a soft fade with a slight
+  /// zoom, both ways 300 ms (« parfaite »); back to the apps: the chat
+  /// gone at once (70 ms), the tiles in 160 ms, no zoom (user, 2026-10-02:
+  /// « la transition chat → accueil est trop lente »). An AnimatedSwitcher
+  /// gives each child the durations it had when it came in.
+  Widget _modeSwitch() {
+    final toChat = _mode == 1;
+    return AnimatedSwitcher(
+      duration: Motion.of(context, toChat ? Motion.fold : _tilesIn),
+      reverseDuration: Motion.of(context, toChat ? _chatOut : Motion.fold),
+      switchInCurve: Motion.enter,
+      switchOutCurve: Motion.leave,
+      layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
+      transitionBuilder: (child, t) => FadeTransition(
+        opacity: t,
+        child: child.key == const ValueKey('chat') ? ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(t), child: child) : child,
+      ),
     child: _mode == 0
         ? Stack(key: const ValueKey('tiles'), children: [_pagerArea()])
         : Padding(
@@ -416,7 +421,10 @@ class _HomeViewState extends State<HomeView> {
             padding: const EdgeInsets.only(top: HomeLayout.barTop + HomeLayout.barHeight),
             child: widget.chat?.call(() => _set(() => _mode = 0)) ?? const _ChatSoon(),
           ),
-  );
+    );
+  }
+
+  static const _tilesIn = Duration(milliseconds: 160), _chatOut = Duration(milliseconds: 70);
 
   /// Room around the grid for the tiles' shadows and their lift.
   static const _air = 14.0;

@@ -92,6 +92,31 @@ void main() {
     expect(find.byType(AddTile), findsOneWidget);
   });
 
+  testWidgets('back from the Chat, it is gone at once; to the Chat, a soft fade', (tester) async {
+    await tester.pumpWidget(Directionality(
+      textDirection: TextDirection.ltr,
+      child: MikkyUiTheme(
+        ui: MikkyUi.light,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(3), animate: false, chat: (_) => const Text('nouvelle tâche')),
+        ),
+      ),
+    ));
+    await tester.tap(find.bySemanticsLabel('Chat'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 150));
+    // Halfway through the soft fade, the tiles are still leaving.
+    expect(find.byType(AppTile), findsWidgets);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.bySemanticsLabel('Applications'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(find.text('nouvelle tâche'), findsNothing);
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (tester) async {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(20), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);

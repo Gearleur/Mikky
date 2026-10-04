@@ -12,17 +12,9 @@ import '../ui/tokens.dart';
 import 'content/parts.dart';
 import 'island_painter.dart';
 
-/// Mikky's state for the agent he stands for. Thinking and searching
-/// are work: his working animation (user request, 2026-10-01).
-MikkyState mikkyStateFor(AgentStatus? status) => switch (status) {
-  null || AgentStatus.idle || AgentStatus.paused => MikkyState.idle,
-  AgentStatus.working || AgentStatus.thinking || AgentStatus.searching => MikkyState.working,
-  AgentStatus.approval => MikkyState.approval,
-  AgentStatus.question => MikkyState.question,
-  AgentStatus.error => MikkyState.error,
-  AgentStatus.finished => MikkyState.finished,
-  AgentStatus.rateLimited => MikkyState.rateLimited,
-};
+/// Mikky's state for the agent he stands for: the engine's table
+/// ([mikkyStateOf]).
+MikkyState mikkyStateFor(AgentStatus? status) => mikkyStateOf(status);
 
 /// Under Mikky on the closed island at the right edge: what the agent he
 /// stands for is doing; his name when there is none, nothing to show
