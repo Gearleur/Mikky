@@ -37,13 +37,15 @@ class IslandMetrics {
     required this.mikkyList,
   });
 
-  /// Spec §3: closed 186 × 36, open Focus 430 × 178. List: the home,
+  /// Spec §3: closed 186 × 36. Focus, a request Mikky brings with its
+  /// task: 450 × 260 since 2026-10-04 (was 430 × 178; the home's size,
+  /// to draw again with the user). List: the home,
   /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
   /// validated by the user). Page: an agent's Suivi / Chat, 450 × 380 —
   /// the home grows a little for the conversation (user, 2026-10-02).
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
-    focus: (width: 430, height: 178),
+    focus: (width: 450, height: 260),
     list: (width: 450, height: 260),
     page: (width: 450, height: 380),
     hidden: (width: 150, height: 0),
