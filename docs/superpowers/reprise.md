@@ -1,6 +1,6 @@
 # Mikky — où on en est
 
-Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
+Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
 
 À lire en premier, avec `CLAUDE.md`. Le design est dans `design.md`, les idées dans `idees.md`, les specs validées dans `specs/`.
 
@@ -20,6 +20,8 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
   - menu étoile ; Oui / Non / Toujours, questions ; pause, reprise, arrêt ;
   - ranger les sessions, « Ensorcelé » (relance après la limite) ;
   - notifications Windows.
+- **Mikky compagnon** (2026-10-04, fonctionnel, visuel à refaire) : il réagit à chaque agent (geste, émote, son), s'endort et se réveille ; il **apporte chaque demande avec son contexte** (tâche, étape, derniers mots, dernières actions +N −M) ; sons (Media Foundation + XAudio2), raccourcis Ctrl + Alt + A / Espace / M.
+- **Hooks Claude Code et Codex** (2026-10-04) : les sessions lancées dans un terminal ou VS Code demandent aussi leurs permissions dans Mikky (`mikky-hook` → `mikkyd`) ; installation avec diff, jamais sans l'utilisateur. **Pas encore installés chez l'utilisateur.**
 - **`mikkyd`** :
   - lance les adaptateurs ACP sous Windows ou dans WSL (job object) ;
   - garde permissions et questions même sans écran ;
@@ -29,7 +31,18 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
   - Fermer l'app n'arrête pas les agents.
 - **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique.
 
-## Dernière session (2 octobre) : le nouvel accueil
+## Dernière session (4 octobre) : Mikky au centre, le fonctionnel
+
+Comparaison avec Coucou (`~/projects/coucou`, MIT) : Mikky avait le moteur de Mochi (états, émotes), mais l'app n'en branchait presque rien, et les demandes arrivaient sans contexte. Demande de l'utilisateur : **le fonctionnel seulement** ; les animations et les sons se refont avec lui demain, une par une. **Seul l'accueil est validé.**
+
+- **Moteur** (`mikky_engine`) : `reactions.dart` (table événement → état, émote, geste, son `MikkyCue`, phrase ; `MikkyDirector` : une réaction par changement d'agent, sommeil après 10 min) ; `brief.dart` (`TaskBrief`, `activityOf`, `diffStat`) ; Mikky : `slap`, `onSound`. L'île ouverte pour une demande, en haut : 450 × 260.
+- **App** : `BriefView` (en haut dans l'île, à droite page « Pour toi », `SideApp.openAlert`) ; `SoundBoard` (`app/lib/sound/`) et lecteur natif (`app/windows/runner/sound.cpp`) ; menu : Sons, Volume, Raccourcis, Hooks Claude Code…, Hooks Codex… ; page `HooksPage`.
+- **Sons** : les MP3 PSP de l'utilisateur dans `app/assets/sounds/`, **hors de git** (dépôt public, sons de Sony). MCI ne lit pas ces MP3 (DirectShow refuse leur encodage) : Media Foundation les décode.
+- **Hooks** : `daemon/mikky-hook` (relais : coffre de Windows, 300 ms pour se connecter, rien écrit sans réponse, 110 s au plus) ; `mikkyd` : `hooks.rs` (file des demandes ; rien n'attend sans écran, ni pour ses propres sessions, ni pour les questions ; la suite de la session retire la demande), `claude_settings.rs` (installation Claude / Codex, diff, empreinte, copie datée, relais copié dans `%LOCALAPPDATA%\Mikky\bin`). Essai de bout en bout : `cargo test -p mikky-hook`.
+- **Bundle** reconstruit et relancé (`dist\Mikky-20261004-222423`, sans agent actif) ; aperçu de l'installation vérifié sur le vrai `settings.json` (57 lignes ajoutées, rien retiré), **rien écrit**.
+- **Plans** : `plans/2026-10-05-visuel-et-son.md` (la séance de demain : animations une par une, sons, écrans pas revus, planches à ajouter) ; `plans/2026-10-05-plateforme.md` (ton environnement, performance, sécurité, cloud et versions V1 → V5).
+
+## Session du 2 octobre : le nouvel accueil
 
 - Les maquettes HTML de `docs/notch_haut/` (Top 1 × 4 et 2 × 4, Right 2 × 2 et 3 × 3) servent seulement de référence visuelle ; rien n'en est repris techniquement.
 - Planches **Accueil** et **Accueil haut** retirées (le rail « Mikkys au travail » aussi) ; « Choisir le lieu » corrigé et renommé **« Choisir l'environnement »**, sur la planche Composants.
@@ -61,7 +74,9 @@ Mis à jour le 2026-10-01 · branche `main` · https://github.com/Gearleur/Mikky
 
 **Périmètre du MVP** : une île Windows fiable pour voir les sessions locales de Claude Code et Codex, lancer et piloter des agents sur Windows ou WSL, répondre aux permissions et retrouver les agents après fermeture de l'écran. Ne pas promettre qu'une session extérieure « tourne » tant que son processus n'a pas été vérifié : le JSONL prouve une activité, pas la vie d'un processus.
 
-**Tout de suite : le menu du clic droit** (les réglages de Mikky) : depuis que c'est notre menu flottant dans l'accueil, il est devenu grand et « trop gluant, bouncy, perturbant » (l'utilisateur, 2026-10-02). À reprendre sur les planches : plus petit, moins de rebond, peut-être une vraie page Réglages.
+**Demain (5 octobre) : le visuel et le son, avec l'utilisateur** : `plans/2026-10-05-visuel-et-son.md` (les animations de Mikky une par une, les sons un par un, la carte de demande en haut et à droite, la page Réglages qui remplace le menu du clic droit). Puis l'essai réel des hooks et la suite technique : `plans/2026-10-05-plateforme.md` §6.
+
+**Le menu du clic droit** (les réglages de Mikky) : depuis que c'est notre menu flottant dans l'accueil, il est devenu grand et « trop gluant, bouncy, perturbant » (l'utilisateur, 2026-10-02) ; il a encore grandi le 4 (sons, raccourcis, hooks). À reprendre sur les planches : une vraie page Réglages.
 
 **Étape suivante : les applications** (design d'abord, sur les planches). Ce qu'il y a dans une tuile (images), comment valider ses **actions rapides** depuis l'accueil, et tout ce que faisait l'ancien accueil, à refaire (en attendant : la page de l'agent, en haut comme à droite) :
 - **Approbation** : Oui / Non / Toujours sous l'agent qui attend, la commande en pilule ; les **questions** (« Pose une question : … », formulaire) ; Y / N au clavier en haut.
@@ -93,17 +108,22 @@ Reportés : R4, la grande fenêtre (branche `feature/r4-workspace`) ; R7, le VPS
 ## Le code
 
 ```
-daemon/                  Rust : mikky-acp (JSON-RPC ACP), mikkyd (agents, sessions, SQLite, API)
-packages/mikky_engine/   Dart pur : Mikky, règles de l'île (IslandMachine), SessionLog, groupes
-packages/mikky_agents/   client de mikkyd (DaemonClient, RealAgentSource, AgentStore)
-app/lib/island/          l'île (island_view, compact_view = petite île), shader app/shaders/island.frag
-app/lib/side/            petite fenêtre : accueil (side_app), agent_page, session_*
+daemon/                  Rust : mikky-acp (JSON-RPC ACP), mikkyd (agents, sessions, SQLite, API,
+                         hooks.rs, claude_settings.rs), mikky-hook (relais des hooks)
+packages/mikky_engine/   Dart pur : Mikky (reactions.dart), règles de l'île (IslandMachine),
+                         SessionLog, brief.dart (ce que Mikky apporte), groupes
+packages/mikky_agents/   client de mikkyd (DaemonClient, RealAgentSource, AgentStore, HookAsk)
+app/lib/island/          l'île (island_view, compact_view = petite île, content/brief_view),
+                         shader app/shaders/island.frag
+app/lib/side/            petite fenêtre : accueil (side_app), agent_page, brief_page, hooks_page, session_*
+app/lib/sound/           sound_board.dart : quel fichier pour quel signal
 app/lib/ui/              composants, pixels (pixel_fx), menu flottant
 app/lib/boards/          planches --kit ; images de test dans app/test/goldens/
-app/windows/runner/      overlay natif (clics traversants, crochet souris, menus)
+app/windows/runner/      overlay natif (clics traversants, crochet souris, menus, raccourcis
+                         globaux, sons : sound.cpp)
 ```
 
-Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptateurs sont dans `%LOCALAPPDATA%\Mikky\acp`, et dans WSL dans `~/.local/share/mikky`. Aucun identifiant sur disque.
+Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptateurs sont dans `%LOCALAPPDATA%\Mikky\acp`, et dans WSL dans `~/.local/share/mikky`. Le relais des hooks, une fois installés, dans `%LOCALAPPDATA%\Mikky\bin`. Aucun identifiant sur disque. Les sons (`app/assets/sounds/*.mp3`) ne sont pas dans git : les copier à la main sur une autre machine.
 
 ## Lancer, tester
 
