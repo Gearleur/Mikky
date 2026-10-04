@@ -232,19 +232,22 @@ class AgentsService extends ChangeNotifier {
     ]);
   }
 
-  /// Claude Code's hooks for sessions started outside Mikky
-  /// (`daemon/mikkyd/src/claude_settings.rs`): installed or not.
-  Future<Map<String, Object?>> hooksStatus() async => ((await _client.request('hooks.status')) as Map).cast();
+  /// The hooks of [tool] (Claude Code or Codex) for sessions started
+  /// outside Mikky (`daemon/mikkyd/src/claude_settings.rs`): installed or
+  /// not.
+  Future<Map<String, Object?>> hooksStatus(AgentProvider tool) async =>
+      ((await _client.request('hooks.status', {'tool': tool.name})) as Map).cast();
 
-  /// What installing ([install]) or uninstalling would change in Claude's
-  /// `settings.json`: `diff`, `changes`, `settingsPath`, `fingerprint`.
-  Future<Map<String, Object?>> hooksPreview({required bool install}) async =>
-      ((await _client.request('hooks.preview', {'install': install})) as Map).cast();
+  /// What installing ([install]) or uninstalling would change in the
+  /// tool's file: `diff`, `changes`, `settingsPath`, `fingerprint`.
+  Future<Map<String, Object?>> hooksPreview(AgentProvider tool, {required bool install}) async =>
+      ((await _client.request('hooks.preview', {'tool': tool.name, 'install': install})) as Map).cast();
 
   /// Writes it, only if the file is still the one of [fingerprint].
   /// Returns where the old one was saved.
-  Future<String?> hooksWrite({required bool install, required String fingerprint}) async {
-    final r = (await _client.request('hooks.write', {'install': install, 'fingerprint': fingerprint})) as Map;
+  Future<String?> hooksWrite(AgentProvider tool, {required bool install, required String fingerprint}) async {
+    final r =
+        (await _client.request('hooks.write', {'tool': tool.name, 'install': install, 'fingerprint': fingerprint})) as Map;
     return r['backup'] as String?;
   }
 

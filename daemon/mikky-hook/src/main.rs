@@ -76,13 +76,24 @@ fn read_event() -> Option<(Value, String)> {
     let raw = raw.strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(&raw);
     let mut payload: Value = serde_json::from_slice(raw).ok()?;
     let map = payload.as_object_mut()?;
+    // `mikky-hook [--agent codex] <EventName>`: no agent is Claude Code.
+    let (mut agent, mut arg_event) = (String::from("claude"), None);
+    let mut args = std::env::args().skip(1);
+    while let Some(arg) = args.next() {
+        if arg == "--agent" {
+            agent = args.next().unwrap_or(agent);
+        } else if arg_event.is_none() {
+            arg_event = Some(arg);
+        }
+    }
     let event = map
         .get("hook_event_name")
         .and_then(Value::as_str)
         .filter(|s| !s.is_empty())
         .map(str::to_owned)
-        .or_else(|| std::env::args().nth(1))?;
+        .or(arg_event)?;
     map.insert("hook_event_name".into(), json!(event));
+    map.insert("mikky_agent".into(), json!(agent));
     for field in DROPPED {
         map.remove(*field);
     }

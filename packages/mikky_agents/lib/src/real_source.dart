@@ -245,9 +245,9 @@ class RealAgentSource implements AgentSource {
       ..clear()
       ..addAll({for (final a in asks) a.sessionId: a});
     for (final a in asks) {
-      var e = _entries.where((x) => x.provider == AgentProvider.claude && x.sessionId == a.sessionId).firstOrNull;
+      var e = _entries.where((x) => x.provider == a.provider && x.sessionId == a.sessionId).firstOrNull;
       if (e == null) {
-        e = AgentEntry._('h${a.sessionId}', AgentProvider.claude, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
+        e = AgentEntry._('h${a.sessionId}', a.provider, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
           ..failure = (SessionLog()..apply(SessionStarted(a.sessionId, cwd: a.cwd)))
           ..startedAt = clock()
           ..statusSince = clock();

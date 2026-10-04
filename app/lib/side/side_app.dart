@@ -142,6 +142,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       ),
     )),
     'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
+    'hooks:codex' => _pushPage(_Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex))),
     'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
     final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
     _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),

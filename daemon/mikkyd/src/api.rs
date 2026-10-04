@@ -312,10 +312,14 @@ async fn dispatch(
                 .ok_or_else(|| RpcError::new(-32602, "missing id"))?;
             Ok(json!(daemon.hooks.answer(id, params.get("decision").and_then(Value::as_str))))
         }
-        "hooks.status" => Ok(crate::claude_settings::status()),
-        "hooks.preview" => crate::claude_settings::preview(params["install"].as_bool().unwrap_or(true))
-            .map_err(|e| RpcError::new(-32000, e)),
+        "hooks.status" => Ok(crate::claude_settings::status(hook_tool(params)?)),
+        "hooks.preview" => crate::claude_settings::preview(
+            hook_tool(params)?,
+            params["install"].as_bool().unwrap_or(true),
+        )
+        .map_err(|e| RpcError::new(-32000, e)),
         "hooks.write" => crate::claude_settings::write(
+            hook_tool(params)?,
             params["install"].as_bool().unwrap_or(true),
             str_param(params, "fingerprint")?,
         )
@@ -610,6 +614,13 @@ fn traffic(run: &str, t: &Traffic) -> String {
 
 fn notification(method: &str, params: Value) -> String {
     json!({"jsonrpc": "2.0", "method": method, "params": params}).to_string()
+}
+
+/// Whose hooks: `tool` is `claude` (the default) or `codex`.
+fn hook_tool(params: &Value) -> Result<crate::claude_settings::Tool, RpcError> {
+    let name = params["tool"].as_str().unwrap_or("claude");
+    crate::claude_settings::Tool::named(name)
+        .ok_or_else(|| RpcError::new(-32602, format!("unknown tool {name}")))
 }
 
 fn str_param<'a>(params: &'a Value, key: &str) -> Result<&'a str, RpcError> {

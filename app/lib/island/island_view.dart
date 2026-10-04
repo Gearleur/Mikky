@@ -49,7 +49,7 @@ const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9,
 const _menuAutoRelaunch = 20;
 const _menuStopAll = 12;
 const _menuAutostart = 13;
-const _menuHooks = 19;
+const _menuHooks = 19, _menuHooksCodex = 21;
 const _menuSound = 14, _menuVolumeLow = 15, _menuVolumeMid = 16, _menuVolumeHigh = 17, _menuHotkeys = 18;
 
 /// Global shortcuts (Ctrl + Alt + …): ids for [OverlayChannel.setHotkeys].
@@ -651,6 +651,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       // (« Ensorcelé »); the violet star after « Agents » while on.
       MenuEntry(_menuAutoRelaunch, 'Relance automatique', checked: Enchantments.instance.everywhere),
       if (widget.agents.canLaunch) const MenuEntry(_menuHooks, 'Hooks Claude Code…'),
+      if (widget.agents.canLaunch) const MenuEntry(_menuHooksCodex, 'Hooks Codex…'),
       if (widget.agents.canLaunch)
         MenuEntry(_menuAutostart, 'Moteur au démarrage de Windows', checked: autostart),
       const MenuEntry.separator(),
@@ -714,11 +715,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         s.volume = const {_menuVolumeLow: .2, _menuVolumeMid: .5, _menuVolumeHigh: 1.0}[chosen]!;
         unawaited(s.save());
         _sound.play(MikkyCue.select);
-      case _menuHooks:
+      case _menuHooks || _menuHooksCodex:
         if (_snap.shape != IslandShape.open) _machine.click(_clock.now);
         _overlay.activate();
         _apply();
-        _sideKey.currentState?.openPage('hooks');
+        _sideKey.currentState?.openPage(chosen == _menuHooks ? 'hooks' : 'hooks:codex');
       case _menuHotkeys:
         s.hotkeys = !s.hotkeys;
         unawaited(s.save());

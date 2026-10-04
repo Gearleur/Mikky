@@ -1,5 +1,6 @@
-//! Mikky's hooks in Claude Code's `settings.json` (2026-10-04), like
-//! Coucou's: never overwrite it. Read, merge Mikky's entries (marked by
+//! Mikky's hooks in Claude Code's `settings.json` and in Codex's
+//! `hooks.json` (same format; 2026-10-04), like Coucou's: never overwrite
+//! them. Read, merge Mikky's entries (marked by
 //! `mikky-hook` in their command) with everything else left as is, show the
 //! diff, and write only what the user saw: `write` refuses a file that
 //! changed since its preview. A dated backup first, then a new file beside
@@ -23,16 +24,42 @@ const EVENTS: &[(&str, u64)] = &[
 
 const MARKER: &str = "mikky-hook";
 
-/// `~/.claude/settings.json`, or in `CLAUDE_CONFIG_DIR`.
-pub fn settings_path() -> PathBuf {
-    if let Some(dir) = std::env::var_os("CLAUDE_CONFIG_DIR") {
-        return PathBuf::from(dir).join("settings.json");
+/// Whose hooks.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Tool {
+    Claude,
+    Codex,
+}
+
+impl Tool {
+    pub fn named(name: &str) -> Option<Tool> {
+        match name {
+            "claude" => Some(Tool::Claude),
+            "codex" => Some(Tool::Codex),
+            _ => None,
+        }
     }
-    let home = std::env::var_os("USERPROFILE")
-        .or_else(|| std::env::var_os("HOME"))
-        .map(PathBuf::from)
-        .unwrap_or_default();
-    home.join(".claude").join("settings.json")
+
+    /// `~/.claude/settings.json` (or in `CLAUDE_CONFIG_DIR`),
+    /// `~/.codex/hooks.json` (or in `CODEX_HOME`).
+    pub fn file(self) -> PathBuf {
+        let home = || {
+            std::env::var_os("USERPROFILE")
+                .or_else(|| std::env::var_os("HOME"))
+                .map(PathBuf::from)
+                .unwrap_or_default()
+        };
+        match self {
+            Tool::Claude => std::env::var_os("CLAUDE_CONFIG_DIR")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| home().join(".claude"))
+                .join("settings.json"),
+            Tool::Codex => std::env::var_os("CODEX_HOME")
+                .map(PathBuf::from)
+                .unwrap_or_else(|| home().join(".codex"))
+                .join("hooks.json"),
+        }
+    }
 }
 
 const HOOK_NAME: &str = if cfg!(windows) {
@@ -84,9 +111,13 @@ fn place_hook() -> Result<PathBuf, String> {
     Ok(to)
 }
 
-fn command(hook: &Path, event: &str) -> String {
-    // Claude Code runs it through a shell: forward slashes, quoted.
-    format!("\"{}\" {event}", hook.to_string_lossy().replace('\\', "/"))
+fn command(hook: &Path, tool: Tool, event: &str) -> String {
+    // Run through a shell: forward slashes, quoted.
+    let exe = hook.to_string_lossy().replace('\\', "/");
+    match tool {
+        Tool::Claude => format!("\"{exe}\" {event}"),
+        Tool::Codex => format!("\"{exe}\" --agent codex {event}"),
+    }
 }
 
 fn parse(bytes: &[u8]) -> Result<Value, String> {
@@ -96,10 +127,8 @@ fn parse(bytes: &[u8]) -> Result<Value, String> {
     }
     match serde_json::from_slice::<Value>(bytes) {
         Ok(v) if v.is_object() => Ok(v),
-        Ok(_) => Err("settings.json n’est pas un objet JSON : rien n’a été touché.".into()),
-        Err(e) => Err(format!(
-            "settings.json illisible ({e}) : rien n’a été touché."
-        )),
+        Ok(_) => Err("le fichier n’est pas un objet JSON : rien n’a été touché.".into()),
+        Err(e) => Err(format!("fichier illisible ({e}) : rien n’a été touché.")),
     }
 }
 
@@ -118,7 +147,7 @@ fn is_ours(entry: &Value) -> bool {
     })
 }
 
-fn merged(existing: &Value, hook: &Path) -> Value {
+fn merged(existing: &Value, hook: &Path, tool: Tool) -> Value {
     let mut root = existing.as_object().cloned().unwrap_or_default();
     let mut hooks = root
         .get("hooks")
@@ -132,7 +161,13 @@ fn merged(existing: &Value, hook: &Path) -> Value {
             .cloned()
             .unwrap_or_default();
         list.retain(|e| !is_ours(e));
-        list.push(json!({"hooks": [{"type": "command", "command": command(hook, event), "timeout": timeout}]}));
+        let mut entry =
+            json!({"type": "command", "command": command(hook, tool, event), "timeout": timeout});
+        if tool == Tool::Codex && *event == "PermissionRequest" {
+            // Shown by Codex while it waits.
+            entry["statusMessage"] = json!("En attente de ta réponse dans Mikky");
+        }
+        list.push(json!({"hooks": [entry]}));
         hooks.insert((*event).into(), Value::Array(list));
     }
     root.insert("hooks".into(), Value::Object(hooks));
@@ -190,8 +225,8 @@ fn fingerprint(bytes: &[u8]) -> String {
 }
 
 /// Installed or not, where.
-pub fn status() -> Value {
-    let path = settings_path();
+pub fn status(tool: Tool) -> Value {
+    let path = tool.file();
     let hook = hook_path();
     let (current, _) = read(&path).unwrap_or((json!({}), Vec::new()));
     json!({
@@ -203,14 +238,14 @@ pub fn status() -> Value {
 }
 
 /// What installing (or uninstalling) would change.
-pub fn preview(install: bool) -> Result<Value, String> {
-    preview_at(&settings_path(), &hook_path(), install)
+pub fn preview(tool: Tool, install: bool) -> Result<Value, String> {
+    preview_at(&tool.file(), &hook_path(), tool, install)
 }
 
-fn preview_at(path: &Path, hook: &Path, install: bool) -> Result<Value, String> {
+fn preview_at(path: &Path, hook: &Path, tool: Tool, install: bool) -> Result<Value, String> {
     let (current, bytes) = read(path)?;
     let next = if install {
-        merged(&current, hook)
+        merged(&current, hook, tool)
     } else {
         without_ours(&current)
     };
@@ -223,19 +258,19 @@ fn preview_at(path: &Path, hook: &Path, install: bool) -> Result<Value, String> 
 }
 
 /// Writes it, if the file is still the one previewed. Returns the backup.
-pub fn write(install: bool, seen: &str) -> Result<Value, String> {
+pub fn write(tool: Tool, install: bool, seen: &str) -> Result<Value, String> {
     let hook = if install { place_hook()? } else { hook_path() };
-    write_at(&settings_path(), &hook, install, seen)
+    write_at(&tool.file(), &hook, tool, install, seen)
 }
 
-fn write_at(path: &Path, hook: &Path, install: bool, seen: &str) -> Result<Value, String> {
+fn write_at(path: &Path, hook: &Path, tool: Tool, install: bool, seen: &str) -> Result<Value, String> {
     if install && !hook.exists() {
         return Err(format!("{} manque : réinstalle Mikky.", hook.display()));
     }
     let (current, bytes) = read(path)?;
     if fingerprint(&bytes) != seen {
         return Err(
-            "settings.json a changé depuis l’aperçu : rien n’a été écrit, regarde le nouveau diff."
+            "le fichier a changé depuis l’aperçu : rien n’a été écrit, regarde le nouveau diff."
                 .into(),
         );
     }
@@ -245,12 +280,13 @@ fn write_at(path: &Path, hook: &Path, install: bool, seen: &str) -> Result<Value
     let mut backup = Value::Null;
     if !bytes.is_empty() {
         let stamp = chrono::Local::now().format("%Y%m%d-%H%M%S");
-        let to = path.with_file_name(format!("settings.json.bak-{stamp}"));
+        let name = path.file_name().unwrap_or_default().to_string_lossy();
+        let to = path.with_file_name(format!("{name}.bak-{stamp}"));
         std::fs::write(&to, &bytes).map_err(|e| format!("sauvegarde impossible : {e}"))?;
         backup = json!(to.to_string_lossy());
     }
     let next = if install {
-        merged(&current, hook)
+        merged(&current, hook, tool)
     } else {
         without_ours(&current)
     };
@@ -349,7 +385,7 @@ mod tests {
             "env": {"A": "1"},
             "hooks": {"PostToolUse": [{"hooks": [{"type": "command", "command": "other"}]}]},
         });
-        let with = merged(&mine, hook);
+        let with = merged(&mine, hook, Tool::Claude);
         assert_eq!(with["env"], json!({"A": "1"}));
         let post = with["hooks"]["PostToolUse"].as_array().unwrap();
         assert_eq!(post.len(), 2);
@@ -365,14 +401,30 @@ mod tests {
         assert!(installed(&with));
         // Installing twice: still one entry of ours.
         assert_eq!(
-            merged(&with, hook)["hooks"]["PostToolUse"]
+            merged(&with, hook, Tool::Claude)["hooks"]["PostToolUse"]
                 .as_array()
                 .unwrap()
                 .len(),
             2
         );
         assert_eq!(without_ours(&with), mine);
-        assert_eq!(without_ours(&merged(&json!({}), hook)), json!({}));
+        assert_eq!(without_ours(&merged(&json!({}), hook, Tool::Claude)), json!({}));
+    }
+
+    #[test]
+    fn codex_hooks_say_which_agent_and_wait_with_a_message() {
+        let hook = Path::new("C:\\Mikky\\mikky-hook.exe");
+        let with = merged(&json!({}), hook, Tool::Codex);
+        let ask = &with["hooks"]["PermissionRequest"][0]["hooks"][0];
+        assert_eq!(
+            ask["command"],
+            "\"C:/Mikky/mikky-hook.exe\" --agent codex PermissionRequest"
+        );
+        assert!(ask["statusMessage"].as_str().unwrap().contains("Mikky"));
+        assert_eq!(without_ours(&with), json!({}));
+        assert!(Tool::Codex.file().ends_with("hooks.json"));
+        assert_eq!(Tool::named("codex"), Some(Tool::Codex));
+        assert_eq!(Tool::named("x"), None);
     }
 
     #[test]
@@ -391,18 +443,18 @@ mod tests {
         std::fs::write(&hook, b"").unwrap();
         std::fs::write(&path, b"{\"model\": \"opus\"}").unwrap();
 
-        let p = preview_at(&path, &hook, true).unwrap();
+        let p = preview_at(&path, &hook, Tool::Claude, true).unwrap();
         assert!(p["diff"].as_str().unwrap().contains("+ "));
         assert_eq!(p["changes"], true);
         std::fs::write(&path, b"{\"model\": \"sonnet\"}").unwrap();
-        assert!(write_at(&path, &hook, true, p["fingerprint"].as_str().unwrap()).is_err());
+        assert!(write_at(&path, &hook, Tool::Claude, true, p["fingerprint"].as_str().unwrap()).is_err());
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
             "{\"model\": \"sonnet\"}"
         );
 
-        let p = preview_at(&path, &hook, true).unwrap();
-        let done = write_at(&path, &hook, true, p["fingerprint"].as_str().unwrap()).unwrap();
+        let p = preview_at(&path, &hook, Tool::Claude, true).unwrap();
+        let done = write_at(&path, &hook, Tool::Claude, true, p["fingerprint"].as_str().unwrap()).unwrap();
         let backup = done["backup"].as_str().unwrap();
         assert_eq!(
             std::fs::read_to_string(backup).unwrap(),
@@ -412,8 +464,8 @@ mod tests {
         assert_eq!(now["model"], "sonnet");
         assert!(installed(&now));
 
-        let p = preview_at(&path, &hook, false).unwrap();
-        write_at(&path, &hook, false, p["fingerprint"].as_str().unwrap()).unwrap();
+        let p = preview_at(&path, &hook, Tool::Claude, false).unwrap();
+        write_at(&path, &hook, Tool::Claude, false, p["fingerprint"].as_str().unwrap()).unwrap();
         let now: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         assert_eq!(now, json!({"model": "sonnet"}));
         let _ = std::fs::remove_dir_all(&dir);

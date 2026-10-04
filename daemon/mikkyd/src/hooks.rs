@@ -125,15 +125,17 @@ impl Hooks {
         let id = self.next.fetch_add(1, Ordering::Relaxed);
         let (tx, rx) = oneshot::channel();
         let input = &payload["tool_input"];
+        let command = command_of(input);
         let shown = json!({
             "id": id,
             "sessionId": session,
             "cwd": payload["cwd"],
             "tool": tool,
-            "command": input["command"],
-            "path": input.get("file_path").or_else(|| input.get("path")).or_else(|| input.get("notebook_path")),
-            "description": input["description"],
-            "title": summary(tool, input),
+            "command": command,
+            "path": input.get("file_path").or_else(|| input.get("path")).or_else(|| input.get("notebook_path")).filter(|v| v.is_string()),
+            "description": input["description"].as_str(),
+            "title": summary(tool, command.as_deref().or_else(|| [input["file_path"].as_str(), input["path"].as_str(), input["url"].as_str(), input["pattern"].as_str()].into_iter().flatten().next())),
+            "agent": payload["mikky_agent"].as_str().unwrap_or("claude"),
             "terminal": payload["term_program"],
             "at": chrono::Utc::now().to_rfc3339(),
         });
@@ -186,15 +188,27 @@ impl Hooks {
 }
 
 /// One line for the request: the command, the file, or the tool.
-fn summary(tool: &str, input: &Value) -> String {
-    let text = input["command"]
-        .as_str()
-        .or_else(|| input["file_path"].as_str())
-        .or_else(|| input["path"].as_str())
-        .or_else(|| input["url"].as_str())
-        .or_else(|| input["pattern"].as_str())
-        .unwrap_or_default();
-    let one: String = text.split_whitespace().collect::<Vec<_>>().join(" ");
+/// The command, as text: Claude gives a string, Codex may give its words.
+fn command_of(input: &Value) -> Option<String> {
+    match &input["command"] {
+        Value::String(s) => Some(s.clone()),
+        Value::Array(words) => Some(
+            words
+                .iter()
+                .filter_map(Value::as_str)
+                .collect::<Vec<_>>()
+                .join(" "),
+        ),
+        _ => None,
+    }
+}
+
+fn summary(tool: &str, text: Option<&str>) -> String {
+    let one: String = text
+        .unwrap_or_default()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ");
     let short: String = one.chars().take(200).collect();
     if short.is_empty() {
         tool.to_owned()
@@ -216,6 +230,18 @@ mod tests {
             "tool_name": "Bash",
             "tool_input": {"command": command},
         })
+    }
+
+    #[test]
+    fn codex_commands_come_as_words() {
+        let words = json!({"command": ["bash", "-lc", "cargo  test"]});
+        assert_eq!(command_of(&words).as_deref(), Some("bash -lc cargo  test"));
+        assert_eq!(
+            summary("shell", command_of(&words).as_deref()),
+            "shell bash -lc cargo test"
+        );
+        assert_eq!(command_of(&json!({"file_path": "a"})), None);
+        assert_eq!(summary("Edit", None), "Edit");
     }
 
     #[tokio::test]

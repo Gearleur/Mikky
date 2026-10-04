@@ -1,5 +1,7 @@
-/// A permission asked by a Claude Code session started outside Mikky (a
-/// terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks.rs`).
+import 'package:mikky_engine/mikky_engine.dart';
+
+/// A permission asked by a Claude Code or Codex session started outside
+/// Mikky (a terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks.rs`).
 /// It waits on `mikkyd` until the user answers, or for 105 s; then Claude
 /// asks in its own terminal.
 class HookAsk {
@@ -8,6 +10,7 @@ class HookAsk {
     required this.sessionId,
     required this.tool,
     required this.title,
+    this.provider = AgentProvider.claude,
     this.cwd,
     this.command,
     this.path,
@@ -15,17 +18,22 @@ class HookAsk {
     this.at,
   });
 
-  factory HookAsk.fromJson(Map<String, Object?> j) => HookAsk(
-    id: (j['id'] as num).toInt(),
-    sessionId: j['sessionId'] as String? ?? '',
-    tool: j['tool'] as String? ?? '',
-    title: j['title'] as String? ?? '',
-    cwd: j['cwd'] as String?,
-    command: j['command'] as String?,
-    path: j['path'] as String?,
-    description: j['description'] as String?,
-    at: DateTime.tryParse(j['at'] as String? ?? ''),
-  );
+  /// What `mikkyd` lists; a field of an unexpected type is left out.
+  factory HookAsk.fromJson(Map<String, Object?> j) {
+    String? text(String key) => j[key] is String ? j[key]! as String : null;
+    return HookAsk(
+      id: (j['id'] as num).toInt(),
+      sessionId: text('sessionId') ?? '',
+      tool: text('tool') ?? '',
+      title: text('title') ?? '',
+      provider: j['agent'] == 'codex' ? AgentProvider.codex : AgentProvider.claude,
+      cwd: text('cwd'),
+      command: text('command'),
+      path: text('path'),
+      description: text('description'),
+      at: DateTime.tryParse(text('at') ?? ''),
+    );
+  }
 
   /// `mikkyd`'s id of the request, to answer it.
   final int id;
@@ -36,6 +44,9 @@ class HookAsk {
 
   /// One line: the tool and its command or file.
   final String title;
+
+  /// Claude Code or Codex.
+  final AgentProvider provider;
   final String? cwd;
   final String? command;
   final String? path;
