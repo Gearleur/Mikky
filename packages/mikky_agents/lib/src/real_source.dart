@@ -5,6 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import 'acp/agent_run.dart';
 import 'daemon/daemon_run.dart';
+import 'hooks.dart';
 import 'store.dart';
 import 'watch/session_watcher.dart';
 
@@ -163,6 +164,13 @@ class RealAgentSource implements AgentSource {
 
   final List<AgentEntry> _entries = [];
   final Map<String, StoredAgent> _stored = {};
+
+  /// Permissions asked through Claude's hooks, by session.
+  final Map<String, HookAsk> _hookAsks = {};
+
+  /// Sends the answer to a hook request (`hooks.answer`): `allow`, `deny`,
+  /// or null to leave it to the terminal.
+  void Function(int id, String? decision)? answerHook;
   final _changes = StreamController<void>.broadcast();
   final List<StreamSubscription<Object?>> _subs = [];
   int _ids = 0;
@@ -218,13 +226,47 @@ class RealAgentSource implements AgentSource {
     return e.changedLive && s == AgentStatus.finished && now - e.statusSince < finishedLinger;
   }
 
+  /// Agent [id] as the island would show it, on the island or not.
+  Agent? agentOf(String id) {
+    final e = entry(id);
+    return e == null ? null : _agentOf(e);
+  }
+
+  /// The permission agent [id] asks through Claude's hooks, if any.
+  HookAsk? hookAskOf(String id) {
+    final sessionId = entry(id)?.sessionId;
+    return sessionId == null ? null : _hookAsks[sessionId];
+  }
+
+  /// The requests waiting on `mikkyd` from Claude's hooks, all of them: each
+  /// goes to its session (a new one if Mikky did not see it yet).
+  void hookAsks(List<HookAsk> asks) {
+    _hookAsks
+      ..clear()
+      ..addAll({for (final a in asks) a.sessionId: a});
+    for (final a in asks) {
+      var e = _entries.where((x) => x.provider == AgentProvider.claude && x.sessionId == a.sessionId).firstOrNull;
+      if (e == null) {
+        e = AgentEntry._('h${a.sessionId}', AgentProvider.claude, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
+          ..failure = (SessionLog()..apply(SessionStarted(a.sessionId, cwd: a.cwd)))
+          ..startedAt = clock()
+          ..statusSince = clock();
+        _entries.add(e);
+      }
+      e
+        ..changedLive = true
+        ..dismissed = false;
+    }
+    _changed();
+  }
+
   Agent _agentOf(AgentEntry e) => Agent(
     id: e.id,
     name: e.name,
     status: e.status,
     startedAt: e.startedAt,
     statusSince: e.statusSince,
-    detail: e.log.detail,
+    detail: _hookAsks[e.sessionId]?.request ?? e.log.detail,
     provider: e.provider,
     host: e.host,
     origin: e.origin,
@@ -467,6 +509,8 @@ class RealAgentSource implements AgentSource {
       var s = e.log.statusAt(now, staleAfter: watchedOnly ? staleAfter : null);
       // Paused: once its stopped turn is over, until it is taken off hold.
       if (e.mark.pausedAt != null && !e.log.working && !s.needsYou) s = AgentStatus.paused;
+      // Asked through Claude's hooks: waits for the user.
+      if (_hookAsks.containsKey(e.sessionId)) s = AgentStatus.approval;
       if (s != e.status) _setStatus(e, s);
     }
   }
@@ -554,6 +598,19 @@ class RealAgentSource implements AgentSource {
   bool answer(String id, AgentAnswer answer, double now) {
     final e = entry(id);
     if (e == null) return false;
+    final hook = _hookAsks[e.sessionId];
+    if (hook != null && answer != AgentAnswer.retry) {
+      // Claude's hooks know yes and no; « Toujours » stays a yes there.
+      final allow = switch (answer) {
+        AgentAnswer.allow || AgentAnswer.allowAlways => true,
+        AgentAnswer.deny => false,
+        _ => null,
+      };
+      _hookAsks.remove(e.sessionId);
+      answerHook?.call(hook.id, HookAsk.decision(allow: allow));
+      _refresh();
+      return true;
+    }
     switch (answer) {
       case AgentAnswer.allow || AgentAnswer.allowAlways || AgentAnswer.deny:
         final ok = e.run?.answer(allow: answer != AgentAnswer.deny, always: answer == AgentAnswer.allowAlways) ?? false;

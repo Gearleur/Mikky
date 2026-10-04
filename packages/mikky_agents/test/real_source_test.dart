@@ -265,4 +265,27 @@ void main() {
       expect(source.entries.single.id, id);
     });
   });
+
+  test('a permission from the hooks of Claude: on the island, answered through mikkyd', () {
+    final sent = <(int, String?)>[];
+    source.answerHook = (id, decision) => sent.add((id, decision));
+    source.hookAsks(const [HookAsk(id: 7, sessionId: 's-ext', tool: 'Bash', title: 'Bash cargo test', cwd: r'C:\p', command: 'cargo test')]);
+    final agent = source.agents.single;
+    expect(agent.status, AgentStatus.approval);
+    expect(agent.detail, 'cargo test');
+    expect(agent.origin, AgentOrigin.external);
+    expect(source.hookAskOf(agent.id)?.id, 7);
+
+    expect(source.answer(agent.id, AgentAnswer.allowAlways, clock), isTrue);
+    expect(sent, [(7, 'allow')]);
+    expect(source.hookAskOf(agent.id), isNull);
+    expect(source.agents.where((a) => a.status.needsYou), isEmpty);
+
+    // Again, left to the terminal; then mikkyd drops it.
+    source.hookAsks(const [HookAsk(id: 8, sessionId: 's-ext', tool: 'Bash', title: 'Bash ls', command: 'ls')]);
+    expect(source.answer(agent.id, AgentAnswer.dismiss, clock), isTrue);
+    expect(sent.last, (8, null));
+    source.hookAsks(const []);
+    expect(source.hookAskOf(agent.id), isNull);
+  });
 }

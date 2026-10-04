@@ -3,9 +3,11 @@
 //!
 //! Requests: `hello`, `runs.list`, `run.start`, `run.open`, `run.request`,
 //! `run.prompt`, `run.answer`, `run.answerQuestion`, `run.cancel`,
-//! `run.stop`, `run.subscribe`. Notifications to the client:
-//! `run.traffic` (every ACP message of a run, the past ones first on
-//! subscribe) and `run.closed`.
+//! `run.stop`, `run.subscribe`; Claude Code's hooks (`hooks.rs`):
+//! `hook.event` (from `mikky-hook`), `hooks.list`, `hooks.answer`,
+//! `hooks.status`, `hooks.preview`, `hooks.write`. Notifications to the
+//! client: `run.traffic` (every ACP message of a run, the past ones first
+//! on subscribe), `run.closed`, `hooks.changed`.
 
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -49,6 +51,7 @@ pub struct Daemon {
     wsl: tokio::sync::Mutex<Option<Arc<crate::wsl::Proxy>>>,
     preparing: tokio::sync::Mutex<()>,
     logins: crate::login::Logins,
+    pub hooks: crate::hooks::Hooks,
 }
 
 impl Daemon {
@@ -68,6 +71,7 @@ impl Daemon {
             wsl: tokio::sync::Mutex::new(None),
             preparing: tokio::sync::Mutex::new(()),
             logins: crate::login::Logins::default(),
+            hooks: crate::hooks::Hooks::default(),
         }
     }
     async fn wsl(
@@ -136,6 +140,9 @@ async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
     let (mut sink, mut source) = ws.split();
     let (out, mut out_rx) = mpsc::unbounded_channel::<String>();
     let watching = watch_notifications(&daemon, out.clone());
+    // A screen (it says hello): requests from Claude's hooks may wait for
+    // it. Hook relays never do.
+    let mut screen = false;
     let writer = tokio::spawn(async move {
         while let Some(text) = out_rx.recv().await {
             if sink.send(Message::text(text)).await.is_err() {
@@ -147,6 +154,10 @@ async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
     while let Some(Ok(msg)) = source.next().await {
         match msg {
             Message::Text(text) => {
+                if !screen && text.contains("\"hello\"") {
+                    screen = true;
+                    daemon.hooks.screen_joined();
+                }
                 tokio::spawn(handle(text.to_string(), out.clone(), daemon.clone()));
             }
             Message::Close(_) => break,
@@ -155,17 +166,27 @@ async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
     }
     writer.abort();
     watching.abort();
+    if screen {
+        daemon.hooks.screen_left();
+    }
 }
 
 pub fn watch_notifications(
-    daemon: &Daemon,
+    daemon: &Arc<Daemon>,
     notices: mpsc::UnboundedSender<String>,
 ) -> tokio::task::JoinHandle<()> {
     let mut changes = daemon.sessions.changes.subscribe();
     let mut state = daemon.store.changes.subscribe();
+    let mut hooks = daemon.hooks.changes.subscribe();
+    let daemon = daemon.clone();
     tokio::spawn(async move {
         loop {
             let update = tokio::select! {
+                result = hooks.recv() => {
+                    if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
+                    if notices.send(notification("hooks.changed", json!({"requests": daemon.hooks.list()}))).is_err() { break; }
+                    None
+                }
                 result = changes.recv() => Some(result),
                 result = state.recv() => {
                     if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
@@ -270,6 +291,35 @@ async fn dispatch(
             Ok(Value::Null)
         }
         "tools.status" => Ok(crate::tools::status().await),
+        "hook.event" => {
+            let payload = params.get("payload").cloned().unwrap_or(Value::Null);
+            let own = |session: &str| {
+                daemon
+                    .agents
+                    .lock()
+                    .unwrap()
+                    .values()
+                    .any(|a| a.run.session_id().as_deref() == Some(session))
+            };
+            let out = out.clone();
+            Ok(daemon.hooks.event(&payload, own, async move { out.closed().await }).await)
+        }
+        "hooks.list" => Ok(daemon.hooks.list()),
+        "hooks.answer" => {
+            let id = params
+                .get("id")
+                .and_then(Value::as_u64)
+                .ok_or_else(|| RpcError::new(-32602, "missing id"))?;
+            Ok(json!(daemon.hooks.answer(id, params.get("decision").and_then(Value::as_str))))
+        }
+        "hooks.status" => Ok(crate::claude_settings::status()),
+        "hooks.preview" => crate::claude_settings::preview(params["install"].as_bool().unwrap_or(true))
+            .map_err(|e| RpcError::new(-32000, e)),
+        "hooks.write" => crate::claude_settings::write(
+            params["install"].as_bool().unwrap_or(true),
+            str_param(params, "fingerprint")?,
+        )
+        .map_err(|e| RpcError::new(-32000, e)),
         "tools.auth" => crate::tools::auth(str_param(params, "provider")?).await,
         "tools.launch" => {
             let _prepare = daemon.preparing.lock().await;

@@ -396,9 +396,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "mikky-hook"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "tungstenite",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "mikkyd"
 version = "0.1.0"
 dependencies = [
+ "chrono",
  "futures-util",
  "getrandom",
  "libc",

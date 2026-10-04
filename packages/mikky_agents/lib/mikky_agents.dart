@@ -6,6 +6,7 @@ export 'src/acp/agent_run.dart';
 export 'src/auth.dart';
 export 'src/daemon/daemon_client.dart';
 export 'src/daemon/daemon_run.dart';
+export 'src/hooks.dart';
 export 'src/real_source.dart';
 
 export 'src/store.dart';
