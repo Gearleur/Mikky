@@ -51,6 +51,10 @@ abstract final class TextSize {
   /// Reading text: messages, a row's title, the field.
   static const body = 14.0;
 
+  /// An agent's answers, read like a note (2026-10-05, « comme sur
+  /// Obsidian »), with a line height of 1.65.
+  static const reading = 14.5;
+
   /// A big button, a card's heading.
   static const lead = 15.0;
 

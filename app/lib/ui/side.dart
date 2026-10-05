@@ -34,6 +34,25 @@ class SideFrame extends StatelessWidget {
 
 /// `.side-head`: 68 px — Mikky small (or a back button), the title, and
 /// round buttons on the right.
+/// The reading column of a thread (user, 2026-10-05: « recentre le
+/// texte, rends les bords plus larges », « comme quand on lit sur
+/// Obsidian »): at most this wide, centered; in a narrow window, the
+/// window's own margins.
+const readingWidth = 600.0;
+
+/// [child] in the reading column: centered, at most [readingWidth] wide.
+class ReadingColumn extends StatelessWidget {
+  const ReadingColumn({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child),
+  );
+}
+
 class SideHead extends StatelessWidget {
   const SideHead({super.key, this.title, this.leading, this.actions = const [], this.small = false, this.titleMark});
 

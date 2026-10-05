@@ -92,11 +92,16 @@ abstract final class FakeSessions {
       PlanEntry('Relancer les tests', PlanStatus.completed),
     ], at: _at(80)),
     AgentMessage(
-      'C’est corrigé : la fermeture auto attendait **60 s**, les tests **45 s**.\n\n'
+      '## C’est corrigé\n\n'
+      'La fermeture auto attendait **60 s**, les tests *45 s* : j’ai aligné le code sur la spec.\n\n'
       '1. J’ai mis `autoCloseSec` à 45\n'
       '2. Les 76 tests passent\n\n'
+      '| Fichier | Avant | Après |\n'
+      '| --- | --- | --- |\n'
+      '| island_machine.dart | 60 s | 45 s |\n\n'
       '- Rien d’autre ne dépendait de cette valeur\n'
-      '- La spec dit bien 45 s (§3)',
+      '- Les autres délais ne bougent pas\n\n'
+      '> La spec dit bien 45 s (§3).',
       at: _at(90),
     ),
     TurnEnded(StopReason.endTurn, at: _at(92)),

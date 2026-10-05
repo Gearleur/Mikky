@@ -59,7 +59,7 @@ class ChatMessage extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 2, 2, 2),
-            child: DefaultTextStyle(style: uiText(TextSize.body, color: ui.text, height: 1.5), child: AgentText(text)),
+            child: DefaultTextStyle(style: uiText(TextSize.reading, color: ui.text, height: 1.65), child: AgentText(text)),
           ),
           ?metaLine,
         ],

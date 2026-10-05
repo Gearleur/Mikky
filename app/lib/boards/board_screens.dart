@@ -125,7 +125,7 @@ class _AgentMockState extends State<AgentMock> {
           child: SingleChildScrollView(
             controller: _scroll,
             padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : 78),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
+            child: ReadingColumn(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content)),
           ),
         ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
@@ -144,9 +144,11 @@ class _AgentMockState extends State<AgentMock> {
             left: 20,
             right: 20,
             bottom: 12,
-            child: Composer(
-              glass: true,
-              placeholder: working ? 'Écris à cet agent…' : 'Continuer avec cet agent…',
+            child: ReadingColumn(
+              child: Composer(
+                glass: true,
+                placeholder: working ? 'Écris à cet agent…' : 'Continuer avec cet agent…',
+              ),
             ),
           )
         else
@@ -339,6 +341,29 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                   '- Trois points retenus\n'
                   '- Un point à valider avec toi\n'
                   '  - la position de l’île',
+            ),
+          ]),
+        ),
+        BoardFrame(
+          label: 'Réponse à lire',
+          note: 'Comme une note dans Obsidian : 14,5 px, interligne 1,65 ; titres, listes, tableau, citation, trait.',
+          child: _Pane([
+            ChatMessage(
+              me: false,
+              text: '# Le notch\n\n'
+                  'Mikky regarde la **dernière tâche** au travail ; les autres applications sont à droite.\n\n'
+                  '## Ce qui change\n\n'
+                  '- Les tuiles sont larges\n'
+                  '- Le logiciel remplace le *modèle*\n'
+                  '  - VS Code, c’est VS Code\n\n'
+                  '| Partie | Largeur |\n'
+                  '| --- | --- |\n'
+                  '| Mikky et sa tâche | 342 |\n'
+                  '| Applications | 418 |\n\n'
+                  '> Pas de bloc pour rien.\n\n'
+                  '---\n\n'
+                  '### Plus tard\n\n'
+                  'Ctrl + clic ouvre l’agent dans son logiciel.',
             ),
           ]),
         ),

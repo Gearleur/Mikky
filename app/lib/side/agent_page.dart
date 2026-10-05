@@ -171,7 +171,8 @@ class _AgentPageState extends State<AgentPage> {
             // Room for the field, or for the read-only note of outside sessions.
             padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : 78),
             child: SelectableArea(
-              child: Column(
+              child: ReadingColumn(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   if (content.isEmpty)
@@ -183,6 +184,7 @@ class _AgentPageState extends State<AgentPage> {
                     ),
                   ...content,
                 ],
+                ),
               ),
             ),
           ),
@@ -207,7 +209,7 @@ class _AgentPageState extends State<AgentPage> {
             ),
           ],
         ),
-        if (composer != null) Positioned(left: 20, right: 20, bottom: 12, child: composer),
+        if (composer != null) Positioned(left: 20, right: 20, bottom: 12, child: ReadingColumn(child: composer)),
         if (composer == null)
           Positioned(
             left: 16,
