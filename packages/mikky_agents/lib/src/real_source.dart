@@ -93,6 +93,10 @@ class AgentEntry {
 
   String? get sessionId => log.sessionId ?? watched?.sessionId;
 
+  /// The software it runs in: Mikky for its own, else what the session
+  /// file says (VS Code, a terminal, the Claude or Codex app).
+  AgentApp? get app => origin == AgentOrigin.mikky ? AgentApp.mikky : (log.app ?? watched?.log.app);
+
   /// Can take a message now: launched by Mikky and still running.
   bool get live => run?.alive ?? false;
 

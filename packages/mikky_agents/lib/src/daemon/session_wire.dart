@@ -15,6 +15,7 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
       ],
       modelId: e['modelId'] as String?,
       modelOption: e['modelOption'] as String?,
+      app: AgentApp.fromWire(e['app'] as String?),
       at: at,
     ),
     'mode' => ModeChanged(e['id'] as String, at: at),
