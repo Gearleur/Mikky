@@ -7,8 +7,9 @@ class SpringSpec {
   final double stiffness;
   final double dampingRatio;
 
-  /// The island itself: "dry" (spec §3).
-  static const island = SpringSpec(210, .74);
+  /// The island itself: "dry" (spec §3); a little slower since 2026-10-05
+  /// (« un peu trop rapide », 210 before).
+  static const island = SpringSpec(165, .74);
 
   /// The notification drop: "sticky".
   static const drop = SpringSpec(120, .42);
@@ -16,8 +17,9 @@ class SpringSpec {
   /// The split bubble.
   static const sideBubble = SpringSpec(55, .65);
 
-  /// Open / close progress of the island content.
-  static const progress = SpringSpec(170, .8);
+  /// Open / close progress of the island content (135 since 2026-10-05,
+  /// with the island; 170 before).
+  static const progress = SpringSpec(135, .8);
 }
 
 /// A damped spring toward [target], integrated like the prototypes

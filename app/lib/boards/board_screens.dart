@@ -29,7 +29,11 @@ class AgentMock extends StatefulWidget {
     this.enchanted = false,
     this.finished = false,
     this.framed = true,
+    this.mikky,
   });
+
+  /// A trial: Mikky on the left of the page.
+  final MikkyBeside? mikky;
 
   /// In its own window (else in the caller's: the notch).
   final bool framed;
@@ -122,6 +126,7 @@ class _AgentMockState extends State<AgentMock> {
         menu: () {},
       ),
       scrolledTo: widget.scrolled ? 120 : null,
+      mikky: widget.mikky,
     );
   }
 }

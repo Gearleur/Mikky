@@ -68,7 +68,8 @@ class _Page {
 }
 
 class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
-  static const _push = Duration(milliseconds: 340), _pop = Duration(milliseconds: 280);
+  // A little slower since 2026-10-05 (340 and 280: « un peu trop rapide »).
+  static const _push = Duration(milliseconds: 400), _pop = Duration(milliseconds: 330);
 
   /// Opening: the page below goes out early; the new one comes in a little
   /// later. Back (t from 1 to 0): the page leaves in the first half, the

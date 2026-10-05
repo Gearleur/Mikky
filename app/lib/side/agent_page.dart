@@ -128,6 +128,20 @@ class AgentPageActions {
   final VoidCallback? resume, finishLimit, unfinishLimit, menu;
 }
 
+/// Trials (boards, 2026-10-05: « laisser une place à gauche pour
+/// Mikky »): Mikky in a column on the left of an agent's page, the thread
+/// and the field moved right, with smaller margins; where he stands.
+enum MikkyBeside {
+  /// At the top, under the back button.
+  top,
+
+  /// In the middle of the page's height.
+  middle,
+
+  /// At the bottom, beside the field.
+  bottom,
+}
+
 /// An agent's page (UX `ux-a.html`): one thread, the conversation with
 /// the work where it happened — each task unfolds what the agent did and
 /// said, in order, live while it works (user request, 2026-10-05: no more
@@ -135,10 +149,14 @@ class AgentPageActions {
 /// started elsewhere are followed without touching them; once done they
 /// can go on in Mikky.
 class AgentPageView extends StatefulWidget {
-  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo});
+  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo, this.mikky});
 
   final AgentPageModel model;
   final AgentPageActions actions;
+
+  /// A trial (boards only for now): Mikky on the left, the thread on the
+  /// right. Null: the centered reading column.
+  final MikkyBeside? mikky;
 
   /// Opens scrolled this far from the top (the boards), instead of at the
   /// end of the conversation.
@@ -245,6 +263,15 @@ class _AgentPageViewState extends State<AgentPageView> {
         ),
     ];
 
+    // The trial with Mikky on the left: his column, then the thread up to
+    // a small margin on the right.
+    final beside = widget.mikky;
+    const gutter = 128.0, rightMargin = 28.0;
+    Widget column({required Widget child}) => beside == null
+        ? ReadingColumn(child: child)
+        : Align(alignment: Alignment.topLeft, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child));
+    final left = beside == null ? 16.0 : gutter, right = beside == null ? 16.0 : rightMargin;
+
     final Widget? composer = m.external && working
         ? null
         : Composer(
@@ -269,9 +296,9 @@ class _AgentPageViewState extends State<AgentPageView> {
           child: SingleChildScrollView(
             controller: _scroll,
             // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 62 : 88),
+            padding: EdgeInsets.fromLTRB(left, 62, right, composer == null ? 62 : 88),
             child: SelectableArea(
-              child: ReadingColumn(
+              child: column(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -304,13 +331,23 @@ class _AgentPageViewState extends State<AgentPageView> {
           ],
         ),
         // Off the window's foot (2026-10-05: « trop petit » at 12).
-        if (composer != null) Positioned(left: 20, right: 20, bottom: 20, child: ReadingColumn(child: composer)),
+        if (composer != null)
+          Positioned(left: beside == null ? 20 : gutter, right: beside == null ? 20 : rightMargin, bottom: 20, child: column(child: composer)),
+        if (beside != null)
+          Positioned(
+            left: 22,
+            top: beside == MikkyBeside.top ? 58 : null,
+            bottom: beside == MikkyBeside.bottom ? 12 : null,
+            child: beside == MikkyBeside.middle ? const SizedBox.shrink() : _BesideMikky(status: m.status),
+          ),
+        if (beside == MikkyBeside.middle)
+          Positioned(left: 22, top: 0, bottom: 0, child: Center(child: _BesideMikky(status: m.status))),
         if (composer == null)
           Positioned(
-            left: 16,
-            right: 16,
+            left: left,
+            right: right,
             bottom: 20,
-            child: ReadingColumn(
+            child: column(
               child: Row(children: [
                 MikkyIcon('lock', size: 13, color: ui.text3),
                 const SizedBox(width: 6),
@@ -323,4 +360,15 @@ class _AgentPageViewState extends State<AgentPageView> {
       ],
     );
   }
+}
+
+/// Mikky beside the thread (trial): 84 px, in his agent's state, looking
+/// at the thread on his right.
+class _BesideMikky extends StatelessWidget {
+  const _BesideMikky({required this.status});
+
+  final AgentStatus status;
+
+  @override
+  Widget build(BuildContext context) => MiniMikky(size: 84, badge: false, state: mikkyStateOf(status), look: const Offset(1, .2));
 }

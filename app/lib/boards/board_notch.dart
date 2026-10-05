@@ -15,6 +15,7 @@ import '../ui/side.dart';
 import '../ui/status.dart';
 import '../ui/tabs.dart';
 import '../ui/tokens.dart';
+import '../side/agent_page.dart' show MikkyBeside;
 import 'board_screens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
@@ -100,6 +101,26 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
       BoardFrame(label: 'Au travail', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
       BoardFrame(label: 'Feu vert', width: 700, child: _page(AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
       BoardFrame(label: 'Terminé, la conversation continue', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), framed: false))),
+    ],
+  ),
+  BoardSection(
+    title: 'Essais · Mikky dans la page d’un agent',
+    note: 'Moins de marge ; le fil et le champ décalés vers la droite ; à gauche, une place pour Mikky (84), dans l’état de l’agent, tourné vers le fil. Trois places : en haut sous le retour, au milieu, en bas à côté du champ. Dans l’app, ce serait le Mikky de l’île qui s’y pose.',
+    kind: FrameKind.trial,
+    frames: [
+      BoardFrame(label: 'En haut', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false, mikky: MikkyBeside.top))),
+      BoardFrame(label: 'Au milieu', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false, mikky: MikkyBeside.middle))),
+      BoardFrame(label: 'En bas, à côté du champ', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false, mikky: MikkyBeside.bottom))),
+    ],
+  ),
+  BoardSection(
+    title: 'Essais · les mêmes, dans d’autres états',
+    kind: FrameKind.trial,
+    frames: [
+      for (final (label, place) in [('En haut', MikkyBeside.top), ('Au milieu', MikkyBeside.middle), ('En bas', MikkyBeside.bottom)]) ...[
+        BoardFrame(label: '$label · feu vert', width: 700, child: _page(AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false, mikky: place))),
+        BoardFrame(label: '$label · terminé', width: 700, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), framed: false, mikky: place))),
+      ],
     ],
   ),
   const BoardSection(
