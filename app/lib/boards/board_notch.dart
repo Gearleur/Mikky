@@ -7,6 +7,7 @@ import '../home/task_glance.dart';
 import '../home/tools_rail.dart';
 import '../ui/app_glyph.dart';
 import '../ui/app_tile.dart';
+import '../ui/dot_field.dart';
 import '../ui/buttons.dart';
 import '../ui/edge_rail.dart';
 import '../ui/environment_selector.dart';
@@ -42,7 +43,7 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 
 /// The notch in its window, on a board, its Mikky in the task's state.
 /// The task he looks at is not among the apps, as in the app.
-Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
+Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, DotFieldStyle? dots}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
     layout: HomeLayout.top,
@@ -52,6 +53,7 @@ Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => H
     mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
     onNew: () {},
     onHistory: (_) {},
+    dots: dots,
   ),
 );
 
@@ -81,6 +83,17 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
         child: _notch(apps: sampleNotchApps.skip(3).toList()),
       ),
       BoardFrame(label: 'Aucun agent', note: '« + » pour lancer une tâche, des petits points là où les applications viendront.', width: 700, child: _notch(apps: const [])),
+    ],
+  ),
+  BoardSection(
+    title: 'Essais · des points derrière les applications',
+    note: 'De tout petits points gris (1,2 px, tous les 6 px), une texture de loin : toujours là sous les applications, ils se fondent doucement jusqu’à disparaître dans la partie de Mikky, pour séparer les deux parties. Trois façons : réguliers ; deux foyers où ils sont denses et qui se diffusent ; glitchés, en petits carrés plus ou moins présents qui s’éteignent au hasard dans le fondu.',
+    kind: FrameKind.trial,
+    frames: [
+      for (final (label, style) in [('Réguliers', DotFieldStyle.even), ('Deux foyers', DotFieldStyle.hotspots), ('Glitchés', DotFieldStyle.glitch)]) ...[
+        BoardFrame(label: label, width: 700, child: _notch(watched: _watched(FakeSessions.working()), dots: style)),
+        BoardFrame(label: '$label · rien en cours', width: 700, child: _notch(apps: sampleNotchApps.skip(3).toList(), dots: style)),
+      ],
     ],
   ),
   BoardSection(

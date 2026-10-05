@@ -9,6 +9,7 @@ import '../ui/app_glyph.dart';
 import '../ui/app_tile.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
+import '../ui/dot_field.dart';
 import '../ui/edge_rail.dart';
 import '../ui/environment_selector.dart';
 import '../ui/motion.dart';
@@ -187,6 +188,7 @@ class HomeView extends StatefulWidget {
     this.environment = MikkyEnvironment.local,
     this.mikky = MikkyState.idle,
     this.animate = true,
+    this.dots,
   });
 
   final HomeLayout layout;
@@ -219,6 +221,10 @@ class HomeView extends StatefulWidget {
 
   /// False: Mikky still (goldens).
   final bool animate;
+
+  /// Trial (boards, 2026-10-05): tiny grey dots behind the notch's apps,
+  /// fading out into Mikky's part. Null: none.
+  final DotFieldStyle? dots;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -348,6 +354,8 @@ class _HomeViewState extends State<HomeView> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        // Whole under the apps, gone a little into Mikky's part.
+        if (top && widget.dots != null) Positioned.fill(child: DotField(style: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 90)),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
