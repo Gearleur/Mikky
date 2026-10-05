@@ -37,7 +37,7 @@ B à E auront chacune leur petite spec quand on y arrivera. Cette spec sert à v
 Paperclip (MIT, https://github.com/paperclipai/paperclip, adaptateurs `packages/adapters/claude-local` et `codex-local`) lance les outils officiels, déjà connectés par l'utilisateur. Mikky fait pareil et **ne touche jamais aux jetons**.
 
 **Deux principes (validés le 2026-09-29)** :
-- **Pas d'API** : seulement les abonnements de l'utilisateur, à travers les outils officiels connectés (comme Paperclip sans clé d'API). Mikky ne gère aucune clé d'API.
+- **Pas d'API** : seulement les abonnements de l'utilisateur, à travers les outils officiels connectés (comme Paperclip sans clé d'API). Mikky ne gère aucune clé d'API. **Changé le 2026-10-05** (l'utilisateur) : les API sont permises aussi, pour un chat (Claude, OpenAI, Gemini, modèles locaux), clés dans le coffre de Windows ; les agents restent lancés par les outils officiels (`plans/2026-10-06-premium.md`).
 - **Mikky n'est pas un harnais d'agents** (comme Hermes ou OpenClaw) : il ne fait tourner ni modèle ni boucle d'agent lui-même. Il lance Claude Code et Codex, les suit, et passe leurs demandes à l'utilisateur. Là où on recopie du code de Paperclip, on garde sa mention de licence.
 
 ### 3.1 Par défaut : ACP, le même protocole pour les deux
