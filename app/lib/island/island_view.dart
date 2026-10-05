@@ -1084,18 +1084,24 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
           // history's dark — fills the island to its corners (2026-10-02).
           child: ClipPath(
             clipper: IslandClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius, _corners),
-            child: OverflowBox(
-              minWidth: open.width,
-              maxWidth: open.width,
-              minHeight: open.height,
-              maxHeight: open.height,
-              child: Opacity(
-                opacity: opacity.clamp(0.0, 1.0),
-                child: Transform.translate(
-                  offset: Offset(0, (1 - opacity) * 6),
-                  child: MikkyUiTheme(
-                    ui: ui,
-                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
+            // The same shape as a rounded rectangle: blurs behind the pages
+            // (the field's foot, the history's dark) stay inside it, even
+            // while the island grows (2026-10-05).
+            child: ClipRRect(
+              clipper: _RoundClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius),
+              child: OverflowBox(
+                minWidth: open.width,
+                maxWidth: open.width,
+                minHeight: open.height,
+                maxHeight: open.height,
+                child: Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - opacity) * 6),
+                    child: MikkyUiTheme(
+                      ui: ui,
+                      child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
+                    ),
                   ),
                 ),
               ),
@@ -1202,6 +1208,20 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 /// The island's shape in a child of it: [shape] (in the child's
 /// coordinates, past the screen's edge) with the shader's corners — a
 /// curve of radius [radius] and power [power] (2: a circle's).
+/// The island's shape as a rounded rectangle (see [IslandClip]).
+class _RoundClip extends CustomClipper<RRect> {
+  const _RoundClip(this.shape, this.radius);
+
+  final Rect shape;
+  final double radius;
+
+  @override
+  RRect getClip(Size size) => RRect.fromRectAndRadius(shape, Radius.circular(math.max(0.0, math.min(radius, shape.shortestSide / 2))));
+
+  @override
+  bool shouldReclip(_RoundClip old) => old.shape != shape || old.radius != radius;
+}
+
 class IslandClip extends CustomClipper<Path> {
   const IslandClip(this.shape, this.radius, [this.power = 2]);
 

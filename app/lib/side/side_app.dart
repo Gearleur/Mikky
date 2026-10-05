@@ -42,8 +42,10 @@ class SideHost {
 
 /// The island's window, at the right edge or at the top (2026-10-02): the
 /// home (`HomeScreen`, its Chat the new agent), an agent's page (its
-/// thread). Pages are stacked; a new one slides in from the right (380 ms),
-/// the one below moves 28 % left and dims. Under a page the island takes
+/// thread). Pages are stacked; a new one comes in as an iPhone opens an
+/// app (2026-10-05: the slide from the right was « pas cool »): it fades
+/// in, growing from 97 % to its size, while the one below fades out,
+/// drawing back a little; back, the other way. Under a page the island takes
 /// the page's size ([HomeLayout.pageSize]).
 class SideApp extends StatefulWidget {
   const SideApp({super.key, required this.host, this.layout = HomeLayout.right, this.onHome});
@@ -66,7 +68,10 @@ class _Page {
 }
 
 class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
-  static const _push = Duration(milliseconds: 380);
+  static const _push = Duration(milliseconds: 340);
+
+  /// The page below goes out early; the new one comes in a little later.
+  static const _out = Interval(0, .55), _in = Interval(.15, 1);
   static const _curve = Cubic(.2, .9, .25, 1);
 
   late final List<_Page> _pages = [_Page('home', _home)];
@@ -223,7 +228,6 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         builder: (context, _) {
           final t = _t.value;
           final moving = t < 1;
-          final width = widget.layout.pageSize.width;
           final notice = switch (host.service.backend) {
             BackendState.online => null,
             BackendState.connecting => const BackendStatus(title: 'Connexion à Mikky', message: 'Tes sessions arrivent…'),
@@ -249,14 +253,24 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
                     // Pages further down keep their state but are not drawn.
                     for (final p in _pages)
                       if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
+                    // Hidden and still at rest, in the same widgets: it keeps
+                    // its state.
                     if (below != null)
-                      moving
-                          ? Transform.translate(
-                              offset: Offset(-.28 * width * t, 0),
-                              child: Opacity(opacity: 1 - .5 * t, child: page(below)),
-                            )
-                          : Offstage(child: TickerMode(enabled: false, child: page(below))),
-                    Transform.translate(offset: Offset((1 - t) * width, 0), child: page(top)),
+                      Offstage(
+                        offstage: !moving,
+                        child: TickerMode(
+                          enabled: moving,
+                          child: Opacity(
+                            opacity: 1 - _out.transform(t),
+                            child: Transform.scale(scale: 1 + .015 * t, alignment: Alignment.topCenter, child: page(below)),
+                          ),
+                        ),
+                      ),
+                    // The same widgets at rest (1, 1): the page keeps its state.
+                    Opacity(
+                      opacity: _in.transform(t),
+                      child: Transform.scale(scale: .97 + .03 * t, alignment: Alignment.topCenter, child: page(top)),
+                    ),
                   ],
                 ),
               ),

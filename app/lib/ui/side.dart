@@ -112,7 +112,12 @@ class SideHead extends StatelessWidget {
 /// way), not strong from its first pixels. Still: costs nothing when
 /// nothing moves.
 class EdgeBlur extends StatelessWidget {
-  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8, this.ramp = .5});
+  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8, this.ramp = .5, this.corner = 22});
+
+  /// The round corners of the window's edge it lies on, less its 8 px
+  /// inset: the blur keeps inside them (2026-10-05: at the bottom it went
+  /// past the island's corners).
+  final double corner;
 
   /// How the blur grows towards the edge: layer i reaches 1 − (i/n)^ramp
   /// of the way; .5 grows evenly, lower is strong sooner, higher later.
@@ -146,7 +151,8 @@ class EdgeBlur extends StatelessWidget {
                 right: 8,
                 top: top ? 0 : height - reach(i),
                 bottom: top ? height - reach(i) : 0,
-                child: ClipRect(
+                child: ClipRRect(
+                  borderRadius: top ? BorderRadius.zero : BorderRadius.vertical(bottom: Radius.circular(corner)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.clamp),
                     child: const SizedBox.expand(),

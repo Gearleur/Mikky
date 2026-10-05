@@ -269,7 +269,7 @@ class _AgentPageViewState extends State<AgentPageView> {
           child: SingleChildScrollView(
             controller: _scroll,
             // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : 78),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 62 : 88),
             child: SelectableArea(
               child: ReadingColumn(
                 child: Column(
@@ -290,7 +290,7 @@ class _AgentPageViewState extends State<AgentPageView> {
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : 54)),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 50 : 64)),
         // Top middle: the violet star under the spell (« Ensorcelé »), the
         // yellow one while the limit holds it (user requests, 2026-09-30).
         Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: m.id, limited: m.status == AgentStatus.rateLimited))),
@@ -303,12 +303,13 @@ class _AgentPageViewState extends State<AgentPageView> {
             RoundButton.menu(size: 34, tooltip: 'Menu', onPressed: a.menu ?? () {}),
           ],
         ),
-        if (composer != null) Positioned(left: 20, right: 20, bottom: 12, child: ReadingColumn(child: composer)),
+        // Off the window's foot (2026-10-05: « trop petit » at 12).
+        if (composer != null) Positioned(left: 20, right: 20, bottom: 20, child: ReadingColumn(child: composer)),
         if (composer == null)
           Positioned(
             left: 16,
             right: 16,
-            bottom: 14,
+            bottom: 20,
             child: ReadingColumn(
               child: Row(children: [
                 MikkyIcon('lock', size: 13, color: ui.text3),
