@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' show ImageFilter;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
@@ -362,11 +363,31 @@ class _HomeViewState extends State<HomeView> {
           left: top ? _gridLeft : 0,
           width: top ? _gridWidth : l.size.width,
           bottom: l.foot + (selectorH - PageDots.height) / 2,
-          child: Center(child: _dots()),
+          child: Center(child: _halo(_dots())),
         ),
-        Positioned(right: l.side, bottom: l.foot, child: _environmentSelector(inner)),
+        Positioned(right: top ? l.side - _haloPad.horizontal / 2 : l.side, bottom: top ? l.foot - _haloPad.vertical / 2 : l.foot, child: _halo(_environmentSelector(inner))),
         if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _history(inner)),
       ],
+    );
+  }
+
+  /// In the notch, a light blur around the pages' dots and the
+  /// environment, over the dots behind the apps (2026-10-05: « un petit
+  /// effet de flou, vraiment léger, juste autour de ces éléments »).
+  static const _haloPad = EdgeInsets.symmetric(horizontal: 6, vertical: 3);
+
+  Widget _halo(Widget child) {
+    if (!_l.isTop) return child;
+    final ui = MikkyUi.of(context);
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(999),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 2.5, sigmaY: 2.5),
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: ui.island.withValues(alpha: .5)),
+          child: Padding(padding: _haloPad, child: child),
+        ),
+      ),
     );
   }
 
