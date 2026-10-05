@@ -11,7 +11,6 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/floating_menu.dart';
-import '../ui/metro.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
@@ -165,7 +164,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Modes de l’accueil',
-            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px, en haut au milieu dans les deux accueils ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
+            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px en haut au milieu de l’accueil de droite, 32 dans le notch ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
             child: BoardPane(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Local(0, (v, set) => MTabBar(mini: true, height: 44, ink: true, selected: v, onChanged: set, items: _modes)),
@@ -275,7 +274,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Champ de saisie',
-            note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle, ou Suivi | Chat.',
+            note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle pour une nouvelle tâche ; rien pour écrire à un agent.',
             child: _Tray([
               Composer(
                 placeholder: 'Que doit faire l’agent ?',
@@ -286,10 +285,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
                 ]),
               ),
               const SizedBox(height: 4),
-              Local(0, (v, set) => Composer(
-                placeholder: 'Écris à cet agent…',
-                options: Segmented(options: const ['Suivi', 'Chat'], selected: v, size: SegmentSize.field, onChanged: set),
-              )),
+              const Composer(placeholder: 'Écris à cet agent…'),
             ]),
           ),
           BoardFrame(
@@ -309,7 +305,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Tuiles',
-            note: '64 px, 8 par page, en haut comme à droite (2 octobre) ; 104 px, l’ancienne taille de droite, pour comparer. Neutres tant qu’elles n’ont pas leur dessin.',
+            note: '64 px, 8 par page, à droite (2 octobre) ; le notch a ses tuiles larges (168 × 44, planche Notch Top) ; 104 px, l’ancienne taille de droite, pour comparer. Neutres tant qu’elles n’ont pas leur dessin.',
             child: BoardPane(
               width: 260,
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -348,7 +344,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           const BoardFrame(
             label: 'Mikky',
-            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil, sans case. Au repos, au travail, fini.',
+            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil de droite, 84 à gauche du notch, sans case. Au repos, au travail, fini.',
             child: BoardPane(
               width: 270,
               child: Row(children: [
@@ -363,13 +359,13 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
     ]),
     ('Historique', [
       const BoardSection(
-        title: 'Historique (essai)',
-        note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la fenêtre en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
+        title: 'Historique',
+        note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la hauteur du notch en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme.',
         frames: [
           BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 290, child: HistoryTry()),
           BoardFrame(label: 'À droite · ouvert', width: 290, child: HistoryOpen()),
-          BoardFrame(label: 'En haut · à essayer', width: 450, child: HistoryTry(layout: HomeLayout.top)),
-          BoardFrame(label: 'En haut · ouvert', width: 450, child: HistoryOpen(layout: HomeLayout.top)),
+          BoardFrame(label: 'Notch · à essayer', width: 730, child: HistoryTry(layout: HomeLayout.top)),
+          BoardFrame(label: 'Notch · ouvert', width: 730, child: HistoryOpen(layout: HomeLayout.top)),
         ],
       ),
     ]),
@@ -435,17 +431,6 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
                 const CodePill('npm run build'),
               ]),
             ]),
-          ),
-          const BoardFrame(
-            label: 'Suivi',
-            note: 'La ligne de métro : fait, en cours (trait bleu qui avance), à faire, message glissé.',
-            child: _Tray([
-              MetroStep(kind: StepKind.done, past: true, first: true, child: Text('Lancer les tests')),
-              MetroStep(kind: StepKind.me, past: true, meta: '14:02', child: Text('Regarde aussi le délai')),
-              MetroStep(kind: StepKind.now, child: Text('Corriger la fermeture auto')),
-              MetroStep(kind: StepKind.todo, child: Text('Relancer les tests')),
-              MetroStep(kind: StepKind.todo, last: true, child: Text('Terminé')),
-            ], width: 320),
           ),
         ],
       ),

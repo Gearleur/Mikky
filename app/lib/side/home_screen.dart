@@ -4,6 +4,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../home/history_sheet.dart';
 import '../home/home_view.dart';
+import '../home/task_glance.dart';
 import '../ui/brand_logo.dart';
 import '../ui/status.dart';
 import 'session_text.dart';
@@ -18,15 +19,68 @@ const maxDone = 5;
 /// of their own (user, 2026-10-02). [recalled]: agents opened from the
 /// history, back among the finished ones, first. Paused agents get no
 /// state on their tile.
-List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> recalled = const {}}) => [
+/// [except]: the agent the notch shows beside Mikky.
+List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> recalled = const {}, String? except}) => [
   for (final e in _shown(entries, now, recalled))
-    HomeApp(
-      id: e.id,
-      name: e.name,
-      brand: Brand.of(e.provider),
-      status: appStatus(e.status, e.homeStatus),
-    ),
+    if (e.id != except)
+      HomeApp(
+        id: e.id,
+        name: e.name,
+        brand: Brand.of(e.provider),
+        status: appStatus(e.status, e.homeStatus),
+        line: appLine(e.homeStatus, e.log, e.lastActivity, now),
+        app: e.app,
+      ),
 ];
+
+/// What an app does now, or how it ended, in a few words: the line under
+/// its title in the notch (user, 2026-10-05: « un petit texte qui
+/// change »).
+String appLine(AgentStatus status, SessionLog log, DateTime last, DateTime now) => switch (status) {
+  AgentStatus.approval => log.detail.isEmpty ? 'Attend ton feu vert' : 'Attend : ${log.detail}',
+  AgentStatus.question => 'Te pose une question',
+  AgentStatus.working || AgentStatus.thinking || AgentStatus.searching => log.detail.isEmpty ? 'Au travail' : log.detail,
+  AgentStatus.rateLimited => log.detail,
+  AgentStatus.error => 'En erreur',
+  AgentStatus.paused => 'En pause',
+  AgentStatus.finished || AgentStatus.idle => 'Terminée · ${ago(last, now)}',
+};
+
+/// A task that ended this long ago is still the one Mikky looks at.
+const watchedAfterEnd = Duration(minutes: 10);
+
+/// The task Mikky looks at in the notch (user, 2026-10-05: « la dernière
+/// tâche qui est en train d'être faite »): the latest at work or waiting
+/// for the user; else the latest that ended in the last
+/// [watchedAfterEnd]; else none.
+T? watchedOf<T>(Iterable<T> items, {required AgentStatus Function(T) status, required DateTime Function(T) lastActivity, required DateTime now}) {
+  T? latest(bool Function(AgentStatus) keep) {
+    T? best;
+    for (final i in items) {
+      if (keep(status(i)) && (best == null || lastActivity(i).isAfter(lastActivity(best)))) best = i;
+    }
+    return best;
+  }
+
+  final active = latest((s) => switch (s) {
+    AgentStatus.working || AgentStatus.thinking || AgentStatus.searching || AgentStatus.approval || AgentStatus.question => true,
+    _ => false,
+  });
+  if (active != null) return active;
+  final ended = latest((s) => s == AgentStatus.finished || s == AgentStatus.rateLimited || s == AgentStatus.error);
+  return ended != null && now.difference(lastActivity(ended)) <= watchedAfterEnd ? ended : null;
+}
+
+/// [watchedOf] on the agents: not archived ones, nor paused ones.
+WatchedTask? watchedTask(List<AgentEntry> entries, DateTime now) {
+  final e = watchedOf(
+    entries.where((e) => !e.mark.archived),
+    status: (e) => e.homeStatus,
+    lastActivity: (e) => e.lastActivity,
+    now: now,
+  );
+  return e == null ? null : WatchedTask(id: e.id, name: e.name, log: e.log, status: e.homeStatus, app: e.app);
+}
 
 /// An app's state on its tile, from its agent's [status] and the one the
 /// home sorts it by ([home]). Paused by the user: nothing. An agent whose
@@ -123,10 +177,12 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
+    final watched = layout.isTop ? watchedTask(entries, now) : null;
     return HomeView(
       key: ValueKey(layout.placement),
       layout: layout,
-      apps: homeApps(entries, now, recalled: recalled),
+      watched: watched,
+      apps: homeApps(entries, now, recalled: recalled, except: watched?.id),
       drawMikky: false,
       onOpen: (app) => open(app.id),
       onNew: canLaunch ? () => open('new') : null,

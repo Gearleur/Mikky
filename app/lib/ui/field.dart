@@ -123,7 +123,7 @@ class _SearchFieldState extends State<SearchField> {
 /// The field of the window (`.cbox`, « Champ »): grey and hollow, the text
 /// grows from one line to five, then scrolls. On the right, a small mic
 /// and the send arrow. [options] sit half inside, bottom left: folder and
-/// model (new agent) or Suivi | Chat (agent at work). Enter sends,
+/// model (new agent). Enter sends,
 /// Shift + Enter goes to the next line. A « / » at the start shows the
 /// agent's [commands] above the field: ↑ ↓ to choose, Tab or Enter to
 /// take one.

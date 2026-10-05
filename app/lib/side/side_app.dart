@@ -41,10 +41,10 @@ class SideHost {
 }
 
 /// The island's window, at the right edge or at the top (2026-10-02): the
-/// home (`HomeScreen`, its Chat the new agent), an agent's page (Suivi /
-/// Chat). Pages are stacked; a new one slides in from the right (380 ms),
-/// the one below moves 28 % left and dims. At the top, the island grows
-/// a little under a page ([HomeLayout.pageSize]).
+/// home (`HomeScreen`, its Chat the new agent), an agent's page (its
+/// thread). Pages are stacked; a new one slides in from the right (380 ms),
+/// the one below moves 28 % left and dims. Under a page the island takes
+/// the page's size ([HomeLayout.pageSize]).
 class SideApp extends StatefulWidget {
   const SideApp({super.key, required this.host, this.layout = HomeLayout.right, this.onHome});
 

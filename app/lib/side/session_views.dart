@@ -77,8 +77,8 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
   );
 }
 
-/// The star's colors of a main step.
-PixelFxPalette? _paletteOf(StepTone? tone, MikkyUi ui) => switch (tone) {
+/// The star's colors of a main step (grey when null: reading, searching).
+PixelFxPalette? stepPalette(StepTone? tone, MikkyUi ui) => switch (tone) {
   StepTone.plan || StepTone.created => PixelFxPalette.green(ui),
   StepTone.changed => PixelFxPalette.blue,
   StepTone.deleted => PixelFxPalette.red,
@@ -95,7 +95,7 @@ List<Widget> _step(MainStep s, MikkyUi ui) {
   return [
     TaskStep(
       label: s.label,
-      tone: _paletteOf(s.tone, ui),
+      tone: stepPalette(s.tone, ui),
       state: s.state,
       note: s.note,
       detail: s.tools.isEmpty ? null : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final t in s.tools) _toolLine(t, ui)]),

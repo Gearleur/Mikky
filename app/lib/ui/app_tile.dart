@@ -14,9 +14,14 @@ import 'tokens.dart';
 /// raised controls; under the mouse it rises 2 px and its shadow grows;
 /// pressed, it shrinks like every button.
 class AppTile extends StatefulWidget {
-  const AppTile({super.key, this.size = 64, this.label, this.onTap, this.child, this.status});
+  const AppTile({super.key, this.size = 64, this.width, this.label, this.onTap, this.child, this.status});
 
+  /// Its height, and its width when square.
   final double size;
+
+  /// Wider than high: the notch's apps, with their words on the tile
+  /// (2026-10-05). Null: square.
+  final double? width;
 
   /// Read by screen readers.
   final String? label;
@@ -43,7 +48,7 @@ class _AppTileState extends State<AppTile> {
     final s = widget.size, r = AppTile.radiusFor(s);
     final on = widget.onTap != null;
     final face = Surface(
-      width: s,
+      width: widget.width ?? s,
       height: s,
       radius: r,
       gradient: ui.tile,

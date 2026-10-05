@@ -20,11 +20,11 @@ void main() {
     // The band's title: the board shown.
     Finder title(String name) => find.byWidgetPredicate((w) => w is Text && w.data == name && (w.style?.fontSize ?? 0) == 30);
     expect(title('Marque'), findsWidgets);
-    await tester.tap(find.text('Accueil Top').first);
+    await tester.tap(find.text('Notch Top').first);
     await tester.pump();
     expect(title('Marque'), findsWidgets);
     await tester.pump(const Duration(milliseconds: 300));
-    expect(title('Accueil Top'), findsWidgets);
+    expect(title('Notch Top'), findsWidgets);
     expect(title('Marque'), findsNothing);
   });
 }

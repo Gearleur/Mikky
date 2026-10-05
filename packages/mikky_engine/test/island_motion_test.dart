@@ -41,12 +41,12 @@ void main() {
       expect(m.openContentOpacity, 1);
     });
 
-    test('the list layout is the home: taller, Mikky at its top left', () {
+    test('the list layout is the home: the notch, Mikky big on its left', () {
       final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
-      expect(m.currentWidth, 450);
-      expect(m.currentHeight, 260);
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      expect(m.currentWidth, 730);
+      expect(m.currentHeight, 216);
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (52, 117.36, 24.36));
       // An alert: the request Mikky brings, as big as the home (2026-10-04),
       // Mikky at his focus place.
       m.setShape(IslandShape.open, layout: IslandLayout.focus);
@@ -55,7 +55,7 @@ void main() {
       expect(m.mikkyRadius, 28);
     });
 
-    test('a page over the home grows a little for the conversation', () {
+    test('a page over the home: its own size, Mikky behind the back button', () {
       final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
       m.setShape(IslandShape.open, layout: IslandLayout.page);

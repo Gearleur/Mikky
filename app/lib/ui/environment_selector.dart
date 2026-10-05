@@ -49,17 +49,22 @@ class EnvironmentSelector extends StatefulWidget {
     required this.selected,
     required this.onChanged,
     required this.menuWithin,
+    this.small = false,
   });
 
   final MikkyEnvironment selected;
   final ValueChanged<MikkyEnvironment> onChanged;
   final BuildContext menuWithin;
 
-  static const height = 36.0;
+  /// The notch's (2026-10-05): 24 px, the name small and grey — quiet,
+  /// not made to be clicked much.
+  final bool small;
+
+  static const height = 36.0, smallHeight = 24.0;
 
   /// The star's round zone, at the right end.
-  static const _star = 34.0;
-  static const _padLeft = 13.0;
+  static const _star = 34.0, _smallStar = 22.0;
+  static const _padLeft = 13.0, _smallPadLeft = 7.0;
 
   /// At least this wide: its menu, as wide as it, fits the names and
   /// their check.
@@ -130,8 +135,14 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final style = uiText(TextSize.label, weight: FontWeight.w600, height: 1, color: ui.text);
-    final width = math.max(EnvironmentSelector.minWidth, EnvironmentSelector._padLeft + _widestLabel(style, MediaQuery.textScalerOf(context)) + 4 + EnvironmentSelector._star);
+    final small = widget.small;
+    final style = small
+        ? uiText(TextSize.small, weight: FontWeight.w500, height: 1, color: ui.text2)
+        : uiText(TextSize.label, weight: FontWeight.w600, height: 1, color: ui.text);
+    final star = small ? EnvironmentSelector._smallStar : EnvironmentSelector._star;
+    final padLeft = small ? EnvironmentSelector._smallPadLeft : EnvironmentSelector._padLeft;
+    final widest = padLeft + _widestLabel(style, MediaQuery.textScalerOf(context)) + 4 + star;
+    final width = small ? widest : math.max(EnvironmentSelector.minWidth, widest);
     final look = _look;
     final raised = look == _Look.raised;
     final clear = ui.thumb.withValues(alpha: 0);
@@ -177,8 +188,8 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
                     duration: Motion.of(context, raised ? Motion.pressDown : Motion.fade),
                     curve: Motion.enter,
                     width: width,
-                    height: EnvironmentSelector.height,
-                    padding: const EdgeInsets.only(left: EnvironmentSelector._padLeft, right: 1),
+                    height: small ? EnvironmentSelector.smallHeight : EnvironmentSelector.height,
+                    padding: EdgeInsets.only(left: padLeft, right: 1),
                     decoration: BoxDecoration(
                       color: switch (look) {
                         _Look.raised => ui.thumb,
@@ -201,7 +212,7 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
                           Expanded(child: _Name(widget.selected.label, style: style)),
                           RoundButton.menu(
                             key: _star,
-                            size: EnvironmentSelector._star,
+                            size: star,
                             tooltip: 'Choisir l’environnement',
                             onPressed: _openMenu,
                           ),

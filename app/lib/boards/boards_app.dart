@@ -37,7 +37,7 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, islandBoard, notchTopBoard, notchRightBoard, homeTopBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
+final boards = [brandBoard, componentsBoard, islandBoard, notchTopBoard, notchRightBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});

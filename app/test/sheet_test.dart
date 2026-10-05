@@ -65,8 +65,8 @@ void main() {
     expect(find.byType(HistoryList), findsNothing);
   });
 
-  testWidgets('at the top too: centered in the low island', (tester) async {
-    await tester.binding.setSurfaceSize(const Size(520, 320));
+  testWidgets('in the notch too: centered in the low island', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 320));
     await tester.pumpWidget(const MediaQuery(
       data: MediaQueryData(disableAnimations: true),
       child: Directionality(

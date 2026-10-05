@@ -6,6 +6,7 @@ use std::collections::HashSet;
 pub struct Reader {
     started: bool,
     cwd: bool,
+    app: bool,
     turn: bool,
     user_in_turn: bool,
     plan_tools: HashSet<String>,
@@ -75,12 +76,16 @@ impl Reader {
             return vec![];
         }
         let mut out = vec![];
+        let app = claude_app(string(&line["entrypoint"]));
         if line["sessionId"].is_string()
-            && (!self.started || (!self.cwd && line["cwd"].is_string()))
+            && (!self.started
+                || (!self.cwd && line["cwd"].is_string())
+                || (!self.app && app.is_some()))
         {
             self.started = true;
-            self.cwd = line["cwd"].is_string();
-            out.push(json!({"type":"session", "id":line["sessionId"], "cwd":line["cwd"]}));
+            self.cwd |= line["cwd"].is_string();
+            self.app |= app.is_some();
+            out.push(json!({"type":"session", "id":line["sessionId"], "cwd":line["cwd"], "app":app}));
         }
         match string(&line["type"]) {
             // The summary Claude writes after compacting is not a message
@@ -213,7 +218,8 @@ impl Reader {
                     .or_else(|| p.get("session_id"))
                     .unwrap_or(&Value::Null);
                 if id.is_string() {
-                    return vec![json!({"type":"session", "id":id, "cwd":p["cwd"]})];
+                    let app = codex_app(string(&p["originator"]));
+                    return vec![json!({"type":"session", "id":id, "cwd":p["cwd"], "app":app})];
                 }
             }
             "response_item" if p["type"] == "function_call" && p["name"] == "update_plan" => {
@@ -317,6 +323,27 @@ impl Reader {
 }
 
 /// Why a Codex turn failed: the subscription limit, or another error.
+/// The software a Claude session runs in, from its `entrypoint`.
+fn claude_app(entrypoint: &str) -> Option<&'static str> {
+    match entrypoint {
+        "cli" => Some("terminal"),
+        e if e.contains("vscode") => Some("vscode"),
+        e if e.contains("desktop") => Some("claude"),
+        _ => None,
+    }
+}
+
+/// The software a Codex session runs in, from its `originator`.
+fn codex_app(originator: &str) -> Option<&'static str> {
+    let o = originator.to_lowercase();
+    match o.as_str() {
+        "codex_cli_rs" | "codex_exec" => Some("terminal"),
+        o if o.contains("vscode") => Some("vscode"),
+        o if o.contains("desktop") => Some("codex"),
+        _ => None,
+    }
+}
+
 fn failure(message: &str, info: &str) -> &'static str {
     if info.contains("limit") || message.to_lowercase().contains("limit") {
         "rateLimited"
@@ -415,5 +442,18 @@ mod tests {
             &json!({"type":"assistant","message":{"id":"m","stop_reason":"end_turn","content":[{"type":"text","text":"Fait."}]}}),
         );
         assert_eq!(out.last().unwrap()["reason"], "endTurn");
+    }
+
+    #[test]
+    fn the_software_a_session_runs_in() {
+        let mut r = Reader::default();
+        let out = r.read("claude", &json!({"type":"user","sessionId":"s","cwd":"/a","entrypoint":"claude-vscode","message":{"content":"Go"}}));
+        assert_eq!(out[0]["app"], "vscode");
+        let mut r = Reader::default();
+        let out = r.read("codex", &json!({"type":"session_meta","payload":{"id":"c","cwd":"/a","originator":"Codex Desktop"}}));
+        assert_eq!(out[0]["app"], "codex");
+        assert_eq!(codex_app("codex_exec"), Some("terminal"));
+        assert_eq!(claude_app("cli"), Some("terminal"));
+        assert_eq!(claude_app("sdk-ts"), None);
     }
 }

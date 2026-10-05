@@ -67,7 +67,7 @@ abstract final class TextSize {
 /// The window's corner radii (design.md §4): every rounded shape takes one
 /// of these; a [Surface] without a radius is a pill.
 abstract final class Radii {
-  /// Thin bars: a progress bar, the line of Suivi.
+  /// Thin bars: a progress bar.
   static const xs = 2.0;
 
   /// A bubble's corner towards its speaker.

@@ -31,9 +31,9 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      // The home at the top is 450 × 260, an agent's page 450 × 380
-      // (2026-10-02): room for its shadow.
-      IslandEdge.top => const Size(560, 480),
+      // The notch at the top is 730 × 216 (2026-10-05), an agent's page
+      // 450 × 380: room for their shadow.
+      IslandEdge.top => const Size(840, 480),
       // At the right, up to 344 × 520 (an agent's page): room for its
       // shadow on the left.
       IslandEdge.right => const Size(420, 700),
@@ -131,8 +131,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool _sideHome = true;
 
   /// At the top: the focus view for an agent that needs the user (Oui /
-  /// Non, as before). Else, both edges: the home, taller under a page (an
-  /// agent's Suivi / Chat; at the right, the agent that asks opens there).
+  /// Non, as before). Else, both edges: the home, another size under a
+  /// page (an agent's; at the right, the agent that asks opens there).
   IslandLayout get _layoutWanted => switch (_edge) {
     IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage => IslandLayout.focus,
     _ => _sideHome ? IslandLayout.list : IslandLayout.page,

@@ -6,7 +6,7 @@ enum IslandShape { hidden, compact, open }
 
 /// What the open island shows: [focus], one agent and its answers (an
 /// alert at the top); [list], the home; [page], a page over the home (an
-/// agent's Suivi / Chat), a little taller at the top (2026-10-02).
+/// agent's page; at the top 450 × 380, under the notch's 730 × 216).
 enum IslandLayout { focus, list, page }
 
 /// The screen edge the island is glued to.
@@ -35,26 +35,30 @@ class IslandMetrics {
     required this.mikkyCompact,
     required this.mikkyOpen,
     required this.mikkyList,
+    required this.mikkyPage,
   });
 
   /// Spec §3: closed 186 × 36. Focus, a request Mikky brings with its
-  /// task: 450 × 260 since 2026-10-04 (was 430 × 178; the home's size,
-  /// to draw again with the user). List: the home,
-  /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
-  /// validated by the user). Page: an agent's Suivi / Chat, 450 × 380 —
-  /// the home grows a little for the conversation (user, 2026-10-02).
+  /// task: 450 × 260 since 2026-10-04 (was 430 × 178; to draw again with
+  /// the user). List: the home, the notch since 2026-10-05, 730 × 216
+  /// (« Côte à côte »: Mikky and the task he looks at, the other apps;
+  /// was 450 × 260). Page: an agent's page, 450 × 380 (2026-10-02).
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
     focus: (width: 450, height: 260),
-    list: (width: 450, height: 260),
+    list: (width: 730, height: 216),
     page: (width: 450, height: 380),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
-    // Top left of the home, where its 72 px Mikky is drawn.
-    mikkyList: (x: 40, y: 35, radius: 21),
+    // In the notch, where its 84 px Mikky is drawn (`HomeLayout.top`:
+    // at (10, 72); his center at half his width and 54 % of his height,
+    // his radius 29 % of it).
+    mikkyList: (x: 52, y: 117.36, radius: 24.36),
+    // On an agent's page: at its top left, behind the back button.
+    mikkyPage: (x: 40, y: 35, radius: 21),
   );
 
   /// A small tab when closed. Open, the home: the top's, upright (user,
@@ -72,6 +76,7 @@ class IslandMetrics {
     mikkyCompact: (x: 37, y: 32, radius: 15),
     mikkyOpen: (x: 40, y: 35, radius: 21),
     mikkyList: (x: 40, y: 35, radius: 21),
+    mikkyPage: (x: 40, y: 35, radius: 21),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
@@ -85,9 +90,13 @@ class IslandMetrics {
 
   /// Mikky's place when open on the home ([IslandLayout.list]), and on a
   /// page over it (hidden there, behind the page's back button).
-  final MikkySpot mikkyList;
+  final MikkySpot mikkyList, mikkyPage;
 
-  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.focus ? mikkyOpen : mikkyList;
+  MikkySpot mikkyAt(IslandLayout layout) => switch (layout) {
+        IslandLayout.focus => mikkyOpen,
+        IslandLayout.list => mikkyList,
+        IslandLayout.page => mikkyPage,
+      };
 
   IslandSize open(IslandLayout layout) => switch (layout) {
         IslandLayout.focus => focus,

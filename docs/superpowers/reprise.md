@@ -31,6 +31,12 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
   - Fermer l'app n'arrête pas les agents.
 - **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique.
 
+## 5 octobre (suite) : le notch remplace l'accueil du haut
+
+- Planches Notch Top et Notch Right faites avec l'utilisateur ; il a choisi **« Côte à côte »** pour le haut, appliqué dans l'app : `HomeView` en haut = le notch 730 × 216 (`design.md`, « Notch »). L'ancienne planche Accueil Top et la ligne de métro (`metro.dart`) sont supprimées. La droite garde l'accueil de la planche Accueil Right ; ses essais de notch (Au centre, En-tête, Dock) **attendent un choix**.
+- **Le logiciel d'une tâche** (`AgentApp` : VS Code, Terminal, Claude, Codex, Mikky) : `mikkyd` le lit (`entrypoint` de Claude, `originator` de Codex) et l'envoie dans l'événement `session` (`app`). **Le moteur en service doit être reconstruit et relancé** (sans agent actif) pour que le logiciel s'affiche ; d'ici là, seuls les agents lancés par Mikky ont le leur.
+- Vérifié en vrai (bundle `Mikky-20261005-153955`, île relancée) : le notch s'ouvre à 730 px, Mikky suit la session VS Code en cours, ses étapes en direct.
+
 ## 5 octobre : un seul fil sur la page d'un agent
 
 - Demande de l'utilisateur : une tâche lancée dans VS Code ne montrait pas la réponse de Claude ; le chat et les actions doivent être au même endroit. Pour une session extérieure qui travaille, il n'y avait pas de champ, donc pas de bascule : la page restait sur la ligne de métro, sans messages.
