@@ -188,7 +188,6 @@ class HomeView extends StatefulWidget {
     this.environment = MikkyEnvironment.local,
     this.mikky = MikkyState.idle,
     this.animate = true,
-    this.dots,
   });
 
   final HomeLayout layout;
@@ -221,10 +220,6 @@ class HomeView extends StatefulWidget {
 
   /// False: Mikky still (goldens).
   final bool animate;
-
-  /// Trial (boards, 2026-10-05): small grey dots behind the notch's apps,
-  /// fading out into Mikky's part, this big. Null: none.
-  final double? dots;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -354,9 +349,10 @@ class _HomeViewState extends State<HomeView> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Whole under the apps, gone a little into Mikky's part (90 px in
-        // was « un tout petit peu trop sur la gauche »).
-        if (top && widget.dots != null) Positioned.fill(child: DotField(dot: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
+        // The notch: grey dots behind the apps (2026-10-05), whole under
+        // them, gone a little into Mikky's part (90 px in was « un tout
+        // petit peu trop sur la gauche »).
+        if (top) Positioned.fill(child: DotField(solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),

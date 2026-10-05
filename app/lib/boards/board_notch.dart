@@ -42,7 +42,7 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 
 /// The notch in its window, on a board, its Mikky in the task's state.
 /// The task he looks at is not among the apps, as in the app.
-Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, double? dots}) => HomeFrame(
+Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
     layout: HomeLayout.top,
@@ -52,7 +52,6 @@ Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, doubl
     mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
     onNew: () {},
     onHistory: (_) {},
-    dots: dots,
   ),
 );
 
@@ -72,7 +71,7 @@ class _NewChat extends StatelessWidget {
 final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut de l’écran : le notch', (context) => [
   BoardSection(
     title: 'Notch Top',
-    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 700 × 200, collé au bord de l’écran. À gauche, Mikky (96) et la dernière tâche au travail, qui s’étend jusqu’aux applications : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 160 × 42, 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit.',
+    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 700 × 200, collé au bord de l’écran. À gauche, Mikky (96) et la dernière tâche au travail, qui s’étend jusqu’aux applications : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 160 × 42, 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit. Derrière les applications, de petits points gris glitchés (grands et petits carrés, 1,2 px tous les 8 px), fondus vers Mikky, en haut, en bas, et un peu à droite.',
     frames: [
       BoardFrame(label: 'Dans l’app', note: 'Sept autres applications : deux pages, la flèche de droite.', width: 700, child: _notch(watched: _watched(FakeSessions.working()))),
       BoardFrame(
@@ -82,17 +81,6 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
         child: _notch(apps: sampleNotchApps.skip(3).toList()),
       ),
       BoardFrame(label: 'Aucun agent', note: '« + » pour lancer une tâche, des petits points là où les applications viendront.', width: 700, child: _notch(apps: const [])),
-    ],
-  ),
-  BoardSection(
-    title: 'Essais · des points derrière les applications',
-    note: 'Glitchés en grands et petits carrés, retenus (5 octobre) : de grands carrés (6 × 6 points) plus ou moins présents, parsemés de petits carrés vifs (2 × 2). Des points gris tous les 8 px, un peu foncés, une texture de loin : toujours là sous les applications, ils s’éteignent au hasard en allant vers la gauche jusqu’à disparaître, un peu dans la partie de Mikky. Deux tailles : 1,2 px (celle d’avant) et 1,4 px (1,6 était trop gros).',
-    kind: FrameKind.trial,
-    frames: [
-      for (final (label, size) in [('Points de 1,2 px', 1.2), ('Points de 1,4 px', 1.4)]) ...[
-        BoardFrame(label: label, width: 700, child: _notch(watched: _watched(FakeSessions.working()), dots: size)),
-        BoardFrame(label: '$label · rien en cours', width: 700, child: _notch(apps: sampleNotchApps.skip(3).toList(), dots: size)),
-      ],
     ],
   ),
   BoardSection(
