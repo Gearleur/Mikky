@@ -6,7 +6,7 @@ enum IslandShape { hidden, compact, open }
 
 /// What the open island shows: [focus], one agent and its answers (an
 /// alert at the top); [list], the home; [page], a page over the home (an
-/// agent's page; at the top 450 × 380, under the notch's 730 × 216).
+/// agent's page; at the top 760 × 380, under the notch's 760 × 216).
 enum IslandLayout { focus, list, page }
 
 /// The screen edge the island is glued to.
@@ -38,25 +38,25 @@ class IslandMetrics {
     required this.mikkyPage,
   });
 
-  /// Spec §3: closed 186 × 36. Focus, a request Mikky brings with its
-  /// task: 450 × 260 since 2026-10-04 (was 430 × 178; to draw again with
-  /// the user). List: the home, the notch since 2026-10-05, 730 × 216
-  /// (« Côte à côte »: Mikky and the task he looks at, the other apps;
-  /// was 450 × 260). Page: an agent's page, 450 × 380 (2026-10-02).
+  /// Spec §3: closed 186 × 36. Open, as wide as the notch since
+  /// 2026-10-05 (« garder la largeur »), 760: the home, the notch, 216
+  /// high (« Côte à côte »: Mikky and the task he looks at, the other
+  /// apps; was 450 × 260); a request Mikky brings with its task, 260; an
+  /// agent's page, 380.
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
-    focus: (width: 450, height: 260),
-    list: (width: 730, height: 216),
-    page: (width: 450, height: 380),
+    focus: (width: 760, height: 260),
+    list: (width: 760, height: 216),
+    page: (width: 760, height: 380),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
-    // In the notch, where its 84 px Mikky is drawn (`HomeLayout.top`:
-    // at (10, 72); his center at half his width and 54 % of his height,
+    // In the notch, where its 90 px Mikky is drawn (`HomeLayout.top`:
+    // at (17, 69); his center at half his width and 54 % of his height,
     // his radius 29 % of it).
-    mikkyList: (x: 52, y: 117.36, radius: 24.36),
+    mikkyList: (x: 62, y: 117.6, radius: 26.1),
     // On an agent's page: at its top left, behind the back button.
     mikkyPage: (x: 40, y: 35, radius: 21),
   );

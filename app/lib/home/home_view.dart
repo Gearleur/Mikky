@@ -47,14 +47,15 @@ class HomeLayout {
     required this.mikkyAt,
   });
 
-  /// Top: the notch (user, 2026-10-05, « Côte à côte »), 730 × 216. On the
-  /// left, Mikky (84) looking at the latest task at work beside him; on
-  /// the right, its other apps as wide tiles, 168 × 44, two by two (three
-  /// columns when nothing is at work), arrows on each side when there are
-  /// more. Quiet controls: a 32 px bar, a small foot.
+  /// Top: the notch (user, 2026-10-05, « Côte à côte »), 760 × 216. On the
+  /// left, Mikky (90) and the latest task at work beside him, as one group
+  /// centered in the left part (« pas assez centré »); on the right, the
+  /// other apps as wide tiles, 168 × 44, two by two (three columns when
+  /// nothing is at work), arrows on each side when there are more. Quiet
+  /// controls: a 32 px bar, a small foot.
   static const top = HomeLayout._(
     placement: HomePlacement.top,
-    size: Size(730, 216),
+    size: Size(760, 216),
     columns: 2,
     rows: 2,
     tile: 44,
@@ -66,8 +67,8 @@ class HomeLayout {
     bar: 32,
     foot: 8,
     side: 12,
-    mikky: 84,
-    mikkyAt: Offset(10, taskTop + (taskHeight - 84) / 2),
+    mikky: 90,
+    mikkyAt: Offset(17, taskTop + (taskHeight - 90) / 2),
   );
 
   /// Right: the home of 2026-10-02 upright (« une version verticale de la
@@ -92,8 +93,10 @@ class HomeLayout {
     mikkyAt: Offset(4, -4),
   );
 
-  /// The task Mikky looks at, in the notch: from the bar's foot, this high.
-  static const taskTop = 50.0, taskHeight = 128.0;
+  /// The task Mikky looks at, in the notch: from the bar's foot, this
+  /// high, this far from Mikky. With Mikky, it is centered in the left
+  /// part: the same margin on each side (210 wide).
+  static const taskTop = 50.0, taskHeight = 128.0, taskGap = 8.0;
 
   final HomePlacement placement;
   final Size size;
@@ -124,9 +127,10 @@ class HomeLayout {
   double get radius => 30;
 
   /// A page over the home (an agent's page): the island grows for the
-  /// conversation — at the top 450 × 380; at the right to the
+  /// conversation — at the top as wide as the notch, 760 × 380 (user,
+  /// 2026-10-05: « garder la largeur »); at the right to the
   /// phone-shaped 344 × 520 (2026-10-02). As `IslandMetrics.page`.
-  Size get pageSize => isTop ? const Size(450, 380) : const Size(344, 520);
+  Size get pageSize => isTop ? const Size(760, 380) : const Size(344, 520);
 }
 
 /// One app of the home: one or more agents doing a task (user, 2026-10-02).
@@ -511,9 +515,9 @@ class _HomeViewState extends State<HomeView> {
           ? Stack(key: const ValueKey('tiles'), children: [
               if (_l.isTop && watched != null)
                 Positioned(
-                  left: _l.mikkyAt.dx + _l.mikky + 2,
+                  left: _l.mikkyAt.dx + _l.mikky + HomeLayout.taskGap,
                   top: HomeLayout.taskTop,
-                  width: _areaLeft - _l.mikkyAt.dx - _l.mikky - 2,
+                  width: _areaLeft - 2 * _l.mikkyAt.dx - _l.mikky - HomeLayout.taskGap,
                   height: HomeLayout.taskHeight,
                   child: _Watched(task: watched, onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name))),
                 ),

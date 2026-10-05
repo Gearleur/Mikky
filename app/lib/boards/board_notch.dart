@@ -62,44 +62,44 @@ Widget _page(Widget page) => HomeFrame(layout: HomeLayout.top, size: HomeLayout.
 final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut de l’écran : le notch', (context) => [
   BoardSection(
     title: 'Notch Top',
-    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 730 × 216, collé au bord de l’écran. À gauche, Mikky (84) tourné vers la dernière tâche au travail : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit.',
+    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 760 × 216, collé au bord de l’écran. À gauche, Mikky (90) et la dernière tâche au travail, ensemble centrés dans leur partie : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit.',
     frames: [
-      BoardFrame(label: 'Dans l’app', note: 'Sept autres applications : deux pages, la flèche de droite.', width: 730, child: _notch(watched: _watched(FakeSessions.working()))),
+      BoardFrame(label: 'Dans l’app', note: 'Sept autres applications : deux pages, la flèche de droite.', width: 760, child: _notch(watched: _watched(FakeSessions.working()))),
       BoardFrame(
         label: 'Rien en cours',
         note: 'Mikky dort ; une troisième colonne prend la place de la tâche.',
-        width: 730,
+        width: 760,
         child: _notch(apps: sampleNotchApps.skip(3).toList()),
       ),
-      BoardFrame(label: 'Aucun agent', note: '« + » pour lancer une tâche, des petits points là où les applications viendront.', width: 730, child: _notch(apps: const [])),
+      BoardFrame(label: 'Aucun agent', note: '« + » pour lancer une tâche, des petits points là où les applications viendront.', width: 760, child: _notch(apps: const [])),
     ],
   ),
   BoardSection(
     title: 'La tâche que Mikky regarde',
     note: 'La dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min. Seulement ses étapes qui apparaissent, et la fin. Sans plan : pas de progression.',
     frames: [
-      BoardFrame(label: 'Au travail, sans plan', width: 730, child: _notch(watched: _watched(FakeSessions.workingNoPlan(), name: 'Ajoute un test Codex', app: AgentApp.terminal))),
-      BoardFrame(label: 'Attend ton feu vert', width: 730, child: _notch(watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex))),
-      BoardFrame(label: 'Terminée', width: 730, child: _notch(watched: _watched(FakeSessions.done(), app: AgentApp.mikky))),
-      BoardFrame(label: 'Limite atteinte', width: 730, child: _notch(watched: _watched(FakeSessions.limited(), app: AgentApp.claude))),
+      BoardFrame(label: 'Au travail, sans plan', width: 760, child: _notch(watched: _watched(FakeSessions.workingNoPlan(), name: 'Ajoute un test Codex', app: AgentApp.terminal))),
+      BoardFrame(label: 'Attend ton feu vert', width: 760, child: _notch(watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex))),
+      BoardFrame(label: 'Terminée', width: 760, child: _notch(watched: _watched(FakeSessions.done(), app: AgentApp.mikky))),
+      BoardFrame(label: 'Limite atteinte', width: 760, child: _notch(watched: _watched(FakeSessions.limited(), app: AgentApp.claude))),
     ],
   ),
   BoardSection(
     title: 'Chat',
     note: 'Le second mode : le « Nouvel agent » d’avant, dans le notch. La question au milieu, le champ en bas ; le pied s’efface.',
     frames: [
-      BoardFrame(label: 'Au départ', width: 730, child: _notch(watched: _watched(FakeSessions.working()), chat: true)),
-      BoardFrame(label: 'Démarrage', width: 730, child: _notch(watched: _watched(FakeSessions.working()), chat: true, status: 'Démarrage…')),
-      BoardFrame(label: 'Erreur', width: 730, child: _notch(watched: _watched(FakeSessions.working()), chat: true, error: 'Codex n’est pas installé dans WSL.')),
+      BoardFrame(label: 'Au départ', width: 760, child: _notch(watched: _watched(FakeSessions.working()), chat: true)),
+      BoardFrame(label: 'Démarrage', width: 760, child: _notch(watched: _watched(FakeSessions.working()), chat: true, status: 'Démarrage…')),
+      BoardFrame(label: 'Erreur', width: 760, child: _notch(watched: _watched(FakeSessions.working()), chat: true, error: 'Codex n’est pas installé dans WSL.')),
     ],
   ),
   BoardSection(
     title: 'La page d’un agent',
-    note: 'Une tuile ou la tâche ouvre la page de l’agent : le fil (messages et actions ensemble), Oui / Non, la limite, le menu ···. L’île prend 450 × 380, sur le même ressort ; le retour (bouton, Échap) ramène le notch.',
+    note: 'Une tuile ou la tâche ouvre la page de l’agent : le fil (messages et actions ensemble), Oui / Non, la limite, le menu ···. L’île garde la largeur du notch : 760 × 380, sur le même ressort ; le retour (bouton, Échap) ramène le notch.',
     frames: [
-      BoardFrame(label: 'Au travail', width: 450, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
-      BoardFrame(label: 'Feu vert', width: 450, child: _page(AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
-      BoardFrame(label: 'Terminé, la conversation continue', width: 450, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), framed: false))),
+      BoardFrame(label: 'Au travail', width: 760, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
+      BoardFrame(label: 'Feu vert', width: 760, child: _page(AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
+      BoardFrame(label: 'Terminé, la conversation continue', width: 760, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), framed: false))),
     ],
   ),
   const BoardSection(
@@ -108,8 +108,8 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
       BoardFrame(
         label: 'Règles du notch',
         child: BoardRules([
-          ('Taille', 'Île ouverte 730 × 216, coins bas 30 ; le haut dépasse de l’écran (fenêtre de l’île 840 × 480, pour l’ombre). Barre à 10 px du haut, 32 px de haut. La tâche de 50 à 178 ; le pied à 8 px du bas.'),
-          ('Mikky', '84 px à gauche, tourné vers sa tâche ; dans l’app, le Mikky de l’île vient s’y poser en ouvrant, dans l’état de la tâche. Rien en cours : il dort.'),
+          ('Taille', 'Île ouverte 760 × 216, coins bas 30 ; le haut dépasse de l’écran (fenêtre de l’île 840 × 480, pour l’ombre). Toujours 760 de large en haut : la page d’un agent 760 × 380, une demande de Mikky 760 × 260. Barre à 10 px du haut, 32 px de haut. La tâche de 50 à 178 ; le pied à 8 px du bas.'),
+          ('Mikky', '90 px, à 8 px de sa tâche (210 de large) ; les deux ensemble centrés dans la partie gauche, même marge de chaque côté ; dans l’app, le Mikky de l’île vient s’y poser en ouvrant, dans l’état de la tâche. Rien en cours : il dort.'),
           ('La tâche', 'La dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min ; sinon rien, et une colonne d’applications de plus. Logiciel (signe et nom), titre, état et progression, 3 étapes au plus, en retrait.'),
           ('Applications', 'Tuiles larges 168 × 44, 8 px d’écart, 2 × 2 (3 × 2 sans tâche) : le signe du logiciel, le titre, une ligne qui change ; l’état au coin. Le logiciel plutôt que le modèle : VS Code, Terminal, l’app Claude ou Codex, Mikky. Après elles, « + » (Nouvelle tâche, le Chat), puis un petit point à chaque place libre, là où les prochaines viendront.'),
           ('Pages', 'Elles glissent dans la partie droite : glisser à la souris ou au pavé, molette, flèches de 22 px de chaque côté des applications (effacées au bout), points, ← → au clavier.'),

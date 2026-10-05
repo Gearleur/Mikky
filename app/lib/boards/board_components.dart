@@ -344,7 +344,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           const BoardFrame(
             label: 'Mikky',
-            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil de droite, 84 à gauche du notch, sans case. Au repos, au travail, fini.',
+            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil de droite, 90 à gauche du notch, sans case. Au repos, au travail, fini.',
             child: BoardPane(
               width: 270,
               child: Row(children: [
@@ -364,8 +364,8 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 290, child: HistoryTry()),
           BoardFrame(label: 'À droite · ouvert', width: 290, child: HistoryOpen()),
-          BoardFrame(label: 'Notch · à essayer', width: 730, child: HistoryTry(layout: HomeLayout.top)),
-          BoardFrame(label: 'Notch · ouvert', width: 730, child: HistoryOpen(layout: HomeLayout.top)),
+          BoardFrame(label: 'Notch · à essayer', width: 760, child: HistoryTry(layout: HomeLayout.top)),
+          BoardFrame(label: 'Notch · ouvert', width: 760, child: HistoryOpen(layout: HomeLayout.top)),
         ],
       ),
     ]),

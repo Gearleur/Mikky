@@ -34,7 +34,7 @@ void main() {
       expect(m.currentWidth, greaterThan(186));
       expect(m.currentHeight, 36);
       run(m, 2);
-      expect(m.currentWidth, 450);
+      expect(m.currentWidth, 760);
       expect(m.currentHeight, 260);
       expect(m.cornerRadius, 30);
       expect(m.mikkyRadius, 28);
@@ -44,14 +44,14 @@ void main() {
     test('the list layout is the home: the notch, Mikky big on its left', () {
       final m = IslandMotion()..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
-      expect(m.currentWidth, 730);
+      expect(m.currentWidth, 760);
       expect(m.currentHeight, 216);
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (52, 117.36, 24.36));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (62, 117.6, 26.1));
       // An alert: the request Mikky brings, as big as the home (2026-10-04),
       // Mikky at his focus place.
       m.setShape(IslandShape.open, layout: IslandLayout.focus);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (450, 260));
+      expect((m.currentWidth, m.currentHeight), (760, 260));
       expect(m.mikkyRadius, 28);
     });
 
@@ -60,7 +60,7 @@ void main() {
       run(m, 2);
       m.setShape(IslandShape.open, layout: IslandLayout.page);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (450, 380));
+      expect((m.currentWidth, m.currentHeight), (760, 380));
       expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
     });
 
