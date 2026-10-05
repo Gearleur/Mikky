@@ -101,7 +101,8 @@ void main() {
 
   group('SoundBoard', () {
     test('every cue has a known file or none', () {
-      const files = {'back', 'folder_close', 'folder_open', 'launch', 'navigate', 'retroachievements', 'select'};
+      // The files of app/assets/sounds (README.md).
+      const files = {'back', 'discord_close', 'discord_open', 'folder_close', 'folder_open', 'launch', 'navigate', 'retroachievements', 'select'};
       for (final cue in MikkyCue.values) {
         expect(soundFiles.containsKey(cue), isTrue, reason: '$cue');
         final f = soundFiles[cue];
@@ -126,7 +127,7 @@ void main() {
         ..play(MikkyCue.open)
         ..play(MikkyCue.back)
         ..play(MikkyCue.select);
-      expect(overlay.played, ['retroachievements', 'folder_open', 'back']);
+      expect(overlay.played, ['retroachievements', 'discord_open', 'back']);
       now = now.add(const Duration(seconds: 1));
       board.play(MikkyCue.finished);
       expect(overlay.played.last, 'retroachievements');
