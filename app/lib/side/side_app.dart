@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -69,8 +72,10 @@ class _Page {
 }
 
 class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
-  // A little slower since 2026-10-05 (340 and 280: « un peu trop rapide »).
-  static const _push = Duration(milliseconds: 400), _pop = Duration(milliseconds: 330);
+  /// The pages come and go on the island's own spring (its stiffness,
+  /// barely damped more so they do not overshoot), so they arrive with
+  /// the island as it grows or shrinks (2026-10-05: one motion, smooth).
+  static final _spring = SpringDescription.withDampingRatio(mass: 1, stiffness: SpringSpec.island.stiffness, ratio: .95);
 
   /// Opening: the page below goes out early; the new one comes in a little
   /// later. Back (t from 1 to 0): the page leaves in the first half, the
@@ -81,7 +86,9 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   /// Going back: the other timing (above).
   bool _back = false;
-  static const _curve = Cubic(.2, .9, .25, 1);
+
+  /// A page comes or goes: the one below is drawn.
+  bool _moving = false;
 
   late final List<_Page> _pages = [_Page('home', _home)];
 
@@ -138,7 +145,44 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     final e = host.service.source.entry(id);
     if (e != null) showSessionMenu(host, e, rename: () => _open('rename:$id'));
   }
-  late final AnimationController _t = AnimationController(vsync: this, duration: _push, value: 1);
+  late final AnimationController _t = AnimationController(vsync: this, value: 1);
+
+  // Agents send many small changes while they work (a message comes in
+  // pieces): the pages follow at most every 60 ms — the first change at
+  // once, the last one never lost.
+  static const _settle = Duration(milliseconds: 60);
+  Timer? _settling;
+  bool _changed = false;
+
+  void _onService() {
+    if (_settling != null) {
+      _changed = true;
+      return;
+    }
+    setState(() {});
+    _settling = Timer(_settle, () {
+      _settling = null;
+      if (_changed && mounted) {
+        _changed = false;
+        _onService();
+      }
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    widget.host.service.addListener(_onService);
+  }
+
+  @override
+  void didUpdateWidget(SideApp oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.host.service != widget.host.service) {
+      oldWidget.host.service.removeListener(_onService);
+      widget.host.service.addListener(_onService);
+    }
+  }
   _Page? _leaving;
 
   SideHost get host => widget.host;
@@ -147,8 +191,21 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   @override
   void dispose() {
+    widget.host.service.removeListener(_onService);
+    _settling?.cancel();
     _t.dispose();
     super.dispose();
+  }
+
+  /// Runs the move from where it is to [to] on the spring; done, the page
+  /// below is put away.
+  Future<void> _move(double to) {
+    setState(() => _moving = true);
+    final reduced = Motion.reduced(context);
+    final run = reduced ? _t.animateTo(to, duration: Duration.zero) : _t.animateWith(SpringSimulation(_spring, _t.value, to, 0));
+    return run.whenComplete(() {
+      if (mounted) setState(() => _moving = false);
+    });
   }
 
   void _open(String what) => switch (what) {
@@ -182,7 +239,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     });
     widget.onHome?.call(false);
     _t.value = 0;
-    _t.animateTo(1, curve: Motion.reduced(context) ? Curves.linear : _curve, duration: Motion.reduced(context) ? Duration.zero : _push);
+    _move(1);
   }
 
   void back() {
@@ -193,8 +250,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       _back = true;
     });
     if (_pages.length == 1) widget.onHome?.call(true);
-    // Quick from the start, as the opening (the flipped curve started slow).
-    _t.animateBack(0, curve: _curve, duration: Motion.reduced(context) ? Duration.zero : _pop).whenComplete(() {
+    _move(0).whenComplete(() {
       if (!mounted) return;
       setState(() {
         _leaving = null;
@@ -245,70 +301,62 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     final ui = MikkyUi.of(context);
     final top = _leaving ?? _pages.last;
     final below = _leaving != null ? _pages.last : (_pages.length > 1 ? _pages[_pages.length - 2] : null);
+    // Built here, once per change — never at each frame of a move.
     Widget page(_Page p) => KeyedSubtree(
       key: ValueKey(p.key),
-      child: ColoredBox(
-        color: ui.island,
-        child: p.build(),
-      ),
+      child: RepaintBoundary(child: ColoredBox(color: ui.island, child: p.build())),
     );
-    return ListenableBuilder(
-      listenable: host.service,
-      builder: (context, _) => AnimatedBuilder(
-        animation: _t,
-        builder: (context, _) {
-          final t = _t.value;
-          final moving = t < 1;
-          final notice = switch (host.service.backend) {
-            BackendState.online => null,
-            BackendState.connecting => const BackendStatus(title: 'Connexion à Mikky', message: 'Tes sessions arrivent…'),
-            BackendState.reconnecting => const BackendStatus(
-              title: 'Reconnexion en cours',
-              message: 'Le dernier état reste visible. Les actions seront disponibles une fois la connexion rétablie.',
-            ),
-            BackendState.unavailable => BackendStatus(
-              title: 'Moteur indisponible',
-              message: host.service.backendError ?? 'La connexion sera réessayée automatiquement.',
-              retry: host.service.reconnect,
-              warning: true,
-            ),
-          };
-          return Column(
+    final notice = switch (host.service.backend) {
+      BackendState.online => null,
+      BackendState.connecting => const BackendStatus(title: 'Connexion à Mikky', message: 'Tes sessions arrivent…'),
+      BackendState.reconnecting => const BackendStatus(
+        title: 'Reconnexion en cours',
+        message: 'Le dernier état reste visible. Les actions seront disponibles une fois la connexion rétablie.',
+      ),
+      BackendState.unavailable => BackendStatus(
+        title: 'Moteur indisponible',
+        message: host.service.backendError ?? 'La connexion sera réessayée automatiquement.',
+        retry: host.service.reconnect,
+        warning: true,
+      ),
+    };
+    // The move: the page above fades in growing to its size, the one below
+    // fades out drawing back a little; back, the other timing.
+    final aboveOpacity = _t.drive(CurveTween(curve: _back ? _backOut : _in));
+    final belowOpacity = _t.drive(Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: _back ? _backIn : _out)));
+    return Column(
+      children: [
+        ?notice,
+        Expanded(
+          child: Stack(
+            fit: StackFit.expand,
+            clipBehavior: Clip.hardEdge,
             children: [
-              ?notice,
-              Expanded(
-                child: Stack(
-                  fit: StackFit.expand,
-                  clipBehavior: Clip.hardEdge,
-                  children: [
-                    // Pages further down keep their state but are not drawn.
-                    for (final p in _pages)
-                      if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
-                    // Hidden and still at rest, in the same widgets: it keeps
-                    // its state.
-                    if (below != null)
-                      Offstage(
-                        offstage: !moving,
-                        child: TickerMode(
-                          enabled: moving,
-                          child: Opacity(
-                            opacity: _back ? 1 - _backIn.transform(t) : 1 - _out.transform(t),
-                            child: Transform.scale(scale: 1 + .015 * t, alignment: Alignment.topCenter, child: page(below)),
-                          ),
-                        ),
-                      ),
-                    // The same widgets at rest (1, 1): the page keeps its state.
-                    Opacity(
-                      opacity: _back ? _backOut.transform(t) : _in.transform(t),
-                      child: Transform.scale(scale: .97 + .03 * t, alignment: Alignment.topCenter, child: page(top)),
+              // Pages further down keep their state but are not drawn.
+              for (final p in _pages)
+                if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
+              // Hidden and still at rest, in the same widgets: it keeps
+              // its state.
+              if (below != null)
+                Offstage(
+                  offstage: !_moving,
+                  child: TickerMode(
+                    enabled: _moving,
+                    child: FadeTransition(
+                      opacity: belowOpacity,
+                      child: ScaleTransition(scale: _t.drive(Tween(begin: 1.0, end: 1.015)), alignment: Alignment.topCenter, child: page(below)),
                     ),
-                  ],
+                  ),
                 ),
+              // The same widgets at rest (1, 1): the page keeps its state.
+              FadeTransition(
+                opacity: aboveOpacity,
+                child: ScaleTransition(scale: _t.drive(Tween(begin: .97, end: 1.0)), alignment: Alignment.topCenter, child: page(top)),
               ),
             ],
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 }

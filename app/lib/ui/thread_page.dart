@@ -79,14 +79,24 @@ class ThreadPage extends StatelessWidget {
     return Stack(
       children: [
         // The thread fills the page and passes under the buttons and the
-        // field, blurred (user request, 2026-09-30).
+        // field, blurred (user request, 2026-09-30). A lazy list: only what
+        // shows is built and laid out, however long the session
+        // (2026-10-05); its margins put it in the reading column.
         Positioned.fill(
-          child: SingleChildScrollView(
-            controller: scroll,
-            padding: EdgeInsets.fromLTRB(left, 62, right, bottom),
-            child: SelectableArea(
-              child: column(Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children)),
-            ),
+          child: LayoutBuilder(
+            builder: (context, box) {
+              final room = box.maxWidth - left - right;
+              final width = room < readingWidth ? room : readingWidth;
+              // Centered, or against Mikky's column.
+              final l = beside == null ? (box.maxWidth - width) / 2 : left;
+              return SelectableArea(
+                child: ListView(
+                  controller: scroll,
+                  padding: EdgeInsets.fromLTRB(l, 62, box.maxWidth - l - width, bottom),
+                  children: children,
+                ),
+              );
+            },
           ),
         ),
         if (children.isEmpty && empty != null) Positioned.fill(left: left, right: right, top: 62, bottom: bottom, child: Center(child: empty)),

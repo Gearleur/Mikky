@@ -166,6 +166,9 @@ class _AgentPageViewState extends State<AgentPageView> {
   late int _lastVersion = widget.scrolledTo == null ? -1 : widget.model.log.version;
   String? _sendError;
 
+  /// The finished turns' widgets, kept between builds.
+  final _thread = ThreadCache();
+
   @override
   void dispose() {
     _scroll.dispose();
@@ -191,10 +194,22 @@ class _AgentPageViewState extends State<AgentPageView> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
       final p = _scroll.position;
-      if (first || p.maxScrollExtent - p.pixels < 160) {
-        _scroll.jumpTo(p.maxScrollExtent);
-      }
+      if (first || p.maxScrollExtent - p.pixels < 160) _toEnd();
     });
+  }
+
+  /// To the end of the thread. The list builds lazily: its length is
+  /// known for sure once the end is laid out, so it checks again over the
+  /// next frames.
+  void _toEnd([int tries = 4]) {
+    final p = _scroll.position;
+    if (p.pixels >= p.maxScrollExtent) return;
+    _scroll.jumpTo(p.maxScrollExtent);
+    if (tries > 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scroll.hasClients) _toEnd(tries - 1);
+      });
+    }
   }
 
   @override
@@ -220,7 +235,7 @@ class _AgentPageViewState extends State<AgentPageView> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...threadOf(context, log, limit: LimitHooks(
+      ...threadOf(context, log, cache: _thread, limit: LimitHooks(
         m.id,
         a.send ?? (_) async {},
         finish: a.finishLimit,

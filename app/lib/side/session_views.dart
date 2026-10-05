@@ -151,12 +151,20 @@ List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer
 /// work in it is a task, part of the page, that unfolds what the agent
 /// did and said in order; then its answer, the whole width. The last task
 /// is open, older ones folded.
-List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit}) {
+List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, ThreadCache? cache}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
   void gap([double h = 8]) => out.add(SizedBox(height: h));
   for (final turn in log.turns) {
     final last = identical(turn, log.turns.last);
+    // A finished turn, not the last, never changes: its widgets are kept.
+    final kept = !turn.running && !last;
+    final widgets = kept ? cache?._of(ui, turn) : null;
+    if (widgets != null) {
+      out.addAll(widgets);
+      continue;
+    }
+    final from = out.length;
     final items = turnItems(log, turn);
     for (final u in items.whereType<UserItem>().where((u) => !u.queued)) {
       out.add(ChatMessage(me: true, text: u.text, meta: u.at == null ? null : clockTime(u.at!)));
@@ -206,6 +214,26 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit})
       out.add(ChatMessage(me: false, text: turn.message!));
       gap(14);
     }
+    if (kept) cache?._keep(turn, out.sublist(from));
   }
   return out;
+}
+
+/// The widgets of a session's finished turns, kept from one build of its
+/// page to the next (2026-10-05): the same instances, so Flutter skips
+/// them entirely while the last turn goes on.
+class ThreadCache {
+  MikkyUi? _ui;
+  final _turns = <(int, int), List<Widget>>{};
+
+  List<Widget>? _of(MikkyUi ui, TurnSpan turn) {
+    // Another theme: everything again.
+    if (!identical(ui, _ui)) {
+      _turns.clear();
+      _ui = ui;
+    }
+    return _turns[(turn.start, turn.end!)];
+  }
+
+  void _keep(TurnSpan turn, List<Widget> widgets) => _turns[(turn.start, turn.end!)] = widgets;
 }

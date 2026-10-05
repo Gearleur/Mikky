@@ -112,7 +112,10 @@ class SideHead extends StatelessWidget {
 /// way), not strong from its first pixels. Still: costs nothing when
 /// nothing moves.
 class EdgeBlur extends StatelessWidget {
-  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8, this.ramp = .5, this.corner = 22});
+  // 5 layers of 1.94 blur the edge as much as 12 of 1.25 did (blurs add
+  // up as the square root of the sum of their squares), for far less GPU
+  // work at each frame (2026-10-05).
+  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 5, this.sigma = 1.94, this.veil = .8, this.ramp = .5, this.corner = 22});
 
   /// The round corners of the window's edge it lies on, less its 8 px
   /// inset: the blur keeps inside them (2026-10-05: at the bottom it went
