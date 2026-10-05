@@ -7,7 +7,6 @@ import '../home/task_glance.dart';
 import '../home/tools_rail.dart';
 import '../ui/app_glyph.dart';
 import '../ui/app_tile.dart';
-import '../ui/dot_field.dart';
 import '../ui/buttons.dart';
 import '../ui/edge_rail.dart';
 import '../ui/environment_selector.dart';
@@ -43,7 +42,7 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 
 /// The notch in its window, on a board, its Mikky in the task's state.
 /// The task he looks at is not among the apps, as in the app.
-Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, DotFieldStyle? dots}) => HomeFrame(
+Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, double? dots}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
     layout: HomeLayout.top,
@@ -87,12 +86,12 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
   ),
   BoardSection(
     title: 'Essais · des points derrière les applications',
-    note: 'Glitchés, retenus (5 octobre ; réguliers et deux foyers écartés). De petits points gris (1,6 px, tous les 8 px ; 1,2 et 6 en faisaient trop, trop petits), un peu plus foncés, une texture de loin : toujours là sous les applications, ils s’éteignent au hasard en allant vers la gauche jusqu’à disparaître, un peu dans la partie de Mikky. Deux versions : des carrés de 4 × 4 points, un sur trois très présent ; ou de grands carrés (6 × 6) plus ou moins présents, parsemés de petits carrés vifs (2 × 2).',
+    note: 'Glitchés en grands et petits carrés, retenus (5 octobre) : de grands carrés (6 × 6 points) plus ou moins présents, parsemés de petits carrés vifs (2 × 2). Des points gris tous les 8 px, un peu foncés, une texture de loin : toujours là sous les applications, ils s’éteignent au hasard en allant vers la gauche jusqu’à disparaître, un peu dans la partie de Mikky. Deux tailles : 1,2 px (celle d’avant) et 1,4 px (1,6 était trop gros).',
     kind: FrameKind.trial,
     frames: [
-      for (final (label, style) in [('Glitchés', DotFieldStyle.glitch), ('Glitchés · grands et petits carrés', DotFieldStyle.glitchMixed)]) ...[
-        BoardFrame(label: label, width: 700, child: _notch(watched: _watched(FakeSessions.working()), dots: style)),
-        BoardFrame(label: '$label · rien en cours', width: 700, child: _notch(apps: sampleNotchApps.skip(3).toList(), dots: style)),
+      for (final (label, size) in [('Points de 1,2 px', 1.2), ('Points de 1,4 px', 1.4)]) ...[
+        BoardFrame(label: label, width: 700, child: _notch(watched: _watched(FakeSessions.working()), dots: size)),
+        BoardFrame(label: '$label · rien en cours', width: 700, child: _notch(apps: sampleNotchApps.skip(3).toList(), dots: size)),
       ],
     ],
   ),

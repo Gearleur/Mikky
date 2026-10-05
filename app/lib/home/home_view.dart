@@ -222,9 +222,9 @@ class HomeView extends StatefulWidget {
   /// False: Mikky still (goldens).
   final bool animate;
 
-  /// Trial (boards, 2026-10-05): tiny grey dots behind the notch's apps,
-  /// fading out into Mikky's part. Null: none.
-  final DotFieldStyle? dots;
+  /// Trial (boards, 2026-10-05): small grey dots behind the notch's apps,
+  /// fading out into Mikky's part, this big. Null: none.
+  final double? dots;
 
   @override
   State<HomeView> createState() => _HomeViewState();
@@ -356,7 +356,7 @@ class _HomeViewState extends State<HomeView> {
       children: [
         // Whole under the apps, gone a little into Mikky's part (90 px in
         // was « un tout petit peu trop sur la gauche »).
-        if (top && widget.dots != null) Positioned.fill(child: DotField(style: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
+        if (top && widget.dots != null) Positioned.fill(child: DotField(dot: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
@@ -507,6 +507,9 @@ class _HomeViewState extends State<HomeView> {
   /// Room around the grid for the tiles' shadows and their lift.
   static const _air = 14.0;
 
+  /// The notch's apps fade over this much at their area's edges.
+  static const _edgeFade = 20.0;
+
   /// The pages of tiles with their arrows: at the right across the whole
   /// width, the arrows 18 px from the edges; in the notch over the right
   /// part only, small arrows on each side of the apps.
@@ -551,11 +554,27 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
     final arrowTop = _air + _gridHeight / 2 - arrowSize / 2;
+    // In the notch, the apps fade out at their area's edges as they slide,
+    // instead of being cut there (2026-10-05: « c'est net, pas très beau »);
+    // at rest they are whole (the fade lies in the arrows' room).
+    final shown = top
+        ? ShaderMask(
+            blendMode: BlendMode.dstIn,
+            shaderCallback: (rect) {
+              final edge = (_edgeFade / rect.width).clamp(0.0, .5);
+              return LinearGradient(
+                colors: const [Color(0x00000000), Color(0xFF000000), Color(0xFF000000), Color(0x00000000)],
+                stops: [0, edge, 1 - edge, 1],
+              ).createShader(rect);
+            },
+            child: pages,
+          )
+        : pages;
     final inset = top ? 0.0 : 18.0;
     return Listener(
       onPointerSignal: _onWheel,
       child: Stack(children: [
-        Positioned.fill(child: pages),
+        Positioned.fill(child: shown),
         Positioned(left: inset, top: arrowTop, child: arrow(false)),
         Positioned(right: inset, top: arrowTop, child: arrow(true)),
       ]),
