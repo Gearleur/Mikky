@@ -56,6 +56,8 @@ class _AppTileState extends State<AppTile> {
       child: widget.child,
     );
     final status = widget.status;
+    // The state's pastille: 22 on the 64 px tiles, 16 on the small ones.
+    final pin = s >= 60 ? 22.0 : 16.0;
     final tile = status == null
         ? face
         : Stack(
@@ -63,14 +65,14 @@ class _AppTileState extends State<AppTile> {
             children: [
               face,
               Positioned(
-                right: -5,
-                top: -5,
+                right: -pin * .23,
+                top: -pin * .23,
                 child: Surface(
-                  width: 22,
-                  height: 22,
+                  width: pin,
+                  height: pin,
                   color: ui.thumb,
                   shadows: [...ui.shCtl, CssShadow(0, 0, 0, ui.line, spread: .7, inset: true)],
-                  child: Center(child: StatusFx(status, size: 14)),
+                  child: Center(child: StatusFx(status, size: pin >= 22 ? 14 : 10)),
                 ),
               ),
             ],

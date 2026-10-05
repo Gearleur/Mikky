@@ -85,7 +85,7 @@ class MTabBar extends StatelessWidget {
                   width: col,
                   child: PressDown(
                     onDown: onChanged == null || i == selected ? null : () => onChanged!(i),
-                    child: _Tab(item: items[i], on: i == selected, mini: mini, ink: ink, iconSize: height >= 52 ? 21 : 18),
+                    child: _Tab(item: items[i], on: i == selected, mini: mini, ink: ink, iconSize: height >= 52 ? 21 : (height >= 36 ? 18 : 13)),
                   ),
                 ),
             ],

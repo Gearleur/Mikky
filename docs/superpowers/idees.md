@@ -107,6 +107,9 @@ Couleurs relevées sur l'image :
 39. **Communauté et plugins** : chacun peut créer et partager une mini-app, et on installe ce qu'on veut (comme les plugins de Paperclip, mais sous forme d'apps).
 40. **Demander à Mikky d'ouvrir une app** (« ouvre mes mails », « lance l'orchestrateur ») : plus tard, pour que Mikky soit un peu agentique, en restant simple.
 
+**Raccourcis (ajouté le 2026-10-05)**
+41. **Ctrl + clic sur une tâche** (une tuile, la tâche que Mikky regarde) : ouvre l'agent dans son application, VS Code ou le terminal où il tourne. Plus tard.
+
 ## 4. Les boucles agentiques (« modes de travail »)
 
 Garde-fous communs : nombre de tours et temps maximum, arrêt près de la limite d'abonnement, pauses pour demander l'avis de l'utilisateur, bouton « tout arrêter », réglage « combien d'agents en même temps » (plusieurs agents sur un abonnement atteignent vite la limite).

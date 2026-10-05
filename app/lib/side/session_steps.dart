@@ -248,6 +248,22 @@ List<AgentItem> turnAnswer(TurnSpan turn, List<ThreadItem> items) {
   return out;
 }
 
+/// The latest task at a glance, for the notch (user, 2026-10-05: « juste
+/// les tâches qui apparaissent et quand c'est fini », no messages): its
+/// plan, else its actions; at most [max], around the one at work.
+List<MainStep> glanceSteps(SessionLog log, {int max = 4}) {
+  // The latest turn with work in it: a question after it has none.
+  final turn = log.turns.lastWhere((t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem), orElse: () => const TurnSpan(-1));
+  if (turn.start < 0) return const [];
+  final steps = turn.plan.isNotEmpty ? planSteps(turn) : toolSteps(turnItems(log, turn).whereType<ToolItem>().toList());
+  if (steps.length <= max) return steps;
+  final now = steps.indexWhere((s) => s.state == TaskStepState.now);
+  final anchor = now >= 0 ? now : steps.lastIndexWhere((s) => s.state != TaskStepState.todo);
+  // Mostly what was done, the step at work, then one to come.
+  final start = (anchor - (max - 2)).clamp(0, steps.length - max);
+  return steps.sublist(start, start + max);
+}
+
 /// The state of a turn's task.
 UiStatus taskStatus(TurnSpan turn) => turn.running
     ? UiStatus.working

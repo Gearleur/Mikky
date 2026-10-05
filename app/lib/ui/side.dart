@@ -187,7 +187,7 @@ class HeadMikky extends StatelessWidget {
 /// blinking and looking around; still when [animate] is false (goldens)
 /// or Windows asks for fewer animations.
 class MiniMikky extends StatefulWidget {
-  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle, this.badge = true});
+  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle, this.badge = true, this.look});
 
   final double size;
   final bool animate;
@@ -197,6 +197,10 @@ class MiniMikky extends StatefulWidget {
 
   /// The state's badge next to him (off in the logo).
   final bool badge;
+
+  /// Where he looks, each in [-1, 1] (right, down): at the task beside
+  /// him in the notch (2026-10-05). Some states look elsewhere. Null: ahead.
+  final Offset? look;
 
   @override
   State<MiniMikky> createState() => _MiniMikkyState();
@@ -212,7 +216,7 @@ class _MiniMikkyState extends State<MiniMikky> {
     super.initState();
     _mikky.setState(widget.state);
     for (var i = 0; i < 54; i++) {
-      _mikky.update(1 / 60, lookX: .2, lookY: .1);
+      _mikky.update(1 / 60, lookX: widget.look?.dx ?? .2, lookY: widget.look?.dy ?? .1);
     }
   }
 
@@ -234,7 +238,7 @@ class _MiniMikkyState extends State<MiniMikky> {
     final now = DecorClock.now.value;
     final dt = _last == null ? 0.0 : ((now - _last!).inMicroseconds / 1e6).clamp(0.0, .1);
     _last = now;
-    setState(() => _mikky.update(dt));
+    setState(() => _mikky.update(dt, lookX: widget.look?.dx ?? 0, lookY: widget.look?.dy ?? 0));
   }
 
   @override

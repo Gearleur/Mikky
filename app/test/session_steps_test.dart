@@ -116,6 +116,24 @@ void main() {
     });
   });
 
+  test('at a glance: the steps around the one at work', () {
+    final log = SessionLog()
+      ..applyAll([
+        TurnStarted(at: t0),
+        UserMessage('Go', at: t0),
+        const PlanChanged([
+          PlanEntry('1', PlanStatus.completed),
+          PlanEntry('2', PlanStatus.completed),
+          PlanEntry('3', PlanStatus.completed),
+          PlanEntry('4', PlanStatus.inProgress),
+          PlanEntry('5', PlanStatus.pending),
+          PlanEntry('6', PlanStatus.pending),
+        ]),
+      ]);
+    expect([for (final s in glanceSteps(log)) s.label], ['2', '3', '4', '5']);
+    expect(glanceSteps(SessionLog()), isEmpty);
+  });
+
   test('a change shows two removed lines, then the added ones', () {
     final (:removed, :added) = diffPreview(const FileDiff('a.dart', 'one\n\ntwo\nthree', 'uno\ndos\ntres\ncuatro'));
     expect(removed, ['one', 'two']);

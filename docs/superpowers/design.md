@@ -148,6 +148,15 @@ Un panneau **gris clair** (`well`), coins 16, ombre douce ; le **carré blanc qu
 ### L'étoile grise d'un agent (son menu)
 **Invisible** tant que la souris n'est pas dessus : elle n'apparaît que quand on est vraiment proche ; un clic ouvre le menu de l'agent (le clic droit sur la ligne aussi).
 
+### Notch du haut (essais du 2026-10-05, planche Notch, à valider)
+Demande de l'utilisateur, sur une image de Coucou : l'île du haut plus large ; **Mikky plus grand à gauche, tourné vers la dernière tâche au travail** ; les autres applications à droite en **3 colonnes et 2 rangées** (la colonne de gauche des 8 enlevée) ; tout plus petit, « plus premium », ces boutons ne sont pas faits pour être beaucoup cliqués ; **pas de bloc pour rien**. De la tâche : seulement ses étapes qui apparaissent, et la fin, pas les messages.
+- **A · Barre fine** (580 × 188) : modes et outils à 26 px (44 avant, icônes de 13), tuiles de 46, Mikky à 80.
+- **B · Sans barre** (580 × 160) : les modes en tout petit dans le pied, à côté de l'historique ; « + » lance une tâche.
+- **C · Plus large** (640 × 212) : Mikky à 96, tuiles de 52, cinq étapes.
+- La tâche, sans carte : logo de l'outil et nom, son état en quelques mots (« Au travail · 2 sur 3 », « Attend ton feu vert » en ambre, « Terminée · 3 min » en vert, la limite), puis jusqu'à 4 étapes autour de celle en cours (`glanceSteps`). Rien en cours : Mikky dort.
+- Pied : l'historique en icône de 12, l'environnement en « Local » 11,5 px avec son étoile ; les pastilles d'état des petites tuiles à 16 px (22 sur les tuiles de 64).
+- Prototypes seulement (`app/lib/boards/board_notch.dart`) : l'app garde `HomeView` jusqu'au choix.
+
 ### Accueil épuré (essai, planche Accueil)
 Le feu d'artifice seulement pour « En attente » et « Travaillent » ; les titres de groupes en gris, le chevron au survol ; plus de « WSL », des heures courtes (« 2 min »). À valider avant de l'appliquer à l'app.
 
