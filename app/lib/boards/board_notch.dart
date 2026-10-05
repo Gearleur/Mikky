@@ -24,7 +24,7 @@ import 'fake_sessions.dart';
 
 // The notch (user, 2026-10-05), to replace the home at the top, and the
 // same idea at the right: Mikky bigger, looking at the latest task (its
-// steps, its end, no messages); four other apps, wide enough for a title,
+// steps, its end, no messages); the other apps wide enough for a title,
 // a line that changes, and the software the task runs in — VS Code is
 // VS Code; the model only when it is the Claude or Codex app itself.
 // Quiet controls, no block for nothing. Prototypes: the app keeps
@@ -71,6 +71,8 @@ const _apps = [
   NotchApp('Prépare le plan de l’API', 'Lit api.md', HostApp.vscode, UiStatus.working),
   NotchApp('Traduis la documentation', 'Limite · reprend à 17 h 10', HostApp.terminal, UiStatus.limited),
   NotchApp('Résume la spec', 'Terminée · il y a 5 min', HostApp.claude, UiStatus.finished),
+  NotchApp('Corrige les tests du moteur', 'Terminée · il y a 12 min', HostApp.vscode, UiStatus.finished),
+  NotchApp('Nettoie les imports', 'Terminée · hier', HostApp.mikky, UiStatus.finished),
 ];
 
 /// The task Mikky looks at: the latest one at work.
@@ -93,36 +95,55 @@ enum AppsStyle {
   icons,
 }
 
+/// How far the task is, next to its state: its plan's steps.
+enum ProgressStyle {
+  /// One small segment per step.
+  segments,
+
+  /// A thin bar.
+  bar,
+}
+
 // ------------------------------------------------------------------ top
 
 /// The notch at the top: the bar (modes, tools), Mikky and his task on
 /// the left, four apps in two columns and two rows on the right, the foot.
+/// Nothing at work: a third column of apps takes the task's place.
 class NotchTop extends StatelessWidget {
-  const NotchTop({super.key, this.task, this.style = AppsStyle.cards});
+  const NotchTop({super.key, this.task, this.style = AppsStyle.cards, this.progress = ProgressStyle.segments});
 
-  static const size = Size(680, 200);
-  static const _content = 50.0, _taskHeight = 112.0, _mikky = 84.0;
+  static const size = Size(680, 216);
+  static const _content = 50.0, _taskHeight = 128.0, _mikky = 84.0;
   static const _tileW = 168.0, _tileH = 44.0, _gap = 8.0;
-  static const _gridW = 2 * _tileW + _gap, _gridH = 2 * _tileH + _gap;
+  static const _gridH = 2 * _tileH + _gap;
 
   final NotchTask? task;
   final AppsStyle style;
+  final ProgressStyle progress;
 
   @override
   Widget build(BuildContext context) {
-    const gridLeft = 680 - 16 - _gridW;
+    final t = task;
+    final columns = t == null ? 3 : 2;
+    final gridW = columns * _tileW + (columns - 1) * _gap;
+    final gridLeft = size.width - 16 - gridW;
     const taskLeft = 10 + _mikky + 2;
     return HomeFrame(
       layout: HomeLayout.top,
       size: size,
       child: Stack(clipBehavior: Clip.none, children: [
-        Positioned(left: 10, top: _content + (_taskHeight - _mikky) / 2, child: _Watcher(task: task, size: _mikky)),
-        Positioned(left: taskLeft, top: _content, width: gridLeft - taskLeft - 12, height: _taskHeight, child: _glance(task, 4)),
-        Positioned(left: gridLeft, top: _content + (_taskHeight - _gridH) / 2, child: _AppsGrid(style: style, columns: 2, width: _tileW, height: _tileH, gap: _gap)),
+        Positioned(left: 10, top: _content + (_taskHeight - _mikky) / 2, child: _Watcher(task: t, size: _mikky)),
+        if (t != null)
+          Positioned(left: taskLeft, top: _content, width: gridLeft - taskLeft - 12, height: _taskHeight, child: _TaskGlance(task: t, max: 3, progress: progress)),
+        Positioned(
+          left: gridLeft,
+          top: _content + (_taskHeight - _gridH) / 2,
+          child: _AppsGrid(style: style, columns: columns, count: columns * 2, width: _tileW, height: _tileH, gap: _gap),
+        ),
         const Positioned(top: 10, left: 0, right: 0, child: Center(child: _Modes())),
         Positioned(top: 10, right: 0, child: ToolsRail(edge: RailEdge.right, height: _Modes.height, onPressed: () {})),
         const Positioned(left: 12, bottom: 8, child: _Mini('history', tooltip: 'Historique')),
-        Positioned(left: gridLeft, width: _gridW, bottom: 8 + (24 - PageDots.height) / 2, child: Center(child: PageDots(count: 2, page: 0, onSelect: (_) {}))),
+        Positioned(left: gridLeft, width: gridW, bottom: 8 + (24 - PageDots.height) / 2, child: Center(child: PageDots(count: 2, page: 0, onSelect: (_) {}))),
         const Positioned(right: 14, bottom: 8, child: _Environment()),
       ]),
     );
@@ -131,41 +152,77 @@ class NotchTop extends StatelessWidget {
 
 // ---------------------------------------------------------------- right
 
-/// The notch at the right edge, upright: the bar, Mikky and his task at
-/// the top, the four apps under them, the foot.
+/// Trials for the right edge (the first, Mikky beside his task over a
+/// list, did not convince).
+enum RightStyle {
+  /// Mikky in the middle at the top, his task centered under him (no
+  /// steps), the apps in a list.
+  center,
+
+  /// Mikky small beside the software and the title, the steps under them
+  /// across the width, the apps two by two as icons and words.
+  header,
+
+  /// Mikky beside his task, the apps in a row of small tiles, as a dock.
+  dock,
+}
+
+/// The notch at the right edge, upright, 300 wide.
 class NotchRight extends StatelessWidget {
-  const NotchRight({super.key, this.task, this.style = AppsStyle.cards, this.list = true});
+  const NotchRight({super.key, this.task, this.style = RightStyle.center});
 
   static const width = 300.0;
-  static const _content = 50.0, _taskHeight = 104.0, _mikky = 72.0;
+  static const _content = 50.0;
 
   final NotchTask? task;
-  final AppsStyle style;
+  final RightStyle style;
 
-  /// One column of four (else two by two).
-  final bool list;
+  /// The top part (Mikky and his task), then the apps.
+  (double, double) get _parts => switch (style) {
+    RightStyle.center => (136.0, 4 * 40.0 + 3 * 6),
+    RightStyle.header => (132.0, 2 * 44.0 + 10),
+    RightStyle.dock => (128.0, 44.0),
+  };
 
-  double get _appsHeight => list ? 4 * 40 + 3 * 6 : 2 * 44 + 8;
-  double get height => _content + _taskHeight + 10 + _appsHeight + 12 + 24 + 8;
+  double get height => _content + _parts.$1 + 12 + _parts.$2 + 12 + 24 + 8;
 
   @override
   Widget build(BuildContext context) {
-    const taskLeft = 10 + _mikky + 2;
-    const appsTop = _content + _taskHeight + 10;
+    final (top, _) = _parts;
+    final appsTop = _content + top + 12;
+    final t = task;
+    final head = switch (style) {
+      RightStyle.center => [
+        Positioned(left: 0, right: 0, top: _content - 6, child: Center(child: _Watcher(task: t, size: 76, look: const Offset(0, .7)))),
+        Positioned(
+          left: 20,
+          right: 20,
+          top: _content + 74,
+          child: t == null ? const _Nothing(center: true) : _TaskGlance(task: t, max: 0, center: true),
+        ),
+      ],
+      RightStyle.header => [
+        Positioned(left: 10, top: _content - 4, child: _Watcher(task: t, size: 60)),
+        Positioned(left: 74, right: 14, top: _content, height: 62, child: t == null ? const _Nothing() : _TaskGlance(task: t, max: 0)),
+        if (t != null) Positioned(left: 14, right: 14, top: _content + 72, child: _TaskSteps(task: t, max: 3)),
+      ],
+      RightStyle.dock => [
+        Positioned(left: 10, top: _content + (top - 72) / 2, child: _Watcher(task: t, size: 72)),
+        Positioned(left: 84, right: 14, top: _content, height: top, child: t == null ? const _Nothing() : _TaskGlance(task: t, max: 3)),
+      ],
+    };
+    const appsW = width - 32;
+    final apps = switch (style) {
+      RightStyle.center => const _AppsGrid(style: AppsStyle.cards, columns: 1, width: appsW, height: 40, gap: 6),
+      RightStyle.header => const _AppsGrid(style: AppsStyle.icons, columns: 2, width: (appsW - 10) / 2, height: 44, gap: 10),
+      RightStyle.dock => const _Dock(),
+    };
     return HomeFrame(
       layout: HomeLayout.right,
       size: Size(width, height),
       child: Stack(clipBehavior: Clip.none, children: [
-        Positioned(left: 10, top: _content + (_taskHeight - _mikky) / 2, child: _Watcher(task: task, size: _mikky)),
-        Positioned(left: taskLeft, top: _content, width: width - taskLeft - 14, height: _taskHeight, child: _glance(task, 3)),
-        Positioned(
-          left: 16,
-          right: 16,
-          top: appsTop,
-          child: list
-              ? _AppsGrid(style: style, columns: 1, width: width - 32, height: 40, gap: 6)
-              : _AppsGrid(style: style, columns: 2, width: (width - 32 - 8) / 2, height: 44, gap: 8),
-        ),
+        ...head,
+        Positioned(left: 16, right: 16, top: appsTop, child: apps),
         const Positioned(top: 10, left: 0, right: 0, child: Center(child: _Modes())),
         Positioned(top: 10, right: 0, child: ToolsRail(edge: RailEdge.right, height: _Modes.height, onPressed: () {})),
         const Positioned(left: 12, bottom: 8, child: _Mini('history', tooltip: 'Historique')),
@@ -176,14 +233,33 @@ class NotchRight extends StatelessWidget {
   }
 }
 
+/// The apps as a dock: small tiles with their sign, the words on hover;
+/// « + » at the end.
+class _Dock extends StatelessWidget {
+  const _Dock();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+      for (final a in _apps.take(4))
+        AppTile(size: 44, label: '${a.title}, ${a.host.label}', status: a.status, onTap: () {}, child: Center(child: hostGlyph(a.host, 16, ui))),
+      AddTile(size: 44, onTap: () {}),
+    ]);
+  }
+}
+
 // ---------------------------------------------------------------- parts
 
 /// Mikky, bigger, turned to the task beside him; asleep without one.
 class _Watcher extends StatelessWidget {
-  const _Watcher({required this.task, required this.size});
+  const _Watcher({required this.task, required this.size, this.look = const Offset(1, .3)});
 
   final NotchTask? task;
   final double size;
+
+  /// Where the task is: beside him, or under him.
+  final Offset look;
 
   @override
   Widget build(BuildContext context) => MiniMikky(
@@ -191,18 +267,16 @@ class _Watcher extends StatelessWidget {
     animate: false,
     state: task == null ? MikkyState.sleeping : mikkyStateOf(task!.status),
     badge: false,
-    look: const Offset(1, .3),
+    look: look,
   );
 }
 
-Widget _glance(NotchTask? task, int max) => task == null ? const _Nothing() : _TaskGlance(task: task, max: max);
-
-/// The four other apps, [columns] wide.
+/// The other apps, [columns] wide: the first [count].
 class _AppsGrid extends StatelessWidget {
-  const _AppsGrid({required this.style, required this.columns, required this.width, required this.height, required this.gap});
+  const _AppsGrid({required this.style, required this.columns, required this.width, required this.height, required this.gap, this.count = 4});
 
   final AppsStyle style;
-  final int columns;
+  final int columns, count;
   final double width, height, gap;
 
   @override
@@ -211,7 +285,9 @@ class _AppsGrid extends StatelessWidget {
     child: Wrap(
       spacing: gap,
       runSpacing: gap,
-      children: [for (final a in _apps) style == AppsStyle.cards ? _AppCard(app: a, width: width, height: height) : _AppIcon(app: a, width: width, height: height)],
+      children: [
+        for (final a in _apps.take(count)) style == AppsStyle.cards ? _AppCard(app: a, width: width, height: height) : _AppIcon(app: a, width: width, height: height),
+      ],
     ),
   );
 }
@@ -349,19 +425,150 @@ class _Environment extends StatelessWidget {
 
 /// No task: Mikky sleeps.
 class _Nothing extends StatelessWidget {
-  const _Nothing();
+  const _Nothing({this.center = false});
+
+  final bool center;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Align(alignment: Alignment.centerLeft, child: Text('Rien en cours', style: uiText(TextSize.label, color: ui.text3)));
+    return Align(
+      alignment: center ? Alignment.topCenter : Alignment.centerLeft,
+      child: Text('Rien en cours', style: uiText(TextSize.label, color: ui.text3)),
+    );
   }
 }
 
-/// The latest task at a glance: where it runs and its title, its state in
-/// a few words, its steps (done, at work, to come). No messages, no card.
+/// The task's state in a few words, and its color.
+(String, Color) _stateOf(NotchTask task, MikkyUi ui) {
+  final log = task.log;
+  final turn = log.turns.lastOrNull;
+  return switch (task.status) {
+    AgentStatus.approval => ('Attend ton feu vert', ui.amber),
+    AgentStatus.question => ('Te pose une question', ui.amber),
+    AgentStatus.finished => (_finished(log), ui.green),
+    AgentStatus.rateLimited => (log.detail, ui.text3),
+    AgentStatus.error => ('En erreur', ui.red),
+    AgentStatus.idle || AgentStatus.paused => ('Arrêtée', ui.text3),
+    _ => (turn != null && turn.plan.isNotEmpty ? 'Au travail · ${planCount(planSteps(turn))}' : 'Au travail', ui.text3),
+  };
+}
+
+String _finished(SessionLog log) {
+  final start = log.items.firstOrNull?.at, end = log.lastEventAt;
+  if (start == null || end == null) return 'Terminée';
+  final m = end.difference(start).inMinutes;
+  return 'Terminée · ${m < 1 ? 'moins d’une min' : '$m min'}';
+}
+
+/// How far the latest task with work is in its plan: (steps done, steps);
+/// null without a plan.
+(int, int)? _progressOf(SessionLog log) {
+  final worked = log.turns.where((t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem)).lastOrNull;
+  if (worked == null || worked.plan.isEmpty) return null;
+  final plan = planSteps(worked);
+  return (plan.where((s) => s.state == TaskStepState.done).length, plan.length);
+}
+
+/// How far the task is: a segment per step, or a thin bar.
+class _Progress extends StatelessWidget {
+  const _Progress({required this.done, required this.total, required this.color, required this.style});
+
+  final int done, total;
+  final Color color;
+  final ProgressStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (style == ProgressStyle.bar) {
+      return Container(
+        width: 56,
+        height: 3,
+        alignment: Alignment.centerLeft,
+        decoration: BoxDecoration(color: ui.track, borderRadius: BorderRadius.circular(1.5)),
+        child: FractionallySizedBox(
+          widthFactor: total == 0 ? 0 : done / total,
+          heightFactor: 1,
+          child: Container(decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(1.5))),
+        ),
+      );
+    }
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      for (var i = 0; i < total; i++)
+        Container(
+          width: 10,
+          height: 3,
+          margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
+          decoration: BoxDecoration(
+            // Done, the one at work paler, then the ones to come.
+            color: i < done ? color : (i == done ? color.withValues(alpha: .4) : ui.track),
+            borderRadius: BorderRadius.circular(1.5),
+          ),
+        ),
+    ]);
+  }
+}
+
+/// The latest task at a glance (user, 2026-10-05): the software it runs
+/// in, its sign and name a little bigger; its title; its state small and
+/// grey with how far it is; its steps under it, a little indented. No
+/// messages, no card. [max] 0: no steps.
 class _TaskGlance extends StatelessWidget {
-  const _TaskGlance({required this.task, required this.max});
+  const _TaskGlance({required this.task, required this.max, this.progress = ProgressStyle.segments, this.center = false});
+
+  final NotchTask task;
+  final int max;
+  final ProgressStyle progress;
+  final bool center;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final (state, stateColor) = _stateOf(task, ui);
+    final p = _progressOf(task.log);
+    final barColor = switch (task.status) {
+      AgentStatus.finished => ui.green,
+      AgentStatus.approval || AgentStatus.question => ui.amber,
+      AgentStatus.rateLimited => ui.yellow,
+      AgentStatus.error => ui.red,
+      _ => ui.blue,
+    };
+    final rowSize = center ? MainAxisSize.min : MainAxisSize.max;
+    return Column(
+      crossAxisAlignment: center ? CrossAxisAlignment.center : CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: center ? MainAxisSize.min : MainAxisSize.max,
+      children: [
+        Row(mainAxisSize: rowSize, children: [
+          hostGlyph(task.host, 14, ui),
+          const SizedBox(width: 6),
+          Text(task.host.label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2)),
+        ]),
+        const SizedBox(height: 4),
+        Text(task.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+        const SizedBox(height: 3),
+        Row(mainAxisSize: rowSize, children: [
+          Flexible(
+            child: Text(state, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, weight: FontWeight.w500, color: stateColor, tabular: true)),
+          ),
+          if (p != null) ...[
+            const SizedBox(width: 8),
+            _Progress(done: p.$1, total: p.$2, color: barColor, style: progress),
+          ],
+        ]),
+        if (max > 0) ...[
+          const SizedBox(height: 7),
+          _TaskSteps(task: task, max: max),
+        ],
+      ],
+    );
+  }
+}
+
+/// The task's steps, a little indented: done, at work, to come.
+class _TaskSteps extends StatelessWidget {
+  const _TaskSteps({required this.task, required this.max});
 
   final NotchTask task;
   final int max;
@@ -369,49 +576,11 @@ class _TaskGlance extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final log = task.log;
-    final status = task.status;
-    final steps = glanceSteps(log, max: max);
-    final turn = log.turns.lastOrNull;
-    final waiting = status == AgentStatus.approval || status == AgentStatus.question;
-    final state = switch (status) {
-      AgentStatus.approval => 'attend ton feu vert',
-      AgentStatus.question => 'te pose une question',
-      AgentStatus.finished => _finished(log),
-      AgentStatus.rateLimited => log.detail.replaceFirst('Limite atteinte', 'limite atteinte'),
-      AgentStatus.error => 'en erreur',
-      AgentStatus.idle || AgentStatus.paused => 'arrêtée',
-      _ => turn != null && turn.plan.isNotEmpty ? 'au travail · ${planCount(planSteps(turn))}' : 'au travail',
-    };
-    final stateColor = switch (status) {
-      AgentStatus.approval || AgentStatus.question => ui.amber,
-      AgentStatus.error => ui.red,
-      AgentStatus.finished => ui.green,
-      _ => ui.text3,
-    };
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(task.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-        const SizedBox(height: 3),
-        Row(children: [
-          hostGlyph(task.host, 11, ui),
-          const SizedBox(width: 5),
-          Flexible(
-            child: Text.rich(
-              TextSpan(children: [
-                TextSpan(text: '${task.host.label} · ', style: TextStyle(color: ui.text3)),
-                TextSpan(text: state, style: TextStyle(color: stateColor)),
-              ]),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: uiText(TextSize.caption, weight: FontWeight.w500, tabular: true),
-            ),
-          ),
-        ]),
-        const SizedBox(height: 7),
-        for (final s in steps)
+    final waiting = task.status == AgentStatus.approval || task.status == AgentStatus.question;
+    return Padding(
+      padding: const EdgeInsets.only(left: 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+        for (final s in glanceSteps(task.log, max: max))
           Padding(
             padding: const EdgeInsets.only(bottom: 3),
             child: Row(children: [
@@ -436,15 +605,8 @@ class _TaskGlance extends StatelessWidget {
               ),
             ]),
           ),
-      ],
+      ]),
     );
-  }
-
-  static String _finished(SessionLog log) {
-    final start = log.items.firstOrNull?.at, end = log.lastEventAt;
-    if (start == null || end == null) return 'terminée';
-    final m = end.difference(start).inMinutes;
-    return 'terminée · ${m < 1 ? 'moins d’une min' : '$m min'}';
   }
 
   static Widget _star(MainStep s, MikkyUi ui, bool waiting) => switch (s.state) {
@@ -499,22 +661,22 @@ class _Sizes extends StatelessWidget {
 final notchTopBoard = BoardSpec('Notch Top', 'L’accueil du haut à venir : Mikky regarde la dernière tâche, quatre applications', (context) => [
   BoardSection(
     title: 'Notch Top',
-    note: '680 × 200, à la place de l’accueil du haut. À gauche, Mikky (84) tourné vers la dernière tâche au travail : son titre, où elle tourne et son état, ses étapes (faites, en cours, à venir), sans les messages. À droite, quatre applications en 2 × 2, assez larges pour un titre, une ligne qui change et le logiciel où elles tournent (VS Code, Terminal, l’app Claude ou Codex) plutôt que le modèle. Modes et outils à 32 px, historique et environnement en petit. Plus tard : Ctrl + clic ouvre l’agent dans son logiciel.',
+    note: '680 × 216, à la place de l’accueil du haut. À gauche, Mikky (84) tourné vers la dernière tâche au travail : le logiciel où elle tourne (son signe et son nom, un peu plus gros), son titre, son état en petit et gris avec sa progression, puis ses étapes un peu en retrait, sans les messages. À droite, quatre applications en 2 × 2 : un titre, une ligne qui change, le logiciel plutôt que le modèle. Rien en cours : une colonne d’applications de plus. Plus tard : Ctrl + clic ouvre l’agent dans son logiciel.',
     frames: [
-      BoardFrame(label: 'Tuiles larges', note: 'Le signe, le titre et la ligne sur la tuile.', width: 680, child: NotchTop(task: _task(FakeSessions.working()))),
-      BoardFrame(label: 'Icônes et mots', note: 'Une petite tuile avec le signe, les mots à côté, sans fond.', width: 680, child: NotchTop(task: _task(FakeSessions.working()), style: AppsStyle.icons)),
+      BoardFrame(label: 'Tuiles larges', note: 'Progression en segments, un par étape du plan.', width: 680, child: NotchTop(task: _task(FakeSessions.working()))),
+      BoardFrame(label: 'Icônes et mots', note: 'Progression en barre fine.', width: 680, child: NotchTop(task: _task(FakeSessions.working()), style: AppsStyle.icons, progress: ProgressStyle.bar)),
+      const BoardFrame(label: 'Rien en cours', note: 'Mikky dort ; trois colonnes, six applications.', width: 680, child: NotchTop()),
     ],
   ),
   BoardSection(
     title: 'La tâche que Mikky regarde',
-    note: 'Seulement les étapes qui apparaissent, et la fin. Où elle tourne avant son état : VS Code, Terminal, Claude, Codex, Mikky.',
+    note: 'Seulement les étapes qui apparaissent, et la fin. Sans plan : pas de progression.',
     frames: [
       BoardFrame(label: 'Au travail, avec un plan', width: 680, child: NotchTop(task: _task(FakeSessions.working()))),
       BoardFrame(label: 'Au travail, sans plan', width: 680, child: NotchTop(task: _task(FakeSessions.workingNoPlan(), name: 'Ajoute un test Codex', host: HostApp.terminal))),
       BoardFrame(label: 'Attend ton feu vert', width: 680, child: NotchTop(task: _task(FakeSessions.approval(), name: 'Met à jour le site', host: HostApp.codex))),
       BoardFrame(label: 'Terminée', width: 680, child: NotchTop(task: _task(FakeSessions.done(), host: HostApp.mikky))),
       BoardFrame(label: 'Limite atteinte', width: 680, child: NotchTop(task: _task(FakeSessions.limited(), host: HostApp.claude))),
-      const BoardFrame(label: 'Rien en cours', note: 'Mikky dort.', width: 680, child: NotchTop()),
     ],
   ),
   const BoardSection(
@@ -527,22 +689,36 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil du haut à venir : Mik
   ),
 ]);
 
-final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir : la même idée, debout', (context) => [
+final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir : d’autres essais', (context) => [
   BoardSection(
     title: 'Notch Right',
-    note: '300 de large, collé au bord droit. En haut, Mikky (72) et la tâche qu’il regarde (trois étapes) ; en dessous, les quatre autres applications ; le pied en petit.',
+    note: '300 de large, collé au bord droit. Trois idées, après la première (Mikky à côté de sa tâche, au-dessus d’une liste) qui ne convainquait pas.',
     frames: [
-      BoardFrame(label: 'Liste · tuiles larges', note: 'Une colonne de quatre : les titres en entier.', width: 300, child: NotchRight(task: _task(FakeSessions.working()))),
-      BoardFrame(label: 'Liste · icônes et mots', width: 300, child: NotchRight(task: _task(FakeSessions.working()), style: AppsStyle.icons)),
-      BoardFrame(label: '2 × 2 · tuiles larges', note: 'Plus court, les titres coupés plus tôt.', width: 300, child: NotchRight(task: _task(FakeSessions.working()), list: false)),
+      BoardFrame(
+        label: 'Au centre',
+        note: 'Mikky au milieu en haut, le regard vers sa tâche dessous : logiciel, titre, état ; pas d’étapes. Les applications en liste.',
+        width: 300,
+        child: NotchRight(task: _task(FakeSessions.working())),
+      ),
+      BoardFrame(
+        label: 'En-tête',
+        note: 'Mikky petit à côté du logiciel et du titre, les étapes dessous sur toute la largeur ; les applications 2 × 2 en icônes et mots.',
+        width: 300,
+        child: NotchRight(task: _task(FakeSessions.working()), style: RightStyle.header),
+      ),
+      BoardFrame(
+        label: 'Dock',
+        note: 'Mikky à côté de sa tâche ; les applications en une rangée de petites tuiles, comme un dock (les mots au survol). Le plus court.',
+        width: 300,
+        child: NotchRight(task: _task(FakeSessions.working()), style: RightStyle.dock),
+      ),
     ],
   ),
   BoardSection(
-    title: 'La tâche que Mikky regarde',
+    title: 'Attend ton feu vert',
     frames: [
-      BoardFrame(label: 'Attend ton feu vert', width: 300, child: NotchRight(task: _task(FakeSessions.approval(), name: 'Met à jour le site', host: HostApp.codex))),
-      BoardFrame(label: 'Terminée', width: 300, child: NotchRight(task: _task(FakeSessions.done(), host: HostApp.mikky))),
-      const BoardFrame(label: 'Rien en cours', width: 300, child: NotchRight()),
+      for (final (label, style) in [('Au centre', RightStyle.center), ('En-tête', RightStyle.header), ('Dock', RightStyle.dock)])
+        BoardFrame(label: label, width: 300, child: NotchRight(task: _task(FakeSessions.approval(), name: 'Met à jour le site', host: HostApp.codex), style: style)),
     ],
   ),
 ]);
