@@ -84,6 +84,35 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
     ],
   ),
   BoardSection(
+    title: 'Essais · le gris des applications, en sombre',
+    note: 'En sombre, les tuiles avaient le dégradé des commandes en relief (#26262A → #1B1B1E) : « ça fait cheap, pas premium ». Quatre essais, à comparer avec l’actuel ; en clair, rien ne change.',
+    kind: FrameKind.trial,
+    frames: [
+      for (final (label, look) in [
+        ('Actuel', TileLook.control),
+        ('Obsidienne', TileLook.obsidian),
+        ('Verre fumé', TileLook.smoke),
+        ('Relief doux', TileLook.soft),
+        ('Contour seul', TileLook.outline),
+      ])
+        BoardFrame(label: label, width: 700, child: TileLookScope(look: look, child: _notch(watched: _watched(FakeSessions.working())))),
+    ],
+  ),
+  BoardSection(
+    title: 'Essais · Mikky blanc, en sombre',
+    note: 'Un Mikky blanc aux yeux noirs sur l’île noire (en clair, il reste noir : blanc sur blanc, il disparaîtrait).',
+    kind: FrameKind.trial,
+    frames: [
+      BoardFrame(label: 'Au travail', width: 700, child: MikkyLookScope(white: true, child: _notch(watched: _watched(FakeSessions.working())))),
+      BoardFrame(label: 'Rien en cours', width: 700, child: MikkyLookScope(white: true, child: _notch(apps: sampleNotchApps.skip(3).toList()))),
+      BoardFrame(
+        label: 'La page d’un agent',
+        width: 700,
+        child: MikkyLookScope(white: true, child: _page(AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false, mikky: MikkyBeside.middle))),
+      ),
+    ],
+  ),
+  BoardSection(
     title: 'La tâche que Mikky regarde',
     note: 'La dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min. Seulement ses étapes qui apparaissent, et la fin. Sans plan : pas de progression.',
     frames: [

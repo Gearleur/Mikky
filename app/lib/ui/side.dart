@@ -277,6 +277,7 @@ class _MiniMikkyState extends State<MiniMikky> {
 
   @override
   Widget build(BuildContext context) {
+    final white = !MikkyUi.of(context).isLight && MikkyLookScope.whiteOf(context);
     final theme = MikkyUi.of(context).isLight ? MikkyTheme.light : MikkyTheme.dark;
     final s = widget.size;
     return RepaintBoundary(
@@ -284,6 +285,9 @@ class _MiniMikkyState extends State<MiniMikky> {
         dimension: s,
         child: CustomPaint(
           painter: MikkyPainter(
+            // The trial of a white Mikky, in dark only.
+            body: white ? _whiteFur : MikkyPainter.ink,
+            eyes: white ? MikkyPainter.ink : MikkyPainter.eyeWhite,
             geometry: MikkyGeometry.of(_mikky, s * .29),
             center: Offset(s / 2, s * .54),
             rim: theme.mikkyRim,
@@ -295,4 +299,20 @@ class _MiniMikkyState extends State<MiniMikky> {
       ),
     );
   }
+}
+
+/// A white Mikky's fur: not paper white, a little soft.
+const _whiteFur = Color(0xFFF2F2F4);
+
+/// Trial (boards, 2026-10-05: « un Mikky blanc pour la version noire »):
+/// the [MiniMikky]s under it are white with black eyes, in dark only.
+class MikkyLookScope extends InheritedWidget {
+  const MikkyLookScope({super.key, required this.white, required super.child});
+
+  final bool white;
+
+  static bool whiteOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<MikkyLookScope>()?.white ?? false;
+
+  @override
+  bool updateShouldNotify(MikkyLookScope old) => old.white != white;
 }

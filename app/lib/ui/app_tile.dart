@@ -47,17 +47,14 @@ class _AppTileState extends State<AppTile> {
     final ui = MikkyUi.of(context);
     final s = widget.size, r = AppTile.radiusFor(s);
     final on = widget.onTap != null;
+    final (color, gradient, shadows) = _face(ui, TileLookScope.of(context));
     final face = Surface(
       width: widget.width ?? s,
       height: s,
       radius: r,
-      gradient: ui.tile,
-      shadows: [
-        ...ui.shThumb,
-        ui.highlight,
-        CssShadow(0, 0, 0, ui.line, spread: .8, inset: true),
-        if (_keyboard) ...ui.focusRing,
-      ],
+      color: color,
+      gradient: gradient,
+      shadows: [...shadows, if (_keyboard) ...ui.focusRing],
       child: widget.child,
     );
     final status = widget.status;
@@ -190,4 +187,59 @@ class AppSlot extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Trials for the tiles in dark (2026-10-05: the raised controls' grey
+/// « fait cheap, pas premium »); in light, the tile stays as it is.
+enum TileLook {
+  /// The raised controls' gradient (#26262A → #1B1B1E), as until now.
+  control,
+
+  /// Near black, a fine light rim and a sheen on top: polished stone.
+  obsidian,
+
+  /// A faint white veil on the black, a fine rim: smoked glass.
+  smoke,
+
+  /// A deeper grey than the controls, a stronger sheen on top.
+  soft,
+
+  /// The island's black, only a fine light outline.
+  outline,
+}
+
+/// The [TileLook] of the tiles under it (the boards' trials); none: the
+/// raised controls' gradient.
+class TileLookScope extends InheritedWidget {
+  const TileLookScope({super.key, required this.look, required super.child});
+
+  final TileLook look;
+
+  static TileLook of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<TileLookScope>()?.look ?? TileLook.control;
+
+  @override
+  bool updateShouldNotify(TileLookScope old) => old.look != look;
+}
+
+/// A tile's face: its color or gradient, and its shadows.
+(Color?, Gradient?, List<CssShadow>) _face(MikkyUi ui, TileLook look) {
+  LinearGradient down(Color a, Color b) => LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [a, b]);
+  CssShadow rim(Color c, [double spread = .8]) => CssShadow(0, 0, 0, c, spread: spread, inset: true);
+  CssShadow sheen(Color c) => CssShadow(0, 1, 0, c, inset: true);
+  if (ui.isLight || look == TileLook.control) return (null, ui.tile, [...ui.shThumb, ui.highlight, rim(ui.line)]);
+  return switch (look) {
+    TileLook.obsidian => (
+      null,
+      down(const Color(0xFF151517), const Color(0xFF0C0C0E)),
+      [const CssShadow(0, 2, 8, Color(0x80000000)), sheen(const Color(0x17FFFFFF)), rim(const Color(0x14FFFFFF))],
+    ),
+    TileLook.smoke => (const Color(0x0DFFFFFF), null, [sheen(const Color(0x0FFFFFFF)), rim(const Color(0x17FFFFFF))]),
+    TileLook.soft => (
+      null,
+      down(const Color(0xFF1F1F22), const Color(0xFF131315)),
+      [...ui.shThumb, sheen(const Color(0x24FFFFFF)), rim(const Color(0x0DFFFFFF))],
+    ),
+    TileLook.outline => (const Color(0xFF0A0A0B), null, [rim(const Color(0x1FFFFFFF), 1)]),
+    TileLook.control => (null, ui.tile, const <CssShadow>[]),
+  };
 }
