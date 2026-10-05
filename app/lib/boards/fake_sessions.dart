@@ -29,12 +29,15 @@ abstract final class FakeSessions {
     ], at: _at(4)),
     ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'Lancer les tests', command: 'dart test', status: ToolStatus.failed,
         output: '00:02 +74 -2: island closes after 45 s [E]\n  Expected: 45\n    Actual: 60\n00:02 +74 -2: Some tests failed.', at: _at(6)),
+    AgentMessage('Deux tests échouent : ils attendent une fermeture à **45 s**, le code ferme à 60 s. Je regarde la constante.', at: _at(8)),
     ToolCallEvent('t2', name: 'Read', kind: ToolKind.read, title: 'Lire island_machine.dart', path: _file, status: ToolStatus.completed, at: _at(20)),
   ];
 
   /// At work, a file being written.
   static SessionLog working() => _log([
     ..._fixing(),
+    UserMessage('Vérifie aussi la spec §3', queued: true, at: _at(30)),
+    AgentMessage('La spec dit bien 45 s. Je corrige `autoCloseSec`.', at: _at(35)),
     ToolCallEvent('t3', name: 'Edit', kind: ToolKind.edit, title: 'Modifier island_machine.dart', path: _file,
         diff: const FileDiff(_file, '  static const autoCloseSec = 60;', '  static const autoCloseSec = 45;'), status: ToolStatus.running, at: _at(40)),
   ]);
@@ -44,6 +47,7 @@ abstract final class FakeSessions {
     ..._start('Ajoute un test pour le lecteur de sessions Codex.'),
     for (final (i, f) in ['codex_reader.dart', 'session_log.dart', 'codex_reader_test.dart'].indexed)
       ToolCallEvent('r$i', kind: ToolKind.read, title: 'Lire $f', path: 'packages/mikky_engine/lib/src/sessions/$f', status: ToolStatus.completed, at: _at(4 + i)),
+    AgentMessage('Le lecteur ignore `token_count` quand la fenêtre manque. Je cherche où il le lit.', at: _at(8)),
     ToolCallEvent('s1', kind: ToolKind.search, title: 'Chercher « token_count »', command: 'rg token_count', status: ToolStatus.completed, at: _at(9)),
     ToolCallEvent('e1', kind: ToolKind.edit, title: 'Écrire usage_test.dart', path: 'packages/mikky_engine/test/sessions/usage_test.dart',
         diff: const FileDiff('packages/mikky_engine/test/sessions/usage_test.dart', null, "test('Codex writes its limits', () {\n  …\n});"),

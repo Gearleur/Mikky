@@ -83,7 +83,9 @@ impl Reader {
             out.push(json!({"type":"session", "id":line["sessionId"], "cwd":line["cwd"]}));
         }
         match string(&line["type"]) {
-            "user" if line["isMeta"] != true => {
+            // The summary Claude writes after compacting is not a message
+            // from the user: it would cut the task in two.
+            "user" if line["isMeta"] != true && line["isCompactSummary"] != true => {
                 if self.first_message.is_none() {
                     self.first_message = line["uuid"].as_str().map(str::to_owned);
                 }
@@ -398,5 +400,20 @@ mod tests {
         r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_started"}}));
         let out = r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_complete"}}));
         assert_eq!(out[0]["reason"], "endTurn");
+    }
+
+    #[test]
+    fn claude_compact_summary_does_not_cut_the_turn() {
+        let mut r = Reader::default();
+        let user = |text: &str| json!({"type":"user","sessionId":"s","message":{"content":text}});
+        assert_eq!(r.read("claude", &user("Corrige le bug"))[1]["type"], "start");
+        let mut summary = user("This session is being continued from a previous conversation…");
+        summary["isCompactSummary"] = json!(true);
+        assert!(r.read("claude", &summary).is_empty());
+        let out = r.read(
+            "claude",
+            &json!({"type":"assistant","message":{"id":"m","stop_reason":"end_turn","content":[{"type":"text","text":"Fait."}]}}),
+        );
+        assert_eq!(out.last().unwrap()["reason"], "endTurn");
     }
 }

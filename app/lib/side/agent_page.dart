@@ -6,9 +6,7 @@ import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
-import '../ui/motion.dart';
 import '../ui/selection.dart';
-import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/status.dart';
 import '../ui/tokens.dart';
@@ -18,10 +16,10 @@ import 'session_text.dart';
 import 'session_views.dart';
 import 'side_app.dart';
 
-/// An agent's page (UX `ux-a.html`). While it works: Suivi (the metro
-/// line) or Chat (the whole conversation), the choice half inside the
-/// field. Once done: the plain chat, the work folded in « Tâche terminée »
-/// cards, and the conversation goes on. Sessions started elsewhere are
+/// An agent's page (UX `ux-a.html`): one thread, the conversation with
+/// the work where it happened — each task unfolds what the agent did and
+/// said, in order, live while it works (user request, 2026-10-05: no more
+/// Suivi and Chat apart). The conversation goes on under it. Sessions started elsewhere are
 /// followed without touching them; once done they can go on in Mikky.
 class AgentPage extends StatefulWidget {
   const AgentPage({super.key, required this.host, required this.id, required this.back, this.rename});
@@ -38,8 +36,6 @@ class AgentPage extends StatefulWidget {
 }
 
 class _AgentPageState extends State<AgentPage> {
-  /// 0: Suivi, 1: Chat.
-  int _view = 0;
   final _scroll = ScrollController();
   int _lastVersion = -1;
 
@@ -59,14 +55,9 @@ class _AgentPageState extends State<AgentPage> {
     } catch (e) {
       if (mounted) setState(() => _sendError = 'Envoi non confirmé : $e');
     }
-    if (!mounted) return;
-    // The answer comes in the chat: follow it.
-    if (!(_source.entry(widget.id)?.log.working ?? false)) {
-      setState(() => _view = 1);
-    }
   }
 
-  /// In Chat, stays at the bottom as the conversation grows (unless the
+  /// Stays at the bottom as the conversation grows (unless the
   /// user scrolled up to read).
   void _follow(SessionLog log) {
     if (log.version == _lastVersion) return;
@@ -101,8 +92,7 @@ class _AgentPageState extends State<AgentPage> {
     final working = log.working;
     final external = e.origin == AgentOrigin.external;
     final adapterPid = e.live && e.run is DaemonAgentRun ? (e.run as DaemonAgentRun).adapterPid : null;
-    final suivi = working && _view == 0;
-    if (!suivi) _follow(log);
+    _follow(log);
 
     final usage = usageLine(log);
     final content = <Widget>[
@@ -117,13 +107,13 @@ class _AgentPageState extends State<AgentPage> {
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: LimitHooks(
+      ...threadOf(context, log, limit: LimitHooks(
         e.id,
         (t) => _source.send(e.id, t),
         finish: () => finishLimit(widget.host, e.id),
         finished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
         unfinish: () => _source.unsettle(e.id),
-      ))),
+      )),
       if (e.status == AgentStatus.paused)
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -164,14 +154,6 @@ class _AgentPageState extends State<AgentPage> {
                 : external
                 ? 'Continuer dans Mikky…'
                 : 'Continuer avec cet agent…',
-            options: working
-                ? Segmented(
-                    options: const ['Suivi', 'Chat'],
-                    selected: _view,
-                    size: SegmentSize.field,
-                    onChanged: (i) => setState(() => _view = i),
-                  )
-                : null,
             commands: e.live ? log.commands : const [],
             onSend: widget.host.service.canLaunch ? _send : null,
             glass: true,
@@ -187,32 +169,20 @@ class _AgentPageState extends State<AgentPage> {
           child: SingleChildScrollView(
             controller: _scroll,
             // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : (working ? 96 : 78)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, composer == null ? 56 : 78),
             child: SelectableArea(
-              child: AnimatedSwitcher(
-                duration: Duration(milliseconds: Motion.reduced(context) ? 1 : 220),
-                switchInCurve: Motion.enter,
-                transitionBuilder: (child, a) => FadeTransition(
-                  opacity: a,
-                  child: SlideTransition(
-                    position: Tween(begin: const Offset(0, .02), end: Offset.zero).animate(a),
-                    child: child,
-                  ),
-                ),
-                child: Column(
-                  key: ValueKey(suivi),
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (content.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 60),
-                        child: Center(
-                          child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
-                        ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (content.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 60),
+                      child: Center(
+                        child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
                       ),
-                    ...content,
-                  ],
-                ),
+                    ),
+                  ...content,
+                ],
               ),
             ),
           ),
@@ -220,7 +190,7 @@ class _AgentPageState extends State<AgentPage> {
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : (working ? 74 : 54))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : 54)),
         // Top middle: the violet star under the spell (« Ensorcelé »), the
         // yellow one while the limit holds it (user requests, 2026-09-30).
         Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: e.id, limited: e.status == AgentStatus.rateLimited))),

@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_steps.dart';
-import 'package:mikky/ui/metro.dart';
 import 'package:mikky/ui/status.dart';
 import 'package:mikky/ui/tasks.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -10,10 +9,9 @@ void main() {
   final t0 = DateTime.utc(2026, 9, 30, 12);
 
   group('main steps of a task', () {
-    const done = TurnSpan(0, end: 6, reason: StopReason.endTurn);
 
     test('tools of one kind in a row make one step', () {
-      final steps = mainSteps(done, const [
+      final steps = toolSteps(const [
         ToolItem('1', kind: ToolKind.read, path: r'C:\app\lib\main.dart', status: ToolStatus.completed),
         ToolItem('2', kind: ToolKind.read, path: '/app/lib/a.dart', status: ToolStatus.completed),
         ToolItem('3', kind: ToolKind.search, status: ToolStatus.completed),
@@ -28,7 +26,7 @@ void main() {
     });
 
     test('a refused command is a failed step with its note', () {
-      final steps = mainSteps(done, const [
+      final steps = toolSteps(const [
         ToolItem('1', kind: ToolKind.execute, command: 'rm -rf build', status: ToolStatus.failed, output: 'User refused'),
       ]);
       expect(steps.single.label, 'Lance une commande');
@@ -43,7 +41,8 @@ void main() {
         PlanEntry('Écrire', PlanStatus.pending),
         PlanEntry('Tester', PlanStatus.pending),
       ]);
-      final steps = mainSteps(turn, const []);
+      final steps = planSteps(turn);
+      expect(planCount(steps), '2 sur 3');
       expect([for (final s in steps) s.state], [TaskStepState.done, TaskStepState.now, TaskStepState.todo]);
       expect(steps.every((s) => s.tone == StepTone.plan && s.tools.isEmpty), isTrue);
     });
@@ -51,11 +50,10 @@ void main() {
 
   group('task head', () {
     test('status and title follow how the turn ended', () {
-      final log = SessionLog();
       expect(taskStatus(const TurnSpan(0)), UiStatus.working);
-      expect(taskTitle(log, const TurnSpan(0)), 'Au travail');
+      expect(taskTitle(const TurnSpan(0)), 'Au travail');
       expect(taskStatus(const TurnSpan(0, end: 1, reason: StopReason.rateLimited)), UiStatus.limited);
-      expect(taskTitle(log, const TurnSpan(0, end: 1, reason: StopReason.cancelled)), 'Tâche arrêtée');
+      expect(taskTitle(const TurnSpan(0, end: 1, reason: StopReason.cancelled)), 'Tâche arrêtée');
       expect(taskStatus(const TurnSpan(0, end: 1, reason: StopReason.endTurn)), UiStatus.finished);
     });
 
@@ -71,24 +69,50 @@ void main() {
     });
   });
 
-  group('Suivi', () {
-    test('one step per tool, the one running is at work', () {
+  group('the flow of a turn', () {
+    test('words and steps in order, the answer apart', () {
       final log = SessionLog()
         ..applyAll([
           TurnStarted(at: t0),
           UserMessage('Corrige le bug', at: t0),
-          const ToolCallEvent('1', kind: ToolKind.read, title: 'Read main.dart', status: ToolStatus.completed),
-          const ToolCallEvent('2', kind: ToolKind.edit, title: 'Edit main.dart', status: ToolStatus.running, diff: FileDiff('main.dart', 'a', 'b')),
+          const AgentMessage('Je regarde.', messageId: 'a'),
+          const ToolCallEvent('1', kind: ToolKind.read, title: 'Read a.dart', path: 'a.dart', status: ToolStatus.completed),
+          const ToolCallEvent('2', kind: ToolKind.read, title: 'Read b.dart', path: 'b.dart', status: ToolStatus.completed),
+          const AgentMessage('Le bug est dans b.', messageId: 'b'),
+          const UserMessage('Et c ?', queued: true),
+          const ToolCallEvent('3', kind: ToolKind.edit, title: 'Edit b.dart', path: 'b.dart', diff: FileDiff('b.dart', 'x', 'y'), status: ToolStatus.completed),
+          const AgentMessage('Corrigé.', messageId: 'c'),
+          const TurnEnded(StopReason.endTurn),
         ]);
-      final steps = suiviSteps(log, log.turns.last);
-      expect([for (final s in steps) (s.kind, s.text)], [(StepKind.done, 'Read main.dart'), (StepKind.now, 'Edit main.dart')]);
-      expect(steps.last.diff?.newText, 'b');
-      expect(suiviCount(log.turns.last, steps), '2 étapes');
+      final turn = log.turns.single;
+      final items = turnItems(log, turn);
+      final answer = turnAnswer(turn, items);
+      expect([for (final a in answer) a.text], ['Corrigé.']);
+      final flow = turnFlow(items, answer.toSet());
+      expect([
+        for (final e in flow)
+          switch (e) {
+            FlowWords(:final text) => 'dit: $text',
+            FlowStep(:final step) => 'étape: ${step.label}',
+            FlowMe(:final item) => 'moi: ${item.text}',
+          },
+      ], ['dit: Je regarde.', 'étape: Lit 2 fichiers', 'dit: Le bug est dans b.', 'moi: Et c ?', 'étape: Modifie b.dart']);
     });
 
-    test('nothing running yet: it thinks', () {
-      final log = SessionLog()..applyAll([TurnStarted(at: t0), UserMessage('Bonjour', at: t0)]);
-      expect([for (final s in suiviSteps(log, log.turns.last)) s.text], ['Réfléchit…']);
+    test('while it works, no answer: its last words stay in the flow', () {
+      final log = SessionLog()
+        ..applyAll([
+          TurnStarted(at: t0),
+          UserMessage('Bonjour', at: t0),
+          const ToolCallEvent('1', kind: ToolKind.edit, title: 'Edit a', path: 'a', status: ToolStatus.running),
+          const AgentMessage('J’écris.'),
+        ]);
+      final turn = log.turns.single;
+      final items = turnItems(log, turn);
+      expect(turnAnswer(turn, items), isEmpty);
+      final flow = turnFlow(items, const {});
+      expect((flow.first as FlowStep).step.state, TaskStepState.now);
+      expect((flow.last as FlowWords).text, 'J’écris.');
     });
   });
 

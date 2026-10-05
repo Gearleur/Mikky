@@ -4,7 +4,6 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../ui/code_card.dart';
 import '../ui/feedback.dart';
 import '../ui/messages.dart';
-import '../ui/metro.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/status.dart';
 import '../ui/tasks.dart';
@@ -24,81 +23,14 @@ Widget? _code(FileDiff? diff) {
   ]);
 }
 
-/// A message slipped in while the agent worked, for the metro line.
-class _Slipped {
-  const _Slipped(this.text, this.meta);
-
-  final String text;
-  final String? meta;
-}
-
-/// The metro line: [slipped] messages go just before the step at work.
-List<Widget> _metro(List<SuiviStep> steps, MikkyUi ui, {List<_Slipped> slipped = const []}) {
-  final rows = <(StepKind, Widget, String?)>[];
-  final nowAt = steps.indexWhere((s) => s.kind == StepKind.now);
-  for (var i = 0; i < steps.length; i++) {
-    final s = steps[i];
-    if (i == nowAt) {
-      for (final m in slipped) {
-        rows.add((StepKind.me, Text(m.text), m.meta));
-      }
-    }
-    final code = s.kind == StepKind.now ? _code(s.diff) : null;
-    final text = _stepText(s, ui);
-    rows.add((
-      s.kind,
-      code == null ? text : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [text, const SizedBox(height: 8), code]),
-      null,
-    ));
-  }
-  final past = nowAt < 0 ? rows.length : rows.indexWhere((r) => r.$1 == StepKind.now);
-  return [
-    for (var i = 0; i < rows.length; i++)
-      MetroStep(kind: rows[i].$1, past: i < past, first: i == 0, last: i == rows.length - 1, meta: rows[i].$3, child: rows[i].$2),
-  ];
-}
-
-Widget _stepText(SuiviStep s, MikkyUi ui) => s.note != null
-    ? Text.rich(
-        TextSpan(children: [TextSpan(text: s.text), TextSpan(text: ' · ${s.note}', style: TextStyle(color: ui.red, fontWeight: FontWeight.w500))]),
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-      )
-    : Text(s.text, maxLines: 2, overflow: TextOverflow.ellipsis);
-
-/// Suivi: what the agent does now, then the metro line of its turn, with
-/// the messages slipped in while it works just before the step at work.
-List<Widget> suiviOf(BuildContext context, SessionLog log) {
-  final ui = MikkyUi.of(context);
-  final turn = log.turns.lastOrNull;
-  if (turn == null) return [const _Waiting()];
-  final steps = suiviSteps(log, turn);
-  final slipped = [
-    for (final u in turnItems(log, turn).whereType<UserItem>().where((u) => u.queued)) _Slipped(u.text, u.at == null ? null : clockTime(u.at!)),
-  ];
-  return [
-    Padding(
-      padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-        Expanded(
-          child: Text(log.detail.isEmpty ? 'Réfléchit…' : log.detail,
-              maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text)),
-        ),
-        const SizedBox(width: 10),
-        Text(suiviCount(turn, steps), style: uiText(TextSize.small, color: ui.text2, tabular: true)),
-      ]),
-    ),
-    ..._metro([...steps, if (turn.running) const SuiviStep(StepKind.todo, 'Terminé')], ui, slipped: slipped),
-  ];
-}
-
+/// The agent thinks: its dots, where its words will come.
 class _Waiting extends StatelessWidget {
   const _Waiting();
 
   @override
-  Widget build(BuildContext context) => const Padding(
-        padding: EdgeInsets.only(top: 40),
-        child: Center(child: TypingDots()),
+  Widget build(BuildContext context) => const Align(
+        alignment: Alignment.centerLeft,
+        child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: TypingDots()),
       );
 }
 
@@ -156,74 +88,119 @@ PixelFxPalette? _paletteOf(StepTone? tone, MikkyUi ui) => switch (tone) {
   null => null,
 };
 
-/// Chat: the whole conversation. The user's messages in bubbles; each turn
-/// with work in it is a task, part of the page, that shows what the agent
-/// did — its plan, what it thought and said on the way, every tool — then
-/// its answer, the whole width (user request, 2026-09-30). The last task
+/// A main step of a task: its dot and words; a tap shows its tools. The
+/// one at work shows the code it writes right under it.
+List<Widget> _step(MainStep s, MikkyUi ui) {
+  final code = s.state == TaskStepState.now ? _code(s.tools.where((t) => t.active && t.diff != null).lastOrNull?.diff) : null;
+  return [
+    TaskStep(
+      label: s.label,
+      tone: _paletteOf(s.tone, ui),
+      state: s.state,
+      note: s.note,
+      detail: s.tools.isEmpty ? null : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final t in s.tools) _toolLine(t, ui)]),
+    ),
+    if (code != null) Padding(padding: const EdgeInsets.fromLTRB(19, 2, 0, 6), child: code),
+  ];
+}
+
+/// The agent's plan on top of its task: « Plan · 2 sur 5 », its steps.
+List<Widget> _plan(TurnSpan turn, MikkyUi ui) {
+  final plan = planSteps(turn);
+  return [
+    Padding(
+      padding: const EdgeInsets.only(top: 2, bottom: 2),
+      child: Text('Plan · ${planCount(plan)}', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true)),
+    ),
+    for (final s in plan) ..._step(s, ui),
+  ];
+}
+
+/// What happened in a task, in order: the agent's words, its main steps,
+/// the messages slipped in; while it works, the dots of what comes.
+List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer, MikkyUi ui) {
+  final out = <Widget>[];
+  Object? previous;
+  void add(Object kind, List<Widget> widgets) {
+    // A breath between words and steps; steps in a row stay close.
+    if (previous != null && (previous != kind || kind != FlowStep)) out.add(const SizedBox(height: 8));
+    out.addAll(widgets);
+    previous = kind;
+  }
+
+  if (turn.plan.isNotEmpty) add(PlanEntry, _plan(turn, ui));
+  for (final e in turnFlow(items, answer)) {
+    switch (e) {
+      case FlowWords(:final text, :final thought):
+        add(FlowWords, [NoteLine(text, thought: thought)]);
+      case FlowStep(:final step):
+        add(FlowStep, _step(step, ui));
+      case FlowMe(:final item):
+        add(FlowMe, [ChatMessage(me: true, text: item.text, meta: item.at == null ? null : clockTime(item.at!))]);
+    }
+  }
+  if (turn.running && !items.any((i) => i is ToolItem && i.active)) {
+    add(_Waiting, [const _Waiting()]);
+  }
+  return out;
+}
+
+/// The thread: the whole conversation, the work in it where it happened
+/// (user request, 2026-10-05: one place for the actions and the messages,
+/// instead of Suivi and Chat). Your messages in bubbles; each turn with
+/// work in it is a task, part of the page, that unfolds what the agent
+/// did and said in order; then its answer, the whole width. The last task
 /// is open, older ones folded.
-List<Widget> chatOf(BuildContext context, SessionLog log, {VoidCallback? toSuivi, LimitHooks? limit}) {
+List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
   void gap([double h = 8]) => out.add(SizedBox(height: h));
   for (final turn in log.turns) {
+    final last = identical(turn, log.turns.last);
     final items = turnItems(log, turn);
-    final users = items.whereType<UserItem>().toList();
-    final tools = items.whereType<ToolItem>().toList();
-    for (final u in users.where((u) => !u.queued)) {
+    for (final u in items.whereType<UserItem>().where((u) => !u.queued)) {
       out.add(ChatMessage(me: true, text: u.text, meta: u.at == null ? null : clockTime(u.at!)));
       gap();
     }
-    for (final u in users.where((u) => u.queued)) {
-      out.add(ChatMessage(me: true, text: u.text));
-      gap();
-    }
-    final answer = turn.running ? null : items.whereType<AgentItem>().where((a) => !a.thought && a.text.trim().isNotEmpty).lastOrNull;
+    final answer = turnAnswer(turn, items);
+    final tools = items.whereType<ToolItem>().toList();
     if (tools.isNotEmpty || turn.plan.isNotEmpty) {
-      final steps = [
-        for (final s in mainSteps(turn, tools))
-          TaskStep(
-            label: s.label,
-            tone: _paletteOf(s.tone, ui),
-            state: s.state,
-            note: s.note,
-            detail: s.tools.isEmpty
-                ? null
-                : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final t in s.tools) _toolLine(t, ui)]),
-          ),
-      ];
-      // Everything, on demand: what it thought and said, every tool.
-      final details = <Widget>[
-        for (final item in items)
-          if (item is ToolItem)
-            _toolLine(item, ui)
-          else if (item is AgentItem && item.text.trim().isNotEmpty && !identical(item, answer))
-            NoteLine(item.text.trim(), thought: item.thought),
-      ];
       out.add(TaskSection(
-        key: ValueKey('task-${turn.start}'),
+        // Folds once a newer task comes.
+        key: ValueKey('task-${turn.start}-$last'),
         status: taskStatus(turn),
-        title: taskTitle(log, turn),
-        meta: taskMeta(turn, items, steps.length),
-        initiallyOpen: identical(turn, log.turns.last),
-        action: turn.running && toSuivi != null ? 'Suivi' : null,
-        onAction: toSuivi,
-        steps: steps,
-        details: details,
+        title: taskTitle(turn),
+        meta: taskMeta(turn, items, toolSteps(tools).length),
+        initiallyOpen: last,
+        children: _flow(turn, items, answer.toSet(), ui),
       ));
       gap(6);
+    } else if (turn.running) {
+      // A plain exchange: the words as they come, then the dots.
+      for (final e in turnFlow(items, const {})) {
+        if (e case FlowWords(:final text, thought: false)) {
+          out.add(ChatMessage(me: false, text: text));
+          gap(10);
+        } else if (e case FlowMe(:final item)) {
+          out.add(ChatMessage(me: true, text: item.text));
+          gap();
+        }
+      }
+      out.add(const _Waiting());
     }
     if (turn.running) continue;
-    if (turn.reason == StopReason.rateLimited && identical(turn, log.turns.last)) {
+    final text = answer.map((a) => a.text.trim()).join('\n\n');
+    if (turn.reason == StopReason.rateLimited && last) {
       // The subscription's limit: when it lifts, not the raw message (user
       // request, 2026-09-30).
-      if (answer != null) {
-        out.add(ChatMessage(me: false, text: answer.text.trim()));
+      if (text.isNotEmpty) {
+        out.add(ChatMessage(me: false, text: text));
         gap(10);
       }
       out.add(LimitBlock(log: log, message: turn.message, hooks: limit));
       gap(14);
-    } else if (answer != null) {
-      out.add(ChatMessage(me: false, text: answer.text.trim()));
+    } else if (text.isNotEmpty) {
+      out.add(ChatMessage(me: false, text: text));
       gap(14);
     } else if (turn.message != null) {
       out.add(ChatMessage(me: false, text: turn.message!));

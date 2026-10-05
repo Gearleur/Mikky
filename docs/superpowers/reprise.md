@@ -16,7 +16,7 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
 - **Île** : overlay transparent avec clics traversants, forme SDF en shader, positions « en haut » et « à droite ». À droite, la petite île montre Mikky dans l'état de l'agent qu'il suit. Ce qui attend l'utilisateur sort dans une bulle gluante. Quand un agent a fini, la petite île sort 5,2 s. Au survol, l'île s'ouvre en petite fenêtre. 0 % de CPU quand l'île est cachée.
 - **Petite fenêtre** :
   - accueil en applications (2026-10-02) : en haut et à droite, des pages de tuiles, une par agent ; une tuile ouvre l'agent, les outils un nouvel agent ;
-  - page d'un agent (Suivi / Chat), nouvel agent (Windows ou WSL, Demander / Auto), connexion ;
+  - page d'un agent (un seul fil : messages et actions de chaque tâche ensemble, depuis le 2026-10-05), nouvel agent (Windows ou WSL, Demander / Auto), connexion ;
   - menu étoile ; Oui / Non / Toujours, questions ; pause, reprise, arrêt ;
   - ranger les sessions, « Ensorcelé » (relance après la limite) ;
   - notifications Windows.
@@ -31,7 +31,13 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
   - Fermer l'app n'arrête pas les agents.
 - **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique.
 
-## Dernière session (4 octobre) : Mikky au centre, le fonctionnel
+## 5 octobre : un seul fil sur la page d'un agent
+
+- Demande de l'utilisateur : une tâche lancée dans VS Code ne montrait pas la réponse de Claude ; le chat et les actions doivent être au même endroit. Pour une session extérieure qui travaille, il n'y avait pas de champ, donc pas de bascule : la page restait sur la ligne de métro, sans messages.
+- **Suivi et Chat remplacés par un seul fil** (`threadOf`, `session_views.dart`) : chaque tâche déroule dans l'ordre ce que l'agent dit, ses actions groupées (code en direct sous l'action en cours), les messages glissés ; sa réponse dessous. Logique pure : `turnFlow`, `turnAnswer`, `planSteps`, `toolSteps` (`session_steps.dart`). Planches Agent, Messages, Accueil Top / Right à jour. **À valider sur les planches.**
+- `mikkyd` : le résumé que Claude écrit après une compaction (`isCompactSummary`) n'est plus pris pour un message de l'utilisateur (il coupait la tâche en deux). **Le moteur en service doit être reconstruit et relancé** (sans agent actif) pour en profiter.
+
+## Session du 4 octobre : Mikky au centre, le fonctionnel
 
 Comparaison avec Coucou (`~/projects/coucou`, MIT) : Mikky avait le moteur de Mochi (états, émotes), mais l'app n'en branchait presque rien, et les demandes arrivaient sans contexte. Demande de l'utilisateur : **le fonctionnel seulement** ; les animations et les sons se refont avec lui demain, une par une. **Seul l'accueil est validé.**
 

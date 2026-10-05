@@ -1,46 +1,35 @@
 import 'package:flutter/widgets.dart';
 
 import 'icons.dart';
+import 'markdown.dart';
 import 'motion.dart';
 import 'pixel_fx.dart';
 import 'sliding_hover.dart';
 import 'status.dart';
 import 'tokens.dart';
 
-/// A task in the chat, part of the page (no card): its state in pixels,
-/// its title and figures, a chevron. Open: its main steps, as dots; under
-/// them « Voir le détail » shows [details], everything the agent did (user
-/// requests, 2026-09-30). [action]: a link on the right (« Suivi » while
-/// it works).
+/// A task in the thread, part of the page (no card): its state in pixels,
+/// its title and figures, a chevron. Open: everything that happened in it,
+/// in order — the agent's words, its main steps as dots, a message slipped
+/// in (user request, 2026-10-05: the actions and the messages in one
+/// place). Past [shown] lines, the oldest fold under « N plus tôt ».
 class TaskSection extends StatefulWidget {
   const TaskSection({
     super.key,
     required this.status,
     required this.title,
     this.meta,
-    this.steps = const [],
-    this.details = const [],
+    this.children = const [],
     this.initiallyOpen = false,
-    this.initiallyDetails = false,
-    this.action,
-    this.onAction,
+    this.shown = 40,
   });
 
   final UiStatus status;
   final String title;
   final String? meta;
-
-  /// The main steps ([TaskStep]).
-  final List<Widget> steps;
-
-  /// Everything, shown on demand.
-  final List<Widget> details;
+  final List<Widget> children;
   final bool initiallyOpen;
-
-  /// The detail shown from the start (boards).
-  final bool initiallyDetails;
-  final String? action;
-  final VoidCallback? onAction;
+  final int shown;
 
   @override
   State<TaskSection> createState() => _TaskSectionState();
@@ -48,19 +37,12 @@ class TaskSection extends StatefulWidget {
 
 class _TaskSectionState extends State<TaskSection> {
   late bool _open = widget.initiallyOpen;
-  late bool _details = widget.initiallyDetails;
-
-  Widget _fold(BuildContext context, bool open, Widget child) => AnimatedSize(
-    duration: Motion.of(context, Motion.fold),
-    curve: Motion.enter,
-    alignment: Alignment.topCenter,
-    child: open ? child : const SizedBox(width: double.infinity),
-  );
+  bool _all = false;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final foldable = widget.steps.isNotEmpty || widget.details.isNotEmpty;
+    final foldable = widget.children.isNotEmpty;
     final head = Row(
       children: [
         StatusFx(widget.status, size: 14),
@@ -75,12 +57,6 @@ class _TaskSectionState extends State<TaskSection> {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (widget.action != null)
-          HoverRow(
-            onTap: widget.onAction,
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            child: Text(widget.action!, style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.blue)),
-          ),
         if (foldable) ...[
           const SizedBox(width: 4),
           AnimatedRotation(
@@ -92,6 +68,7 @@ class _TaskSectionState extends State<TaskSection> {
         ],
       ],
     );
+    final hidden = _all ? 0 : (widget.children.length - widget.shown).clamp(0, widget.children.length);
     // The sliding square of the Oui / Non answers as hover (user request,
     // 2026-09-30).
     return SlidingHover(
@@ -109,43 +86,31 @@ class _TaskSectionState extends State<TaskSection> {
               child: head,
             ),
           ),
-          _fold(
-            context,
-            _open && foldable,
-            Container(
-              margin: const EdgeInsets.only(left: 6, bottom: 4),
-              padding: const EdgeInsets.only(left: 10),
-              decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ...widget.steps,
-                  if (widget.details.isNotEmpty) ...[
-                    _fold(
-                      context,
-                      _details,
-                      Padding(
-                        padding: const EdgeInsets.fromLTRB(6, 6, 0, 2),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            for (var i = 0; i < widget.details.length; i++)
-                              Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 8), child: widget.details[i]),
-                          ],
-                        ),
-                      ),
+          AnimatedSize(
+            duration: Motion.of(context, Motion.fold),
+            curve: Motion.enter,
+            alignment: Alignment.topCenter,
+            child: !_open || !foldable
+                ? const SizedBox(width: double.infinity)
+                : Container(
+                    margin: const EdgeInsets.only(left: 6, bottom: 4),
+                    padding: const EdgeInsets.only(left: 10),
+                    decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (hidden > 0)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: HoverRow(
+                              onTap: () => setState(() => _all = true),
+                              child: Text('$hidden plus tôt', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3)),
+                            ),
+                          ),
+                        ...widget.children.skip(hidden),
+                      ],
                     ),
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: HoverRow(
-                        onTap: () => setState(() => _details = !_details),
-                        child: Text(_details ? 'Masquer le détail' : 'Voir le détail', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+                  ),
           ),
         ],
       ),
@@ -302,8 +267,9 @@ class _ToolLineState extends State<ToolLine> {
   }
 }
 
-/// A line of the agent's own words in a task: what it thought (grey,
-/// short), or what it said on the way.
+/// The agent's own words in a task: what it said on the way, whole, in
+/// markdown (user request, 2026-10-05: the messages with the actions); or
+/// what it [thought], grey and short.
 class NoteLine extends StatelessWidget {
   const NoteLine(this.text, {super.key, this.thought = false});
 
@@ -313,12 +279,15 @@ class NoteLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    if (!thought) {
+      return DefaultTextStyle(style: uiText(TextSize.label, color: ui.text, height: 1.45), child: AgentText(text));
+    }
     return Text(
       // Short and plain: no markdown marks.
       text.replaceAll(RegExp(r'\*\*|__|`'), ''),
-      maxLines: thought ? 2 : 4,
+      maxLines: 2,
       overflow: TextOverflow.ellipsis,
-      style: uiText(thought ? TextSize.small : TextSize.label, color: thought ? ui.text3 : ui.text2, height: 1.4),
+      style: uiText(TextSize.small, color: ui.text3, height: 1.4),
     );
   }
 }

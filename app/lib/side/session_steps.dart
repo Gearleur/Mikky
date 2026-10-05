@@ -1,13 +1,13 @@
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/metro.dart' show StepKind;
 import '../ui/status.dart';
 import '../ui/tasks.dart' show TaskStepState;
 import 'session_text.dart';
 
-// How a session becomes steps, before any widget: the metro line of Suivi,
-// the tasks of the chat and their main steps. Pure, testable without a
-// screen; `session_views.dart` draws it.
+// How a session becomes its thread, before any widget: each turn's task,
+// what happened in it in order (the agent's words, its actions grouped in
+// main steps), and its answer. Pure, testable without a screen;
+// `session_views.dart` draws it.
 
 /// The items of a turn.
 List<ThreadItem> turnItems(SessionLog log, TurnSpan turn) => log.items.sublist(turn.start, turn.end ?? log.items.length);
@@ -45,73 +45,7 @@ String? toolNote(ToolItem t) {
   return (removed: removed, added: added);
 }
 
-// ---------------------------------------------------------------- Suivi
-
-/// A step of the metro line of Suivi.
-class SuiviStep {
-  const SuiviStep(this.kind, this.text, {this.note, this.diff});
-
-  final StepKind kind;
-  final String text;
-
-  /// In red after the text: « refusé », « échec ».
-  final String? note;
-
-  /// The change the step at work is writing.
-  final FileDiff? diff;
-}
-
-/// The steps of a turn: the agent's plan when it made one, else one step
-/// per tool it used (the last [maxTools]).
-List<SuiviStep> suiviSteps(SessionLog log, TurnSpan turn, {int maxTools = 7}) {
-  final tools = turnItems(log, turn).whereType<ToolItem>().toList();
-  // Code only while a tool writes it: an old diff under a new step lies.
-  final lastDiff = tools.where((t) => t.active && t.diff != null).lastOrNull?.diff;
-  if (turn.plan.isNotEmpty) {
-    var nowSeen = false;
-    final steps = <SuiviStep>[];
-    for (final e in turn.plan) {
-      switch (e.status) {
-        case PlanStatus.completed:
-          steps.add(SuiviStep(StepKind.done, e.content));
-        case PlanStatus.inProgress:
-          nowSeen = true;
-          steps.add(SuiviStep(turn.running ? StepKind.now : StepKind.done, e.content, diff: lastDiff));
-        case PlanStatus.pending:
-          if (turn.running && !nowSeen) {
-            nowSeen = true;
-            steps.add(SuiviStep(StepKind.now, e.content, diff: lastDiff));
-          } else {
-            steps.add(SuiviStep(StepKind.todo, e.content));
-          }
-      }
-    }
-    return steps;
-  }
-  final shown = tools.length > maxTools ? tools.sublist(tools.length - maxTools) : tools;
-  final steps = <SuiviStep>[
-    if (tools.length > maxTools) SuiviStep(StepKind.done, '${tools.length - maxTools} étapes avant'),
-    for (final t in shown)
-      SuiviStep(
-        t.active && turn.running ? StepKind.now : StepKind.done,
-        toolTitle(t),
-        note: toolNote(t),
-        diff: t.active ? t.diff : null,
-      ),
-  ];
-  if (turn.running && !steps.any((s) => s.kind == StepKind.now)) {
-    steps.add(const SuiviStep(StepKind.now, 'Réfléchit…'));
-  }
-  return steps;
-}
-
-/// « 2 sur 5 » with a plan, else « 4 étapes ».
-String suiviCount(TurnSpan turn, List<SuiviStep> steps) {
-  final done = steps.where((s) => s.kind == StepKind.done).length;
-  return turn.plan.isNotEmpty ? '${(done + 1).clamp(1, steps.length)} sur ${steps.length}' : '${steps.length} étape${steps.length > 1 ? 's' : ''}';
-}
-
-// ----------------------------------------------------------------- Chat
+// --------------------------------------------------------------- Steps
 
 /// What an important action is, for the color of its step's star (user
 /// request, 2026-09-30); reading and searching have none (grey).
@@ -194,50 +128,124 @@ StepTone? _toneOf(List<ToolItem> tools) {
   };
 }
 
-/// The main steps of a turn: its plan when the agent made one, else its
-/// tools grouped (user request, 2026-09-30: the big lines first, the
-/// detail on a click).
-List<MainStep> mainSteps(TurnSpan turn, List<ToolItem> tools) {
-  if (turn.plan.isNotEmpty) {
-    // As in Suivi: while it works, the first step not done is the one at
-    // work when the agent marked none.
-    final marked = turn.plan.any((e) => e.status == PlanStatus.inProgress);
-    final firstTodo = turn.plan.indexWhere((e) => e.status == PlanStatus.pending);
-    return [
-      for (var i = 0; i < turn.plan.length; i++)
-        MainStep(
-          label: turn.plan[i].content,
-          tone: StepTone.plan,
-          state: switch (turn.plan[i].status) {
-            PlanStatus.completed => TaskStepState.done,
-            PlanStatus.inProgress => turn.running ? TaskStepState.now : TaskStepState.done,
-            PlanStatus.pending => turn.running && !marked && i == firstTodo ? TaskStepState.now : TaskStepState.todo,
-          },
-        ),
-    ];
-  }
-  final groups = <(String, List<ToolItem>)>[];
-  for (final t in tools) {
-    final g = _groupOf(t);
-    if (g == null) continue;
-    if (groups.isNotEmpty && groups.last.$1 == g && !g.contains(':')) {
-      groups.last.$2.add(t);
-    } else {
-      groups.add((g, [t]));
-    }
-  }
+/// The agent's plan for a turn, as steps. While it works, the first step
+/// not done is the one at work when the agent marked none.
+List<MainStep> planSteps(TurnSpan turn) {
+  final marked = turn.plan.any((e) => e.status == PlanStatus.inProgress);
+  final firstTodo = turn.plan.indexWhere((e) => e.status == PlanStatus.pending);
   return [
-    for (final (_, group) in groups)
+    for (var i = 0; i < turn.plan.length; i++)
       MainStep(
-        label: stepLabel(group),
-        tone: _toneOf(group),
-        state: group.any((t) => t.active)
-            ? TaskStepState.now
-            : (group.any((t) => t.status == ToolStatus.failed) ? TaskStepState.failed : TaskStepState.done),
-        note: group.map(toolNote).nonNulls.firstOrNull,
-        tools: group,
+        label: turn.plan[i].content,
+        tone: StepTone.plan,
+        state: switch (turn.plan[i].status) {
+          PlanStatus.completed => TaskStepState.done,
+          // Stopped on the way (limit, error, by the user): not done.
+          PlanStatus.inProgress => turn.running
+              ? TaskStepState.now
+              : (turn.reason == StopReason.endTurn ? TaskStepState.done : TaskStepState.todo),
+          PlanStatus.pending => turn.running && !marked && i == firstTodo ? TaskStepState.now : TaskStepState.todo,
+        },
       ),
   ];
+}
+
+/// « 2 sur 5 »: the plan's step at work, or the last one done.
+String planCount(List<MainStep> plan) {
+  final done = plan.where((s) => s.state == TaskStepState.done).length;
+  final now = plan.any((s) => s.state == TaskStepState.now);
+  return '${(done + (now ? 1 : 0)).clamp(1, plan.length)} sur ${plan.length}';
+}
+
+MainStep _stepOf(List<ToolItem> group) => MainStep(
+  label: stepLabel(group),
+  tone: _toneOf(group),
+  state: group.any((t) => t.active)
+      ? TaskStepState.now
+      : (group.any((t) => t.status == ToolStatus.failed) ? TaskStepState.failed : TaskStepState.done),
+  note: group.map(toolNote).nonNulls.firstOrNull,
+  tools: group,
+);
+
+/// Tools in a row grouped in main steps (user request, 2026-09-30: the big
+/// lines first, the detail on a click).
+List<MainStep> toolSteps(List<ToolItem> tools) => [
+  for (final e in turnFlow(tools, const {}))
+    if (e is FlowStep) e.step,
+];
+
+/// What happened in a turn, in order (user request, 2026-10-05: the
+/// actions and the messages in one place).
+sealed class FlowEntry {
+  const FlowEntry();
+}
+
+/// What the agent said on the way, or [thought].
+class FlowWords extends FlowEntry {
+  const FlowWords(this.text, {this.thought = false});
+
+  final String text;
+  final bool thought;
+}
+
+/// Tools of one kind in a row: one main step.
+class FlowStep extends FlowEntry {
+  const FlowStep(this.step);
+
+  final MainStep step;
+}
+
+/// A message the user slipped in while the agent worked.
+class FlowMe extends FlowEntry {
+  const FlowMe(this.item);
+
+  final UserItem item;
+}
+
+/// The turn's [items] in order, without the user's opening messages and
+/// without [skip] (the answer, shown under the task).
+List<FlowEntry> turnFlow(List<ThreadItem> items, Set<ThreadItem> skip) {
+  final out = <FlowEntry>[];
+  String? group;
+  var tools = <ToolItem>[];
+  void flush() {
+    if (tools.isNotEmpty) out.add(FlowStep(_stepOf(tools)));
+    tools = [];
+    group = null;
+  }
+
+  for (final item in items) {
+    if (skip.contains(item)) continue;
+    switch (item) {
+      case ToolItem():
+        final g = _groupOf(item);
+        if (g == null) continue;
+        if (g != group || g.contains(':')) flush();
+        group = g;
+        tools.add(item);
+      case AgentItem(:final text, :final thought):
+        if (text.trim().isEmpty) continue;
+        flush();
+        out.add(FlowWords(text.trim(), thought: thought));
+      case UserItem(:final queued):
+        if (!queued) continue;
+        flush();
+        out.add(FlowMe(item));
+    }
+  }
+  flush();
+  return out;
+}
+
+/// A finished turn's answer: what the agent said after its last tool.
+List<AgentItem> turnAnswer(TurnSpan turn, List<ThreadItem> items) {
+  if (turn.running) return const [];
+  final out = <AgentItem>[];
+  for (final item in items.reversed) {
+    if (item is ToolItem) break;
+    if (item is AgentItem && !item.thought && item.text.trim().isNotEmpty) out.insert(0, item);
+  }
+  return out;
 }
 
 /// The state of a turn's task.
@@ -251,8 +259,8 @@ UiStatus taskStatus(TurnSpan turn) => turn.running
       };
 
 /// The title of a turn's task: what it does now, or how it ended.
-String taskTitle(SessionLog log, TurnSpan turn) => turn.running
-    ? (log.detail.isEmpty ? 'Au travail' : log.detail)
+String taskTitle(TurnSpan turn) => turn.running
+    ? 'Au travail'
     : switch (turn.reason) {
         StopReason.cancelled => 'Tâche arrêtée',
         StopReason.rateLimited => 'Limite atteinte',

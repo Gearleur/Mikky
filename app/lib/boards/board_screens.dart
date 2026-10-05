@@ -12,7 +12,6 @@ import '../ui/field.dart';
 import '../ui/icons.dart';
 import '../ui/messages.dart';
 import '../ui/pixel_fx.dart';
-import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/status.dart';
 import '../ui/tasks.dart';
@@ -23,13 +22,12 @@ import 'fake_sessions.dart';
 // ----------------------------------------------------------------- agent
 
 /// An agent's page in its window, fed by a made-up session (the same
-/// Suivi and Chat as the app's).
+/// thread as the app's).
 class AgentMock extends StatefulWidget {
   const AgentMock({
     super.key,
     required this.title,
     required this.log,
-    this.chat = false,
     this.external = false,
     this.adapterPid,
     this.scrolled = false,
@@ -56,9 +54,6 @@ class AgentMock extends StatefulWidget {
   /// Scrolled down a little: the thread passes under the buttons.
   final bool scrolled;
 
-  /// Starts on Chat (else Suivi, while it works).
-  final bool chat;
-
   /// Started in VS Code or a terminal: followed, read only.
   final bool external;
 
@@ -73,7 +68,6 @@ class AgentMock extends StatefulWidget {
 }
 
 class _AgentMockState extends State<AgentMock> {
-  late int _view = widget.chat ? 1 : 0;
   late final _scroll = ScrollController(initialScrollOffset: widget.scrolled ? 120 : 0);
 
   // Its own agent id for the spell, as the app's page would have.
@@ -83,6 +77,12 @@ class _AgentMockState extends State<AgentMock> {
   @override
   void initState() {
     super.initState();
+    // As the app: the page opens at the end of the thread.
+    if (!widget.scrolled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
+      });
+    }
     if (widget.enchanted) {
       // Seen from when the limit hit, so the spell waits until its time.
       Enchantments.instance.enchant(_id, widget.log.limitResetsAt, _limit.send, now: widget.log.lastEventAt);
@@ -101,7 +101,6 @@ class _AgentMockState extends State<AgentMock> {
     final ui = MikkyUi.of(context);
     final log = widget.log;
     final working = log.working;
-    final suivi = working && _view == 0;
     final usage = usageLine(log);
     final content = <Widget>[
       if (widget.adapterPid != null)
@@ -111,7 +110,7 @@ class _AgentMockState extends State<AgentMock> {
         ),
       if (usage.isNotEmpty)
         Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(TextSize.caption, color: ui.text3, tabular: true))),
-      ...(suivi ? suiviOf(context, log) : chatOf(context, log, toSuivi: () => setState(() => _view = 0), limit: _limit)),
+      ...threadOf(context, log, limit: _limit),
       if (widget.paused)
         Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
       else if (log.question != null)
@@ -125,14 +124,14 @@ class _AgentMockState extends State<AgentMock> {
         Positioned.fill(
           child: SingleChildScrollView(
             controller: _scroll,
-            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : (working ? 96 : 78)),
+            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : 78),
             child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content),
           ),
         ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : (working ? 74 : 54))),
+        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : 54)),
         Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: _id, limited: log.statusAt(log.lastEventAt ?? DateTime(2026)) == AgentStatus.rateLimited))),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
@@ -148,9 +147,6 @@ class _AgentMockState extends State<AgentMock> {
             child: Composer(
               glass: true,
               placeholder: working ? 'Écris à cet agent…' : 'Continuer avec cet agent…',
-              options: working
-                  ? Segmented(options: const ['Suivi', 'Chat'], selected: _view, size: SegmentSize.field, onChanged: (i) => setState(() => _view = i))
-                  : null,
             ),
           )
         else
@@ -223,21 +219,20 @@ class NewAgentMock extends StatelessWidget {
   }
 }
 
-final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, attentes, fins', (context) => [
+final agentBoard = BoardSpec('Agent', 'La page d’un agent : le fil, attentes, fins', (context) => [
   BoardSection(
     title: 'Au travail',
-    note: 'Suivi (la ligne de métro) ou Chat, au choix sous le champ. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
+    note: 'Un seul fil (2026-10-05) : tes messages, et pour chaque tâche tout ce qui s’y passe dans l’ordre — ce que l’agent dit en route, ses actions en grandes lignes (un clic montre les outils), le code en direct sous l’action en cours, le plan en haut s’il en a un ; sa réponse sous la tâche. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
     frames: [
-      BoardFrame(label: 'Suivi', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), adapterPid: 12345)),
-      BoardFrame(label: 'Chat, avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true)),
+      BoardFrame(label: 'Avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), adapterPid: 12345)),
       BoardFrame(
-        label: 'Chat, sans plan',
-        note: 'Les outils regroupés en grandes lignes, colorées par action.',
-        child: AgentMock(title: 'Ajoute un test Codex', log: FakeSessions.workingNoPlan(), chat: true),
+        label: 'Sans plan',
+        note: 'Les outils regroupés en grandes lignes, colorées par action, entre ce que l’agent dit.',
+        child: AgentMock(title: 'Ajoute un test Codex', log: FakeSessions.workingNoPlan()),
       ),
       BoardFrame(
         label: 'Session hors de Mikky',
-        note: 'Lancée ailleurs : Mikky lit son activité, sans confirmer que son processus tourne et sans pouvoir lui répondre.',
+        note: 'Lancée dans VS Code ou un terminal : le même fil, ses messages et ses actions en direct ; Mikky lit son activité, sans confirmer que son processus tourne et sans pouvoir lui répondre.',
         child: AgentMock(title: 'Refactor du lecteur', log: FakeSessions.working(), external: true),
       ),
     ],
@@ -245,8 +240,8 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : Suivi, Chat, atten
   BoardSection(
     title: 'Attend',
     frames: [
-      BoardFrame(label: 'Feu vert pour une commande', child: AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), chat: true)),
-      BoardFrame(label: 'Question à choix', child: AgentMock(title: 'Stockage des tâches', log: FakeSessions.question(), chat: true)),
+      BoardFrame(label: 'Feu vert pour une commande', child: AgentMock(title: 'Met à jour le site', log: FakeSessions.approval())),
+      BoardFrame(label: 'Question à choix', child: AgentMock(title: 'Stockage des tâches', log: FakeSessions.question())),
     ],
   ),
   BoardSection(
@@ -360,29 +355,35 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
     ),
     BoardSection(
       title: 'Tâches',
-      note: 'Une tâche fait partie de la page : son état en pixels, son titre, ses chiffres. Ouverte : les grandes lignes en points d’étape ; un clic sur une étape montre ses outils ; « Voir le détail » montre tout.',
+      note: 'Une tâche fait partie de la page : son état en pixels, son titre, ses chiffres. Ouverte : tout ce qui s’y passe dans l’ordre (2026-10-05) — ce que l’agent dit en route, ses actions en points d’étape, un message glissé ; un clic sur une étape montre ses outils. Au-delà de 40 lignes, le début se replie sous « N plus tôt ».',
       frames: [
         const BoardFrame(
           label: 'Repliée',
-          child: _Pane([TaskSection(status: UiStatus.finished, title: 'Tâche terminée', meta: '3 étapes · 1 fichier · 2 min', steps: [TaskStep(label: 'Lit la spec')])]),
+          child: _Pane([TaskSection(status: UiStatus.finished, title: 'Tâche terminée', meta: '3 étapes · 1 fichier · 2 min', children: [TaskStep(label: 'Lit la spec')])]),
         ),
         BoardFrame(
-          label: 'Grandes lignes',
-          note: 'Couleur par action : crée vert, modifie bleu, commande orange, internet violet, supprime rouge ; lire et chercher en gris.',
+          label: 'Le déroulement',
+          note: 'Ce que l’agent dit en entier ; ses réflexions en gris clair, sur deux lignes. Couleur par action : crée vert, modifie bleu, commande orange, internet violet, supprime rouge ; lire et chercher en gris.',
           child: _Pane([
             TaskSection(
               status: UiStatus.working,
               title: 'Au travail',
-              meta: '6 étapes · 2 fichiers',
+              meta: '5 étapes · 2 fichiers',
               initiallyOpen: true,
-              action: 'Suivi',
-              onAction: () {},
-              steps: [
+              children: [
+                const NoteLine('Je regarde d’abord comment le lecteur compte les jetons.', thought: true),
+                const SizedBox(height: 8),
                 const TaskStep(label: 'Lit 3 fichiers'),
+                const SizedBox(height: 8),
+                const NoteLine('Le lecteur ignore `token_count` quand la fenêtre manque. J’ajoute un test pour ce cas.'),
+                const SizedBox(height: 8),
                 TaskStep(label: 'Crée usage_test.dart', tone: PixelFxPalette.green(ui)),
                 TaskStep(label: 'Modifie codex_reader.dart', tone: PixelFxPalette.blue),
                 TaskStep(label: 'Va sur internet', tone: PixelFxPalette.violet),
                 const TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec'),
+                const SizedBox(height: 8),
+                const ChatMessage(me: true, text: 'Regarde aussi le délai', meta: '14:02'),
+                const SizedBox(height: 8),
                 const TaskStep(label: 'Relance les tests', state: TaskStepState.now),
               ],
             ),
@@ -397,7 +398,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
               title: 'Tâche terminée',
               meta: '2 étapes · 2 min',
               initiallyOpen: true,
-              steps: [
+              children: [
                 TaskStep(
                   label: 'Lance une commande',
                   tone: PixelFxPalette.fire,
@@ -415,36 +416,11 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
             ),
           ]),
         ),
-        BoardFrame(
-          label: 'Tout le détail',
-          note: 'Réflexions en gris clair, messages en cours de route, chaque outil.',
-          child: _Pane([
-            TaskSection(
-              status: UiStatus.finished,
-              title: 'Tâche terminée',
-              meta: '2 étapes · 1 fichier',
-              initiallyOpen: true,
-              initiallyDetails: true,
-              steps: [const TaskStep(label: 'Lit la spec'), TaskStep(label: 'Crée resume.md', tone: PixelFxPalette.green(ui))],
-              details: [
-                const NoteLine('Je lis la spec puis j’écris un résumé court.', thought: true),
-                const ToolLine(icon: 'file', title: 'Lire la spec', detail: 'docs/spec.md'),
-                ToolLine(
-                  icon: 'file',
-                  title: 'Écrire le résumé',
-                  detail: 'docs/resume.md',
-                  trailing: Text('+12', style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true, color: ui.green)),
-                ),
-                const NoteLine('Résumé écrit, 12 lignes.'),
-              ],
-            ),
-          ]),
-        ),
-        BoardFrame(
+        const BoardFrame(
           label: 'Arrêtée, en erreur',
           child: _Pane([
-            const TaskSection(status: UiStatus.paused, title: 'Tâche arrêtée', meta: '2 étapes', steps: [TaskStep(label: 'Lit 2 fichiers')]),
-            const TaskSection(status: UiStatus.error, title: 'Tâche en erreur', meta: '1 étape', steps: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')]),
+            TaskSection(status: UiStatus.paused, title: 'Tâche arrêtée', meta: '2 étapes', children: [TaskStep(label: 'Lit 2 fichiers')]),
+            TaskSection(status: UiStatus.error, title: 'Tâche en erreur', meta: '1 étape', children: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')]),
           ]),
         ),
       ],

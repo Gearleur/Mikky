@@ -177,11 +177,10 @@ final homeTopBoard = BoardSpec(
     ),
     BoardSection(
       title: 'La page d’un agent',
-      note: 'Une tuile ouvre la page de l’agent comme à droite : Suivi ou Chat, Oui / Non, la limite, le menu ···. L’île grandit un peu pour la conversation : 450 × 380, sur le même ressort ; le retour (bouton, Échap) la ramène à 260.',
+      note: 'Une tuile ouvre la page de l’agent comme à droite : le fil (messages et actions ensemble), Oui / Non, la limite, le menu ···. L’île grandit un peu pour la conversation : 450 × 380, sur le même ressort ; le retour (bouton, Échap) la ramène à 260.',
       frames: [
-        BoardFrame(label: 'Suivi', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
-        BoardFrame(label: 'Chat', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true, framed: false))),
-        BoardFrame(label: 'Feu vert', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), chat: true, framed: false))),
+        BoardFrame(label: 'Au travail', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
+        BoardFrame(label: 'Feu vert', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
         BoardFrame(label: 'Terminé, la conversation continue', width: 450, child: _page(HomeLayout.top, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), framed: false))),
       ],
     ),
@@ -232,9 +231,8 @@ final homeRightBoard = BoardSpec(
       title: 'La page d’un agent',
       note: 'Comme en haut : une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 344 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à 290 × 408.',
       frames: [
-        BoardFrame(label: 'Suivi', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
-        BoardFrame(label: 'Chat', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), chat: true, framed: false))),
-        BoardFrame(label: 'Feu vert', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), chat: true, framed: false))),
+        BoardFrame(label: 'Au travail', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
+        BoardFrame(label: 'Feu vert', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
       ],
     ),
     const BoardSection(
