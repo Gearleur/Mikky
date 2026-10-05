@@ -18,16 +18,7 @@ class MikkyPainter extends CustomPainter {
     required this.foreground,
     this.rim,
     this.showBadge = true,
-    this.body = ink,
-    this.eyes = eyeWhite,
   });
-
-  /// Mikky's black, and his eyes' white.
-  static const ink = _ink, eyeWhite = _eyeWhite;
-
-  /// His fur and his eyes: black and white, or the other way round (trial
-  /// of a white Mikky in dark, 2026-10-05).
-  final Color body, eyes;
 
   final MikkyGeometry geometry;
   final Offset center;
@@ -64,7 +55,7 @@ class MikkyPainter extends CustomPainter {
     ];
     final rim = this.rim;
     for (final part in parts) {
-      canvas.drawPath(part, Paint()..color = this.body);
+      canvas.drawPath(part, Paint()..color = _ink);
       if (rim != null) {
         canvas.drawPath(
           part,
@@ -101,12 +92,12 @@ class MikkyPainter extends CustomPainter {
 
   void _eye(Canvas canvas, EyeGeometry e, double r, double time) {
     final w = e.width, h = e.height, full = e.fullHeight;
-    final fill = Paint()..color = eyes;
+    final fill = Paint()..color = _eyeWhite;
     Paint line(double width) => Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = width
-      ..color = eyes;
+      ..color = _eyeWhite;
     switch (e.shape) {
       case EyeShape.oval:
         canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: w, height: h), fill);
