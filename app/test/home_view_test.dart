@@ -46,9 +46,9 @@ void main() {
     await tester.pumpAndSettle();
     expect(page(tester), 2, reason: 'no page after the last');
 
-    // The last page: its two apps only, no empty places.
+    // The last page: its two apps, then a token where the next ones come.
     expect(find.byType(AppTile), findsNWidgets(2));
-    expect(find.byType(AppSlot), findsNothing);
+    expect(find.byType(AppSlot), findsNWidgets(4));
     final next = tester.widget<AnimatedOpacity>(find.ancestor(of: find.bySemanticsLabel('Page suivante'), matching: find.byType(AnimatedOpacity)).first);
     expect(next.opacity, 0);
   });
@@ -83,8 +83,8 @@ void main() {
         return const Text('nouvelle tâche');
       },
     )));
-    // No « + » in the notch: the tools and the modes start a task.
-    expect(find.byType(AddTile), findsNothing);
+    // « + » after the apps, the tools: both go to the Chat.
+    expect(find.byType(AddTile), findsOneWidget);
     await tester.tap(find.bySemanticsLabel(RegExp('^Outils')));
     await tester.pumpAndSettle();
     expect(find.text('nouvelle tâche'), findsOneWidget);
@@ -95,7 +95,7 @@ void main() {
     toApps!();
     await tester.pumpAndSettle();
     expect(find.text('nouvelle tâche'), findsNothing);
-    expect(find.byType(AppTile), findsNWidgets(3));
+    expect(find.byType(AddTile), findsOneWidget);
   });
 
   testWidgets('notch: the task Mikky looks at beside him, two columns, a click opens it', (tester) async {
@@ -211,10 +211,11 @@ void main() {
     expect(find.byType(AppTile), findsNothing);
     expect(find.byType(AppSlot), findsNWidgets(8));
 
-    // The notch keeps no place for nothing.
+    // The notch too: « + », then wide tokens.
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, animate: false, onNew: () {})));
-    expect(find.byType(AppTile), findsNothing);
-    expect(find.byType(AppSlot), findsNothing);
+    expect(find.byType(AddTile), findsOneWidget);
+    expect(tester.getSize(find.byType(AddTile)), const Size(168, 44));
+    expect(find.byType(AppSlot), findsNWidgets(5));
   });
 
   testWidgets('« + » takes a place: eight apps and « + » make two pages at the right', (tester) async {

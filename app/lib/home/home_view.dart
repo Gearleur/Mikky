@@ -190,7 +190,7 @@ class HomeView extends StatefulWidget {
   /// A tile pressed (the watched task too).
   final ValueChanged<HomeApp>? onOpen;
 
-  /// A new task: the tools' rail and, at the right, the « + » tile, when
+  /// A new task: the tools' rail and the « + » tile, when
   /// there is no [chat]. Neither: cannot launch.
   final VoidCallback? onNew;
 
@@ -243,8 +243,8 @@ class _HomeViewState extends State<HomeView> {
   double get _gridWidth => _columns * _l.tileWidth + (_columns - 1) * _l.gap;
   double get _gridHeight => _l.rows * _l.tile + (_l.rows - 1) * _l.rowGap;
 
-  /// The apps, then, at the right, « + » when a task can be started.
-  int get _cells => widget.apps.length + (_canStart && !_l.isTop ? 1 : 0);
+  /// The apps, then « + » when a task can be started.
+  int get _cells => widget.apps.length + (_canStart ? 1 : 0);
   int get _pageCount => math.max(1, (_cells / _perPage).ceil());
 
   @override
@@ -466,16 +466,16 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  /// Page [p]. At the right, always full: its apps, then « + » in the
-  /// first free place, then small tokens where apps will come
-  /// (2026-10-02). In the notch, only its apps: no block for nothing.
+  /// Page [p], always full: its apps, then « + » in the first free
+  /// place, then small tokens where apps will come (2026-10-02; in the
+  /// notch too, user 2026-10-05).
   Widget _grid(int p) {
     final l = _l, apps = widget.apps;
-    Widget? cell(int i) {
+    final wide = l.isTop ? l.tileWidth : null;
+    Widget cell(int i) {
       if (i < apps.length) return l.isTop ? _card(apps[i]) : _tile(apps[i]);
-      if (l.isTop) return null;
-      if (i == apps.length && _canStart) return AddTile(key: const ValueKey('add'), size: l.tile, onTap: _start);
-      return AppSlot(size: l.tile);
+      if (i == apps.length && _canStart) return AddTile(key: const ValueKey('add'), size: l.tile, width: wide, onTap: _start);
+      return AppSlot(size: l.tile, width: wide);
     }
 
     return SizedBox(
@@ -483,7 +483,7 @@ class _HomeViewState extends State<HomeView> {
       child: Wrap(
         spacing: l.gap,
         runSpacing: l.rowGap,
-        children: [for (var i = p * _perPage; i < (p + 1) * _perPage; i++) ?cell(i)],
+        children: [for (var i = p * _perPage; i < (p + 1) * _perPage; i++) cell(i)],
       ),
     );
   }

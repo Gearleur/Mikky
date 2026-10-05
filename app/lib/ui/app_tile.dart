@@ -133,21 +133,34 @@ class _AppTileState extends State<AppTile> {
 }
 
 /// The tile that starts a task (2026-10-02): an app's tile with « + »,
-/// after the apps, in the first free place.
+/// after the apps, in the first free place. Wide (the notch): « + » where
+/// an app has its sign, and « Nouvelle tâche ».
 class AddTile extends StatelessWidget {
-  const AddTile({super.key, this.size = 64, this.onTap});
+  const AddTile({super.key, this.size = 64, this.width, this.onTap});
 
   final double size;
+  final double? width;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final w = width;
     return AppTile(
       size: size,
+      width: w,
       label: 'Nouvelle tâche',
       onTap: onTap,
-      child: Center(child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2)),
+      child: w == null
+          ? Center(child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2))
+          : Padding(
+              padding: const EdgeInsets.only(left: 11, right: 12),
+              child: Row(children: [
+                SizedBox(width: 16, child: Center(child: MikkyIcon('plus', size: 15, color: ui.text2, stroke: 2))),
+                const SizedBox(width: 9),
+                Text('Nouvelle tâche', style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2)),
+              ]),
+            ),
     );
   }
 }
@@ -155,9 +168,12 @@ class AddTile extends StatelessWidget {
 /// A free place on a page of apps (2026-10-02): a small hollow token in
 /// its middle, waiting for an app (the hollow of our tracks, not a tile).
 class AppSlot extends StatelessWidget {
-  const AppSlot({super.key, this.size = 64});
+  const AppSlot({super.key, this.size = 64, this.width});
 
   final double size;
+
+  /// A wide place (the notch); null: square.
+  final double? width;
 
   /// The token's side.
   static double tokenFor(double size) => (size * .16).clamp(9.0, 16.0).roundToDouble();
@@ -167,8 +183,9 @@ class AppSlot extends StatelessWidget {
     final ui = MikkyUi.of(context);
     final t = tokenFor(size);
     return ExcludeSemantics(
-      child: SizedBox.square(
-        dimension: size,
+      child: SizedBox(
+        width: width ?? size,
+        height: size,
         child: Center(child: Surface(width: t, height: t, color: ui.track, shadows: ui.inset)),
       ),
     );
