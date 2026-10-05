@@ -148,14 +148,14 @@ Un panneau **gris clair** (`well`), coins 16, ombre douce ; le **carré blanc qu
 ### L'étoile grise d'un agent (son menu)
 **Invisible** tant que la souris n'est pas dessus : elle n'apparaît que quand on est vraiment proche ; un clic ouvre le menu de l'agent (le clic droit sur la ligne aussi).
 
-### Notch du haut (essais du 2026-10-05, planche Notch, à valider)
-Demande de l'utilisateur, sur une image de Coucou : l'île du haut plus large ; **Mikky plus grand à gauche, tourné vers la dernière tâche au travail** ; les autres applications à droite en **3 colonnes et 2 rangées** (la colonne de gauche des 8 enlevée) ; tout plus petit, « plus premium », ces boutons ne sont pas faits pour être beaucoup cliqués ; **pas de bloc pour rien**. De la tâche : seulement ses étapes qui apparaissent, et la fin, pas les messages.
-- **A · Barre fine** (580 × 188) : modes et outils à 26 px (44 avant, icônes de 13), tuiles de 46, Mikky à 80.
-- **B · Sans barre** (580 × 160) : les modes en tout petit dans le pied, à côté de l'historique ; « + » lance une tâche.
-- **C · Plus large** (640 × 212) : Mikky à 96, tuiles de 52, cinq étapes.
-- La tâche, sans carte : logo de l'outil et nom, son état en quelques mots (« Au travail · 2 sur 3 », « Attend ton feu vert » en ambre, « Terminée · 3 min » en vert, la limite), puis jusqu'à 4 étapes autour de celle en cours (`glanceSteps`). Rien en cours : Mikky dort.
-- Pied : l'historique en icône de 12, l'environnement en « Local » 11,5 px avec son étoile ; les pastilles d'état des petites tuiles à 16 px (22 sur les tuiles de 64).
-- Prototypes seulement (`app/lib/boards/board_notch.dart`) : l'app garde `HomeView` jusqu'au choix.
+### Notch (2026-10-05, planches Notch Top et Notch Right, à valider)
+Le notch **remplacera l'accueil du haut** ; la droite suit la même idée. Demandes de l'utilisateur (sur une image de Coucou) : Mikky plus grand, **tourné vers la dernière tâche au travail** ; de cette tâche, seulement ses étapes qui apparaissent et la fin, **pas les messages** ; les autres applications **plus larges, 4 en 2 × 2**, pour un titre, une petite ligne qui change et **le logiciel où la tâche tourne** (VS Code, c'est VS Code ; le modèle seulement si c'est l'app Claude ou Codex) ; des commandes plus discrètes, « plus premium » ; **pas de bloc pour rien**. Le sujet de la tâche : peut-être plus tard.
+- **Notch Top**, 680 × 200 : Mikky (84) à gauche, la tâche à côté sans carte (titre ; signe du logiciel, « VS Code · au travail · 2 sur 3 » ; jusqu'à 4 étapes autour de celle en cours, `glanceSteps`) ; à droite 4 applications de 168 × 44 en 2 × 2. Deux variantes : **tuiles larges** (le signe, le titre et la ligne sur la tuile) ou **icônes et mots** (une petite tuile, les mots à côté, sans fond).
+- **Notch Right**, 300 de large : Mikky (72) et sa tâche (3 étapes) en haut, les 4 applications en dessous : en liste (une colonne, titres entiers) ou en 2 × 2.
+- **Commandes** : modes et outils à 32 px, icônes de 15 (44 et 18 avant ; 26 était trop petit) ; historique en icône de 14 ; environnement « Local » en 12,5 avec son étoile ; pastilles d'état à 16 px sur les petites tuiles.
+- **Logiciel** : lu dans les sessions (Claude : `entrypoint` `claude-vscode`, `cli` ; Codex : `originator` `codex_vscode`, `Codex Desktop`, `codex_exec`). VS Code et le terminal ont **nos signes** (`code` en bleu, `agents`) : leurs logos ne sont pas à nous (dépôt public) ; l'app pourra prendre l'icône de VS Code installé. Claude et Codex : leurs logos.
+- Plus tard : **Ctrl + clic** ouvre l'agent dans son logiciel (`idees.md` n° 41).
+- Prototypes (`app/lib/boards/board_notch.dart`) : l'app garde `HomeView` jusqu'au choix ; les planches Accueil Top et Right restent jusque-là.
 
 ### Accueil épuré (essai, planche Accueil)
 Le feu d'artifice seulement pour « En attente » et « Travaillent » ; les titres de groupes en gris, le chevron au survol ; plus de « WSL », des heures courtes (« 2 min »). À valider avant de l'appliquer à l'app.
