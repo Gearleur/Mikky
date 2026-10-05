@@ -46,7 +46,11 @@ void main() {
       run(m, 2);
       expect(m.currentWidth, 760);
       expect(m.currentHeight, 216);
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (62, 117.6, 26.1));
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (62, 118, 29));
+      // Nothing at work: Mikky goes to his bigger place, on a spring.
+      m.listIdle = true;
+      run(m, 2);
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (83, 121.12, 37.12));
       // An alert: the request Mikky brings, as big as the home (2026-10-04),
       // Mikky at his focus place.
       m.setShape(IslandShape.open, layout: IslandLayout.focus);

@@ -325,6 +325,7 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
         ),
         BoardFrame(
           label: 'Effets à l’essai',
+          kind: FrameKind.trial,
           note: 'Étincelle, feu d’artifice complet, galaxie.',
           width: 520,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

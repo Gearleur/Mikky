@@ -16,12 +16,9 @@ import 'session_text.dart';
 import 'session_views.dart';
 import 'side_app.dart';
 
-/// An agent's page (UX `ux-a.html`): one thread, the conversation with
-/// the work where it happened — each task unfolds what the agent did and
-/// said, in order, live while it works (user request, 2026-10-05: no more
-/// Suivi and Chat apart). The conversation goes on under it. Sessions started elsewhere are
-/// followed without touching them; once done they can go on in Mikky.
-class AgentPage extends StatefulWidget {
+/// An agent's page in the app: [AgentPageView] fed by the agent Mikky
+/// follows, its actions sent to the agent.
+class AgentPage extends StatelessWidget {
   const AgentPage({super.key, required this.host, required this.id, required this.back, this.rename});
 
   final SideHost host;
@@ -31,13 +28,130 @@ class AgentPage extends StatefulWidget {
   /// Opens the rename page for this session.
   final VoidCallback? rename;
 
+  RealAgentSource get _source => host.service.source;
+
   @override
-  State<AgentPage> createState() => _AgentPageState();
+  Widget build(BuildContext context) {
+    final e = _source.entry(id);
+    if (e == null) {
+      return Stack(children: [
+        SideHead(title: 'Agent', small: true, leading: RoundButton('left', size: 34, onPressed: back, tooltip: 'Retour')),
+      ]);
+    }
+    final hook = _source.hookAskOf(e.id);
+    return AgentPageView(
+      key: ValueKey(e.id),
+      model: AgentPageModel(
+        id: e.id,
+        log: e.log,
+        status: e.status,
+        external: e.origin == AgentOrigin.external,
+        live: e.live,
+        host: e.host,
+        adapterPid: e.live && e.run is DaemonAgentRun ? (e.run as DaemonAgentRun).adapterPid : null,
+        hook: hook == null ? null : (description: hook.description, request: hook.request),
+        limitFinished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
+        canSend: host.service.canLaunch,
+      ),
+      actions: AgentPageActions(
+        back: back,
+        send: (text) => _source.send(e.id, text),
+        answer: (a) => host.answer(e.id, a),
+        answerQuestion: (answers) => _source.answerQuestion(e.id, answers),
+        resume: () => _source.unpause(e.id),
+        finishLimit: () => finishLimit(host, e.id),
+        unfinishLimit: () => _source.unsettle(e.id),
+        menu: () => showSessionMenu(host, e, rename: rename ?? () {}, deleted: back),
+      ),
+    );
+  }
 }
 
-class _AgentPageState extends State<AgentPage> {
-  final _scroll = ScrollController();
-  int _lastVersion = -1;
+/// What an agent's page shows: read from its agent in the app, made up on
+/// the boards — one page for both (2026-10-05: the boards show the app's
+/// own screens, never a copy).
+class AgentPageModel {
+  const AgentPageModel({
+    required this.id,
+    required this.log,
+    required this.status,
+    this.external = false,
+    this.live = true,
+    this.host = AgentHost.windows,
+    this.adapterPid,
+    this.hook,
+    this.limitFinished = false,
+    this.canSend = true,
+  });
+
+  final String id;
+  final SessionLog log;
+  final AgentStatus status;
+
+  /// Started in VS Code or a terminal: followed, read only while it works.
+  final bool external;
+
+  /// Launched by Mikky and still running: it can answer.
+  final bool live;
+  final AgentHost host;
+
+  /// PID of the ACP adapter Mikky runs for it.
+  final int? adapterPid;
+
+  /// A request through Claude's hooks (a session outside Mikky).
+  final ({String? description, String request})? hook;
+
+  /// Stopped by its limit, and « Terminée » by the user.
+  final bool limitFinished;
+
+  /// A message can be sent (the engine is there).
+  final bool canSend;
+}
+
+/// What the user does on an agent's page.
+class AgentPageActions {
+  const AgentPageActions({
+    required this.back,
+    this.send,
+    this.answer,
+    this.answerQuestion,
+    this.resume,
+    this.finishLimit,
+    this.unfinishLimit,
+    this.menu,
+  });
+
+  final VoidCallback back;
+  final Future<void> Function(String text)? send;
+  final ValueChanged<AgentAnswer>? answer;
+  final ValueChanged<Map<String, Object>?>? answerQuestion;
+  final VoidCallback? resume, finishLimit, unfinishLimit, menu;
+}
+
+/// An agent's page (UX `ux-a.html`): one thread, the conversation with
+/// the work where it happened — each task unfolds what the agent did and
+/// said, in order, live while it works (user request, 2026-10-05: no more
+/// Suivi and Chat apart). The conversation goes on under it. Sessions
+/// started elsewhere are followed without touching them; once done they
+/// can go on in Mikky.
+class AgentPageView extends StatefulWidget {
+  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo});
+
+  final AgentPageModel model;
+  final AgentPageActions actions;
+
+  /// Opens scrolled this far from the top (the boards), instead of at the
+  /// end of the conversation.
+  final double? scrolledTo;
+
+  @override
+  State<AgentPageView> createState() => _AgentPageViewState();
+}
+
+class _AgentPageViewState extends State<AgentPageView> {
+  late final _scroll = ScrollController(initialScrollOffset: widget.scrolledTo ?? 0);
+  late int _lastVersion = widget.scrolledTo == null ? -1 : widget.model.log.version;
+  String? _sendError;
 
   @override
   void dispose() {
@@ -45,27 +159,24 @@ class _AgentPageState extends State<AgentPage> {
     super.dispose();
   }
 
-  RealAgentSource get _source => widget.host.service.source;
-  String? _sendError;
-
   Future<void> _send(String text) async {
     try {
-      await _source.send(widget.id, text);
+      await widget.actions.send!(text);
       if (mounted) setState(() => _sendError = null);
     } catch (e) {
       if (mounted) setState(() => _sendError = 'Envoi non confirmé : $e');
     }
   }
 
-  /// Stays at the bottom as the conversation grows (unless the
-  /// user scrolled up to read).
+  /// Stays at the bottom as the conversation grows (unless the user
+  /// scrolled up to read).
   void _follow(SessionLog log) {
     if (log.version == _lastVersion) return;
     // Opening the page: straight to the end of the conversation.
     final first = _lastVersion == -1;
     _lastVersion = log.version;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
+      if (!mounted || !_scroll.hasClients) return;
       final p = _scroll.position;
       if (first || p.maxScrollExtent - p.pixels < 160) {
         _scroll.jumpTo(p.maxScrollExtent);
@@ -76,31 +187,20 @@ class _AgentPageState extends State<AgentPage> {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final e = _source.entry(widget.id);
-    if (e == null) {
-      return Stack(
-        children: [
-          SideHead(
-            title: 'Agent',
-            small: true,
-            leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
-          ),
-        ],
-      );
-    }
-    final log = e.log;
+    final m = widget.model;
+    final a = widget.actions;
+    final log = m.log;
     final working = log.working;
-    final external = e.origin == AgentOrigin.external;
-    final adapterPid = e.live && e.run is DaemonAgentRun ? (e.run as DaemonAgentRun).adapterPid : null;
     _follow(log);
 
     final usage = usageLine(log);
+    final hook = m.hook;
     final content = <Widget>[
       if (_sendError != null) Text(_sendError!, style: uiText(12, color: ui.red)),
-      if (adapterPid != null)
+      if (m.adapterPid != null)
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
-          child: Text('Adaptateur ACP · PID $adapterPid · ${e.host == AgentHost.wsl ? 'WSL' : 'Windows'}', style: uiText(11.5, color: ui.text3, tabular: true)),
+          child: Text('Adaptateur ACP · PID ${m.adapterPid} · ${m.host == AgentHost.wsl ? 'WSL' : 'Windows'}', style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
       if (usage.isNotEmpty)
         Padding(
@@ -108,18 +208,18 @@ class _AgentPageState extends State<AgentPage> {
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
       ...threadOf(context, log, limit: LimitHooks(
-        e.id,
-        (t) => _source.send(e.id, t),
-        finish: () => finishLimit(widget.host, e.id),
-        finished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
-        unfinish: () => _source.unsettle(e.id),
+        m.id,
+        a.send ?? (_) async {},
+        finish: a.finishLimit,
+        finished: m.limitFinished,
+        unfinish: a.unfinishLimit,
       )),
-      if (e.status == AgentStatus.paused)
+      if (m.status == AgentStatus.paused)
         Padding(
           padding: const EdgeInsets.only(top: 12),
-          child: PausedCard(onResume: () => _source.unpause(e.id)),
+          child: PausedCard(onResume: a.resume ?? () {}),
         )
-      else if (_source.hookAskOf(e.id) case final hook?)
+      else if (hook != null)
         // A session outside Mikky, asking through Claude's hooks.
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -131,31 +231,31 @@ class _AgentPageState extends State<AgentPage> {
             style: AgentCardStyle.waiting,
             actions: WaitActions(
               command: hook.request,
-              onYes: () => widget.host.answer(e.id, AgentAnswer.allow),
-              onNo: () => widget.host.answer(e.id, AgentAnswer.deny),
+              onYes: () => a.answer?.call(AgentAnswer.allow),
+              onNo: () => a.answer?.call(AgentAnswer.deny),
             ),
           ),
         )
-      else if ((log.pending.isNotEmpty || log.question != null) && e.live)
+      else if ((log.pending.isNotEmpty || log.question != null) && m.live)
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: log.question != null
-              ? QuestionCard(question: log.question!, onAnswer: (answers) => _source.answerQuestion(e.id, answers))
-              : AskCard(log: log, onAnswer: (a) => widget.host.answer(e.id, a)),
+              ? QuestionCard(question: log.question!, onAnswer: (answers) => a.answerQuestion?.call(answers))
+              : AskCard(log: log, onAnswer: (answer) => a.answer?.call(answer)),
         ),
     ];
 
-    final Widget? composer = external && working
+    final Widget? composer = m.external && working
         ? null
         : Composer(
-            key: ValueKey('composer:${e.id}'),
+            key: ValueKey('composer:${m.id}'),
             placeholder: working
                 ? 'Écris à cet agent…'
-                : external
+                : m.external
                 ? 'Continuer dans Mikky…'
                 : 'Continuer avec cet agent…',
-            commands: e.live ? log.commands : const [],
-            onSend: widget.host.service.canLaunch ? _send : null,
+            commands: m.live ? log.commands : const [],
+            onSend: m.canSend && a.send != null ? _send : null,
             glass: true,
           );
 
@@ -164,7 +264,7 @@ class _AgentPageState extends State<AgentPage> {
     return Stack(
       children: [
         // The thread fills the page and passes under the buttons and the
-        // field, blurred (user request, 2026-09-30).
+        // field, blurred (user request, 2026-09-30), in the reading column.
         Positioned.fill(
           child: SingleChildScrollView(
             controller: _scroll,
@@ -173,17 +273,15 @@ class _AgentPageState extends State<AgentPage> {
             child: SelectableArea(
               child: ReadingColumn(
                 child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  if (content.isEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 60),
-                      child: Center(
-                        child: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (content.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 60),
+                        child: Center(child: Text('Rien à montrer', style: uiText(13, color: ui.text3))),
                       ),
-                    ),
-                  ...content,
-                ],
+                    ...content,
+                  ],
                 ),
               ),
             ),
@@ -195,18 +293,14 @@ class _AgentPageState extends State<AgentPage> {
         Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 44 : 54)),
         // Top middle: the violet star under the spell (« Ensorcelé »), the
         // yellow one while the limit holds it (user requests, 2026-09-30).
-        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: e.id, limited: e.status == AgentStatus.rateLimited))),
+        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: m.id, limited: m.status == AgentStatus.rateLimited))),
         SideHead(
-          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+          leading: RoundButton('left', size: 34, onPressed: a.back, tooltip: 'Retour'),
           actions: [
             // No pause button any more: « Mettre en pause », « Reprendre »
             // and « Arrêter l'agent » are in the ··· menu (user request,
             // 2026-09-30).
-            RoundButton.menu(
-              size: 34,
-              tooltip: 'Menu',
-              onPressed: () => showSessionMenu(widget.host, e, rename: widget.rename ?? () {}, deleted: widget.back),
-            ),
+            RoundButton.menu(size: 34, tooltip: 'Menu', onPressed: a.menu ?? () {}),
           ],
         ),
         if (composer != null) Positioned(left: 20, right: 20, bottom: 12, child: ReadingColumn(child: composer)),
@@ -215,17 +309,14 @@ class _AgentPageState extends State<AgentPage> {
             left: 16,
             right: 16,
             bottom: 14,
-            child: Row(
-              children: [
+            child: ReadingColumn(
+              child: Row(children: [
                 MikkyIcon('lock', size: 13, color: ui.text3),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(
-                    'Session extérieure : activité observée, processus non vérifié.',
-                    style: uiText(11.5, color: ui.text3, height: 1.35),
-                  ),
+                  child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(11.5, color: ui.text3, height: 1.35)),
                 ),
-              ],
+              ]),
             ),
           ),
       ],

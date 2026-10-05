@@ -14,6 +14,7 @@ import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../home/home_view.dart';
+import '../side/home_screen.dart' show watchedTask;
 import '../side/session_steps.dart';
 import '../side/side_app.dart';
 import '../sound/sound_board.dart';
@@ -367,6 +368,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     if (prev.shape != IslandShape.open && s.shape == IslandShape.open) _sound.play(MikkyCue.open);
     final layout = _layoutWanted;
+    // The notch with nothing at work: Mikky takes his bigger place there,
+    // as the home draws it (`HomeLayout.top`).
+    _motion.listIdle = _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
     final relaid = layout != _motion.layout;
     if (s.shape != _motion.shape || relaid) {
       final opening = s.shape != _motion.shape && s.shape == IslandShape.open;
@@ -400,7 +404,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (s.bubble && !prev.bubble) _mikky.twitch();
     _bubble.target = s.bubble ? 1 : 0;
     _notify(s);
-    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
+    // Mikky moving to his other place on the home counts too.
+    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents) || !_motion.isAtRest;
     if (changed || !_settled) {
       _wake();
     } else {

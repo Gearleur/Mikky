@@ -18,25 +18,21 @@ import '../ui/tokens.dart';
 import 'session_text.dart';
 import 'side_app.dart';
 
-/// The new agent (UX `ux-a.html`, « Nouvel agent »): an empty chat, the
-/// field, and half inside it the folder and the model. The model's menu
-/// also holds where it runs (Windows / WSL, from the folder) and the
-/// permissions (Demander by default, or Auto). [inHome]: the home's Chat
-/// (2026-10-02), without its head; a sign-in then goes through [login].
+/// A new agent, the home's Chat (2026-10-02; the page of its own is gone
+/// since): the question, the field, and half inside it the folder and the
+/// model. The model's menu also holds where it runs (Windows / WSL, from
+/// the folder) and the permissions (Demander by default, or Auto).
 class NewAgentPage extends StatefulWidget {
-  const NewAgentPage({super.key, required this.host, required this.back, required this.launched, this.inHome = false, this.login});
+  const NewAgentPage({super.key, required this.host, required this.launched, required this.login});
 
   final SideHost host;
-  final VoidCallback back;
 
-  /// The agent started: its page takes this one's place.
+  /// The agent started: its page opens.
   final ValueChanged<String> launched;
 
-  final bool inHome;
-
-  /// In the home: the sign-in to [provider] on [target], as a page of its
-  /// own; [done] once signed in.
-  final void Function(AgentHost target, AgentProvider provider, VoidCallback done)? login;
+  /// The sign-in to [provider] on [target], as a page of its own; [done]
+  /// once signed in.
+  final void Function(AgentHost target, AgentProvider provider, VoidCallback done) login;
 
   @override
   State<NewAgentPage> createState() => _NewAgentPageState();
@@ -51,7 +47,6 @@ class _NewAgentPageState extends State<NewAgentPage> {
   bool _hostChosen = false;
 
   /// Waiting for a sign-in before launching this prompt.
-  String? _pending;
   String? _error;
   bool _starting = false;
 
@@ -173,12 +168,8 @@ class _NewAgentPageState extends State<NewAgentPage> {
       final host = _hostChosen ? _host : hostOfFolder(_folder!);
       final auth = _service.auth[(host, _provider)] ?? await _service.checkAuth(host, _provider);
       if (!auth.installed || !auth.loggedIn) {
-        final login = widget.login;
-        setState(() {
-          if (login == null) _pending = text;
-          _starting = false;
-        });
-        login?.call(host, _provider, () => _send(text));
+        setState(() => _starting = false);
+        widget.login(host, _provider, () => _send(text));
         return;
       }
       final id = await _service.launch(LaunchRequest(
@@ -202,21 +193,6 @@ class _NewAgentPageState extends State<NewAgentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final pending = _pending;
-    if (pending != null) {
-      final host = _hostChosen ? _host : hostOfFolder(_folder ?? '');
-      return LoginPage(
-        host: widget.host,
-        target: host,
-        provider: _provider,
-        back: () => setState(() => _pending = null),
-        done: () {
-          setState(() => _pending = null);
-          _send(pending);
-        },
-      );
-    }
     final installing = _service.target(_hostChosen ? _host : hostOfFolder(_folder ?? '')).state == TargetState.installing;
     final composer = Composer(
       placeholder: 'Que doit faire l’agent ?',
@@ -228,39 +204,11 @@ class _NewAgentPageState extends State<NewAgentPage> {
         ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
       ]),
     );
-    if (widget.inHome) {
-      return NewTaskView(
-        composer: composer,
-        status: installing ? 'Mikky installe ses adaptateurs…' : (_starting ? 'Démarrage…' : null),
-        error: _error,
-      );
-    }
-    return Stack(children: [
-      SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
-      Positioned.fill(
-        top: 68,
-        bottom: 92,
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          const MiniMikky(size: 64),
-          const SizedBox(height: 8),
-          Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
-          if (_starting || installing) ...[
-            const SizedBox(height: 14),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              const Spinner(size: 14),
-              const SizedBox(width: 8),
-              Text(installing ? 'Mikky installe ses adaptateurs…' : 'Démarrage…', style: uiText(TextSize.small, color: ui.text2)),
-            ]),
-          ],
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-              child: Text(_error!, textAlign: TextAlign.center, maxLines: 4, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.red)),
-            ),
-        ]),
-      ),
-      Positioned(left: 20, right: 20, bottom: 12, child: composer),
-    ]);
+    return NewTaskView(
+      composer: composer,
+      status: installing ? 'Mikky installe ses adaptateurs…' : (_starting ? 'Démarrage…' : null),
+      error: _error,
+    );
   }
 }
 

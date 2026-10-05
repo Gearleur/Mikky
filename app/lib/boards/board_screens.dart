@@ -2,14 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
+import '../side/agent_page.dart';
 import '../side/session_cards.dart';
-import '../side/session_text.dart';
-import '../side/session_views.dart';
-import '../ui/brand_logo.dart';
-import '../ui/buttons.dart';
-import '../ui/feedback.dart';
-import '../ui/field.dart';
-import '../ui/icons.dart';
 import '../ui/messages.dart';
 import '../ui/pixel_fx.dart';
 import '../ui/side.dart';
@@ -21,8 +15,8 @@ import 'fake_sessions.dart';
 
 // ----------------------------------------------------------------- agent
 
-/// An agent's page in its window, fed by a made-up session (the same
-/// thread as the app's).
+/// An agent's page on a board: the app's own page ([AgentPageView]), fed
+/// by a made-up session, its actions doing nothing.
 class AgentMock extends StatefulWidget {
   const AgentMock({
     super.key,
@@ -37,7 +31,7 @@ class AgentMock extends StatefulWidget {
     this.framed = true,
   });
 
-  /// In its own window (else in the caller's: the top's island).
+  /// In its own window (else in the caller's: the notch).
   final bool framed;
 
   /// Stopped by its limit, and already under the spell (« Ensorceler »).
@@ -46,8 +40,8 @@ class AgentMock extends StatefulWidget {
   /// Its limit « Terminée »: only « Relance auto » is left.
   final bool finished;
 
-  /// Its name (the page does not show it any more; kept to tell the
-  /// frames apart in the code).
+  /// Its name (the page does not show it; kept to tell the frames apart
+  /// in the code).
   final String title;
   final SessionLog log;
 
@@ -68,155 +62,66 @@ class AgentMock extends StatefulWidget {
 }
 
 class _AgentMockState extends State<AgentMock> {
-  late final _scroll = ScrollController(initialScrollOffset: widget.scrolled ? 120 : 0);
-
   // Its own agent id for the spell, as the app's page would have.
   late final _id = 'board-${identityHashCode(this)}';
-  late final _limit = LimitHooks(_id, (_) async {}, finish: () {}, finished: widget.finished);
 
   @override
   void initState() {
     super.initState();
-    // As the app: the page opens at the end of the thread.
-    if (!widget.scrolled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _scroll.hasClients) _scroll.jumpTo(_scroll.position.maxScrollExtent);
-      });
-    }
     if (widget.enchanted) {
       // Seen from when the limit hit, so the spell waits until its time.
-      Enchantments.instance.enchant(_id, widget.log.limitResetsAt, _limit.send, now: widget.log.lastEventAt);
+      final log = widget.log;
+      Enchantments.instance.enchant(_id, log.limitResetsAt, (_) async {}, now: log.lastEventAt);
     }
+  }
+
+  // Its own Overlay, as the island's window has: the page's text can be
+  // selected.
+  late final _layer = OverlayEntry(builder: _page);
+
+  @override
+  void didUpdateWidget(AgentMock old) {
+    super.didUpdateWidget(old);
+    _layer.markNeedsBuild();
   }
 
   @override
   void dispose() {
     Enchantments.instance.cancel(_id);
-    _scroll.dispose();
+    _layer.remove();
+    _layer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final log = widget.log;
-    final working = log.working;
-    final usage = usageLine(log);
-    final content = <Widget>[
-      if (widget.adapterPid != null)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
-          child: Text('Adaptateur ACP · PID ${widget.adapterPid} · Windows', style: uiText(11.5, color: ui.text3, tabular: true)),
-        ),
-      if (usage.isNotEmpty)
-        Padding(padding: const EdgeInsets.fromLTRB(4, 0, 4, 10), child: Text(usage, style: uiText(TextSize.caption, color: ui.text3, tabular: true))),
-      ...threadOf(context, log, limit: _limit),
-      if (widget.paused)
-        Padding(padding: const EdgeInsets.only(top: 12), child: PausedCard(onResume: () {}))
-      else if (log.question != null)
-        Padding(padding: const EdgeInsets.only(top: 12), child: QuestionCard(question: log.question!, onAnswer: (_) {}))
-      else if (log.pending.isNotEmpty)
-        Padding(padding: const EdgeInsets.only(top: 12), child: AskCard(log: log, onAnswer: (_) {})),
-    ];
-    final readOnly = widget.external && working;
-    final page = Stack(children: [
-        // As the app: no title, the thread up to the top, the buttons over it.
-        Positioned.fill(
-          child: SingleChildScrollView(
-            controller: _scroll,
-            padding: EdgeInsets.fromLTRB(16, 62, 16, readOnly ? 56 : 78),
-            child: ReadingColumn(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: content)),
-          ),
-        ),
-        // Softer on top (user request, 2026-09-30: « trop puissant »).
-        const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
-        // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: readOnly ? 44 : 54)),
-        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: _id, limited: log.statusAt(log.lastEventAt ?? DateTime(2026)) == AgentStatus.rateLimited))),
-        SideHead(
-          leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour'),
-          actions: [
-            RoundButton.menu(size: 34, onPressed: () {}, tooltip: 'Menu'),
-          ],
-        ),
-        if (!readOnly)
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 12,
-            child: ReadingColumn(
-              child: Composer(
-                glass: true,
-                placeholder: working ? 'Écris à cet agent…' : 'Continuer avec cet agent…',
-              ),
-            ),
-          )
-        else
-          Positioned(
-            left: 16,
-            right: 16,
-            bottom: 14,
-            child: Row(children: [
-              MikkyIcon('lock', size: 13, color: ui.text3),
-              const SizedBox(width: 6),
-              Expanded(child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(TextSize.caption, color: ui.text3, height: 1.35))),
-            ]),
-          ),
-      ]);
+    final page = Overlay(initialEntries: [_layer]);
     return widget.framed ? SideFrame(child: page) : page;
   }
-}
 
-/// « Nouvel agent »: Mikky, the question, the field with its folder and
-/// model.
-class NewAgentMock extends StatelessWidget {
-  const NewAgentMock({super.key, this.starting = false, this.error});
-
-  final bool starting;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return SideFrame(
-      child: Stack(children: [
-        SideHead(title: 'Nouvel agent', small: true, leading: RoundButton('left', size: 34, onPressed: () {}, tooltip: 'Retour')),
-        Positioned.fill(
-          top: 68,
-          bottom: 92,
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const MiniMikky(size: 64),
-            const SizedBox(height: 8),
-            Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
-            if (starting) ...[
-              const SizedBox(height: 14),
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                const Spinner(size: 14),
-                const SizedBox(width: 8),
-                Text('Démarrage…', style: uiText(TextSize.small, color: ui.text2)),
-              ]),
-            ],
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 14, 24, 0),
-                child: Text(error!, textAlign: TextAlign.center, style: uiText(TextSize.small, color: ui.red)),
-              ),
-          ]),
-        ),
-        Positioned(
-          left: 20,
-          right: 20,
-          bottom: 12,
-          child: Composer(
-            placeholder: 'Que doit faire l’agent ?',
-            options: Row(mainAxisSize: MainAxisSize.min, children: [
-              ComposerChip('mikky', icon: 'folder', onTap: () {}),
-              const SizedBox(width: 6),
-              ComposerChip('Claude · Opus', leading: const BrandLogo(Brand.claude, size: 12), onTap: () {}),
-            ]),
-          ),
-        ),
-      ]),
+  Widget _page(BuildContext context) {
+    final log = widget.log;
+    return AgentPageView(
+      model: AgentPageModel(
+        id: _id,
+        log: log,
+        status: widget.paused ? AgentStatus.paused : log.statusAt(log.lastEventAt ?? DateTime(2026)),
+        external: widget.external,
+        live: !widget.external,
+        adapterPid: widget.adapterPid,
+        limitFinished: widget.finished,
+      ),
+      actions: AgentPageActions(
+        back: () {},
+        send: (_) async {},
+        answer: (_) {},
+        answerQuestion: (_) {},
+        resume: () {},
+        finishLimit: () {},
+        unfinishLimit: () {},
+        menu: () {},
+      ),
+      scrolledTo: widget.scrolled ? 120 : null,
     );
   }
 }
@@ -277,14 +182,6 @@ final agentBoard = BoardSpec('Agent', 'La page d’un agent : le fil, attentes, 
         note: '« Mettre en pause » dans le menu ··· ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le même menu.',
         child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled(), paused: true),
       ),
-    ],
-  ),
-  const BoardSection(
-    title: 'Nouvel agent',
-    frames: [
-      BoardFrame(label: 'Au départ', child: NewAgentMock()),
-      BoardFrame(label: 'Démarrage', child: NewAgentMock(starting: true)),
-      BoardFrame(label: 'Erreur', child: NewAgentMock(error: 'Codex n’est pas installé dans WSL.')),
     ],
   ),
 ]);

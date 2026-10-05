@@ -18,17 +18,59 @@ class BoardSpec {
   final List<Widget> Function(BuildContext context) sections;
 }
 
-/// A row of frames on a board, with its title.
+/// What a frame is (user, 2026-10-05: « qu'on s'y retrouve »), on a tag
+/// next to its name.
+enum FrameKind {
+  /// The app's own screen or component, as it is in the app.
+  app('Dans l’app'),
+
+  /// A trial, not in the app (not chosen, or for later).
+  trial('Essai'),
+
+  /// A live place to click and play with.
+  play('À essayer');
+
+  const FrameKind(this.label);
+
+  final String label;
+
+  Color colorIn(MikkyUi ui) => switch (this) {
+    app => ui.green,
+    trial => ui.amber,
+    play => ui.blue,
+  };
+}
+
+/// The boards show only the frames of this kind; null: all.
+class BoardFilter extends InheritedWidget {
+  const BoardFilter({super.key, required this.only, required super.child});
+
+  final FrameKind? only;
+
+  static FrameKind? of(BuildContext context) => context.dependOnInheritedWidgetOfExactType<BoardFilter>()?.only;
+
+  @override
+  bool updateShouldNotify(BoardFilter old) => old.only != only;
+}
+
+/// A row of frames on a board, with its title. [kind]: what its frames
+/// are, unless a frame says otherwise.
 class BoardSection extends StatelessWidget {
-  const BoardSection({super.key, required this.title, this.note, required this.frames});
+  const BoardSection({super.key, required this.title, this.note, required this.frames, this.kind = FrameKind.app});
 
   final String title;
   final String? note;
   final List<Widget> frames;
+  final FrameKind kind;
+
+  FrameKind _kindOf(Widget frame) => frame is BoardFrame ? frame.kind ?? kind : kind;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final only = BoardFilter.of(context);
+    final frames = [for (final f in this.frames) if (only == null || _kindOf(f) == only) f];
+    if (frames.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 72),
       child: Column(
@@ -48,6 +90,7 @@ class BoardSection extends StatelessWidget {
           // start on one line (user request, 2026-09-30).
           _HeadHeight(
             height: [for (final f in frames.whereType<BoardFrame>()) f._headHeight(context)].fold(0.0, (a, b) => a > b ? a : b),
+            kind: kind,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -62,22 +105,29 @@ class BoardSection extends StatelessWidget {
 }
 
 class _HeadHeight extends InheritedWidget {
-  const _HeadHeight({required this.height, required super.child});
+  const _HeadHeight({required this.height, required this.kind, required super.child});
 
   final double height;
 
+  /// The section's kind, for its frames' tags.
+  final FrameKind kind;
+
   @override
-  bool updateShouldNotify(_HeadHeight old) => old.height != height;
+  bool updateShouldNotify(_HeadHeight old) => old.height != height || old.kind != kind;
 }
 
-/// One frame on a board: its name, a line about it, then the thing itself,
-/// live (it moves, it can be clicked).
+/// One frame on a board: its name and its tag (in the app, a trial, to
+/// play with), a line about it, then the thing itself, live (it moves, it
+/// can be clicked).
 class BoardFrame extends StatelessWidget {
-  const BoardFrame({super.key, required this.label, this.note, required this.child, this.width});
+  const BoardFrame({super.key, required this.label, this.note, required this.child, this.width, this.kind});
 
   final String label;
   final String? note;
   final Widget child;
+
+  /// What it is; null: its section's.
+  final FrameKind? kind;
 
   /// Width of the text above; the child keeps its own size.
   final double? width;
@@ -101,11 +151,17 @@ class BoardFrame extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final section = context.dependOnInheritedWidgetOfExactType<_HeadHeight>();
+    final k = kind ?? section?.kind ?? FrameKind.app;
     final head = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: _labelStyle(ui)),
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          Text(label, style: _labelStyle(ui)),
+          const SizedBox(width: 8),
+          _Tag(k),
+        ]),
         if (note != null)
           Padding(
             padding: const EdgeInsets.only(top: 3),
@@ -113,7 +169,7 @@ class BoardFrame extends StatelessWidget {
           ),
       ],
     );
-    final height = context.dependOnInheritedWidgetOfExactType<_HeadHeight>()?.height;
+    final height = section?.height;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -122,6 +178,28 @@ class BoardFrame extends StatelessWidget {
         const SizedBox(height: 10),
         child,
       ],
+    );
+  }
+}
+
+/// A frame's tag: a dot of its color and its kind, small.
+class _Tag extends StatelessWidget {
+  const _Tag(this.kind);
+
+  final FrameKind kind;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final color = kind.colorIn(ui);
+    return Container(
+      padding: const EdgeInsets.fromLTRB(6, 2, 7, 2),
+      decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(Radii.sm)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
+        const SizedBox(width: 5),
+        Text(kind.label, style: uiText(TextSize.badge, weight: FontWeight.w600, color: ui.text2, height: 1.2)),
+      ]),
     );
   }
 }

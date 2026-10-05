@@ -45,11 +45,15 @@ class HomeLayout {
     required this.side,
     required this.mikky,
     required this.mikkyAt,
-  });
+    double? mikkyIdle,
+    Offset? mikkyIdleAt,
+  }) : mikkyIdle = mikkyIdle ?? mikky,
+       mikkyIdleAt = mikkyIdleAt ?? mikkyAt;
 
   /// Top: the notch (user, 2026-10-05, « Côte à côte »), 760 × 216. On the
-  /// left, Mikky (90) and the latest task at work beside him, as one group
-  /// centered in the left part (« pas assez centré »); on the right, the
+  /// left, Mikky (100) and the latest task at work beside him, as one
+  /// group centered in the left part (« pas assez centré »); nothing at
+  /// work, Mikky alone, bigger (128), centered there (« trop petit »). On the
   /// other apps as wide tiles, 168 × 44, two by two (three columns when
   /// nothing is at work), arrows on each side when there are more. Quiet
   /// controls: a 32 px bar, a small foot.
@@ -67,8 +71,10 @@ class HomeLayout {
     bar: 32,
     foot: 8,
     side: 12,
-    mikky: 90,
-    mikkyAt: Offset(17, taskTop + (taskHeight - 90) / 2),
+    mikky: 100,
+    mikkyAt: Offset(12, taskTop + (taskHeight - 100) / 2),
+    mikkyIdle: 128,
+    mikkyIdleAt: Offset(19, 52),
   );
 
   /// Right: the home of 2026-10-02 upright (« une version verticale de la
@@ -117,9 +123,10 @@ class HomeLayout {
   /// bottom, from the sides.
   final double foot, side;
 
-  /// Mikky's size and his top left corner.
-  final double mikky;
-  final Offset mikkyAt;
+  /// Mikky's size and his top left corner; on the notch with nothing at
+  /// work, bigger (as `IslandMetrics.top.mikkyListIdle`).
+  final double mikky, mikkyIdle;
+  final Offset mikkyAt, mikkyIdleAt;
 
   bool get isTop => placement == HomePlacement.top;
 
@@ -359,7 +366,7 @@ class _HomeViewState extends State<HomeView> {
       clipBehavior: Clip.none,
       children: [
         Positioned.fill(child: _modeSwitch()),
-        Positioned(left: l.mikkyAt.dx, top: l.mikkyAt.dy, child: _mikkyWidget),
+        Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
         Positioned(top: l.barTop, right: 0, child: _tools()),
         // The star under the apps, on the selector's middle line.
@@ -394,16 +401,20 @@ class _HomeViewState extends State<HomeView> {
 
   // ------------------------------------------------------------------ parts
 
+  bool get _idle => _l.isTop && widget.watched == null;
+  double get _mikkySize => _idle ? _l.mikkyIdle : _l.mikky;
+  Offset get _mikkyAt => _idle ? _l.mikkyIdleAt : _l.mikkyAt;
+
   Widget get _mikkyWidget => widget.drawMikky
       ? MiniMikky(
-          size: _l.mikky,
+          size: _mikkySize,
           animate: widget.animate,
           state: widget.mikky,
           badge: false,
           // In the notch he looks at his task, beside him.
           look: _l.isTop && widget.watched != null ? const Offset(1, .3) : null,
         )
-      : SizedBox.square(dimension: _l.mikky);
+      : SizedBox.square(dimension: _mikkySize);
 
   Widget _modes() => MTabBar(
     mini: true,

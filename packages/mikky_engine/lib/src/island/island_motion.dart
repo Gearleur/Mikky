@@ -36,7 +36,8 @@ class IslandMetrics {
     required this.mikkyOpen,
     required this.mikkyList,
     required this.mikkyPage,
-  });
+    MikkySpot? mikkyListIdle,
+  }) : mikkyListIdle = mikkyListIdle ?? mikkyList;
 
   /// Spec §3: closed 186 × 36. Open, as wide as the notch since
   /// 2026-10-05 (« garder la largeur »), 760: the home, the notch, 216
@@ -53,10 +54,13 @@ class IslandMetrics {
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
-    // In the notch, where its 90 px Mikky is drawn (`HomeLayout.top`:
-    // at (17, 69); his center at half his width and 54 % of his height,
-    // his radius 29 % of it).
-    mikkyList: (x: 62, y: 117.6, radius: 26.1),
+    // In the notch, where its Mikky is drawn (`HomeLayout.top`; his
+    // center at half his width and 54 % of his height, his radius 29 % of
+    // it): 100 px at (12, 64) beside his task; 128 px at (19, 52), alone
+    // and bigger, when nothing is at work (user, 2026-10-05: « il est trop
+    // petit »).
+    mikkyList: (x: 62, y: 118, radius: 29),
+    mikkyListIdle: (x: 83, y: 121.12, radius: 37.12),
     // On an agent's page: at its top left, behind the back button.
     mikkyPage: (x: 40, y: 35, radius: 21),
   );
@@ -92,6 +96,9 @@ class IslandMetrics {
   /// page over it (hidden there, behind the page's back button).
   final MikkySpot mikkyList, mikkyPage;
 
+  /// On the home with nothing at work ([IslandMotion.listIdle]).
+  final MikkySpot mikkyListIdle;
+
   MikkySpot mikkyAt(IslandLayout layout) => switch (layout) {
         IslandLayout.focus => mikkyOpen,
         IslandLayout.list => mikkyList,
@@ -124,6 +131,13 @@ class IslandMotion {
   final height = Spring(0, SpringSpec.island);
   final radius = Spring(0, SpringSpec.island);
   final progress = Spring(0, SpringSpec.progress);
+
+  /// 1: the home has no task at work, Mikky takes his bigger place there.
+  final _idle = Spring(0, SpringSpec.island);
+
+  /// Whether the home has a task at work: Mikky moves between his two
+  /// places on the home, on a spring.
+  set listIdle(bool idle) => _idle.target = idle ? 1 : 0;
 
   IslandShape get shape => _shape;
   IslandShape _shape = IslandShape.hidden;
@@ -174,7 +188,7 @@ class IslandMotion {
     if (isAtRest) _snapAll();
   }
 
-  List<Spring> get _springs => [width, height, radius, progress];
+  List<Spring> get _springs => [width, height, radius, progress, _idle];
 
   void _snapAll() {
     for (final s in _springs) {
@@ -211,7 +225,12 @@ class IslandMotion {
   double get mikkyRadius =>
       _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
 
-  MikkySpot get _open => metrics.mikkyAt(_layout);
+  MikkySpot get _open {
+    final at = metrics.mikkyAt(_layout);
+    if (_layout != IslandLayout.list || _idle.value == 0) return at;
+    final idle = metrics.mikkyListIdle, t = _idle.value;
+    return (x: _lerp(at.x, idle.x, t), y: _lerp(at.y, idle.y, t), radius: _lerp(at.radius, idle.radius, t));
+  }
 
   /// Mikky's center, from the island's left edge.
   double get mikkyX => _lerp(metrics.mikkyCompact.x, _open.x, openness.clamp(0.0, 1.0));

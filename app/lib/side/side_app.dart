@@ -90,8 +90,6 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       onMenu: _menu,
       chat: (toApps) => NewAgentPage(
         host: host,
-        inHome: true,
-        back: toApps,
         launched: (id) {
           toApps();
           _open(id);
@@ -143,14 +141,11 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     )),
     'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
     'hooks:codex' => _pushPage(_Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex))),
-    'new' => _pushPage(_Page('new', () => NewAgentPage(host: host, back: back, launched: _launched))),
     final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
     _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
   };
 
   _Page _agentPage(String id) => _Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id')));
-
-  void _launched(String id) => _replaceTop(_agentPage(id));
 
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;

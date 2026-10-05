@@ -62,12 +62,12 @@ Widget _page(Widget page) => HomeFrame(layout: HomeLayout.top, size: HomeLayout.
 final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut de l’écran : le notch', (context) => [
   BoardSection(
     title: 'Notch Top',
-    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 760 × 216, collé au bord de l’écran. À gauche, Mikky (90) et la dernière tâche au travail, ensemble centrés dans leur partie : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit.',
+    note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 760 × 216, collé au bord de l’écran. À gauche, Mikky (100) et la dernière tâche au travail, ensemble centrés dans leur partie : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit.',
     frames: [
       BoardFrame(label: 'Dans l’app', note: 'Sept autres applications : deux pages, la flèche de droite.', width: 760, child: _notch(watched: _watched(FakeSessions.working()))),
       BoardFrame(
         label: 'Rien en cours',
-        note: 'Mikky dort ; une troisième colonne prend la place de la tâche.',
+        note: 'Mikky dort, plus grand (128), centré ; une troisième colonne prend la place de la tâche.',
         width: 760,
         child: _notch(apps: sampleNotchApps.skip(3).toList()),
       ),
@@ -109,7 +109,7 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
         label: 'Règles du notch',
         child: BoardRules([
           ('Taille', 'Île ouverte 760 × 216, coins bas 30 ; le haut dépasse de l’écran (fenêtre de l’île 840 × 480, pour l’ombre). Toujours 760 de large en haut : la page d’un agent 760 × 380, une demande de Mikky 760 × 260. Barre à 10 px du haut, 32 px de haut. La tâche de 50 à 178 ; le pied à 8 px du bas.'),
-          ('Mikky', '90 px, à 8 px de sa tâche (210 de large) ; les deux ensemble centrés dans la partie gauche, même marge de chaque côté ; dans l’app, le Mikky de l’île vient s’y poser en ouvrant, dans l’état de la tâche. Rien en cours : il dort.'),
+          ('Mikky', '100 px, à 8 px de sa tâche (210 de large) ; les deux ensemble centrés dans la partie gauche, même marge de chaque côté ; rien en cours, 128 px, centré ; dans l’app, le Mikky de l’île vient s’y poser en ouvrant, dans l’état de la tâche. Rien en cours : il dort.'),
           ('La tâche', 'La dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min ; sinon rien, et une colonne d’applications de plus. Logiciel (signe et nom), titre, état et progression, 3 étapes au plus, en retrait.'),
           ('Applications', 'Tuiles larges 168 × 44, 8 px d’écart, 2 × 2 (3 × 2 sans tâche) : le signe du logiciel, le titre, une ligne qui change ; l’état au coin. Le logiciel plutôt que le modèle : VS Code, Terminal, l’app Claude ou Codex, Mikky. Après elles, « + » (Nouvelle tâche, le Chat), puis un petit point à chaque place libre, là où les prochaines viendront.'),
           ('Pages', 'Elles glissent dans la partie droite : glisser à la souris ou au pavé, molette, flèches de 22 px de chaque côté des applications (effacées au bout), points, ← → au clavier.'),
@@ -293,6 +293,7 @@ class _Centered extends StatelessWidget {
 final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir : des essais', (context) => [
   BoardSection(
     title: 'Notch Right',
+    kind: FrameKind.trial,
     note: '300 de large, collé au bord droit, avec les pièces du notch du haut. Trois idées, après la première (Mikky à côté de sa tâche, au-dessus d’une liste) qui ne convainquait pas. Dans l’app, la droite reste l’accueil de la planche Accueil Right en attendant.',
     frames: [
       BoardFrame(
@@ -317,6 +318,7 @@ final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir
   ),
   BoardSection(
     title: 'Attend ton feu vert',
+    kind: FrameKind.trial,
     frames: [
       for (final (label, style) in [('Au centre', RightStyle.center), ('En-tête', RightStyle.header), ('Dock', RightStyle.dock)])
         BoardFrame(label: label, width: 300, child: NotchRight(task: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex), style: style)),

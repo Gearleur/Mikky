@@ -139,8 +139,8 @@ List<AgentEntry> _shown(List<AgentEntry> entries, DateTime now, Set<String> reca
 }
 
 /// The home on the real agents, at the top or at the right. A tile opens
-/// its agent's page; « + » and the tools' rail, the Chat ([chat], the
-/// new agent); the history button, the history over it. Mikky is the
+/// its agent's page; « + » and the tools' rail, the Chat ([chat], a new
+/// agent); the history button, the history over it. Mikky is the
 /// island's own, drawn over his place.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -157,7 +157,7 @@ class HomeScreen extends StatelessWidget {
 
   final List<AgentEntry> entries;
 
-  /// An agent's id, or `new`.
+  /// An agent's id.
   final ValueChanged<String> open;
   final bool canLaunch;
   final HomeLayout layout;
@@ -169,7 +169,7 @@ class HomeScreen extends StatelessWidget {
   /// Null: [open].
   final ValueChanged<String>? recall;
 
-  /// The home's Chat; null: « + » opens the new agent's page.
+  /// The home's Chat, where a task starts; null: none can start.
   final Widget Function(VoidCallback toApps)? chat;
 
   /// An agent's ··· menu (a row of the history).
@@ -186,7 +186,6 @@ class HomeScreen extends StatelessWidget {
       apps: homeApps(entries, now, recalled: recalled, except: watched?.id),
       drawMikky: false,
       onOpen: (app) => open(app.id),
-      onNew: canLaunch ? () => open('new') : null,
       chat: canLaunch ? chat : null,
       onHistory: (within) => showHistory(within, rows: historyRows(entries, DateTime.now(), recalled: recalled), onOpen: recall ?? open, onMenu: onMenu),
     );
