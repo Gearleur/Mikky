@@ -87,10 +87,10 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
   ),
   BoardSection(
     title: 'Essais · des points derrière les applications',
-    note: 'De tout petits points gris (1,2 px, tous les 6 px), une texture de loin : toujours là sous les applications, ils se fondent doucement jusqu’à disparaître dans la partie de Mikky, pour séparer les deux parties. Trois façons : réguliers ; deux foyers où ils sont denses et qui se diffusent ; glitchés, en petits carrés plus ou moins présents qui s’éteignent au hasard dans le fondu.',
+    note: 'Glitchés, retenus (5 octobre ; réguliers et deux foyers écartés). De petits points gris (1,6 px, tous les 8 px ; 1,2 et 6 en faisaient trop, trop petits), un peu plus foncés, une texture de loin : toujours là sous les applications, ils s’éteignent au hasard en allant vers la gauche jusqu’à disparaître, un peu dans la partie de Mikky. Deux versions : des carrés de 4 × 4 points, un sur trois très présent ; ou de grands carrés (6 × 6) plus ou moins présents, parsemés de petits carrés vifs (2 × 2).',
     kind: FrameKind.trial,
     frames: [
-      for (final (label, style) in [('Réguliers', DotFieldStyle.even), ('Deux foyers', DotFieldStyle.hotspots), ('Glitchés', DotFieldStyle.glitch)]) ...[
+      for (final (label, style) in [('Glitchés', DotFieldStyle.glitch), ('Glitchés · grands et petits carrés', DotFieldStyle.glitchMixed)]) ...[
         BoardFrame(label: label, width: 700, child: _notch(watched: _watched(FakeSessions.working()), dots: style)),
         BoardFrame(label: '$label · rien en cours', width: 700, child: _notch(apps: sampleNotchApps.skip(3).toList(), dots: style)),
       ],

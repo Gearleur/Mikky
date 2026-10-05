@@ -354,8 +354,9 @@ class _HomeViewState extends State<HomeView> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        // Whole under the apps, gone a little into Mikky's part.
-        if (top && widget.dots != null) Positioned.fill(child: DotField(style: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 90)),
+        // Whole under the apps, gone a little into Mikky's part (90 px in
+        // was « un tout petit peu trop sur la gauche »).
+        if (top && widget.dots != null) Positioned.fill(child: DotField(style: widget.dots!, solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
