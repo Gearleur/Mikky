@@ -1,5 +1,12 @@
-param([switch]$Island, [switch]$Boards, [switch]$InstallStartup)
+param([switch]$Island, [switch]$Boards, [switch]$Live, [switch]$InstallStartup)
 $ErrorActionPreference = 'Stop'
+# -Boards -Live: the boards in debug, reloaded at each saved change of the
+# code (app\tool\boards_live.dart), in a window of their own.
+if ($Live) {
+    $mikkyApp = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'app'))
+    Start-Process -FilePath 'powershell.exe' -WorkingDirectory $mikkyApp -ArgumentList '-NoExit', '-Command', "& 'C:\dev\flutter\bin\dart.bat' tool\boards_live.dart"
+    return
+}
 $mikkyDist = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'dist'))
 $mikkyManifest = Join-Path $mikkyDist 'current.txt'
 if (!(Test-Path -LiteralPath $mikkyManifest)) { throw 'Compile d’abord : .\scripts\Build-Windows.ps1' }

@@ -11,7 +11,6 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/floating_menu.dart';
-import '../ui/metro.dart';
 import '../ui/motion.dart';
 import '../ui/selectors.dart';
 import '../ui/side.dart';
@@ -165,7 +164,8 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Modes de l’accueil',
-            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px, en haut au milieu dans les deux accueils ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
+            kind: FrameKind.play,
+            note: 'Applications · chat. Le choix en noir (2 octobre) : le seul noir de l’accueil, sa profondeur. 44 px en haut au milieu de l’accueil de droite, 32 dans le notch ; il glisse sur le ressort des sélecteurs, l’icône choisie fait un petit saut.',
             child: BoardPane(
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Local(0, (v, set) => MTabBar(mini: true, height: 44, ink: true, selected: v, onChanged: set, items: _modes)),
@@ -174,6 +174,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Le même, en blanc · onglets',
+            kind: FrameKind.play,
             note: 'Même composant (`MTabBar`), le carré blanc qui glisse : des onglets dans une page (pour plus tard). Le noir reste à la navigation de l’accueil.',
             child: _Tray([
               Local(0, (v, set) => MTabBar(selected: v, onChanged: set, items: const [
@@ -186,6 +187,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Pages · l’étoile',
+            kind: FrameKind.play,
             note: 'Un petit pixel gris par page, une étoile en pixels sur la page montrée, dans nos bleus signature (un cran plus clairs en sombre). Elle glisse tout droit, très doucement, avec une courte traînée bleue qui s’efface ; la place ne bouge jamais. Clic sur un pixel ; flèches rondes grises, effacées au bout.',
             child: BoardPane(child: Local(0, (page, set) => PagerTry(page: page, set: set))),
           ),
@@ -225,12 +227,14 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           const BoardFrame(
             label: 'Choisir l’environnement',
+            kind: FrameKind.play,
             note: 'Refait le 2 octobre. Le nom en noir et l’étoile grise des réglages, à plat ; gris au survol ; pressé ou menu ouvert, le relief d’une réponse, puis de nouveau à plat dès que le menu part (avant, un contour restait). Le menu sort du sélecteur entier, à sa largeur, et se déroule tout droit (vers le haut en bas de l’accueil). Le nouveau nom monte, l’ancien s’en va par le haut. Contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
             width: 300,
             child: SelectorTry(),
           ),
           BoardFrame(
             label: 'Sélecteurs',
+            kind: FrameKind.play,
             note: 'Le carré glisse avec un ressort (380 / 0,70) ; les autres options foncent au survol.',
             child: _Tray([
               Local(0, (v, set) => Segmented(options: const ['Tous', 'En cours', 'Finis'], selected: v, onChanged: set)),
@@ -245,6 +249,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Le carré qui glisse',
+            kind: FrameKind.play,
             note: 'Le survol et le choix de Mikky. Sur fond gris, le carré blanc marque le choix et glisse au clic ; au survol, le nom s’éclaire (colonne des planches, menus). Dans une liste sans choix, il suit la souris.',
             child: Container(
               width: 260,
@@ -275,7 +280,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           BoardFrame(
             label: 'Champ de saisie',
-            note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle, ou Suivi | Chat.',
+            note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle pour une nouvelle tâche ; rien pour écrire à un agent.',
             child: _Tray([
               Composer(
                 placeholder: 'Que doit faire l’agent ?',
@@ -286,10 +291,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
                 ]),
               ),
               const SizedBox(height: 4),
-              Local(0, (v, set) => Composer(
-                placeholder: 'Écris à cet agent…',
-                options: Segmented(options: const ['Suivi', 'Chat'], selected: v, size: SegmentSize.field, onChanged: set),
-              )),
+              const Composer(placeholder: 'Écris à cet agent…'),
             ]),
           ),
           BoardFrame(
@@ -309,16 +311,18 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Tuiles',
-            note: '64 px, 8 par page, en haut comme à droite (2 octobre) ; 104 px, l’ancienne taille de droite, pour comparer. Neutres tant qu’elles n’ont pas leur dessin.',
+            note: 'Carrées, 64 px, 8 par page : l’accueil de droite. Larges, 160 × 42 : le notch (le signe du logiciel, le titre, une ligne qui change ; planche Notch Top). Neutres tant qu’elles n’ont pas leur dessin.',
             child: BoardPane(
-              width: 260,
+              width: 300,
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                for (final s in const [64.0, 104.0]) ...[AppTile(size: s, label: 'Application', onTap: _nothing), const SizedBox(width: 24)],
+                AppTile(size: 64, label: 'Application', onTap: _nothing),
+                const SizedBox(width: 24),
+                AppTile(size: 42, width: 160, label: 'Application', onTap: _nothing),
               ]),
             ),
           ),
           BoardFrame(
-            label: 'Dans l’app aujourd’hui',
+            label: 'À droite, dans l’app',
             note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien en pause. Ceux qui attendent, travaillent et les derniers terminés ; pas l’historique.',
             child: BoardPane(
               width: 340,
@@ -348,7 +352,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           ),
           const BoardFrame(
             label: 'Mikky',
-            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil, sans case. Au repos, au travail, fini.',
+            note: 'Le vrai Mikky, vivant : il cligne, regarde autour, prend l’état de l’agent qu’il suit. 72 px en haut à gauche de l’accueil de droite, 96 à gauche du notch (120 quand rien ne tourne), sans case. Au repos, au travail, fini.',
             child: BoardPane(
               width: 270,
               child: Row(children: [
@@ -363,13 +367,13 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
     ]),
     ('Historique', [
       const BoardSection(
-        title: 'Historique (essai)',
-        note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la fenêtre en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme. Pas encore dans l’accueil.',
+        title: 'Historique',
+        note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la hauteur du notch en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme.',
         frames: [
-          BoardFrame(label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 290, child: HistoryTry()),
+          BoardFrame(kind: FrameKind.play, label: 'À droite · à essayer', note: 'Le bouton en bas à gauche.', width: 290, child: HistoryTry()),
           BoardFrame(label: 'À droite · ouvert', width: 290, child: HistoryOpen()),
-          BoardFrame(label: 'En haut · à essayer', width: 450, child: HistoryTry(layout: HomeLayout.top)),
-          BoardFrame(label: 'En haut · ouvert', width: 450, child: HistoryOpen(layout: HomeLayout.top)),
+          BoardFrame(kind: FrameKind.play, label: 'Notch · à essayer', width: 700, child: HistoryTry(layout: HomeLayout.top)),
+          BoardFrame(label: 'Notch · ouvert', width: 700, child: HistoryOpen(layout: HomeLayout.top)),
         ],
       ),
     ]),
@@ -378,9 +382,10 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         title: 'Menu flottant',
         note: 'Notre menu, à la place de celui de Windows : panneau gris clair, le carré blanc qui glisse sous l’option survolée, une coche pour ce qui est actif, en rouge ce qui ne se défait pas. Il sort de l’étoile grise ; Échap ou un clic à côté le replie dedans.',
         frames: [
-          BoardFrame(label: 'À essayer', note: 'Clique sur l’étoile grise : le menu se déploie et se replie en elle (une seule étoile à la fois).', width: 300, child: _MenuTry(_homeMenu)),
+          BoardFrame(kind: FrameKind.play, label: 'À essayer', note: 'Clique sur l’étoile grise : le menu se déploie et se replie en elle (une seule étoile à la fois).', width: 300, child: _MenuTry(_homeMenu)),
           BoardFrame(
             label: 'À essayer · Supprimer…',
+            kind: FrameKind.play,
             note: 'Un menu qui en ouvre un autre : le panneau ne se replie pas, il prend sur place la taille de la confirmation.',
             width: 300,
             child: _MenuTry(_agentMenu, followUps: {7: _deleteMenu}),
@@ -436,65 +441,14 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               ]),
             ]),
           ),
-          const BoardFrame(
-            label: 'Suivi',
-            note: 'La ligne de métro : fait, en cours (trait bleu qui avance), à faire, message glissé.',
-            child: _Tray([
-              MetroStep(kind: StepKind.done, past: true, first: true, child: Text('Lancer les tests')),
-              MetroStep(kind: StepKind.me, past: true, meta: '14:02', child: Text('Regarde aussi le délai')),
-              MetroStep(kind: StepKind.now, child: Text('Corriger la fermeture auto')),
-              MetroStep(kind: StepKind.todo, child: Text('Relancer les tests')),
-              MetroStep(kind: StepKind.todo, last: true, child: Text('Terminé')),
-            ], width: 320),
-          ),
         ],
       ),
     ]),
     ('Couleurs', [interfaceColorsSection(ui)]),
-    ('Listes', [
-      BoardSection(
-        title: 'Lignes de l’ancien accueil',
-        note: 'Plus dans l’accueil depuis le 2 octobre (remplacé par les applications). Gardées : leurs actions — Oui / Non, questions, limite (« Terminer », « Relance auto »), reprendre, menu d’un agent — sont à refaire dans les applications à l’étape suivante.',
-        frames: [
-          BoardFrame(
-            label: 'Titres de groupes',
-            child: _Tray([
-              GroupHeader(label: 'En attente', color: ui.amber, status: UiStatus.approval, count: 1, first: true, onTap: () {}),
-              GroupHeader(label: 'Travaillent', color: ui.blue, status: UiStatus.working, count: 2, onTap: () {}),
-              GroupHeader(label: 'Terminés', color: ui.green, status: UiStatus.finished, count: 3, onTap: () {}),
-              GroupHeader(label: 'Historique', color: ui.grey, count: 12, open: false, onTap: () {}),
-            ]),
-          ),
-          BoardFrame(
-            label: 'Agents',
-            note: 'Le logo de l’outil, qui tourne pendant le travail et sautille quand l’agent attend ; Oui / Non sous la ligne.',
-            child: _Tray([
-              SlidingHover(
-                radius: 14,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  AgentCard(
-                    status: UiStatus.approval,
-                    title: 'Met à jour le site',
-                    who: 'WSL',
-                    brand: Brand.codex,
-                    subtitle: 'Veut lancer une commande',
-                    style: AgentCardStyle.waiting,
-                    onTap: () {},
-                    actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
-                  ),
-                  AgentCard(status: UiStatus.working, title: 'Corrige les tests du moteur', who: '', brand: Brand.claude, subtitle: 'Modifie island_machine.dart', onTap: () {}),
-                  AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
-                  AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
-                ]),
-              ),
-            ], width: 320),
-          ),
-        ],
-      ),
-    ]),
     ('Essais', [
       BoardSection(
         title: 'Essais et à faire',
+        kind: FrameKind.trial,
         frames: [
           BoardFrame(
             label: 'Claude au travail : deux essais',
@@ -516,7 +470,6 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               width: 520,
               child: Text(
                 '• Le dessin des applications, et leurs actions rapides (Oui / Non, limite…).\n'
-                '• Le chat de l’accueil.\n'
                 '• Infobulle.\n'
                 '• Boîte de confirmation (aujourd’hui un menu qui redemande).\n'
                 '• Notification d’erreur (toast rouge).\n'

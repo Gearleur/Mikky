@@ -15,7 +15,7 @@ class BriefActions {
   /// The answers to a question by key; null: skipped.
   final ValueChanged<Map<String, Object>?>? answerQuestion;
 
-  /// The agent's page (Suivi / Chat).
+  /// The agent's page.
   final VoidCallback? open;
 
   /// Leave the request to the terminal it came from (sessions followed

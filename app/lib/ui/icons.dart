@@ -33,6 +33,8 @@ const _icons = <String, String>{
   // The history (2026-10-02): « refresh » turned the other way, a clock's hands.
   'history': '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/><path d="M12 8.5V12l2.5 1.8"/>',
   // The home's two modes (2026-10-02): the agents' tiles, the chat.
+  // A code editor (VS Code…), our own sign: not their logo.
+  'code': '<path d="m8.5 7.5-4.5 4.5 4.5 4.5M15.5 7.5l4.5 4.5-4.5 4.5M13.5 5.5l-3 13"/>',
   'grid': '<rect x="4.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="4.5" width="6" height="6" rx="1.6"/><rect x="4.5" y="13.5" width="6" height="6" rx="1.6"/><rect x="13.5" y="13.5" width="6" height="6" rx="1.6"/>',
   'chat': '<path d="M7 5h10a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-5.5L7 20.5V17a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3z"/><circle cx="8.6" cy="11" r=".5"/><circle cx="12" cy="11" r=".5"/><circle cx="15.4" cy="11" r=".5"/>',
 };

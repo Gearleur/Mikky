@@ -10,8 +10,8 @@ import 'package:mikky/ui/side.dart';
 import 'package:mikky/ui/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-/// The agent page's two views (A4) built from real sessions recorded in
-/// the A0 probe: Suivi while the agent works, Chat once it is done. Update
+/// The agent page's thread built from real sessions recorded in the A0
+/// probe: while the agent works, and once it is done. Update
 /// with `flutter test --update-goldens test/side_pages_test.dart`, then look.
 Future<void> _loadFonts() async {
   for (final (family, files) in [
@@ -67,7 +67,7 @@ void main() {
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
     testWidgets('agent page views, $name', (tester) async {
-      const size = Size(1100, 1100);
+      const size = Size(740, 1100);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
@@ -89,11 +89,9 @@ void main() {
                   padding: const EdgeInsets.all(20),
                   child: Builder(
                     builder: (context) => Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      _Page(title: 'Suivi', children: suiviOf(context, working)),
+                      _Page(title: 'Au travail', children: threadOf(context, working)),
                       const SizedBox(width: 30),
-                      _Page(title: 'Chat (au travail)', children: chatOf(context, working)),
-                      const SizedBox(width: 30),
-                      _Page(title: 'Chat (fini)', children: chatOf(context, done)),
+                      _Page(title: 'Fini', children: threadOf(context, done)),
                     ]),
                   ),
                 ),

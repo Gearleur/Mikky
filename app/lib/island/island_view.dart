@@ -14,6 +14,7 @@ import '../mikky/mikky_painter.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../home/home_view.dart';
+import '../side/home_screen.dart' show watchedTask;
 import '../side/session_steps.dart';
 import '../side/side_app.dart';
 import '../sound/sound_board.dart';
@@ -31,9 +32,9 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      // The home at the top is 450 × 260, an agent's page 450 × 380
-      // (2026-10-02): room for its shadow.
-      IslandEdge.top => const Size(560, 480),
+      // At the top, the notch is 700 wide (2026-10-05), up to 380 high
+      // for an agent's page: room for their shadow.
+      IslandEdge.top => const Size(840, 480),
       // At the right, up to 344 × 520 (an agent's page): room for its
       // shadow on the left.
       IslandEdge.right => const Size(420, 700),
@@ -131,8 +132,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool _sideHome = true;
 
   /// At the top: the focus view for an agent that needs the user (Oui /
-  /// Non, as before). Else, both edges: the home, taller under a page (an
-  /// agent's Suivi / Chat; at the right, the agent that asks opens there).
+  /// Non, as before). Else, both edges: the home, another size under a
+  /// page (an agent's; at the right, the agent that asks opens there).
   IslandLayout get _layoutWanted => switch (_edge) {
     IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage => IslandLayout.focus,
     _ => _sideHome ? IslandLayout.list : IslandLayout.page,
@@ -367,6 +368,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     if (prev.shape != IslandShape.open && s.shape == IslandShape.open) _sound.play(MikkyCue.open);
     final layout = _layoutWanted;
+    // The notch with nothing at work: Mikky takes his bigger place there,
+    // as the home draws it (`HomeLayout.top`).
+    _motion.listIdle = _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
     final relaid = layout != _motion.layout;
     if (s.shape != _motion.shape || relaid) {
       final opening = s.shape != _motion.shape && s.shape == IslandShape.open;
@@ -400,7 +404,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (s.bubble && !prev.bubble) _mikky.twitch();
     _bubble.target = s.bubble ? 1 : 0;
     _notify(s);
-    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents);
+    // Mikky moving to his other place on the home counts too.
+    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents) || !_motion.isAtRest;
     if (changed || !_settled) {
       _wake();
     } else {
@@ -878,9 +883,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
     _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
-    // On the home, and on a request he brings (an alert page).
-    final onAlert = _sideKey.currentState?.topKey.startsWith('alert:') ?? false;
-    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !onAlert ? 0.0 : 1.0;
+    // On the home, on a request he brings (an alert page), and in the
+    // notch on an agent's page, beside the thread (2026-10-05).
+    final top = _sideKey.currentState?.topKey ?? '';
+    final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
+    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
@@ -1079,18 +1086,24 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
           // history's dark — fills the island to its corners (2026-10-02).
           child: ClipPath(
             clipper: IslandClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius, _corners),
-            child: OverflowBox(
-              minWidth: open.width,
-              maxWidth: open.width,
-              minHeight: open.height,
-              maxHeight: open.height,
-              child: Opacity(
-                opacity: opacity.clamp(0.0, 1.0),
-                child: Transform.translate(
-                  offset: Offset(0, (1 - opacity) * 6),
-                  child: MikkyUiTheme(
-                    ui: ui,
-                    child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
+            // The same shape as a rounded rectangle: blurs behind the pages
+            // (the field's foot, the history's dark) stay inside it, even
+            // while the island grows (2026-10-05).
+            child: ClipRRect(
+              clipper: _RoundClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius),
+              child: OverflowBox(
+                minWidth: open.width,
+                maxWidth: open.width,
+                minHeight: open.height,
+                maxHeight: open.height,
+                child: Opacity(
+                  opacity: opacity.clamp(0.0, 1.0),
+                  child: Transform.translate(
+                    offset: Offset(0, (1 - opacity) * 6),
+                    child: MikkyUiTheme(
+                      ui: ui,
+                      child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
+                    ),
                   ),
                 ),
               ),
@@ -1197,6 +1210,20 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 /// The island's shape in a child of it: [shape] (in the child's
 /// coordinates, past the screen's edge) with the shader's corners — a
 /// curve of radius [radius] and power [power] (2: a circle's).
+/// The island's shape as a rounded rectangle (see [IslandClip]).
+class _RoundClip extends CustomClipper<RRect> {
+  const _RoundClip(this.shape, this.radius);
+
+  final Rect shape;
+  final double radius;
+
+  @override
+  RRect getClip(Size size) => RRect.fromRectAndRadius(shape, Radius.circular(math.max(0.0, math.min(radius, shape.shortestSide / 2))));
+
+  @override
+  bool shouldReclip(_RoundClip old) => old.shape != shape || old.radius != radius;
+}
+
 class IslandClip extends CustomClipper<Path> {
   const IslandClip(this.shape, this.radius, [this.power = 2]);
 

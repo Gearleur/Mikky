@@ -9,8 +9,9 @@ import '../settings.dart';
 /// Null: silent.
 const Map<MikkyCue, String?> soundFiles = {
   MikkyCue.hello: 'launch',
-  MikkyCue.open: 'folder_open',
-  MikkyCue.close: 'folder_close',
+  // Opening and closing the island (user, 2026-10-05).
+  MikkyCue.open: 'discord_open',
+  MikkyCue.close: 'discord_close',
   MikkyCue.peek: 'navigate',
   MikkyCue.navigate: 'navigate',
   MikkyCue.back: 'back',

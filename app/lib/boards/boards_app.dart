@@ -11,6 +11,7 @@ import 'board_brand.dart';
 import 'board_components.dart';
 import 'board_home.dart';
 import 'board_island.dart';
+import 'board_notch.dart';
 import 'board_screens.dart';
 import 'board_technical.dart';
 import 'canvas.dart';
@@ -36,7 +37,7 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, islandBoard, homeTopBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
+final boards = [brandBoard, componentsBoard, islandBoard, notchTopBoard, notchRightBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});
@@ -60,22 +61,28 @@ class _BoardsState extends State<Boards> {
   late int _picked = widget.initial;
   Timer? _switch;
   late int _themes = widget.themes;
+
+  /// Only the frames of this kind; null: all.
+  FrameKind? _only;
   final _canvas = GlobalKey<BoardCanvasState>();
   double _scale = 1;
 
   // The board, built again only when it changes: not while the square
   // slides in the sidebar.
-  (int, int)? _shown;
+  (int, int, FrameKind?)? _shown;
   Widget? _content;
 
   Widget _contentOf(List<MikkyUi> bands) {
-    if (_shown != (_board, _themes)) {
-      _shown = (_board, _themes);
+    if (_shown != (_board, _themes, _only)) {
+      _shown = (_board, _themes, _only);
       _content = KeyedSubtree(
         key: ValueKey(_shown),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [for (final ui in bands) BoardBand(spec: boards[_board], ui: ui)],
+        child: BoardFilter(
+          only: _only,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [for (final ui in bands) BoardBand(spec: boards[_board], ui: ui)],
+          ),
         ),
       );
     }
@@ -112,6 +119,8 @@ class _BoardsState extends State<Boards> {
               },
               themes: _themes,
               onThemes: (i) => setState(() => _themes = i),
+              only: _only,
+              onOnly: (k) => setState(() => _only = k),
             ),
             Container(width: 1, color: shell.line),
             Expanded(
@@ -169,12 +178,23 @@ class BoardBand extends StatelessWidget {
 }
 
 class _Sidebar extends StatelessWidget {
-  const _Sidebar({required this.selected, required this.onSelect, required this.themes, required this.onThemes});
+  const _Sidebar({
+    required this.selected,
+    required this.onSelect,
+    required this.themes,
+    required this.onThemes,
+    required this.only,
+    required this.onOnly,
+  });
 
   final int selected;
   final ValueChanged<int> onSelect;
   final int themes;
   final ValueChanged<int> onThemes;
+
+  /// The frames shown: all, or one kind.
+  final FrameKind? only;
+  final ValueChanged<FrameKind?> onOnly;
 
   @override
   Widget build(BuildContext context) {
@@ -239,6 +259,12 @@ class _Sidebar extends StatelessWidget {
             style: uiText(11, color: ui.text3, height: 1.4),
           ),
           const SizedBox(height: 12),
+          // Which frames: all, the app's, the trials, the places to play.
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            MChip('Tout', on: only == null, onTap: () => onOnly(null)),
+            for (final k in FrameKind.values) MChip(k.label, on: only == k, onTap: () => onOnly(k)),
+          ]),
+          const SizedBox(height: 8),
           Segmented(options: const ['Clair', 'Sombre', 'Les deux'], selected: themes, size: SegmentSize.xs, onChanged: onThemes),
         ],
       ),

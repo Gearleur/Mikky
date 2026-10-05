@@ -34,6 +34,25 @@ class SideFrame extends StatelessWidget {
 
 /// `.side-head`: 68 px — Mikky small (or a back button), the title, and
 /// round buttons on the right.
+/// The reading column of a thread (user, 2026-10-05: « recentre le
+/// texte, rends les bords plus larges », « comme quand on lit sur
+/// Obsidian »): at most this wide, centered; in a narrow window, the
+/// window's own margins.
+const readingWidth = 560.0;
+
+/// [child] in the reading column: centered, at most [readingWidth] wide.
+class ReadingColumn extends StatelessWidget {
+  const ReadingColumn({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: Alignment.topCenter,
+    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child),
+  );
+}
+
 class SideHead extends StatelessWidget {
   const SideHead({super.key, this.title, this.leading, this.actions = const [], this.small = false, this.titleMark});
 
@@ -93,7 +112,15 @@ class SideHead extends StatelessWidget {
 /// way), not strong from its first pixels. Still: costs nothing when
 /// nothing moves.
 class EdgeBlur extends StatelessWidget {
-  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 12, this.sigma = 1.25, this.veil = .8, this.ramp = .5});
+  // 5 layers of 1.94 blur the edge as much as 12 of 1.25 did (blurs add
+  // up as the square root of the sum of their squares), for far less GPU
+  // work at each frame (2026-10-05).
+  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 5, this.sigma = 1.94, this.veil = .8, this.ramp = .5, this.corner = 22});
+
+  /// The round corners of the window's edge it lies on, less its 8 px
+  /// inset: the blur keeps inside them (2026-10-05: at the bottom it went
+  /// past the island's corners).
+  final double corner;
 
   /// How the blur grows towards the edge: layer i reaches 1 − (i/n)^ramp
   /// of the way; .5 grows evenly, lower is strong sooner, higher later.
@@ -127,7 +154,8 @@ class EdgeBlur extends StatelessWidget {
                 right: 8,
                 top: top ? 0 : height - reach(i),
                 bottom: top ? height - reach(i) : 0,
-                child: ClipRect(
+                child: ClipRRect(
+                  borderRadius: top ? BorderRadius.zero : BorderRadius.vertical(bottom: Radius.circular(corner)),
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: sigma, sigmaY: sigma, tileMode: TileMode.clamp),
                     child: const SizedBox.expand(),
@@ -187,7 +215,7 @@ class HeadMikky extends StatelessWidget {
 /// blinking and looking around; still when [animate] is false (goldens)
 /// or Windows asks for fewer animations.
 class MiniMikky extends StatefulWidget {
-  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle, this.badge = true});
+  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle, this.badge = true, this.look});
 
   final double size;
   final bool animate;
@@ -197,6 +225,10 @@ class MiniMikky extends StatefulWidget {
 
   /// The state's badge next to him (off in the logo).
   final bool badge;
+
+  /// Where he looks, each in [-1, 1] (right, down): at the task beside
+  /// him in the notch (2026-10-05). Some states look elsewhere. Null: ahead.
+  final Offset? look;
 
   @override
   State<MiniMikky> createState() => _MiniMikkyState();
@@ -212,7 +244,7 @@ class _MiniMikkyState extends State<MiniMikky> {
     super.initState();
     _mikky.setState(widget.state);
     for (var i = 0; i < 54; i++) {
-      _mikky.update(1 / 60, lookX: .2, lookY: .1);
+      _mikky.update(1 / 60, lookX: widget.look?.dx ?? .2, lookY: widget.look?.dy ?? .1);
     }
   }
 
@@ -234,7 +266,7 @@ class _MiniMikkyState extends State<MiniMikky> {
     final now = DecorClock.now.value;
     final dt = _last == null ? 0.0 : ((now - _last!).inMicroseconds / 1e6).clamp(0.0, .1);
     _last = now;
-    setState(() => _mikky.update(dt));
+    setState(() => _mikky.update(dt, lookX: widget.look?.dx ?? 0, lookY: widget.look?.dy ?? 0));
   }
 
   @override

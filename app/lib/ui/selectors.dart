@@ -11,9 +11,6 @@ enum SegmentSize {
 
   /// `.seg.xs`: 28 px buttons.
   xs,
-
-  /// `.cseg`: 22 px, half in the field (Suivi | Chat).
-  field,
 }
 
 /// `.seg`: a choice between a few options; the white capsule slides with
@@ -33,14 +30,12 @@ class Segmented extends StatelessWidget {
     final (pad, h, padX, font, minWidth) = switch (size) {
       SegmentSize.normal => (4.0, 38.0, 18.0, 14.5, 260.0),
       SegmentSize.xs => (3.0, 28.0, 11.0, 12.5, 0.0),
-      SegmentSize.field => (2.0, 22.0, 11.0, 11.5, 0.0),
     };
     var col = _widest(options, font, MediaQuery.textScalerOf(context)) + padX * 2;
     if (col * options.length < minWidth - pad * 2) col = (minWidth - pad * 2) / options.length;
-    final shadows = size == SegmentSize.field ? [ui.cutout] : ui.inset;
     return Surface(
       color: ui.track,
-      shadows: shadows,
+      shadows: ui.inset,
       padding: EdgeInsets.all(pad),
       child: SizedBox(
         width: col * options.length,
