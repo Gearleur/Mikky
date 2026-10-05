@@ -8,6 +8,31 @@ sealed class SessionEvent {
   final DateTime? at;
 }
 
+/// The software a session runs in (user, 2026-10-05: « VS Code, c'est
+/// VS Code »; the model only when it is the Claude or Codex app itself).
+/// Read by `mikkyd` from Claude's `entrypoint` and Codex's `originator`;
+/// [mikky] for the agents Mikky launched.
+enum AgentApp {
+  vscode('VS Code'),
+  terminal('Terminal'),
+  claude('Claude'),
+  codex('Codex'),
+  mikky('Mikky');
+
+  const AgentApp(this.label);
+
+  final String label;
+
+  /// From `mikkyd`'s word; null when unknown.
+  static AgentApp? fromWire(String? name) => switch (name) {
+    'vscode' => vscode,
+    'terminal' => terminal,
+    'claude' => claude,
+    'codex' => codex,
+    _ => null,
+  };
+}
+
 /// The session exists: its id, folder and the modes the agent offers.
 class SessionStarted extends SessionEvent {
   const SessionStarted(
@@ -18,11 +43,15 @@ class SessionStarted extends SessionEvent {
     this.models = const [],
     this.modelId,
     this.modelOption,
+    this.app,
     super.at,
   });
 
   final String sessionId;
   final String? cwd;
+
+  /// The software it runs in, when the session says.
+  final AgentApp? app;
   final List<SessionMode> modes;
   final String? modeId;
   final List<SessionModel> models;

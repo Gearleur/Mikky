@@ -6,7 +6,7 @@ enum IslandShape { hidden, compact, open }
 
 /// What the open island shows: [focus], one agent and its answers (an
 /// alert at the top); [list], the home; [page], a page over the home (an
-/// agent's Suivi / Chat), a little taller at the top (2026-10-02).
+/// agent's page; at the top 700 × 380, under the notch's 700 × 200).
 enum IslandLayout { focus, list, page }
 
 /// The screen edge the island is glued to.
@@ -35,26 +35,35 @@ class IslandMetrics {
     required this.mikkyCompact,
     required this.mikkyOpen,
     required this.mikkyList,
-  });
+    required this.mikkyPage,
+    MikkySpot? mikkyListIdle,
+  }) : mikkyListIdle = mikkyListIdle ?? mikkyList;
 
-  /// Spec §3: closed 186 × 36. Focus, a request Mikky brings with its
-  /// task: 450 × 260 since 2026-10-04 (was 430 × 178; the home's size,
-  /// to draw again with the user). List: the home,
-  /// 450 × 260 (2026-10-02, taller than the spec's 450 × 180; height
-  /// validated by the user). Page: an agent's Suivi / Chat, 450 × 380 —
-  /// the home grows a little for the conversation (user, 2026-10-02).
+  /// Spec §3: closed 186 × 36. Open, as wide as the notch since
+  /// 2026-10-05 (« garder la largeur »), 700: the home, the notch, 200
+  /// high (« Côte à côte »: Mikky and the task he looks at, the other
+  /// apps; was 450 × 260, then 760 × 216, « trop grand »); a request
+  /// Mikky brings with its task, 260; an agent's page, 380.
   static const top = IslandMetrics._(
     compact: (width: 186, height: 36),
-    focus: (width: 450, height: 260),
-    list: (width: 450, height: 260),
-    page: (width: 450, height: 380),
+    focus: (width: 700, height: 260),
+    list: (width: 700, height: 200),
+    page: (width: 700, height: 380),
     hidden: (width: 150, height: 0),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
     mikkyOpen: (x: 54, y: 88, radius: 28),
-    // Top left of the home, where its 72 px Mikky is drawn.
-    mikkyList: (x: 40, y: 35, radius: 21),
+    // In the notch, where its Mikky is drawn (`HomeLayout.top`; his
+    // center at half his width and 54 % of his height, his radius 29 % of
+    // it): 96 px at (10, 58) beside his task; 120 px at (10, 40), alone
+    // and bigger, when nothing is at work (user, 2026-10-05: « il est trop
+    // petit »).
+    mikkyList: (x: 58, y: 109.84, radius: 27.84),
+    mikkyListIdle: (x: 70, y: 104.8, radius: 34.8),
+    // On an agent's page (700 × 380): on its left, in the middle of its
+    // height, 84 px, beside the thread (2026-10-05, « au milieu »).
+    mikkyPage: (x: 64, y: 193.36, radius: 24.36),
   );
 
   /// A small tab when closed. Open, the home: the top's, upright (user,
@@ -72,6 +81,7 @@ class IslandMetrics {
     mikkyCompact: (x: 37, y: 32, radius: 15),
     mikkyOpen: (x: 40, y: 35, radius: 21),
     mikkyList: (x: 40, y: 35, radius: 21),
+    mikkyPage: (x: 40, y: 35, radius: 21),
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
@@ -85,9 +95,16 @@ class IslandMetrics {
 
   /// Mikky's place when open on the home ([IslandLayout.list]), and on a
   /// page over it (hidden there, behind the page's back button).
-  final MikkySpot mikkyList;
+  final MikkySpot mikkyList, mikkyPage;
 
-  MikkySpot mikkyAt(IslandLayout layout) => layout == IslandLayout.focus ? mikkyOpen : mikkyList;
+  /// On the home with nothing at work ([IslandMotion.listIdle]).
+  final MikkySpot mikkyListIdle;
+
+  MikkySpot mikkyAt(IslandLayout layout) => switch (layout) {
+        IslandLayout.focus => mikkyOpen,
+        IslandLayout.list => mikkyList,
+        IslandLayout.page => mikkyPage,
+      };
 
   IslandSize open(IslandLayout layout) => switch (layout) {
         IslandLayout.focus => focus,
@@ -116,6 +133,36 @@ class IslandMotion {
   final radius = Spring(0, SpringSpec.island);
   final progress = Spring(0, SpringSpec.progress);
 
+  /// Mikky's place in the open island, on soft springs: from the home to
+  /// an agent's page, or to his bigger place when nothing is at work, he
+  /// glides (2026-10-05).
+  final _spotX = Spring(0, SpringSpec.glideAcross);
+  final _spotY = Spring(0, SpringSpec.glideUpDown);
+  final _spotRadius = Spring(0, SpringSpec.glideAcross);
+  bool _listIdle = false;
+
+  /// Whether the home has a task at work: Mikky's place on the home.
+  set listIdle(bool idle) {
+    if (idle == _listIdle) return;
+    _listIdle = idle;
+    _aimSpot(snap: _shape != IslandShape.open);
+  }
+
+  MikkySpot get _spotWanted => _layout == IslandLayout.list && _listIdle ? metrics.mikkyListIdle : metrics.mikkyAt(_layout);
+
+  /// Closed, he is in place at once: opening shows him where he belongs.
+  void _aimSpot({required bool snap}) {
+    final spot = _spotWanted;
+    _spotX.target = spot.x;
+    _spotY.target = spot.y;
+    _spotRadius.target = spot.radius;
+    if (snap) {
+      _spotX.snap();
+      _spotY.snap();
+      _spotRadius.snap();
+    }
+  }
+
   IslandShape get shape => _shape;
   IslandShape _shape = IslandShape.hidden;
   IslandLayout get layout => _layout;
@@ -142,6 +189,7 @@ class IslandMotion {
     height.target = size.height;
     radius.target = _shape == IslandShape.open ? metrics.openRadius : metrics.compactRadius;
     progress.target = _shape == IslandShape.open ? 1 : 0;
+    _aimSpot(snap: _shape != IslandShape.open);
     _pendingDepth = null;
     if (delayDepth) {
       _pendingDepth = _depth.target;
@@ -165,7 +213,7 @@ class IslandMotion {
     if (isAtRest) _snapAll();
   }
 
-  List<Spring> get _springs => [width, height, radius, progress];
+  List<Spring> get _springs => [width, height, radius, progress, _spotX, _spotY, _spotRadius];
 
   void _snapAll() {
     for (final s in _springs) {
@@ -202,7 +250,7 @@ class IslandMotion {
   double get mikkyRadius =>
       _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
 
-  MikkySpot get _open => metrics.mikkyAt(_layout);
+  MikkySpot get _open => (x: _spotX.value, y: _spotY.value, radius: _spotRadius.value);
 
   /// Mikky's center, from the island's left edge.
   double get mikkyX => _lerp(metrics.mikkyCompact.x, _open.x, openness.clamp(0.0, 1.0));

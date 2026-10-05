@@ -14,7 +14,7 @@ class UserItem extends ThreadItem {
 
   final String text;
 
-  /// Slipped in while the agent worked: shown between the tasks in Suivi.
+  /// Slipped in while the agent worked: shown where it came in the task.
   final bool queued;
 }
 
@@ -99,6 +99,9 @@ class SessionLog {
   String? sessionId;
   String? cwd;
   String? title;
+
+  /// The software the session runs in (VS Code, a terminal…), if known.
+  AgentApp? app;
   String? modeId;
   List<SessionMode> modes = const [];
   String? modelId;
@@ -161,6 +164,7 @@ class SessionLog {
       case SessionStarted():
         sessionId = e.sessionId;
         cwd = e.cwd ?? cwd;
+        app = e.app ?? app;
         if (e.modes.isNotEmpty) modes = e.modes;
         modeId = e.modeId ?? modeId;
         if (e.models.isNotEmpty) models = e.models;
