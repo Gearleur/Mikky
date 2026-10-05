@@ -13,4 +13,6 @@ docs/notch_haut/
 # Mikky's sounds: the user's own files (PSP theme, not ours to publish).
 app/assets/sounds/*
 !app/assets/sounds/README.md
+# The user's trial sounds (and the old PSP ones), not ours either.
+app/assets/sounds_test/
 app/assets/metadata.json
