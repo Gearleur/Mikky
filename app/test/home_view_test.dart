@@ -30,7 +30,7 @@ void main() {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(14), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     expect(find.byType(AppTile), findsNWidgets(6));
-    expect(tester.getSize(find.byType(AppTile).first), const Size(168, 44));
+    expect(tester.getSize(find.byType(AppTile).first), const Size(160, 42));
     expect(page(tester), 0);
 
     await tester.tap(find.bySemanticsLabel('Page suivante'));
@@ -214,7 +214,7 @@ void main() {
     // The notch too: « + », then wide tokens.
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, animate: false, onNew: () {})));
     expect(find.byType(AddTile), findsOneWidget);
-    expect(tester.getSize(find.byType(AddTile)), const Size(168, 44));
+    expect(tester.getSize(find.byType(AddTile)), const Size(160, 42));
     expect(find.byType(AppSlot), findsNWidgets(5));
   });
 

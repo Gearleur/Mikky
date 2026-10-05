@@ -50,31 +50,31 @@ class HomeLayout {
   }) : mikkyIdle = mikkyIdle ?? mikky,
        mikkyIdleAt = mikkyIdleAt ?? mikkyAt;
 
-  /// Top: the notch (user, 2026-10-05, « Côte à côte »), 760 × 216. On the
-  /// left, Mikky (100) and the latest task at work beside him, as one
-  /// group centered in the left part (« pas assez centré »); nothing at
-  /// work, Mikky alone, bigger (128), centered there (« trop petit »). On the
-  /// other apps as wide tiles, 168 × 44, two by two (three columns when
-  /// nothing is at work), arrows on each side when there are more. Quiet
-  /// controls: a 32 px bar, a small foot.
+  /// Top: the notch (user, 2026-10-05, « Côte à côte »), 700 × 200 (760 ×
+  /// 216 was « trop grand »). On the left, Mikky (96) and the latest task
+  /// at work beside him, reaching to the apps (« la partie de gauche plus
+  /// étendue »); nothing at work, Mikky alone, bigger (120). On the right,
+  /// the other apps as wide tiles, 160 × 42, two by two (three columns
+  /// when nothing is at work), arrows on each side when there are more.
+  /// Quiet controls: a 32 px bar, a small foot.
   static const top = HomeLayout._(
     placement: HomePlacement.top,
-    size: Size(760, 216),
+    size: Size(700, 200),
     columns: 2,
     rows: 2,
-    tile: 44,
-    tileWidth: 168,
+    tile: 42,
+    tileWidth: 160,
     gap: 8,
     rowGap: 8,
-    gridTop: taskTop + (taskHeight - 2 * 44 - 8) / 2,
+    gridTop: taskTop + (taskHeight - 2 * 42 - 8) / 2,
     barTop: 10,
     bar: 32,
     foot: 8,
     side: 12,
-    mikky: 100,
-    mikkyAt: Offset(12, taskTop + (taskHeight - 100) / 2),
-    mikkyIdle: 128,
-    mikkyIdleAt: Offset(19, 52),
+    mikky: 96,
+    mikkyAt: Offset(10, taskTop + (taskHeight - 96) / 2),
+    mikkyIdle: 120,
+    mikkyIdleAt: Offset(10, 40),
   );
 
   /// Right: the home of 2026-10-02 upright (« une version verticale de la
@@ -100,9 +100,9 @@ class HomeLayout {
   );
 
   /// The task Mikky looks at, in the notch: from the bar's foot, this
-  /// high, this far from Mikky. With Mikky, it is centered in the left
-  /// part: the same margin on each side (210 wide).
-  static const taskTop = 50.0, taskHeight = 128.0, taskGap = 8.0;
+  /// high, this far from Mikky; it reaches to [taskEnd] from the apps'
+  /// area (190 wide).
+  static const taskTop = 46.0, taskHeight = 120.0, taskGap = 8.0, taskEnd = 4.0;
 
   final HomePlacement placement;
   final Size size;
@@ -134,10 +134,10 @@ class HomeLayout {
   double get radius => 30;
 
   /// A page over the home (an agent's page): the island grows for the
-  /// conversation — at the top as wide as the notch, 760 × 380 (user,
+  /// conversation — at the top as wide as the notch, 700 × 380 (user,
   /// 2026-10-05: « garder la largeur »); at the right to the
   /// phone-shaped 344 × 520 (2026-10-02). As `IslandMetrics.page`.
-  Size get pageSize => isTop ? const Size(760, 380) : const Size(344, 520);
+  Size get pageSize => isTop ? const Size(700, 380) : const Size(344, 520);
 }
 
 /// One app of the home: one or more agents doing a task (user, 2026-10-02).
@@ -385,10 +385,10 @@ class _HomeViewState extends State<HomeView> {
   /// The notch's small controls: the history, the page arrows.
   static const _smallButton = 24.0, _arrow = 22.0;
 
-  /// The notch's apps: on the right, room on each side for an arrow, 8 px
-  /// from them; their area ends 10 px from the edge.
-  static const _arrowRoom = _arrow + 8 + 2;
-  double get _gridLeft => _l.size.width - 10 - _arrowRoom - _gridWidth;
+  /// The notch's apps: on the right, room on each side for an arrow, 6 px
+  /// from them; their area ends 8 px from the edge.
+  static const _arrowRoom = _arrow + 6;
+  double get _gridLeft => _l.size.width - 8 - _arrowRoom - _gridWidth;
   double get _areaLeft => _gridLeft - _arrowRoom;
 
   /// A part of the foot: there on the apps, gone in Chat.
@@ -528,7 +528,7 @@ class _HomeViewState extends State<HomeView> {
                 Positioned(
                   left: _l.mikkyAt.dx + _l.mikky + HomeLayout.taskGap,
                   top: HomeLayout.taskTop,
-                  width: _areaLeft - 2 * _l.mikkyAt.dx - _l.mikky - HomeLayout.taskGap,
+                  width: _areaLeft - _l.mikkyAt.dx - _l.mikky - HomeLayout.taskGap - HomeLayout.taskEnd,
                   height: HomeLayout.taskHeight,
                   child: _Watched(task: watched, onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name))),
                 ),
@@ -591,7 +591,7 @@ class _HomeViewState extends State<HomeView> {
       ),
     );
     final arrowTop = _air + _gridHeight / 2 - arrowSize / 2;
-    final inset = top ? 2.0 : 18.0;
+    final inset = top ? 0.0 : 18.0;
     return Listener(
       onPointerSignal: _onWheel,
       child: Stack(children: [
@@ -610,7 +610,7 @@ class _HomeViewState extends State<HomeView> {
 
   Widget _pagerArea() => Positioned(
     left: _l.isTop ? _areaLeft : 0,
-    right: _l.isTop ? 10 : 0,
+    right: _l.isTop ? 8 : 0,
     top: _l.gridTop - _air,
     height: _gridHeight + 2 * _air,
     child: _pager(),

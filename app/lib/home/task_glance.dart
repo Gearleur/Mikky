@@ -79,7 +79,7 @@ class TaskGlance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (app != null) ...[AppLine(app), const SizedBox(height: 4)],
+        if (app != null) ...[AppLine(app), const SizedBox(height: 3)],
         Text(task.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
         const SizedBox(height: 3),
         Row(children: [
@@ -98,7 +98,7 @@ class TaskGlance extends StatelessWidget {
           ],
         ]),
         if (steps > 0) ...[
-          const SizedBox(height: 7),
+          const SizedBox(height: 5),
           TaskSteps(log: task.log, max: steps, waiting: task.status == AgentStatus.approval || task.status == AgentStatus.question),
         ],
       ],
@@ -152,7 +152,7 @@ class TaskSteps extends StatelessWidget {
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
         for (final s in glanceSteps(log, max: max))
           Padding(
-            padding: const EdgeInsets.only(bottom: 3),
+            padding: const EdgeInsets.only(bottom: 2),
             child: Row(children: [
               SizedBox(width: 10, child: Center(child: _star(s, ui))),
               const SizedBox(width: 7),

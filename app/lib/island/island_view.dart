@@ -32,7 +32,7 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      // At the top, the notch is 760 wide (2026-10-05), up to 380 high
+      // At the top, the notch is 700 wide (2026-10-05), up to 380 high
       // for an agent's page: room for their shadow.
       IslandEdge.top => const Size(840, 480),
       // At the right, up to 344 × 520 (an agent's page): room for its
