@@ -34,8 +34,8 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
 ## 5 octobre (suite) : le notch remplace l'accueil du haut
 
 - Planches Notch Top et Notch Right faites avec l'utilisateur ; il a choisi **« Côte à côte »** pour le haut, appliqué dans l'app : `HomeView` en haut = le notch 730 × 216 (`design.md`, « Notch »). L'ancienne planche Accueil Top et la ligne de métro (`metro.dart`) sont supprimées. La droite garde l'accueil de la planche Accueil Right ; ses essais de notch (Au centre, En-tête, Dock) **attendent un choix**.
-- **Le logiciel d'une tâche** (`AgentApp` : VS Code, Terminal, Claude, Codex, Mikky) : `mikkyd` le lit (`entrypoint` de Claude, `originator` de Codex) et l'envoie dans l'événement `session` (`app`). **Le moteur en service doit être reconstruit et relancé** (sans agent actif) pour que le logiciel s'affiche ; d'ici là, seuls les agents lancés par Mikky ont le leur.
-- Vérifié en vrai (bundle `Mikky-20261005-153955`, île relancée) : le notch s'ouvre à 730 px, Mikky suit la session VS Code en cours, ses étapes en direct.
+- **Le logiciel d'une tâche** (`AgentApp` : VS Code, Terminal, Claude, Codex, Mikky) : `mikkyd` le lit (`entrypoint` de Claude, `originator` de Codex) et l'envoie dans l'événement `session` (`app`). Le moteur Windows a été relancé sur le bundle `Mikky-20261005-154738` (aucun agent actif, vérifié) ; le moteur natif de WSL reste celui du 1er octobre.
+- Vérifié en vrai : le notch s'ouvre à 730 px, Mikky suit la session VS Code en cours, ses étapes en direct, « VS Code » au-dessus du titre et le signe `</>` sur les tuiles des sessions VS Code. Après les applications, « + Nouvelle tâche » puis un petit point à chaque place libre.
 
 ## 5 octobre : un seul fil sur la page d'un agent
 
