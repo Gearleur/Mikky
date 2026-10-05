@@ -38,7 +38,7 @@ class SideFrame extends StatelessWidget {
 /// texte, rends les bords plus larges », « comme quand on lit sur
 /// Obsidian »): at most this wide, centered; in a narrow window, the
 /// window's own margins.
-const readingWidth = 600.0;
+const readingWidth = 560.0;
 
 /// [child] in the reading column: centered, at most [readingWidth] wide.
 class ReadingColumn extends StatelessWidget {
