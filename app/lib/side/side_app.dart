@@ -68,10 +68,17 @@ class _Page {
 }
 
 class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
-  static const _push = Duration(milliseconds: 340);
+  static const _push = Duration(milliseconds: 340), _pop = Duration(milliseconds: 280);
 
-  /// The page below goes out early; the new one comes in a little later.
+  /// Opening: the page below goes out early; the new one comes in a little
+  /// later. Back (t from 1 to 0): the page leaves in the first half, the
+  /// one below is whole from 55 % of the way (2026-10-05: « le texte ne
+  /// s'efface pas assez rapidement pour voir les applications »).
   static const _out = Interval(0, .55), _in = Interval(.15, 1);
+  static const _backOut = Interval(.5, 1), _backIn = Interval(.45, 1);
+
+  /// Going back: the other timing (above).
+  bool _back = false;
   static const _curve = Cubic(.2, .9, .25, 1);
 
   late final List<_Page> _pages = [_Page('home', _home)];
@@ -155,7 +162,10 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;
     host.sound?.call(MikkyCue.navigate);
-    setState(() => _pages.add(page));
+    setState(() {
+      _pages.add(page);
+      _back = false;
+    });
     widget.onHome?.call(false);
     _t.value = 0;
     _t.animateTo(1, curve: Motion.reduced(context) ? Curves.linear : _curve, duration: Motion.reduced(context) ? Duration.zero : _push);
@@ -164,11 +174,18 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   void back() {
     if (_pages.length < 2 || _leaving != null) return;
     host.sound?.call(MikkyCue.back);
-    setState(() => _leaving = _pages.removeLast());
+    setState(() {
+      _leaving = _pages.removeLast();
+      _back = true;
+    });
     if (_pages.length == 1) widget.onHome?.call(true);
-    _t.animateBack(0, curve: _curve.flipped, duration: Motion.reduced(context) ? Duration.zero : _push).whenComplete(() {
+    // Quick from the start, as the opening (the flipped curve started slow).
+    _t.animateBack(0, curve: _curve, duration: Motion.reduced(context) ? Duration.zero : _pop).whenComplete(() {
       if (!mounted) return;
-      setState(() => _leaving = null);
+      setState(() {
+        _leaving = null;
+        _back = false;
+      });
       _t.value = 1;
     });
   }
@@ -261,14 +278,14 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
                         child: TickerMode(
                           enabled: moving,
                           child: Opacity(
-                            opacity: 1 - _out.transform(t),
+                            opacity: _back ? 1 - _backIn.transform(t) : 1 - _out.transform(t),
                             child: Transform.scale(scale: 1 + .015 * t, alignment: Alignment.topCenter, child: page(below)),
                           ),
                         ),
                       ),
                     // The same widgets at rest (1, 1): the page keeps its state.
                     Opacity(
-                      opacity: _in.transform(t),
+                      opacity: _back ? _backOut.transform(t) : _in.transform(t),
                       child: Transform.scale(scale: .97 + .03 * t, alignment: Alignment.topCenter, child: page(top)),
                     ),
                   ],
