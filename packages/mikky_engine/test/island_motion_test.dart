@@ -65,7 +65,8 @@ void main() {
       m.setShape(IslandShape.open, layout: IslandLayout.page);
       run(m, 2);
       expect((m.currentWidth, m.currentHeight), (700, 380));
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      // On the left of the page, in the middle of its height: he glided.
+      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (64, 193.36, 24.36));
     });
 
     test('hiding slides Mikky up with the island', () {

@@ -883,9 +883,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         ? (_edge == IslandEdge.top ? (.9, 0.0) : (0.0, .9))
         : Mikky.lookAt(_cursor.dx - c.dx, _cursor.dy - c.dy);
     _mikky.update(dt, lookX: lookX, lookY: lookY, attention: atBubble);
-    // On the home, and on a request he brings (an alert page).
-    final onAlert = _sideKey.currentState?.topKey.startsWith('alert:') ?? false;
-    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !onAlert ? 0.0 : 1.0;
+    // On the home, on a request he brings (an alert page), and in the
+    // notch on an agent's page, beside the thread (2026-10-05).
+    final top = _sideKey.currentState?.topKey ?? '';
+    final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && top.startsWith('agent:'));
+    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 

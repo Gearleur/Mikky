@@ -17,6 +17,13 @@ class SpringSpec {
   /// The split bubble.
   static const sideBubble = SpringSpec(55, .65);
 
+  /// Mikky gliding from one place to another in the open island (from the
+  /// home to an agent's page, 2026-10-05: « smooth, un peu flottant,
+  /// léger, pas trop rapide »): across steady, up and down with a little
+  /// float, so his way bends a bit.
+  static const glideAcross = SpringSpec(60, .9);
+  static const glideUpDown = SpringSpec(60, .7);
+
   /// Open / close progress of the island content (135 since 2026-10-05,
   /// with the island; 170 before).
   static const progress = SpringSpec(135, .8);

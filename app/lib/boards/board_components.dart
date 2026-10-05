@@ -311,16 +311,18 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         frames: [
           BoardFrame(
             label: 'Tuiles',
-            note: '64 px, 8 par page, à droite (2 octobre) ; le notch a ses tuiles larges (168 × 44, planche Notch Top) ; 104 px, l’ancienne taille de droite, pour comparer. Neutres tant qu’elles n’ont pas leur dessin.',
+            note: 'Carrées, 64 px, 8 par page : l’accueil de droite. Larges, 160 × 42 : le notch (le signe du logiciel, le titre, une ligne qui change ; planche Notch Top). Neutres tant qu’elles n’ont pas leur dessin.',
             child: BoardPane(
-              width: 260,
+              width: 300,
               child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                for (final s in const [64.0, 104.0]) ...[AppTile(size: s, label: 'Application', onTap: _nothing), const SizedBox(width: 24)],
+                AppTile(size: 64, label: 'Application', onTap: _nothing),
+                const SizedBox(width: 24),
+                AppTile(size: 42, width: 160, label: 'Application', onTap: _nothing),
               ]),
             ),
           ),
           BoardFrame(
-            label: 'Dans l’app aujourd’hui',
+            label: 'À droite, dans l’app',
             note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien en pause. Ceux qui attendent, travaillent et les derniers terminés ; pas l’historique.',
             child: BoardPane(
               width: 340,
@@ -443,47 +445,6 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
       ),
     ]),
     ('Couleurs', [interfaceColorsSection(ui)]),
-    ('Listes', [
-      BoardSection(
-        title: 'Lignes de l’ancien accueil',
-        note: 'Plus dans l’accueil depuis le 2 octobre (remplacé par les applications). Gardées : leurs actions — Oui / Non, questions, limite (« Terminer », « Relance auto »), reprendre, menu d’un agent — sont à refaire dans les applications à l’étape suivante.',
-        frames: [
-          BoardFrame(
-            label: 'Titres de groupes',
-            child: _Tray([
-              GroupHeader(label: 'En attente', color: ui.amber, status: UiStatus.approval, count: 1, first: true, onTap: () {}),
-              GroupHeader(label: 'Travaillent', color: ui.blue, status: UiStatus.working, count: 2, onTap: () {}),
-              GroupHeader(label: 'Terminés', color: ui.green, status: UiStatus.finished, count: 3, onTap: () {}),
-              GroupHeader(label: 'Historique', color: ui.grey, count: 12, open: false, onTap: () {}),
-            ]),
-          ),
-          BoardFrame(
-            label: 'Agents',
-            note: 'Le logo de l’outil, qui tourne pendant le travail et sautille quand l’agent attend ; Oui / Non sous la ligne.',
-            child: _Tray([
-              SlidingHover(
-                radius: 14,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-                  AgentCard(
-                    status: UiStatus.approval,
-                    title: 'Met à jour le site',
-                    who: 'WSL',
-                    brand: Brand.codex,
-                    subtitle: 'Veut lancer une commande',
-                    style: AgentCardStyle.waiting,
-                    onTap: () {},
-                    actions: WaitActions(command: 'npm run build', onYes: () {}, onNo: () {}),
-                  ),
-                  AgentCard(status: UiStatus.working, title: 'Corrige les tests du moteur', who: '', brand: Brand.claude, subtitle: 'Modifie island_machine.dart', onTap: () {}),
-                  AgentCard(status: UiStatus.finished, title: 'Résume la spec', who: '', brand: Brand.claude, subtitle: 'Il y a 2 min', style: AgentCardStyle.done, onTap: () {}),
-                  AgentCard(status: UiStatus.finished, title: 'Traduis le README', who: 'Codex', style: AgentCardStyle.old, onTap: () {}),
-                ]),
-              ),
-            ], width: 320),
-          ),
-        ],
-      ),
-    ]),
     ('Essais', [
       BoardSection(
         title: 'Essais et à faire',
@@ -509,7 +470,6 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               width: 520,
               child: Text(
                 '• Le dessin des applications, et leurs actions rapides (Oui / Non, limite…).\n'
-                '• Le chat de l’accueil.\n'
                 '• Infobulle.\n'
                 '• Boîte de confirmation (aujourd’hui un menu qui redemande).\n'
                 '• Notification d’erreur (toast rouge).\n'

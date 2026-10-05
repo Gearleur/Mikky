@@ -19,11 +19,15 @@ import 'side_app.dart';
 /// An agent's page in the app: [AgentPageView] fed by the agent Mikky
 /// follows, its actions sent to the agent.
 class AgentPage extends StatelessWidget {
-  const AgentPage({super.key, required this.host, required this.id, required this.back, this.rename});
+  const AgentPage({super.key, required this.host, required this.id, required this.back, this.rename, this.mikky});
 
   final SideHost host;
   final String id;
   final VoidCallback back;
+
+  /// Mikky's place beside the thread (the notch: in the middle); the
+  /// island draws him there.
+  final MikkyBeside? mikky;
 
   /// Opens the rename page for this session.
   final VoidCallback? rename;
@@ -41,6 +45,8 @@ class AgentPage extends StatelessWidget {
     final hook = _source.hookAskOf(e.id);
     return AgentPageView(
       key: ValueKey(e.id),
+      mikky: mikky,
+      drawMikky: false,
       model: AgentPageModel(
         id: e.id,
         log: e.log,
@@ -149,14 +155,17 @@ enum MikkyBeside {
 /// started elsewhere are followed without touching them; once done they
 /// can go on in Mikky.
 class AgentPageView extends StatefulWidget {
-  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo, this.mikky});
+  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo, this.mikky, this.drawMikky = true});
 
   final AgentPageModel model;
   final AgentPageActions actions;
 
-  /// A trial (boards only for now): Mikky on the left, the thread on the
-  /// right. Null: the centered reading column.
+  /// Mikky on the left, the thread on the right (the notch, « au milieu »,
+  /// 2026-10-05). Null: the centered reading column (the right edge).
   final MikkyBeside? mikky;
+
+  /// False: the island draws its own Mikky in his place (the app).
+  final bool drawMikky;
 
   /// Opens scrolled this far from the top (the boards), instead of at the
   /// end of the conversation.
@@ -333,14 +342,14 @@ class _AgentPageViewState extends State<AgentPageView> {
         // Off the window's foot (2026-10-05: « trop petit » at 12).
         if (composer != null)
           Positioned(left: beside == null ? 20 : gutter, right: beside == null ? 20 : rightMargin, bottom: 20, child: column(child: composer)),
-        if (beside != null)
+        if (beside != null && widget.drawMikky)
           Positioned(
             left: 22,
             top: beside == MikkyBeside.top ? 58 : null,
             bottom: beside == MikkyBeside.bottom ? 12 : null,
             child: beside == MikkyBeside.middle ? const SizedBox.shrink() : _BesideMikky(status: m.status),
           ),
-        if (beside == MikkyBeside.middle)
+        if (beside == MikkyBeside.middle && widget.drawMikky)
           Positioned(left: 22, top: 0, bottom: 0, child: Center(child: _BesideMikky(status: m.status))),
         if (composer == null)
           Positioned(

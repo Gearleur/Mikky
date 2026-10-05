@@ -61,8 +61,9 @@ class IslandMetrics {
     // petit »).
     mikkyList: (x: 58, y: 109.84, radius: 27.84),
     mikkyListIdle: (x: 70, y: 104.8, radius: 34.8),
-    // On an agent's page: at its top left, behind the back button.
-    mikkyPage: (x: 40, y: 35, radius: 21),
+    // On an agent's page (700 × 380): on its left, in the middle of its
+    // height, 84 px, beside the thread (2026-10-05, « au milieu »).
+    mikkyPage: (x: 64, y: 193.36, radius: 24.36),
   );
 
   /// A small tab when closed. Open, the home: the top's, upright (user,
@@ -132,12 +133,35 @@ class IslandMotion {
   final radius = Spring(0, SpringSpec.island);
   final progress = Spring(0, SpringSpec.progress);
 
-  /// 1: the home has no task at work, Mikky takes his bigger place there.
-  final _idle = Spring(0, SpringSpec.island);
+  /// Mikky's place in the open island, on soft springs: from the home to
+  /// an agent's page, or to his bigger place when nothing is at work, he
+  /// glides (2026-10-05).
+  final _spotX = Spring(0, SpringSpec.glideAcross);
+  final _spotY = Spring(0, SpringSpec.glideUpDown);
+  final _spotRadius = Spring(0, SpringSpec.glideAcross);
+  bool _listIdle = false;
 
-  /// Whether the home has a task at work: Mikky moves between his two
-  /// places on the home, on a spring.
-  set listIdle(bool idle) => _idle.target = idle ? 1 : 0;
+  /// Whether the home has a task at work: Mikky's place on the home.
+  set listIdle(bool idle) {
+    if (idle == _listIdle) return;
+    _listIdle = idle;
+    _aimSpot(snap: _shape != IslandShape.open);
+  }
+
+  MikkySpot get _spotWanted => _layout == IslandLayout.list && _listIdle ? metrics.mikkyListIdle : metrics.mikkyAt(_layout);
+
+  /// Closed, he is in place at once: opening shows him where he belongs.
+  void _aimSpot({required bool snap}) {
+    final spot = _spotWanted;
+    _spotX.target = spot.x;
+    _spotY.target = spot.y;
+    _spotRadius.target = spot.radius;
+    if (snap) {
+      _spotX.snap();
+      _spotY.snap();
+      _spotRadius.snap();
+    }
+  }
 
   IslandShape get shape => _shape;
   IslandShape _shape = IslandShape.hidden;
@@ -165,6 +189,7 @@ class IslandMotion {
     height.target = size.height;
     radius.target = _shape == IslandShape.open ? metrics.openRadius : metrics.compactRadius;
     progress.target = _shape == IslandShape.open ? 1 : 0;
+    _aimSpot(snap: _shape != IslandShape.open);
     _pendingDepth = null;
     if (delayDepth) {
       _pendingDepth = _depth.target;
@@ -188,7 +213,7 @@ class IslandMotion {
     if (isAtRest) _snapAll();
   }
 
-  List<Spring> get _springs => [width, height, radius, progress, _idle];
+  List<Spring> get _springs => [width, height, radius, progress, _spotX, _spotY, _spotRadius];
 
   void _snapAll() {
     for (final s in _springs) {
@@ -225,12 +250,7 @@ class IslandMotion {
   double get mikkyRadius =>
       _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
 
-  MikkySpot get _open {
-    final at = metrics.mikkyAt(_layout);
-    if (_layout != IslandLayout.list || _idle.value == 0) return at;
-    final idle = metrics.mikkyListIdle, t = _idle.value;
-    return (x: _lerp(at.x, idle.x, t), y: _lerp(at.y, idle.y, t), radius: _lerp(at.radius, idle.radius, t));
-  }
+  MikkySpot get _open => (x: _spotX.value, y: _spotY.value, radius: _spotRadius.value);
 
   /// Mikky's center, from the island's left edge.
   double get mikkyX => _lerp(metrics.mikkyCompact.x, _open.x, openness.clamp(0.0, 1.0));

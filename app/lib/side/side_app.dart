@@ -155,10 +155,14 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
     'hooks:codex' => _pushPage(_Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex))),
     final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
-    _ => _pushPage(_Page('agent:$what', () => AgentPage(host: host, id: what, back: back, rename: () => _open('rename:$what')))),
+    _ => _pushPage(_agentPage(what)),
   };
 
-  _Page _agentPage(String id) => _Page('agent:$id', () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id')));
+  /// In the notch, Mikky beside the thread, in the middle (the island's).
+  _Page _agentPage(String id) => _Page(
+    'agent:$id',
+    () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'), mikky: widget.layout.isTop ? MikkyBeside.middle : null),
+  );
 
   void _pushPage(_Page page) {
     if (_pages.last.key == page.key) return;
