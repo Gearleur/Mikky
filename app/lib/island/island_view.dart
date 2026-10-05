@@ -886,7 +886,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // On the home, on a request he brings (an alert page), and in the
     // notch on an agent's page, beside the thread (2026-10-05).
     final top = _sideKey.currentState?.topKey ?? '';
-    final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && top.startsWith('agent:'));
+    final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
     final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;

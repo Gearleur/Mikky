@@ -6,8 +6,8 @@ import '../ui/buttons.dart';
 import '../ui/cards.dart';
 import '../ui/field.dart';
 import '../ui/icons.dart';
-import '../ui/selection.dart';
 import '../ui/side.dart';
+import '../ui/thread_page.dart';
 import '../ui/status.dart';
 import '../ui/tokens.dart';
 import 'session_cards.dart';
@@ -134,20 +134,6 @@ class AgentPageActions {
   final VoidCallback? resume, finishLimit, unfinishLimit, menu;
 }
 
-/// Trials (boards, 2026-10-05: « laisser une place à gauche pour
-/// Mikky »): Mikky in a column on the left of an agent's page, the thread
-/// and the field moved right, with smaller margins; where he stands.
-enum MikkyBeside {
-  /// At the top, under the back button.
-  top,
-
-  /// In the middle of the page's height.
-  middle,
-
-  /// At the bottom, beside the field.
-  bottom,
-}
-
 /// An agent's page (UX `ux-a.html`): one thread, the conversation with
 /// the work where it happened — each task unfolds what the agent did and
 /// said, in order, live while it works (user request, 2026-10-05: no more
@@ -272,15 +258,6 @@ class _AgentPageViewState extends State<AgentPageView> {
         ),
     ];
 
-    // The trial with Mikky on the left: his column, then the thread up to
-    // a small margin on the right.
-    final beside = widget.mikky;
-    const gutter = 128.0, rightMargin = 28.0;
-    Widget column({required Widget child}) => beside == null
-        ? ReadingColumn(child: child)
-        : Align(alignment: Alignment.topLeft, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child));
-    final left = beside == null ? 16.0 : gutter, right = beside == null ? 16.0 : rightMargin;
-
     final Widget? composer = m.external && working
         ? null
         : Composer(
@@ -295,89 +272,26 @@ class _AgentPageViewState extends State<AgentPageView> {
             glass: true,
           );
 
-    // No title, no band on top: the thread goes up to the top as it
-    // scrolls, the buttons float over it (user request, 2026-09-30).
-    return Stack(
-      children: [
-        // The thread fills the page and passes under the buttons and the
-        // field, blurred (user request, 2026-09-30), in the reading column.
-        Positioned.fill(
-          child: SingleChildScrollView(
-            controller: _scroll,
-            // Room for the field, or for the read-only note of outside sessions.
-            padding: EdgeInsets.fromLTRB(left, 62, right, composer == null ? 62 : 88),
-            child: SelectableArea(
-              child: column(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    if (content.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 60),
-                        child: Center(child: Text('Rien à montrer', style: uiText(13, color: ui.text3))),
-                      ),
-                    ...content,
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-        // Softer on top (user request, 2026-09-30: « trop puissant »).
-        const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
-        // Only behind the field, not above it (user request, 2026-09-30).
-        Positioned(left: 0, right: 0, bottom: 0, child: EdgeBlur(top: false, height: composer == null ? 50 : 64)),
-        // Top middle: the violet star under the spell (« Ensorcelé »), the
-        // yellow one while the limit holds it (user requests, 2026-09-30).
-        Positioned(top: 20, left: 0, right: 0, child: Center(child: SpellStar(id: m.id, limited: m.status == AgentStatus.rateLimited))),
-        SideHead(
-          leading: RoundButton('left', size: 34, onPressed: a.back, tooltip: 'Retour'),
-          actions: [
-            // No pause button any more: « Mettre en pause », « Reprendre »
-            // and « Arrêter l'agent » are in the ··· menu (user request,
-            // 2026-09-30).
-            RoundButton.menu(size: 34, tooltip: 'Menu', onPressed: a.menu ?? () {}),
-          ],
-        ),
-        // Off the window's foot (2026-10-05: « trop petit » at 12).
-        if (composer != null)
-          Positioned(left: beside == null ? 20 : gutter, right: beside == null ? 20 : rightMargin, bottom: 20, child: column(child: composer)),
-        if (beside != null && widget.drawMikky)
-          Positioned(
-            left: 22,
-            top: beside == MikkyBeside.top ? 58 : null,
-            bottom: beside == MikkyBeside.bottom ? 12 : null,
-            child: beside == MikkyBeside.middle ? const SizedBox.shrink() : _BesideMikky(status: m.status),
-          ),
-        if (beside == MikkyBeside.middle && widget.drawMikky)
-          Positioned(left: 22, top: 0, bottom: 0, child: Center(child: _BesideMikky(status: m.status))),
-        if (composer == null)
-          Positioned(
-            left: left,
-            right: right,
-            bottom: 20,
-            child: column(
-              child: Row(children: [
-                MikkyIcon('lock', size: 13, color: ui.text3),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(11.5, color: ui.text3, height: 1.35)),
-                ),
-              ]),
-            ),
-          ),
-      ],
+    return ThreadPage(
+      scroll: _scroll,
+      back: a.back,
+      // No pause button any more: « Mettre en pause », « Reprendre » and
+      // « Arrêter l'agent » are in the ··· menu (user request, 2026-09-30).
+      menu: a.menu ?? () {},
+      // The violet star under the spell (« Ensorcelé »), the yellow one
+      // while the limit holds it (user requests, 2026-09-30).
+      overlay: SpellStar(id: m.id, limited: m.status == AgentStatus.rateLimited),
+      mikky: widget.mikky,
+      drawMikky: widget.drawMikky,
+      mikkyState: mikkyStateOf(m.status),
+      empty: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
+      composer: composer,
+      note: Row(children: [
+        MikkyIcon('lock', size: 13, color: ui.text3),
+        const SizedBox(width: 6),
+        Expanded(child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(11.5, color: ui.text3, height: 1.35))),
+      ]),
+      children: content,
     );
   }
-}
-
-/// Mikky beside the thread (trial): 84 px, in his agent's state, looking
-/// at the thread on his right.
-class _BesideMikky extends StatelessWidget {
-  const _BesideMikky({required this.status});
-
-  final AgentStatus status;
-
-  @override
-  Widget build(BuildContext context) => MiniMikky(size: 84, badge: false, state: mikkyStateOf(status), look: const Offset(1, .2));
 }

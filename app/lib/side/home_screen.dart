@@ -151,7 +151,6 @@ class HomeScreen extends StatelessWidget {
     this.layout = HomeLayout.right,
     this.recalled = const {},
     this.recall,
-    this.chat,
     this.onMenu,
   });
 
@@ -169,8 +168,6 @@ class HomeScreen extends StatelessWidget {
   /// Null: [open].
   final ValueChanged<String>? recall;
 
-  /// The home's Chat, where a task starts; null: none can start.
-  final Widget Function(VoidCallback toApps)? chat;
 
   /// An agent's ··· menu (a row of the history).
   final ValueChanged<String>? onMenu;
@@ -186,7 +183,8 @@ class HomeScreen extends StatelessWidget {
       apps: homeApps(entries, now, recalled: recalled, except: watched?.id),
       drawMikky: false,
       onOpen: (app) => open(app.id),
-      chat: canLaunch ? chat : null,
+      // « + », the tools and the Chat mode: the new chat's page.
+      onNew: canLaunch ? () => open('new') : null,
       onHistory: (within) => showHistory(within, rows: historyRows(entries, DateTime.now(), recalled: recalled), onOpen: recall ?? open, onMenu: onMenu),
     );
   }

@@ -3,6 +3,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
 import '../side/agent_page.dart';
+import '../ui/thread_page.dart';
 import '../side/session_cards.dart';
 import '../ui/messages.dart';
 import '../ui/pixel_fx.dart';
@@ -79,27 +80,15 @@ class _AgentMockState extends State<AgentMock> {
     }
   }
 
-  // Its own Overlay, as the island's window has: the page's text can be
-  // selected.
-  late final _layer = OverlayEntry(builder: _page);
-
-  @override
-  void didUpdateWidget(AgentMock old) {
-    super.didUpdateWidget(old);
-    _layer.markNeedsBuild();
-  }
-
   @override
   void dispose() {
     Enchantments.instance.cancel(_id);
-    _layer.remove();
-    _layer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final page = Overlay(initialEntries: [_layer]);
+    final page = OwnOverlay(child: Builder(builder: _page));
     return widget.framed ? SideFrame(child: page) : page;
   }
 

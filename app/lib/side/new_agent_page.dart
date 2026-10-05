@@ -15,17 +15,22 @@ import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
+import '../ui/thread_page.dart';
 import 'session_text.dart';
 import 'side_app.dart';
 
-/// A new agent, the home's Chat (2026-10-02; the page of its own is gone
-/// since): the question, the field, and half inside it the folder and the
-/// model. The model's menu also holds where it runs (Windows / WSL, from
-/// the folder) and the permissions (Demander by default, or Auto).
+/// A new chat (2026-10-05: « comme pour l'agent, un chat vide »): a page
+/// as an agent's ([NewChatView]), the field with the folder and the model
+/// half inside. The model's menu also holds where it runs (Windows / WSL,
+/// from the folder) and the permissions (Demander by default, or Auto).
 class NewAgentPage extends StatefulWidget {
-  const NewAgentPage({super.key, required this.host, required this.launched, required this.login});
+  const NewAgentPage({super.key, required this.host, required this.back, required this.launched, required this.login, this.mikky});
 
   final SideHost host;
+  final VoidCallback back;
+
+  /// In the notch, where Mikky stands (the island draws him).
+  final MikkyBeside? mikky;
 
   /// The agent started: its page opens.
   final ValueChanged<String> launched;
@@ -204,7 +209,10 @@ class _NewAgentPageState extends State<NewAgentPage> {
         ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
       ]),
     );
-    return NewTaskView(
+    return NewChatView(
+      back: widget.back,
+      mikky: widget.mikky,
+      drawMikky: false,
       composer: composer,
       status: installing ? 'Mikky installe ses adaptateurs…' : (_starting ? 'Démarrage…' : null),
       error: _error,

@@ -204,6 +204,37 @@ class _Tag extends StatelessWidget {
   }
 }
 
+/// [child] under an Overlay of its own, as the island's window has one: a
+/// page's text can be selected and its menus open inside it.
+class OwnOverlay extends StatefulWidget {
+  const OwnOverlay({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<OwnOverlay> createState() => _OwnOverlayState();
+}
+
+class _OwnOverlayState extends State<OwnOverlay> {
+  late final _layer = OverlayEntry(builder: (_) => widget.child);
+
+  @override
+  void didUpdateWidget(OwnOverlay old) {
+    super.didUpdateWidget(old);
+    _layer.markNeedsBuild();
+  }
+
+  @override
+  void dispose() {
+    _layer.remove();
+    _layer.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Overlay(initialEntries: [_layer]);
+}
+
 /// How a screen behaves, written next to it as in a design spec (user
 /// request, 2026-10-01): a title per rule, then what happens.
 class BoardRules extends StatelessWidget {

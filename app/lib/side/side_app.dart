@@ -8,6 +8,7 @@ import '../overlay/overlay_channel.dart';
 import '../ui/backend_status.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
+import '../ui/thread_page.dart';
 import 'agent_page.dart';
 import 'brief_page.dart';
 import 'hooks_page.dart';
@@ -101,26 +102,34 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         _open(id);
       },
       onMenu: _menu,
-      chat: (toApps) => NewAgentPage(
-        host: host,
-        launched: (id) {
-          toApps();
-          _open(id);
-        },
-        login: (target, provider, done) => _pushPage(_Page(
-          'login',
-          () => LoginPage(
-            host: host,
-            target: target,
-            provider: provider,
-            back: back,
-            done: () {
-              back();
-              done();
-            },
-          ),
-        )),
-      ),
+    ),
+  );
+
+  /// In the notch, Mikky beside the thread, in the middle (the island's).
+  MikkyBeside? get _beside => widget.layout.isTop ? MikkyBeside.middle : null;
+
+  /// A new chat (2026-10-05: « comme pour l'agent »): a page as an agent's,
+  /// its thread empty; sent, it becomes the agent's page, in place.
+  _Page _newChat() => _Page(
+    'new',
+    () => NewAgentPage(
+      host: host,
+      back: back,
+      mikky: _beside,
+      launched: (id) => _replaceTop(_agentPage(id)),
+      login: (target, provider, done) => _pushPage(_Page(
+        'login',
+        () => LoginPage(
+          host: host,
+          target: target,
+          provider: provider,
+          back: back,
+          done: () {
+            back();
+            done();
+          },
+        ),
+      )),
     ),
   );
 
@@ -154,14 +163,14 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     )),
     'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
     'hooks:codex' => _pushPage(_Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex))),
+    'new' => _pushPage(_newChat()),
     final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
     _ => _pushPage(_agentPage(what)),
   };
 
-  /// In the notch, Mikky beside the thread, in the middle (the island's).
   _Page _agentPage(String id) => _Page(
     'agent:$id',
-    () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'), mikky: widget.layout.isTop ? MikkyBeside.middle : null),
+    () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'), mikky: _beside),
   );
 
   void _pushPage(_Page page) {

@@ -166,9 +166,10 @@ class HomeApp {
 }
 
 /// The home, one widget for both placements: Mikky alive, the two modes
-/// (apps, chat), the tools on a rail out of the screen's edge, pages of
-/// apps (an app: one or more agents doing a task), the history and
-/// « Choisir l'environnement ». In the notch at the top, the task Mikky
+/// (apps; chat opens a new chat's page, as an agent's opens — 2026-10-05),
+/// the tools on a rail out of the screen's edge, pages of apps (an app:
+/// one or more agents doing a task), the history and « Choisir
+/// l'environnement ». In the notch at the top, the task Mikky
 /// looks at beside him ([watched]). The pages slide sideways: drag
 /// (mouse, touchpad), wheel, arrows, dots or ← →. Its own Overlay keeps
 /// the menus inside it.
@@ -180,14 +181,12 @@ class HomeView extends StatefulWidget {
     this.watched,
     this.onOpen,
     this.onNew,
-    this.chat,
     this.onHistory,
     this.drawMikky = true,
     this.tools = const [Brand.claude, Brand.codex],
     this.environment = MikkyEnvironment.local,
     this.mikky = MikkyState.idle,
     this.animate = true,
-    this.inChat = false,
   });
 
   final HomeLayout layout;
@@ -201,14 +200,9 @@ class HomeView extends StatefulWidget {
   /// A tile pressed (the watched task too).
   final ValueChanged<HomeApp>? onOpen;
 
-  /// A new task: the tools' rail and the « + » tile, when
-  /// there is no [chat]. Neither: cannot launch.
+  /// A new task: « + », the tools' rail and the Chat mode open the new
+  /// chat's page. Null: cannot launch.
   final VoidCallback? onNew;
-
-  /// The Chat mode (2026-10-02, the old « Nouvel agent »), given a way
-  /// back to the apps (once launched). The tools' rail and « + » come to
-  /// it. Null: a placeholder.
-  final Widget Function(VoidCallback toApps)? chat;
 
   /// The history button, bottom left, given the home's window to open its
   /// sheet in; null: no button.
@@ -226,16 +220,12 @@ class HomeView extends StatefulWidget {
   /// False: Mikky still (goldens).
   final bool animate;
 
-  /// Opens on the Chat (the boards).
-  final bool inChat;
-
   @override
   State<HomeView> createState() => _HomeViewState();
 }
 
 class _HomeViewState extends State<HomeView> {
   late MikkyEnvironment _environment = widget.environment;
-  late int _mode = widget.inChat ? 1 : 0;
   int _page = 0;
   final _pages = PageController();
   final _keys = FocusNode(debugLabel: 'home');
@@ -246,7 +236,7 @@ class _HomeViewState extends State<HomeView> {
   Duration? _wheelAt;
 
   HomeLayout get _l => widget.layout;
-  bool get _canStart => widget.chat != null || widget.onNew != null;
+  bool get _canStart => widget.onNew != null;
 
   /// The notch with nothing at work: a third column of apps.
   int get _columns => _l.isTop && widget.watched == null ? 3 : _l.columns;
@@ -283,14 +273,8 @@ class _HomeViewState extends State<HomeView> {
     _layer.markNeedsBuild();
   }
 
-  /// « + » or a tool: the Chat, to say what to do.
-  void _start() {
-    if (widget.chat != null) {
-      _set(() => _mode = 1);
-    } else {
-      widget.onNew?.call();
-    }
-  }
+  /// « + », a tool or the Chat mode: the new chat's page.
+  void _start() => widget.onNew?.call();
 
   void _goTo(int page) {
     final p = page.clamp(0, _pageCount - 1);
@@ -305,7 +289,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   KeyEventResult _onKey(FocusNode _, KeyEvent e) {
-    if (e is! KeyDownEvent || _mode != 0) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent) return KeyEventResult.ignored;
     if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _goTo(_page - 1);
       return KeyEventResult.handled;
@@ -320,7 +304,7 @@ class _HomeViewState extends State<HomeView> {
   /// Down or right: the next page; up or left: the one before. Several
   /// pages only: otherwise the wheel stays with what is around.
   void _onWheel(PointerSignalEvent event) {
-    if (event is! PointerScrollEvent || _pageCount < 2 || _mode != 0) return;
+    if (event is! PointerScrollEvent || _pageCount < 2) return;
     GestureBinding.instance.pointerSignalResolver.register(event, (e) {
       final d = (e as PointerScrollEvent).scrollDelta;
       final delta = d.dx.abs() > d.dy.abs() ? d.dx : d.dy;
@@ -356,7 +340,6 @@ class _HomeViewState extends State<HomeView> {
   /// the tools out of the edge; the pages of tiles (in the notch, the
   /// watched task beside Mikky, the apps on the right); at the bottom, the
   /// history on the left, the pages' star, the environment on the right.
-  /// In Chat, its field takes the bottom: the foot fades away.
   Widget _window(BuildContext inner) {
     final l = _l;
     final top = l.isTop;
@@ -365,7 +348,7 @@ class _HomeViewState extends State<HomeView> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Positioned.fill(child: _modeSwitch()),
+        Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
         Positioned(top: l.barTop, right: 0, child: _tools()),
@@ -374,10 +357,10 @@ class _HomeViewState extends State<HomeView> {
           left: top ? _gridLeft : 0,
           width: top ? _gridWidth : l.size.width,
           bottom: l.foot + (selectorH - PageDots.height) / 2,
-          child: Center(child: _foot(_dots())),
+          child: Center(child: _dots()),
         ),
-        Positioned(right: l.side, bottom: l.foot, child: _foot(_environmentSelector(inner))),
-        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _foot(_history(inner))),
+        Positioned(right: l.side, bottom: l.foot, child: _environmentSelector(inner)),
+        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _history(inner)),
       ],
     );
   }
@@ -390,14 +373,6 @@ class _HomeViewState extends State<HomeView> {
   static const _arrowRoom = _arrow + 6;
   double get _gridLeft => _l.size.width - 8 - _arrowRoom - _gridWidth;
   double get _areaLeft => _gridLeft - _arrowRoom;
-
-  /// A part of the foot: there on the apps, gone in Chat.
-  /// Out with the chat's soft fade; back quickly with the apps.
-  Widget _foot(Widget child) => AnimatedOpacity(
-    duration: Motion.of(context, _mode == 0 ? const Duration(milliseconds: 120) : Motion.fade),
-    opacity: _mode == 0 ? 1 : 0,
-    child: IgnorePointer(ignoring: _mode != 0, child: child),
-  );
 
   // ------------------------------------------------------------------ parts
 
@@ -422,8 +397,9 @@ class _HomeViewState extends State<HomeView> {
     // The chosen mode in black (2026-10-02): the home's one black, its
     // depth; the arrows stay grey.
     ink: true,
-    selected: _mode,
-    onChanged: (m) => _set(() => _mode = m),
+    // The apps are here; the chat is a page of its own.
+    selected: 0,
+    onChanged: _canStart ? (m) => m == 1 ? _start() : null : null,
     items: const [TabItem('grid', label: 'Applications'), TabItem('chat', label: 'Chat')],
   );
 
@@ -503,46 +479,21 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  /// The tiles or the chat, one fading into the other. The chat takes
-  /// everything under the bar. To the chat: a soft fade with a slight
-  /// zoom, both ways 300 ms (« parfaite »); back to the apps: the chat
-  /// gone at once (70 ms), the tiles in 160 ms, no zoom (user, 2026-10-02:
-  /// « la transition chat → accueil est trop lente »). An AnimatedSwitcher
-  /// gives each child the durations it had when it came in.
-  Widget _modeSwitch() {
-    final toChat = _mode == 1;
+  /// The tiles; in the notch, the task Mikky looks at beside them.
+  Widget _tiles() {
     final watched = widget.watched;
-    return AnimatedSwitcher(
-      duration: Motion.of(context, toChat ? Motion.fold : _tilesIn),
-      reverseDuration: Motion.of(context, toChat ? _chatOut : Motion.fold),
-      switchInCurve: Motion.enter,
-      switchOutCurve: Motion.leave,
-      layoutBuilder: (current, previous) => Stack(fit: StackFit.expand, children: [...previous, ?current]),
-      transitionBuilder: (child, t) => FadeTransition(
-        opacity: t,
-        child: child.key == const ValueKey('chat') ? ScaleTransition(scale: Tween(begin: .98, end: 1.0).animate(t), child: child) : child,
-      ),
-      child: _mode == 0
-          ? Stack(key: const ValueKey('tiles'), children: [
-              if (_l.isTop && watched != null)
-                Positioned(
-                  left: _l.mikkyAt.dx + _l.mikky + HomeLayout.taskGap,
-                  top: HomeLayout.taskTop,
-                  width: _areaLeft - _l.mikkyAt.dx - _l.mikky - HomeLayout.taskGap - HomeLayout.taskEnd,
-                  height: HomeLayout.taskHeight,
-                  child: _Watched(task: watched, onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name))),
-                ),
-              _pagerArea(),
-            ])
-          : Padding(
-              key: const ValueKey('chat'),
-              padding: EdgeInsets.only(top: _l.barTop + _l.bar),
-              child: widget.chat?.call(() => _set(() => _mode = 0)) ?? const _ChatSoon(),
-            ),
-    );
+    return Stack(children: [
+      if (_l.isTop && watched != null)
+        Positioned(
+          left: _l.mikkyAt.dx + _l.mikky + HomeLayout.taskGap,
+          top: HomeLayout.taskTop,
+          width: _areaLeft - _l.mikkyAt.dx - _l.mikky - HomeLayout.taskGap - HomeLayout.taskEnd,
+          height: HomeLayout.taskHeight,
+          child: _Watched(task: watched, onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name))),
+        ),
+      _pagerArea(),
+    ]);
   }
-
-  static const _tilesIn = Duration(milliseconds: 160), _chatOut = Duration(milliseconds: 70);
 
   /// Room around the grid for the tiles' shadows and their lift.
   static const _air = 14.0;
@@ -602,11 +553,7 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget _dots() => AnimatedOpacity(
-    duration: Motion.of(context, Motion.fade),
-    opacity: _mode == 0 ? 1 : 0,
-    child: PageDots(count: _pageCount, page: _page, onSelect: _goTo),
-  );
+  Widget _dots() => PageDots(count: _pageCount, page: _page, onSelect: _goTo);
 
   Widget _pagerArea() => Positioned(
     left: _l.isTop ? _areaLeft : 0,
@@ -633,17 +580,6 @@ class _Watched extends StatelessWidget {
       child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: TaskGlance(task: task)),
     ),
   );
-}
-
-/// The chat, not drawn yet.
-class _ChatSoon extends StatelessWidget {
-  const _ChatSoon();
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    return Center(child: Text('Le chat · à dessiner', style: uiText(TextSize.small, color: ui.text3)));
-  }
 }
 
 /// The home's window on the boards: the island's color and shadow, flat

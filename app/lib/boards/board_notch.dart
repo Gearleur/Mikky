@@ -15,7 +15,7 @@ import '../ui/side.dart';
 import '../ui/status.dart';
 import '../ui/tabs.dart';
 import '../ui/tokens.dart';
-import '../side/agent_page.dart' show MikkyBeside;
+import '../ui/thread_page.dart';
 import 'board_screens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
@@ -42,7 +42,7 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 
 /// The notch in its window, on a board, its Mikky in the task's state.
 /// The task he looks at is not among the apps, as in the app.
-Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, bool chat = false, String? status, String? error}) => HomeFrame(
+Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
     layout: HomeLayout.top,
@@ -52,13 +52,21 @@ Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, bool 
     mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
     onNew: () {},
     onHistory: (_) {},
-    inChat: chat,
-    chat: chat ? (_) => NewTaskSample(status: status, error: error) : null,
   ),
 );
 
 /// An agent's page in the island at the top: taller than the notch.
 Widget _page(Widget page) => HomeFrame(layout: HomeLayout.top, size: HomeLayout.top.pageSize, child: page);
+
+/// A new chat in the notch's island, Mikky beside it.
+class _NewChat extends StatelessWidget {
+  const _NewChat({this.status, this.error});
+
+  final String? status, error;
+
+  @override
+  Widget build(BuildContext context) => _page(OwnOverlay(child: NewChatSample(status: status, error: error, mikky: MikkyBeside.middle)));
+}
 
 final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut de l’écran : le notch', (context) => [
   BoardSection(
@@ -87,11 +95,11 @@ final notchTopBoard = BoardSpec('Notch Top', 'L’accueil dans l’île en haut 
   ),
   BoardSection(
     title: 'Chat',
-    note: 'Le second mode : le « Nouvel agent » d’avant, dans le notch. La question au milieu, le champ en bas ; le pied s’efface.',
+    note: 'Le mode Chat, « + » et les outils ouvrent un nouveau chat comme la page d’un agent (2026-10-05) : l’île passe à 700 × 380, la page arrive en fondu avec un léger zoom, Mikky glisse à gauche au milieu ; le fil est vide, « Qu’est-ce qu’on lance ? » en son milieu, le champ en bas avec le dossier et le modèle. Envoyer lance l’agent : la page devient la sienne, sur place.',
     frames: [
-      BoardFrame(label: 'Au départ', width: 700, child: _notch(watched: _watched(FakeSessions.working()), chat: true)),
-      BoardFrame(label: 'Démarrage', width: 700, child: _notch(watched: _watched(FakeSessions.working()), chat: true, status: 'Démarrage…')),
-      BoardFrame(label: 'Erreur', width: 700, child: _notch(watched: _watched(FakeSessions.working()), chat: true, error: 'Codex n’est pas installé dans WSL.')),
+      const BoardFrame(label: 'Au départ', width: 700, child: _NewChat()),
+      const BoardFrame(label: 'Démarrage', width: 700, child: _NewChat(status: 'Démarrage…')),
+      const BoardFrame(label: 'Erreur', width: 700, child: _NewChat(error: 'Codex n’est pas installé dans WSL.')),
     ],
   ),
   BoardSection(

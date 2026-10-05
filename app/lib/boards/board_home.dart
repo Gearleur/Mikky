@@ -138,20 +138,14 @@ const sampleApps = [
 /// A home in its window, on a board.
 Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(layout: layout, child: HomeView(layout: layout, apps: apps, onNew: () {}));
 
-/// The home on its Chat, on a board.
-Widget _chat(HomeLayout layout, {String? status, String? error}) => HomeFrame(
-  layout: layout,
-  child: HomeView(layout: layout, apps: sampleApps, inChat: true, chat: (_) => NewTaskSample(status: status, error: error)),
-);
-
 /// An agent's page in the island, taller than the home.
 Widget _page(HomeLayout layout, Widget page) => HomeFrame(layout: layout, size: layout.pageSize, child: page);
 
 const _appRule = ('Application', 'Un ou plusieurs agents qui font une tâche. Dans l’app aujourd’hui : un agent, le logo de son outil et son état ; le dessin des applications viendra.');
 const _pagesRule = ('Pages', 'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, l’étoile des pages (clic sur un point), ← → au clavier.');
 const _whichRule = ('Lesquelles', 'Ceux qui attendent, ceux qui travaillent, puis les 5 derniers terminés du jour (épinglés d’abord). Pas l’historique ni les archives : ils auront leur place ailleurs.');
-const _modesRule = ('Modes', 'En haut au milieu. Applications ou chat, le choix en noir : le seul noir de l’écran, sa profondeur (2 octobre). Vers le chat, un fondu doux avec un léger zoom (300 ms) ; retour aux applications, vif : le chat part en 70 ms, les tuiles arrivent en 160 ms, le pied en 120 ms.');
-const _chatRule = ('Chat', 'Le « Nouvel agent » d’avant, dans l’accueil : « Qu’est-ce qu’on lance ? » au milieu, le champ en bas avec le dossier et le modèle (où, permissions) à moitié dedans ; le pied (historique, étoile, environnement) s’efface. « + » et les outils y mènent. Envoyer lance l’agent : sa page s’ouvre, l’accueil revient aux applications, où il apparaît.');
+const _modesRule = ('Modes', 'En haut au milieu. Applications, en noir : le seul noir de l’écran, sa profondeur (2 octobre). Chat ouvre la page d’un nouveau chat (5 octobre).');
+const _chatRule = ('Chat', 'Une page comme celle d’un agent, son fil vide (5 octobre) : « Qu’est-ce qu’on lance ? » au milieu, le champ en bas avec le dossier et le modèle (où, permissions) à moitié dedans. « + », les outils et le mode Chat y mènent, en fondu avec un léger zoom. Envoyer lance l’agent : la page devient la sienne, sur place.');
 const _mikkyRule = ('Mikky', 'Dans l’app, le Mikky de l’île vient s’y poser en ouvrant (72 px) et garde l’état de l’agent qu’il suit ; sur les planches, le même Mikky en petit.');
 
 
@@ -170,10 +164,10 @@ final homeRightBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Chat',
-      note: 'Le même Chat que dans le notch : le « Nouvel agent » d’avant, dans l’accueil.',
+      note: 'Le même que dans le notch : une page comme celle d’un agent, le fil vide, l’île en forme de téléphone (344 × 520).',
       frames: [
-        BoardFrame(label: 'Au départ', width: 290, child: _chat(HomeLayout.right)),
-        BoardFrame(label: 'Démarrage', width: 290, child: _chat(HomeLayout.right, status: 'Démarrage…')),
+        BoardFrame(label: 'Au départ', width: 344, child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample()))),
+        BoardFrame(label: 'Démarrage', width: 344, child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample(status: 'Démarrage…')))),
       ],
     ),
     BoardSection(

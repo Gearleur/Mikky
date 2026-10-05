@@ -61,41 +61,24 @@ void main() {
     expect(page(tester), 2);
   });
 
-  testWidgets('one page: no dots shown, the modes switch to the chat', (tester) async {
+  testWidgets('one page: no dots shown', (tester) async {
     await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(6), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 1);
     expect(find.byType(AppTile), findsNWidgets(6));
-    await tester.tap(find.bySemanticsLabel('Chat'));
-    await tester.pumpAndSettle();
-    expect(find.text('Le chat · à dessiner'), findsOneWidget);
-    expect(find.byType(AppTile), findsNothing);
   });
 
-  testWidgets('the tools go to the Chat; its foot fades; launched, back to the apps', (tester) async {
-    VoidCallback? toApps;
-    await tester.pumpWidget(host(HomeView(
-      layout: HomeLayout.top,
-      apps: HomeApp.placeholders(3),
-      animate: false,
-      onHistory: (_) {},
-      chat: (back) {
-        toApps = back;
-        return const Text('nouvelle tâche');
-      },
-    )));
-    // « + » after the apps, the tools: both go to the Chat.
-    expect(find.byType(AddTile), findsOneWidget);
+  testWidgets('the Chat mode, « + » and the tools open a new chat; the home stays', (tester) async {
+    var chats = 0;
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(3), animate: false, onHistory: (_) {}, onNew: () => chats++)));
+    await tester.tap(find.bySemanticsLabel('Chat'));
+    await tester.pump();
+    await tester.tap(find.byType(AddTile));
+    await tester.pump();
     await tester.tap(find.bySemanticsLabel(RegExp('^Outils')));
-    await tester.pumpAndSettle();
-    expect(find.text('nouvelle tâche'), findsOneWidget);
-    expect(find.byType(AppTile), findsNothing);
-    final foot = tester.widget<AnimatedOpacity>(find.ancestor(of: find.byType(EnvironmentSelector), matching: find.byType(AnimatedOpacity)).first);
-    expect(foot.opacity, 0);
-
-    toApps!();
-    await tester.pumpAndSettle();
-    expect(find.text('nouvelle tâche'), findsNothing);
-    expect(find.byType(AddTile), findsOneWidget);
+    await tester.pump();
+    expect(chats, 3);
+    // The apps stay: the chat is a page of its own.
+    expect(find.byType(AppTile), findsNWidgets(4));
   });
 
   testWidgets('notch: the task Mikky looks at beside him, two columns, a click opens it', (tester) async {
@@ -124,31 +107,6 @@ void main() {
     await tester.tap(find.text('Corrige les tests'));
     await tester.pump();
     expect(opened?.id, 'w');
-  });
-
-  testWidgets('back from the Chat, it is gone at once; to the Chat, a soft fade', (tester) async {
-    await tester.pumpWidget(Directionality(
-      textDirection: TextDirection.ltr,
-      child: MikkyUiTheme(
-        ui: MikkyUi.light,
-        child: Align(
-          alignment: Alignment.topLeft,
-          child: HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(3), animate: false, chat: (_) => const Text('nouvelle tâche')),
-        ),
-      ),
-    ));
-    await tester.tap(find.bySemanticsLabel('Chat'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 150));
-    // Halfway through the soft fade, the tiles are still leaving.
-    expect(find.byType(AppTile), findsWidgets);
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.bySemanticsLabel('Applications'));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 80));
-    expect(find.text('nouvelle tâche'), findsNothing);
-    await tester.pumpAndSettle();
   });
 
   testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (tester) async {
