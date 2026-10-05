@@ -19,7 +19,8 @@ const maxDone = 5;
 /// of their own (user, 2026-10-02). [recalled]: agents opened from the
 /// history, back among the finished ones, first. Paused agents get no
 /// state on their tile.
-/// [except]: the agent the notch shows beside Mikky.
+/// [except]: the agent the notch shows beside Mikky: not among the apps
+/// too (user, 2026-10-05: « ça fait redondant »).
 List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> recalled = const {}, String? except}) => [
   for (final e in _shown(entries, now, recalled))
     if (e.id != except)

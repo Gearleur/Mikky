@@ -40,11 +40,12 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
     WatchedTask(id: 'w', name: name, log: log, status: log.statusAt(log.lastEventAt ?? DateTime(2026)), app: app);
 
 /// The notch in its window, on a board, its Mikky in the task's state.
+/// The task he looks at is not among the apps, as in the app.
 Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps, bool chat = false, String? status, String? error}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
     layout: HomeLayout.top,
-    apps: apps,
+    apps: [for (final a in apps) if (a.name != watched?.name) a],
     watched: watched,
     animate: false,
     mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
