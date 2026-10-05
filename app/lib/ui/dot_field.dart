@@ -193,11 +193,11 @@ class _LivePainter extends CustomPainter {
   final List<PixelFxPalette> palettes;
 
   /// How many dots light up at once, at most; their cycle (seconds).
-  static const _twinkles = 12, _twinkleMin = 5.0, _twinkleMore = 4.0;
+  static const _twinkles = 20, _twinkleMin = 4.0, _twinkleMore = 4.0;
 
   /// A glitch every [_glitchEvery] seconds, somewhere in it; a firework
   /// every [_fireEvery], lasting [_fireLife].
-  static const _glitchEvery = 7.0, _fireEvery = 24.0, _fireLife = 2.6;
+  static const _glitchEvery = 4.5, _fireEvery = 15.0, _fireLife = 2.8;
 
   static double _h(int i) => pixelHash(i);
 
@@ -220,7 +220,7 @@ class _LivePainter extends CustomPainter {
       final fade = dots.fade[cell];
       if (fade < .4) continue;
       final glow = math.pow(math.sin(math.pi * u / .5), 2).toDouble();
-      paint.color = color.withValues(alpha: color.a * .9 * glow * fade);
+      paint.color = color.withValues(alpha: math.min(1, color.a * 1.6 * glow * fade));
       canvas.drawRect(_Dots.rect(cell % dots.cols, cell ~/ dots.cols), paint);
     }
 
@@ -228,7 +228,7 @@ class _LivePainter extends CustomPainter {
     // step, for a blink.
     final g = (t / _glitchEvery).floor();
     final gStart = g * _glitchEvery + _h(g * 3 + 1) * (_glitchEvery - 1.5);
-    final gLife = .12 + .28 * _h(g * 3 + 2);
+    final gLife = .2 + .4 * _h(g * 3 + 2);
     if (t >= gStart && t < gStart + gLife) {
       final flick = ((t - gStart) / .066).floor();
       if (_h(g * 31 + flick) > .3) {
@@ -240,9 +240,9 @@ class _LivePainter extends CustomPainter {
             final s = dots.strength[r * dots.cols + c];
             if (s == 0) continue;
             final a = color.a * s * dots.fade[r * dots.cols + c];
-            paint.color = color.withValues(alpha: a * .7);
+            paint.color = color.withValues(alpha: math.min(1, a * 1.2));
             canvas.drawRect(_Dots.rect(c, r), paint);
-            paint.color = color.withValues(alpha: a * .5);
+            paint.color = color.withValues(alpha: a * .8);
             canvas.drawRect(_Dots.rect(c, r, slip), paint);
           }
         }
@@ -262,7 +262,7 @@ class _LivePainter extends CustomPainter {
         final cy = (top + _h(f * 5 + 3) * (bottom - top)).roundToDouble();
         final palette = palettes[(_h(f * 5 + 4) * palettes.length).floor().clamp(0, palettes.length - 1)];
         final frame = const [0, 1, 2, 2][(fu * 4).floor().clamp(0, 3)];
-        final fade = (fu < .15 ? fu / .15 : fu > .55 ? (1 - fu) / .45 : 1.0) * .32;
+        final fade = (fu < .15 ? fu / .15 : fu > .55 ? (1 - fu) / .45 : 1.0) * .55;
         for (var dy = -half; dy <= half; dy++) {
           for (var dx = -half; dx <= half; dx++) {
             final level = pixelLevel(CalmFirework.frame(frame, dx, dy));
