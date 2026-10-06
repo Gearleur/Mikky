@@ -107,25 +107,31 @@ class IntroScene extends StatelessWidget {
   final double radius;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(size: size, painter: _IntroPainter(choreography, t, radius));
+  Widget build(BuildContext context) => CustomPaint(size: size, painter: IntroPainter(choreography, t, radius));
 }
 
-class _IntroPainter extends CustomPainter {
-  _IntroPainter(this.c, this.t, this.radius);
+/// An intro at [t]; on its white stage, or on the island ([stage]
+/// false: the island is the background, [theme] its own).
+class IntroPainter extends CustomPainter {
+  IntroPainter(this.c, this.t, this.radius, {this.stage = true, this.theme = MikkyTheme.light});
 
   final Choreography c;
   final double t;
   final double radius;
+  final bool stage;
+  final MikkyTheme theme;
 
   @override
   void paint(Canvas canvas, Size size) {
     // White, a touch warm at the bottom, like a lit floor.
-    canvas.drawRect(
-      Offset.zero & size,
-      Paint()
-        ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFFFFFFF), Color(0xFFF6F6F4)])
-            .createShader(Offset.zero & size),
-    );
+    if (stage) {
+      canvas.drawRect(
+        Offset.zero & size,
+        Paint()
+          ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0xFFFFFFFF), Color(0xFFF6F6F4)])
+              .createShader(Offset.zero & size),
+      );
+    }
     final r = radius;
     final ground = size.height * .8;
     // Where he is at [at]: his bottom on the ground (or `h` above it),
@@ -154,8 +160,9 @@ class _IntroPainter extends CustomPainter {
     MikkyPainter(
       geometry: g,
       center: Offset(x, y),
-      statusColor: MikkyTheme.light.status,
-      foreground: MikkyTheme.light.foreground,
+      rim: theme.mikkyRim,
+      statusColor: theme.status,
+      foreground: theme.foreground,
       showBadge: false,
     ).paint(canvas, size);
     if (power > .01) {
@@ -235,11 +242,12 @@ class _IntroPainter extends CustomPainter {
     canvas.drawOval(
       Rect.fromCenter(center: at + const Offset(0, 2), width: w, height: w * .2),
       Paint()
-        ..color = Color.fromRGBO(0, 0, 0, .2 * (1 - .6 * far) * amount)
+        // On the dark island, a faint light under him instead.
+        ..color = (theme.isLight ? const Color(0xFF000000) : const Color(0xFFFFFFFF)).withValues(alpha: (theme.isLight ? .2 : .07) * (1 - .6 * far) * amount)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, radius * .12),
     );
   }
 
   @override
-  bool shouldRepaint(_IntroPainter old) => old.t != t || old.c != c || old.radius != radius;
+  bool shouldRepaint(IntroPainter old) => old.t != t || old.c != c || old.radius != radius || old.stage != stage || old.theme != theme;
 }
