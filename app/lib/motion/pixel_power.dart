@@ -71,8 +71,9 @@ class _PixelPowerPainter extends CustomPainter {
   final double radius;
   final Size size;
 
-  /// Each picture drawn once: thousands of pixels each.
-  static final _pictures = <(PixelPowerStyle, PixelFxPalette, double, Size), ui.Picture>{};
+  /// Each one drawn once into an image (thousands of pixels: drawn again
+  /// at each frame, they made the board lag), shared by both themes.
+  static final _images = <(PixelPowerStyle, PixelFxPalette, double, Size), ui.Image>{};
 
   /// 4 × 4 ordered dither.
   static const _bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -80,12 +81,16 @@ class _PixelPowerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size _) {
-    final picture = _pictures.putIfAbsent((style, palette, radius, size), () {
+    final image = _images.putIfAbsent((style, palette, radius, size), () {
       final recorder = ui.PictureRecorder();
       _draw(Canvas(recorder));
-      return recorder.endRecording();
+      final picture = recorder.endRecording();
+      final image = picture.toImageSync(size.width.ceil(), size.height.ceil());
+      picture.dispose();
+      return image;
     });
-    canvas.drawPicture(picture);
+    // Its pixels kept sharp when the screen scales it.
+    canvas.drawImage(image, Offset.zero, Paint()..filterQuality = FilterQuality.none);
   }
 
   void _draw(Canvas canvas) {

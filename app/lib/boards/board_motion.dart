@@ -4,7 +4,6 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
-import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
 
@@ -68,7 +67,7 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les courbes',
-      note: 'Comment une valeur va d’un point à un autre (`Easings`, `SpringSpec`) : la courbe, et un point qui la suit. Les ressorts sont ceux de l’app, joués exactement.',
+      note: 'Comment une valeur va d’un point à un autre (`Easings`, `SpringSpec`) : la courbe, et des points à intervalles de temps égaux, sur elle et sur une ligne dessous (serrés : lent ; écartés : rapide). Les ressorts sont ceux de l’app, joués exactement.',
       frames: [
         for (final (name, note, ease) in _curves) BoardFrame(label: name, note: note, width: 200, child: _Curve(ease)),
       ],
@@ -85,7 +84,7 @@ final motionBoard = BoardSpec(
             ('Les ressorts', '`Easings.spring` joue un ressort exactement (ses rebonds et son arrêt) sur une durée donnée, pour qu’il ait sa place dans une chorégraphie.'),
             ('Les particules', '`Burst` : des étincelles tirées au sort une fois (graine fixe), donc les mêmes à chaque fois, avec leur freinage et leur gravité ; on dessine n’importe quel instant.'),
             ('Mikky posé', '`MikkyGeometry.posed` dessine Mikky dans la pose qu’on lui donne, sans sa vie propre (clignements, souffle) : la chorégraphie décide de tout.'),
-            ('Performance', 'Le lecteur ne tourne que pendant la lecture, et pas du tout quand Windows demande moins d’animations : il montre alors un instant fixe.'),
+            ('Performance', 'Le lecteur ne tourne que quand on appuie sur lecture, et jamais quand Windows demande moins d’animations ; pendant la lecture, seuls la scène et le curseur se redessinent, chacun dans sa couche. Chaque cadre des planches a sa couche, et les sprites en pixels sont dessinés une fois en image.'),
           ]),
         ),
       ],
@@ -93,25 +92,21 @@ final motionBoard = BoardSpec(
   ],
 );
 
-/// One curve, and a dot going along it, again and again.
+/// One curve, still: dots at equal times along it and along a line under
+/// it show its pace (close: slow; apart: fast).
 class _Curve extends StatelessWidget {
   const _Curve(this.ease);
 
   final Easing ease;
 
   @override
-  Widget build(BuildContext context) => Looping(
-        period: const Duration(milliseconds: 2200),
-        frozenAt: .45,
-        builder: (context, t) => CustomPaint(size: const Size(200, 120), painter: _CurvePainter(ease, (t * 1.4).clamp(0.0, 1.0), MikkyUi.of(context))),
-      );
+  Widget build(BuildContext context) => CustomPaint(size: const Size(200, 120), painter: _CurvePainter(ease, MikkyUi.of(context)));
 }
 
 class _CurvePainter extends CustomPainter {
-  _CurvePainter(this.ease, this.q, this.ui);
+  _CurvePainter(this.ease, this.ui);
 
   final Easing ease;
-  final double q;
   final MikkyUi ui;
 
   @override
@@ -133,15 +128,19 @@ class _CurvePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.6
       ..color = ui.text2);
-    canvas.drawCircle(at(q, ease(q)), 4, Paint()..color = ui.blue);
-    // The same value, as a move from left to right, under it.
     final y = size.height - 8;
     canvas.drawLine(Offset(pad, y), Offset(pad + w, y), guide);
-    canvas.drawCircle(Offset(pad + ease(q) * w, y), 4.5, Paint()..color = ui.text);
+    final dot = Paint()..color = ui.blue;
+    final move = Paint()..color = ui.text;
+    for (var i = 0; i <= 10; i++) {
+      final q = i / 10;
+      canvas.drawCircle(at(q, ease(q)), 2.5, dot);
+      canvas.drawCircle(Offset(pad + ease(q) * w, y), 3, move);
+    }
   }
 
   @override
-  bool shouldRepaint(_CurvePainter old) => old.q != q || old.ui != ui;
+  bool shouldRepaint(_CurvePainter old) => old.ease != ease || old.ui != ui;
 }
 
 /// The pixel styles of his powers in rows, the colors in columns.
