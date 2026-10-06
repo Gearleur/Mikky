@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
+import '../motion/feet.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
@@ -60,6 +61,12 @@ final motionBoard = BoardSpec(
             child: ClipRRect(borderRadius: BorderRadius.circular(12), child: PoseScene(pose, 0, size: const Size(200, 160), radius: 38)),
           ),
       ],
+    ),
+    BoardSection(
+      title: 'Les pieds',
+      note: 'D’après les pieds de Kirby : deux ovales un peu gros, devant le bas de son corps, de son noir. Quatre formes, et trois façons de les voir sur lui sans changer leur couleur : un trait, un reflet, les deux.',
+      kind: FrameKind.trial,
+      frames: [BoardFrame(label: 'Quatre formes, trois façons de les voir', child: _FeetGrid())],
     ),
     BoardSection(
       title: 'Ses pouvoirs · en pixels',
@@ -219,6 +226,53 @@ class _PixelPowerGrid extends StatelessWidget {
                   ),
               ]),
             ),
+      ],
+    );
+  }
+}
+
+/// The feet: their shapes in rows, the ways to see them in columns.
+class _FeetGrid extends StatelessWidget {
+  const _FeetGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(width: 160),
+          for (final look in FootLook.values)
+            SizedBox(
+              width: 194,
+              child: Column(children: [
+                Text(look.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+                const SizedBox(height: 2),
+                Text(look.note, style: uiText(11, color: ui.text3), textAlign: TextAlign.center),
+                const SizedBox(height: 6),
+              ]),
+            ),
+        ]),
+        for (final shape in FootShape.values)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              SizedBox(
+                width: 160,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(shape.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+                  const SizedBox(height: 2),
+                  Text(shape.note, style: uiText(11, color: ui.text3)),
+                ]),
+              ),
+              for (final look in FootLook.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: FeetScene(shape, look, size: const Size(190, 150), radius: 38)),
+                ),
+            ]),
+          ),
       ],
     );
   }
