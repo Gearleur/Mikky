@@ -53,19 +53,29 @@ void main() {
     final pose = MikkyPose();
     double widest(MikkyGeometry g) => [for (var i = 0; i < g.contour.length; i += 2) g.contour[i].abs()].reduce(math.max);
     final still = MikkyGeometry.posed(pose, 40);
-    expect(still.arms, isEmpty);
     pose[MikkyProp.arms] = 1;
-    double meanX(List<double> p) => [for (var i = 0; i < p.length; i += 2) p[i]].reduce((a, b) => a + b) / (p.length / 2);
-    // The stumps: a tube and an end on each side.
-    final stumps = MikkyGeometry.posed(pose, 40, arms: ArmStyle.nub).arms;
-    expect(stumps, hasLength(4));
-    expect(meanX(stumps.first), lessThan(0));
-    expect(meanX(stumps.last), greaterThan(0));
-    // The others grow out of his outline.
-    for (final style in ArmStyle.values.where((s) => s != ArmStyle.nub)) {
+    // Each style pushes his outline out somewhere, by a few pixels.
+    for (final style in ArmStyle.values) {
       final g = MikkyGeometry.posed(pose, 40, arms: style);
-      expect(g.arms, isEmpty, reason: '$style');
-      expect(widest(g), greaterThan(widest(still) + 5), reason: '$style');
+      var most = 0.0;
+      for (var i = 0; i < g.contour.length; i += 2) {
+        most = math.max(most, math.sqrt(math.pow(g.contour[i] - still.contour[i], 2) + math.pow(g.contour[i + 1] - still.contour[i + 1], 2)));
+      }
+      expect(most, greaterThan(7), reason: '$style');
     }
+    expect(widest(MikkyGeometry.posed(pose, 40)), greaterThan(widest(still) + 5));
+    // Raised, the right arm turns up from where it grows: its outline
+    // goes up, on the right only.
+    final rest = MikkyGeometry.posed(pose, 40);
+    pose[MikkyProp.armRightLift] = 1.2;
+    final up = MikkyGeometry.posed(pose, 40);
+    var rightUp = 0.0, leftMoved = 0.0;
+    for (var i = 0; i < up.contour.length; i += 2) {
+      final dy = up.contour[i + 1] - rest.contour[i + 1];
+      if (rest.contour[i] > 0) rightUp += dy;
+      if (rest.contour[i] < 0) leftMoved += dy.abs();
+    }
+    expect(rightUp, lessThan(-50));
+    expect(leftMoved, closeTo(0, 1e-6));
   });
 }

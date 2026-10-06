@@ -22,28 +22,23 @@ abstract final class MikkyShape {
   static const eyeBaseHeight = .50; // × R, × elongation
 }
 
-/// How his arms are drawn (trials, 2026-10-06). The stumps were the best
-/// of the first five (« les moignons c'est ce qu'il y a de mieux »); the
-/// others are ideas after the Luma of Mario Galaxy (« qui ressemble à Luma
-/// mais pas vraiment Luma »): arms that are part of his outline, grown
-/// out of it with no seam, like his ears.
+/// How his arms are drawn (trials, 2026-10-06). Of all the ideas the
+/// melted stumps were kept (« les moignons fondus et les pointes sont les
+/// meilleurs », then « on va garder les moignons fondus uniquement »):
+/// arms grown out of his outline with no seam, like his ears; here, the
+/// melted stumps and three variants of them.
 enum ArmStyle {
-  /// Short, thick and round stumps, joined to him.
-  nub,
-
-  /// Small points that grow out of his sides and lift a little, like a
-  /// Luma's: the outline bends into them with no seam.
-  star,
-
-  /// Rounded stumps grown out of his outline, no seam: the stumps,
-  /// melted into him.
+  /// Rounded at the end, grown out of his sides with no seam.
   soft,
 
-  /// Wide, soft flippers, a little low.
-  fin,
+  /// Plumper: a round, wider end on a narrower base.
+  plump,
 
-  /// The points, and two tiny feet under him, like a Luma.
-  starFeet,
+  /// Tapering to a soft, narrower end.
+  tapered,
+
+  /// Smaller and lower on his sides, like a seated cat's.
+  low,
 }
 
 /// One eye, in the body's local frame (before the body transform).
@@ -88,7 +83,6 @@ class MikkyGeometry {
     required this.time,
     required this.contour,
     required this.satellites,
-    required this.arms,
     required this.eyes,
     required this.translateX,
     required this.translateY,
@@ -113,9 +107,6 @@ class MikkyGeometry {
   /// [contour]. Eyes are only on [contour].
   final List<Float64List> satellites;
 
-  /// His arms and hands, when out: same format and transform as
-  /// [contour], one with his body (the eyes stay on [contour]).
-  final List<Float64List> arms;
   final List<EyeGeometry> eyes;
   final double translateX, translateY, tilt, scaleX, scaleY;
 
@@ -156,7 +147,7 @@ class MikkyGeometry {
     EyeShape eyeRight = EyeShape.oval,
     MikkyForm form = MikkyForm.cat,
     double morph = 0,
-    ArmStyle arms = ArmStyle.nub,
+    ArmStyle arms = ArmStyle.soft,
     int points = 360,
     MikkyTuning? tuning,
   }) =>
@@ -183,7 +174,7 @@ class MikkyGeometry {
     required EyeShape eyeLeft,
     required EyeShape eyeRight,
     required MikkyBadge? badge,
-    ArmStyle armStyle = ArmStyle.nub,
+    ArmStyle armStyle = ArmStyle.soft,
     required List<MikkyParticle> particles,
     required double radius,
     required int points,
@@ -245,7 +236,7 @@ class MikkyGeometry {
 
     // Arms grown out of the outline (every style but the stumps).
     final armsOut = p[MikkyProp.arms].clamp(0.0, 1.0);
-    final lobes = armStyle == ArmStyle.nub || armsOut <= .01
+    final lobes = armsOut <= .01
         ? const <_Lobe>[]
         : [
             for (final side in const [-1.0, 1.0])
@@ -253,13 +244,10 @@ class MikkyGeometry {
                 armStyle,
                 side,
                 armsOut,
-                side < 0 ? p[MikkyProp.handLeftX] : p[MikkyProp.handRightX],
-                side < 0 ? p[MikkyProp.handLeftY] : p[MikkyProp.handRightY],
-                side < 0 ? p[MikkyProp.handLeftTurn] : p[MikkyProp.handRightTurn],
+                side < 0 ? p[MikkyProp.armLeftLift] : p[MikkyProp.armRightLift],
+                side < 0 ? p[MikkyProp.armLeftGrow] : p[MikkyProp.armRightGrow],
                 r,
               ),
-            if (armStyle == ArmStyle.starFeet)
-              for (final side in const [-1.0, 1.0]) _Lobe(math.pi / 2 - side * .55, .17 * r * armsOut, .3, _Lobe.round),
           ];
 
     final contour = Float64List((points + 1) * 2);
@@ -289,17 +277,14 @@ class MikkyGeometry {
       x *= fluff;
       y *= fluff;
       if (lobes.isNotEmpty) {
-        // Out along his outline's own direction, so the arm grows out of
-        // it; gone as he turns into another form.
+        // Each arm pushes his outline out where it grows, toward where the
+        // arm points: raised, it leans up from its shoulder. Gone as he
+        // turns into another form.
         final at = math.atan2(ry * py, rx * px);
-        var grow = 0.0;
         for (final lobe in lobes) {
-          grow += lobe.at(at);
-        }
-        grow *= 1 - w;
-        if (grow > 0) {
-          x += math.cos(at) * grow;
-          y += math.sin(at) * grow;
+          final (dx, dy) = lobe.push(at);
+          x += dx * (1 - w);
+          y += dy * (1 - w);
         }
       }
       if (heart != 0 && py > 0) {
@@ -356,30 +341,11 @@ class MikkyGeometry {
         _furBall(.03 * r * _easeOut(w), (.88 + math.sin(t * 2.2 + .8) * .035) * r * _easeOut(w), .27 * r * w, t, 120),
     ];
 
-    // His arms: tucked into his body, they come out of his sides and hang
-    // there; from there the hands go where the pose sends them.
-    final show = p[MikkyProp.arms].clamp(0.0, 1.0);
-    final arms = <Float64List>[
-      if (show > .01 && armStyle == ArmStyle.nub)
-        for (final side in const [-1.0, 1.0])
-          ..._arm(
-            side,
-            show,
-            side < 0 ? p[MikkyProp.handLeftX] : p[MikkyProp.handRightX],
-            side < 0 ? p[MikkyProp.handLeftY] : p[MikkyProp.handRightY],
-            side < 0 ? p[MikkyProp.handLeftTurn] : p[MikkyProp.handRightTurn],
-            r,
-            t,
-            armStyle,
-          ),
-    ];
-
     return MikkyGeometry._(
       radius: r,
       time: t,
       contour: contour,
       satellites: satellites,
-      arms: arms,
       eyes: eyes,
       translateX: p.offsetX * r,
       translateY: p.offsetY * r,
@@ -442,98 +408,59 @@ double _lumpy(double th, double t, double seed) =>
   return (x * g, cy + (y - cy) * g + math.sin(t * 2.2) * .03);
 }
 
-/// One stump, on [side] (-1 left), [show] out of his body: a short thick
-/// tube from his shoulder toward the hand, and a round end; [hx], [hy]
-/// move the hand from its place (units of [r]), [turn] turns it. The
-/// parts overlap: they are joined when drawn.
-List<Float64List> _arm(double side, double show, double hx, double hy, double turn, double r, double t, ArmStyle style) {
-  // The shoulder, inside his side; the hand tucked in, then hanging
-  // beside him; short: it stays near the body.
-  final sx = side * .84 * r, sy = .12 * r;
-  final hxFull = side * (.7 + .42 * show) * r + hx * r, hyFull = (.3 + .32 * show) * r + hy * r;
-  final ex = sx + (hxFull - sx) * .58, ey = sy + (hyFull - sy) * .58;
-  const w0 = .36, w1 = .3;
-  const n = 20;
-  final left = <double>[], right = <double>[];
-  final dx = ex - sx, dy = ey - sy;
-  final len = math.max(1e-6, math.sqrt(dx * dx + dy * dy));
-  final nx = -dy / len, ny = dx / len;
-  for (var i = 0; i <= n; i++) {
-    final q = i / n;
-    final bx = sx + dx * q, by = sy + dy * q;
-    final half = (w0 + (w1 - w0) * q) * r / 2;
-    left.addAll([bx + nx * half, by + ny * half]);
-    right.addAll([bx - nx * half, by - ny * half]);
-  }
-  final tube = Float64List(left.length + right.length)..setAll(0, left);
-  for (var i = 0; i < right.length ~/ 2; i++) {
-    final j = right.length ~/ 2 - 1 - i;
-    tube[left.length + i * 2] = right[j * 2];
-    tube[left.length + i * 2 + 1] = right[j * 2 + 1];
-  }
-  return [tube, _blob(ex, ey, w1 / 2 * r, w1 / 2 * r, math.atan2(dy, dx) + turn, t, side)];
-}
-
-/// A bump grown out of his outline (an arm, a foot): around the angle
-/// [angle] (from his center, y down), [length] pixels out at its middle,
-/// [halfWidth] radians to each side, with the [profile] of its shape.
+/// An arm grown out of his outline: around the angle [anchor] where it
+/// grows (from his center, y down), [halfWidth] radians to each side, the
+/// outline is pushed [length] pixels at its middle (by [profile]) in the
+/// direction [direction]: straight out at rest, up when the arm is raised,
+/// so it turns from its shoulder instead of sliding along him.
 class _Lobe {
-  const _Lobe(this.angle, this.length, this.halfWidth, this.profile);
+  const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile);
 
-  /// An arm of [style] on [side]: where its hand is (as for the stumps:
-  /// [hx], [hy] from its place at his side) gives its direction, and how
-  /// far, its length; [turn] bends it a little more (a wave).
-  factory _Lobe.arm(ArmStyle style, double side, double show, double hx, double hy, double turn, double r) {
-    final (rest, length, halfWidth, profile) = switch (style) {
-      ArmStyle.star || ArmStyle.starFeet => (.02, .36, .3, point),
-      ArmStyle.soft => (.12, .32, .36, round),
-      ArmStyle.fin => (.42, .3, .55, flat),
-      ArmStyle.nub => (0.0, 0.0, .5, round),
+  /// The arm of [style] on [side], [show] out of him, [lift] raised (up
+  /// > 0), [grow] bigger.
+  factory _Lobe.arm(ArmStyle style, double side, double show, double lift, double grow, double r) {
+    // Where it grows (a little below his middle), how long, how wide, and
+    // its shape; at rest it points a little down.
+    final (anchor, length, halfWidth, profile, rest) = switch (style) {
+      ArmStyle.soft => (.12, .32, .36, round, .1),
+      ArmStyle.plump => (.12, .3, .34, plump, .1),
+      ArmStyle.tapered => (.1, .36, .38, tapered, .1),
+      ArmStyle.low => (.42, .25, .3, round, .25),
     };
-    // On the right side, then mirrored: where the hand is, seen from his
-    // center.
-    final tx = math.cos(rest) * 1.15 + hx * side, ty = math.sin(rest) * 1.15 + hy;
-    // Not over his ears, not under him.
-    final a = (math.atan2(ty, tx) + turn * .5).clamp(-.35, 1.2);
-    final reach = math.pow((math.sqrt(tx * tx + ty * ty) / 1.15).clamp(.6, 1.6), .6).toDouble();
-    return _Lobe(side > 0 ? a : math.pi - a, length * r * show * reach, halfWidth, profile);
+    // On the right side, then mirrored. Raised, it gets a little bigger.
+    final up = lift.clamp(-.6, 1.4);
+    final dir = anchor + rest - up;
+    final bigger = 1 + grow + .12 * math.max(0.0, math.sin(up));
+    return _Lobe(
+      side > 0 ? anchor : math.pi - anchor,
+      side > 0 ? dir : math.pi - dir,
+      length * r * show * bigger,
+      halfWidth * (1 + .5 * (bigger - 1)),
+      profile,
+    );
   }
 
-  final double angle, length, halfWidth;
+  final double anchor, direction, length, halfWidth;
   final double Function(double u) profile;
-
-  /// A point with soft, hollow sides: it grows out of the outline with no
-  /// seam (a Luma's arms).
-  static double point(double u) => math.pow(1 - u, 1.35).toDouble();
 
   /// Round at the end, no seam at the base.
   static double round(double u) => math.pow(1 - u * u, 2).toDouble();
 
-  /// Wide and flat at the end: a flipper.
-  static double flat(double u) => math.pow(math.cos(u * math.pi / 2), 1.1).toDouble();
+  /// A wider, rounder end.
+  static double plump(double u) => math.pow(1 - math.pow(u, 3), 2.2).toDouble();
 
-  /// How far the outline goes out at the angle [at].
-  double at(double at) {
-    var d = (at - angle) % (2 * math.pi);
+  /// A softly narrowing end.
+  static double tapered(double u) => math.pow(1 - math.pow(u, 1.4), 2).toDouble();
+
+  /// How far, and which way, the outline at the angle [at] is pushed.
+  (double, double) push(double at) {
+    var d = (at - anchor) % (2 * math.pi);
     if (d > math.pi) d -= 2 * math.pi;
     final u = d.abs() / halfWidth;
-    return u >= 1 ? 0 : length * profile(u);
+    if (u >= 1) return (0, 0);
+    final out = length * profile(u);
+    return (math.cos(direction) * out, math.sin(direction) * out);
   }
-}
-
-/// A small soft oval (a hand), lopsided like him, [fur] for a tuft.
-Float64List _blob(double cx, double cy, double rx, double ry, double angle, double t, double seed, {double fur = .02}) {
-  const n = 40;
-  final out = Float64List((n + 1) * 2);
-  final c = math.cos(angle), s = math.sin(angle);
-  for (var i = 0; i <= n; i++) {
-    final th = i / n * math.pi * 2;
-    final f = (1 + _fur(th, t + seed, fur)) * (1 + .5 * (_lumpy(th, t, seed + 4) - 1));
-    final x = math.cos(th) * rx * f, y = math.sin(th) * ry * f;
-    out[i * 2] = cx + x * c - y * s;
-    out[i * 2 + 1] = cy + x * s + y * c;
-  }
-  return out;
 }
 
 /// Outline of a small, lopsided, softly furry ball, in pixels.

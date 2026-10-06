@@ -3,6 +3,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
+import '../motion/particles.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
@@ -26,13 +27,12 @@ final motionBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Le lancement',
-      note: 'Quand Mikky démarre : l’île sort du haut de l’écran, Mikky y arrive, dit coucou, et ils repartent. Trois essais, chacun une chorégraphie écrite à la main (comme la salutation de Mochi) : la barre de temps va à n’importe quel instant (clic ou glisser), ×0,25 pour le ralenti ; sous la barre, ses moments et les courbes de quelques pistes.',
+      note: 'Quand Mikky démarre : l’île sort du haut de l’écran, Mikky y arrive, dit coucou, et ils repartent. Deux essais (sans les bras pour l’instant), chacun une chorégraphie écrite à la main (comme la salutation de Mochi) : la barre de temps va à n’importe quel instant (clic ou glisser), ×0,25 pour le ralenti ; sous la barre, ses moments et les courbes de quelques pistes.',
       kind: FrameKind.trial,
       frames: [
         for (final (c, note, curves) in [
           (Launches.fall, 'Il tombe du haut de l’écran avec des traînées, atterrit écrasé dans un anneau de poussière, rebondit, regarde à gauche et à droite, coucou des oreilles.', ['ih', 'y', 'scaleY', 'yaw']),
           (Launches.hatch, 'Une petite boule de poils arrive en tournant, tremble, et éclot en Mikky parmi trois petits feux d’artifice ; il ouvre les yeux, ses oreilles sortent l’une après l’autre, coucou avec un saut.', ['furball', 'scaleY', 'open', 'earLeft']),
-          (Launches.arms, 'Il grimpe depuis le bas de l’île : les oreilles, puis les yeux, il regarde ; ses mains s’accrochent au bord, il se hisse, et fait coucou de la main (bras souples).', ['y', 'arms', 'handRightY', 'handRightX']),
         ])
           BoardFrame(
             label: c.name,
@@ -48,45 +48,34 @@ final motionBoard = BoardSpec(
       ],
     ),
     BoardSection(
-      title: 'Les bras · moignons et idées de Luma',
-      note: 'Les moignons, gardés des cinq premiers dessins, et des idées d’après le Luma de Mario Galaxy, sans le copier : des bras qui sortent de son contour, sans jointure, comme ses oreilles. Tous font la même chose : ils sortent de ses côtés, font coucou, montrent la tâche, youpi, et rentrent dans son corps.',
+      title: 'Les bras · moignons fondus',
+      note: 'Gardés de tous les essais : des bras sortis de son contour, sans jointure, comme ses oreilles ; et trois variantes. Des poses fixes seulement (« juste des keyframes ») : on les animera quand elles seront bonnes. Levé, un bras tourne depuis l’endroit où il pousse, un peu plus gros ; il ne glisse jamais vers le haut.',
       kind: FrameKind.trial,
-      frames: [
-        for (final style in ArmStyle.values)
-          BoardFrame(
-            label: ArmLoops.names[style]!,
-            note: ArmLoops.notes[style],
-            width: 300,
-            child: MotionPlayer(
-              choreography: ArmLoops.tour,
-              width: 300,
-              poster: 1.5,
-              scene: (context, t) => PoseScene(ArmLoops.tour, t, size: const Size(300, 180), arms: style),
-            ),
-          ),
-      ],
+      frames: [BoardFrame(label: 'Quatre dessins, quatre poses', child: _ArmGrid())],
     ),
     BoardSection(
-      title: 'Les bras · côte à côte',
-      note: 'Les mêmes, figés aux mêmes instants, pour comparer.',
+      title: 'Ses pouvoirs · les couleurs',
+      note: 'Comme le Luma qui reste rouge fluo quand il utilise ses pouvoirs : Mikky allumé de l’intérieur, presque blanc au milieu, lumineux, un peu transparent, un halo autour. Juste des couleurs, pas d’animation ; en haut ses yeux blancs, en bas sombres comme le Luma.',
       kind: FrameKind.trial,
-      frames: [BoardFrame(label: 'Côte à côte', child: _ArmGrid())],
+      frames: [BoardFrame(label: 'Huit couleurs', child: _PowerGrid())],
     ),
     BoardSection(
-      title: 'Ses pouvoirs',
-      note: 'Comme le Luma qui reste rouge fluo quand il utilise ses pouvoirs : Mikky se concentre, éclate en couleur parmi des étincelles, flotte en brillant un moment, puis redevient noir. Avec les pointes. Quatre couleurs à essayer ; on pourrait lier la couleur à ce qu’il fait.',
+      title: 'Les particules',
+      note: 'Des particules seules, à placer plus tard là où elles vont bien : chacune une boucle, dessinée en fonction du temps (graine fixe : les mêmes à chaque fois).',
       kind: FrameKind.trial,
       frames: [
-        for (final (name, note, look) in PowerLoops.looks)
+        for (final e in ParticleEffect.values)
           BoardFrame(
-            label: name,
-            note: note,
-            width: 300,
-            child: MotionPlayer(
-              choreography: PowerLoops.power,
-              width: 300,
-              poster: 2.2,
-              scene: (context, t) => PoseScene(PowerLoops.power, t, size: const Size(300, 190), arms: ArmStyle.star, power: look),
+            label: e.label,
+            note: e.note,
+            width: 260,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Looping(
+                period: e.period,
+                frozenAt: .35,
+                builder: (context, t) => ParticlesScene(e, t * e.period.inMilliseconds / 1000),
+              ),
             ),
           ),
       ],
@@ -169,7 +158,7 @@ class _CurvePainter extends CustomPainter {
   bool shouldRepaint(_CurvePainter old) => old.q != q || old.ui != ui;
 }
 
-/// The arm styles in rows, the same instants in columns.
+/// The arm styles in rows, the poses in columns.
 class _ArmGrid extends StatelessWidget {
   const _ArmGrid();
 
@@ -181,21 +170,64 @@ class _ArmGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          const SizedBox(width: 110),
-          for (final (name, _) in ArmLoops.stills) SizedBox(width: 160, child: Center(child: Text(name, style: label))),
+          const SizedBox(width: 150),
+          for (final pose in ArmPoses.all) SizedBox(width: 184, child: Center(child: Text(pose.name, style: label))),
         ]),
         const SizedBox(height: 6),
         for (final style in ArmStyle.values)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(children: [
-              SizedBox(width: 110, child: Text(ArmLoops.names[style]!, style: label)),
-              for (final (_, t) in ArmLoops.stills)
+              SizedBox(
+                width: 150,
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(ArmPoses.names[style]!, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+                  const SizedBox(height: 2),
+                  Text(ArmPoses.notes[style]!, style: uiText(11.5, color: ui.text3)),
+                ]),
+              ),
+              for (final pose in ArmPoses.all)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(10),
-                    child: PoseScene(ArmLoops.tour, t, size: const Size(156, 120), arms: style, radius: 26),
+                    child: PoseScene(pose, 0, size: const Size(180, 140), arms: style, radius: 32),
+                  ),
+                ),
+            ]),
+          ),
+      ],
+    );
+  }
+}
+
+/// His powers' colors in columns, white then dark eyes in rows.
+class _PowerGrid extends StatelessWidget {
+  const _PowerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final label = uiText(TextSize.label, color: ui.text2);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const SizedBox(width: 110),
+          for (final (name, _) in Powers.colors) SizedBox(width: 154, child: Center(child: Text(name, style: label))),
+        ]),
+        const SizedBox(height: 6),
+        for (final (rowName, dark) in const [('Yeux blancs', false), ('Yeux sombres', true)])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              SizedBox(width: 110, child: Text(rowName, style: label)),
+              for (final (_, color) in Powers.colors)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: PoseScene(Powers.pose, 0, size: const Size(150, 130), radius: 30, power: (color: color, darkEyes: dark)),
                   ),
                 ),
             ]),

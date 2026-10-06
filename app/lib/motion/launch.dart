@@ -23,7 +23,7 @@ abstract final class Launches {
   /// The island while it greets, and Mikky's place in it.
   static const width = 340.0, height = 116.0, restY = 62.0, radius = 27.0;
 
-  static final all = [fall, hatch, arms];
+  static final all = [fall, hatch];
 
   static List<Beat> _islandIn(String track, double to) => [Beat(0, track == 'iw' ? 150 : 0), Beat(.5, to, Easings.back)];
 
@@ -127,174 +127,61 @@ abstract final class Launches {
       'happy': const [Beat(3.3, 0), Beat(3.31, 1, Easings.linear), Beat(4.6, 1), Beat(4.61, 0, Easings.linear)],
     },
   );
-
-  /// « Les bras »: he climbs up from the bottom of the island: his ears
-  /// first, then his eyes, he looks around; his hands grab the edge, he
-  /// pulls himself up, and waves.
-  static final arms = Choreography(
-    name: 'Les bras',
-    duration: 6.3,
-    marks: const [
-      Mark(0, 'l’île sort'),
-      Mark(.95, 'les oreilles'),
-      Mark(1.9, 'les yeux'),
-      Mark(3.0, 'les mains'),
-      Mark(3.3, 'se hisse'),
-      Mark(3.85, 'atterrit'),
-      Mark(4.1, 'coucou'),
-      Mark(5.6, 'repart'),
-    ],
-    tracks: {
-      'iw': [..._islandIn('iw', width), ..._islandOut(5.7, 'iw')],
-      'ih': [..._islandIn('ih', height), ..._islandOut(5.7, 'ih')],
-      'y': const [
-        Beat(.6, 152),
-        Beat(.95, 124, Easings.out),
-        Beat(1.6, 124),
-        Beat(1.9, 104, Easings.inOut),
-        Beat(3.25, 104),
-        Beat(3.36, 110, Easings.out),
-        Beat(3.66, restY - 18, Easings.out),
-        Beat(3.85, restY + 3, Easings.inCubic),
-        Beat(4.0, restY, Easings.out),
-        Beat(5.6, restY),
-        Beat(6.15, restY + 95, Easings.inCubic),
-      ],
-      'scaleY': const [Beat(3.3, 1), Beat(3.36, .9, Easings.out), Beat(3.55, 1.16, Easings.out), Beat(3.75, 1), Beat(3.87, .82, Easings.out), Beat(4.1, 1, Easings.back)],
-      'scaleX': const [Beat(3.3, 1), Beat(3.36, 1.08, Easings.out), Beat(3.55, .9, Easings.out), Beat(3.75, 1), Beat(3.87, 1.16, Easings.out), Beat(4.1, 1, Easings.back)],
-      'earLeft': [const Beat(1.15, 0), ...Choreography.wiggle(1.15, 1.45, 0, .5, 1)],
-      'earRight': [const Beat(1.3, 0), ...Choreography.wiggle(1.3, 1.6, 0, .5, 1)],
-      'open': const [Beat(2.6, 1), Beat(2.67, .06), Beat(2.8, 1, Easings.out)],
-      'yaw': const [Beat(2.0, 0), Beat(2.25, -.5), Beat(2.45, -.5), Beat(2.75, .5), Beat(2.9, .5), Beat(3.05, 0)],
-      'pitch': const [Beat(1.9, .2), Beat(3.0, .2), Beat(3.2, 0)],
-      // His hands on the edge of the island, just above its bottom, then
-      // hanging once he is up; the right one waves.
-      'arms': const [Beat(2.95, 0), Beat(3.12, 1, Easings.back), Beat(5.45, 1), Beat(5.7, 0, Easings.inOut)],
-      'handLeftX': const [Beat(2.95, .3), Beat(3.4, .3), Beat(3.75, 0, Easings.inOut)],
-      'handLeftY': const [Beat(2.95, -.4), Beat(3.4, -.4), Beat(3.75, 0, Easings.inOut)],
-      'handRightX': [
-        const Beat(2.95, -.3),
-        const Beat(3.4, -.3),
-        const Beat(3.75, 0, Easings.inOut),
-        const Beat(4.1, 0),
-        const Beat(4.4, .23, Easings.back),
-        ...Choreography.wiggle(4.4, 5.15, .23, .14, 3),
-        const Beat(5.4, 0, Easings.inOut),
-      ],
-      'handRightY': const [Beat(2.95, -.4), Beat(3.4, -.4), Beat(3.75, 0, Easings.inOut), Beat(4.1, 0), Beat(4.4, -1.17, Easings.back), Beat(5.15, -1.17), Beat(5.4, 0, Easings.inOut)],
-      'handRightTurn': [const Beat(4.4, 0), ...Choreography.wiggle(4.4, 5.15, 0, .35, 3)],
-      'tilt': const [Beat(4.1, 0), Beat(4.4, -.12), Beat(5.15, -.12), Beat(5.4, 0)],
-      'happy': const [Beat(4.1, 0), Beat(4.11, 1, Easings.linear), Beat(5.2, 1), Beat(5.21, 0, Easings.linear)],
-    },
-  );
 }
 
-/// His arms on their own (2026-10-06, « des bras plutôt » than paws):
-/// one loop that goes through what they could do, played by each
-/// [ArmStyle].
-abstract final class ArmLoops {
-  /// Out of his body, hello, the task beside him, hooray, back in.
-  static final tour = Choreography(
-    name: 'Les bras',
-    duration: 6.2,
-    marks: const [Mark(.1, 'sortent'), Mark(.7, 'coucou'), Mark(2.3, 'montre'), Mark(3.6, 'youpi'), Mark(5.5, 'rentrent')],
-    tracks: {
-      'arms': const [Beat(.1, 0), Beat(.5, 1, Easings.back), Beat(5.5, 1), Beat(5.9, 0, Easings.inOut)],
-      // Hello: the right hand up beside his head, waving.
-      'handRightX': [
-        const Beat(.7, 0),
-        const Beat(1.0, .23, Easings.back),
-        ...Choreography.wiggle(1.0, 2.0, .23, .14, 3),
-        const Beat(2.2, 0, Easings.inOut),
-        // The task, on his right.
-        const Beat(2.55, .62, Easings.back),
-        const Beat(3.3, .62),
-        const Beat(3.55, 0, Easings.inOut),
-        // Hooray.
-        const Beat(3.8, .05, Easings.back),
-        const Beat(4.9, .05),
-        const Beat(5.2, 0, Easings.inOut),
-      ],
-      'handRightY': const [
-        Beat(.7, 0),
-        Beat(1.0, -1.17, Easings.back),
-        Beat(2.0, -1.17),
-        Beat(2.2, 0, Easings.inOut),
-        Beat(2.55, -.55, Easings.back),
-        Beat(3.3, -.55),
-        Beat(3.55, 0, Easings.inOut),
-        Beat(3.8, -1.6, Easings.back),
-        Beat(4.9, -1.6),
-        Beat(5.2, 0, Easings.inOut),
-      ],
-      'handRightTurn': [const Beat(1.0, 0), ...Choreography.wiggle(1.0, 2.0, 0, .35, 3)],
-      'handLeftX': const [Beat(3.55, 0), Beat(3.8, -.05, Easings.back), Beat(4.9, -.05), Beat(5.2, 0, Easings.inOut)],
-      'handLeftY': [const Beat(3.55, 0), const Beat(3.8, -1.6, Easings.back), ...Choreography.wiggle(3.8, 4.9, -1.6, .08, 3), const Beat(5.2, 0, Easings.inOut)],
-      'yaw': const [Beat(2.2, 0), Beat(2.45, .5), Beat(3.3, .5), Beat(3.55, 0)],
-      'tilt': const [Beat(.8, 0), Beat(1.0, -.1), Beat(2.0, -.1), Beat(2.2, 0)],
-      'y': const [Beat(3.6, 0), Beat(3.75, -.18, Easings.out), Beat(3.95, 0, Easings.inCubic), Beat(4.2, 0), Beat(4.35, -.12, Easings.out), Beat(4.55, 0, Easings.inCubic)],
-      'happy': const [Beat(.9, 0), Beat(.91, 1, Easings.linear), Beat(2.0, 1), Beat(2.01, 0, Easings.linear), Beat(3.6, 0), Beat(3.61, 1, Easings.linear), Beat(4.95, 1), Beat(4.96, 0, Easings.linear)],
-    },
-  );
+/// His arms, still (2026-10-06: « pour l'instant ne fais pas d'animation,
+/// juste des keyframes »; the arms are animated once these are right):
+/// the melted stumps and three variants, in four poses. Raised, an arm
+/// turns from where it grows, a little bigger; it never slides up.
+abstract final class ArmPoses {
+  static Choreography _pose(String name, Map<String, double> values) => Choreography(
+        name: name,
+        duration: 1,
+        tracks: {for (final e in values.entries) e.key: [Beat(0, e.value)]},
+      );
 
-  /// Instants of [tour] to compare the styles still: at rest, hello, the
-  /// task, hooray.
-  static const stills = [('Au repos', .6), ('Coucou', 1.5), ('Montre', 2.9), ('Youpi', 4.4)];
-
-  static const notes = {
-    ArmStyle.nub: 'Le préféré des cinq premiers dessins : courts, épais et ronds, posés contre lui.',
-    ArmStyle.star: 'Comme un Luma : de petites pointes qui sortent de ses côtés et se lèvent un peu ; le contour s’y plie, sans jointure.',
-    ArmStyle.soft: 'Les moignons fondus en lui : ronds au bout, sortis de son contour, sans jointure.',
-    ArmStyle.fin: 'De larges nageoires douces, un peu basses.',
-    ArmStyle.starFeet: 'Les pointes, et deux tout petits pieds sous lui, comme un Luma.',
-  };
+  static final all = [
+    _pose('Au repos', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': -.15}),
+    _pose('Coucou', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .95, 'armRightGrow': .5, 'happy': 1, 'tilt': -.08}),
+    _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .2, 'armRightGrow': .55, 'yaw': .5}),
+    _pose('Youpi', {'arms': 1, 'armLeftLift': .85, 'armRightLift': .85, 'armLeftGrow': .4, 'armRightGrow': .4, 'happy': 1}),
+  ];
 
   static const names = {
-    ArmStyle.nub: 'Moignons',
-    ArmStyle.star: 'Pointes',
     ArmStyle.soft: 'Moignons fondus',
-    ArmStyle.fin: 'Nageoires',
-    ArmStyle.starFeet: 'Pointes et petits pieds',
+    ArmStyle.plump: 'Dodus',
+    ArmStyle.tapered: 'Effilés',
+    ArmStyle.low: 'Bas',
+  };
+
+  static const notes = {
+    ArmStyle.soft: 'Gardés : ronds au bout, sortis de son contour, sans jointure.',
+    ArmStyle.plump: 'Un bout plus rond et plus large, sur une base plus fine.',
+    ArmStyle.tapered: 'Un peu plus longs, qui s’affinent doucement vers le bout.',
+    ArmStyle.low: 'Plus petits et plus bas sur ses côtés, comme un chat assis.',
   };
 }
 
 /// A color his powers light him in, and whether his eyes go dark then.
 typedef PowerLook = ({Color color, bool darkEyes});
 
-/// Mikky uses his powers (2026-10-06, like a Luma that stays bright red
-/// while it uses its powers): he gathers himself, bursts into color with
-/// sparks, floats glowing for a moment, and goes back to black.
-abstract final class PowerLoops {
-  static final power = Choreography(
-    name: 'Ses pouvoirs',
-    duration: 5.0,
-    marks: const [Mark(.4, 'se concentre'), Mark(1.05, 'pouvoir'), Mark(3.5, 's’éteint')],
-    tracks: {
-      'arms': const [Beat(.1, 0), Beat(.4, 1, Easings.back), Beat(4.2, 1), Beat(4.6, 0, Easings.inOut)],
-      // He gathers himself: crouches, eyes closed, arms in close.
-      'scaleY': const [Beat(.4, 1), Beat(1.0, .86, Easings.inOut), Beat(1.15, 1.12, Easings.out), Beat(1.5, 1, Easings.back)],
-      'scaleX': const [Beat(.4, 1), Beat(1.0, 1.1, Easings.inOut), Beat(1.15, .92, Easings.out), Beat(1.5, 1, Easings.back)],
-      'open': const [Beat(.45, 1), Beat(.6, .08, Easings.out), Beat(1.0, .08), Beat(1.12, 1, Easings.out)],
-      'handLeftY': const [Beat(.4, 0), Beat(1.0, .1), Beat(1.15, -.3, Easings.out), Beat(3.4, -.3), Beat(3.9, 0, Easings.inOut)],
-      'handRightY': const [Beat(.4, 0), Beat(1.0, .1), Beat(1.15, -.3, Easings.out), Beat(3.4, -.3), Beat(3.9, 0, Easings.inOut)],
-      'eyeScale': const [Beat(1.05, 1), Beat(1.25, 1.15, Easings.back), Beat(3.4, 1.15), Beat(3.8, 1)],
-      // He floats while lit.
-      'y': [const Beat(1.05, 0), const Beat(1.4, -.22, Easings.out), ...Choreography.wiggle(1.4, 3.4, -.22, .06, 3), const Beat(3.9, 0, Easings.inOut)],
-      'power': const [Beat(1.05, 0), Beat(1.2, 1, Easings.out), Beat(3.5, 1), Beat(4.1, 0, Easings.inOut)],
-      'glow': const [Beat(1.2, 1), Beat(1.7, .65), Beat(2.2, 1), Beat(2.7, .65), Beat(3.2, 1)],
-      'earLeft': const [Beat(1.05, 0), Beat(1.2, .5, Easings.out), Beat(1.6, 0)],
-      'earRight': const [Beat(1.1, 0), Beat(1.25, .5, Easings.out), Beat(1.65, 0)],
-    },
-  );
-
-  /// The colors to try: the Luma's bright red, with white eyes or dark
-  /// ones like it; the blue of work; the violet of « Ensorcelé ».
-  static const looks = <(String, String, PowerLook)>[
-    ('Rouge fluo', 'Comme le Luma : rouge vif, ses yeux blancs.', (color: Color(0xFFFF2D55), darkEyes: false)),
-    ('Rouge fluo, yeux sombres', 'Comme le Luma jusqu’aux yeux : sombres sur le rouge.', (color: Color(0xFFFF2D55), darkEyes: true)),
-    ('Bleu du travail', 'La couleur de l’agent au travail : un pouvoir par état ?', (color: Color(0xFF0A84FF), darkEyes: false)),
-    ('Violet « Ensorcelé »', 'La couleur de la relance magique.', (color: Color(0xFFBF5AF2), darkEyes: false)),
+/// The colors of his powers (2026-10-06, like the Luma that stays bright
+/// red while it uses its powers; « juste des couleurs », not animated):
+/// luminous, a little see-through, glowing.
+abstract final class Powers {
+  static const colors = <(String, Color)>[
+    ('Rouge fluo', Color(0xFFFF2D55)),
+    ('Bleu', Color(0xFF2E9BFF)),
+    ('Orange', Color(0xFFFF8A1F)),
+    ('Vert', Color(0xFF34E07A)),
+    ('Cyan', Color(0xFF33D6FF)),
+    ('Rose', Color(0xFFFF5FC8)),
+    ('Jaune', Color(0xFFFFD23F)),
+    ('Violet', Color(0xFFBF5AF2)),
   ];
+
+  /// At rest, his melted stumps out.
+  static final pose = ArmPoses.all.first;
 }
 
 /// Mikky's pose at [t] in [c].
@@ -307,7 +194,7 @@ MikkyPose poseAt(Choreography c, double t) {
 }
 
 /// Mikky as [c] has him at [t], with radius [r].
-MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = ArmStyle.nub}) {
+MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = ArmStyle.soft}) {
   final furball = c.value('furball', t);
   final eyes = c.value('happy', t) > .5
       ? EyeShape.happy
@@ -332,7 +219,7 @@ final Future<ui.FragmentProgram?> _program = loadIslandProgram();
 /// The top of a screen at the instant [t] of a launch: the island glued
 /// to its top edge, Mikky in it, the particles.
 class LaunchScene extends StatelessWidget {
-  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190), this.arms = ArmStyle.nub});
+  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190), this.arms = ArmStyle.soft});
 
   final Choreography choreography;
   final double t;
@@ -384,20 +271,6 @@ class _LaunchPainter extends CustomPainter {
     alphaMin: .4,
   );
   static final _pop = Burst(seed: 5, count: 36, speedMin: 90, speedMax: 210, sizeMin: 1, sizeMax: 2.4, lifeMin: .4, lifeMax: .75, drag: 3.6);
-  static final _dust = Burst(
-    seed: 9,
-    count: 14,
-    angleFrom: math.pi * 1.05,
-    angleTo: math.pi * 1.95,
-    speedMin: 40,
-    speedMax: 95,
-    sizeMin: 1.5,
-    sizeMax: 2.5,
-    lifeMin: .35,
-    lifeMax: .6,
-    gravity: 260,
-  );
-
   /// The streaks of the fall (« La chute »): x across the island (0 to 1),
   /// start, speed, length, brightness.
   static final _streaks = () {
@@ -474,7 +347,6 @@ class _LaunchPainter extends CustomPainter {
     final feet = Offset(mx, my + Launches.radius * .8);
     // The dust of his landing, behind him: only what flies out on the
     // sides shows.
-    if (c.name == Launches.arms.name) ring(_dust, 'atterrit', feet, squares: true);
 
     // Mikky.
     final g = geometryAt(c, t, Launches.radius, arms: arms);
@@ -516,9 +388,9 @@ class _LaunchPainter extends CustomPainter {
   bool shouldRepaint(_LaunchPainter old) => old.t != t || old.c != c || old.shader != shader || old.theme != theme || old.arms != arms;
 }
 
-/// Mikky alone at the instant [t] of a loop of his (the arms).
+/// Mikky alone, in a pose (his arms, his powers).
 class PoseScene extends StatelessWidget {
-  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.arms = ArmStyle.nub, this.radius = 34, this.power});
+  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.arms = ArmStyle.soft, this.radius = 34, this.power});
 
   final Choreography choreography;
   final double t;
@@ -526,8 +398,7 @@ class PoseScene extends StatelessWidget {
   final ArmStyle arms;
   final double radius;
 
-  /// The look of his powers, lit by the `power` track (pulsing with
-  /// `glow`); null: none.
+  /// The color of his powers, lit; null: as always.
   final PowerLook? power;
 
   @override
@@ -555,13 +426,11 @@ class _PosePainter extends CustomPainter {
   final double radius;
   final PowerLook? look;
 
-  static final _sparks = Burst(seed: 21, count: 26, speedMin: 60, speedMax: 150, sizeMin: 1.2, sizeMax: 2.6, lifeMin: .5, lifeMax: .9, drag: 2.4);
-
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height * .58 + c.value('y', t) * radius);
     final look = this.look;
-    final lit = look == null ? 0.0 : c.value('power', t);
+    final lit = look == null ? 0.0 : 1.0;
     MikkyPainter(
       geometry: geometryAt(c, t, radius, arms: arms),
       // `y` moves him (units of his radius): his hops.
@@ -570,17 +439,8 @@ class _PosePainter extends CustomPainter {
       statusColor: theme.status,
       foreground: theme.foreground,
       showBadge: false,
-      power: look == null ? null : MikkyPower(look.color, lit, glow: c.value('glow', t, 1), darkEyes: look.darkEyes),
+      power: look == null ? null : MikkyPower(look.color, lit, darkEyes: look.darkEyes),
     ).paint(canvas, size);
-    // Sparks when his power bursts out.
-    final m = c.at('pouvoir');
-    if (look != null && m != null && t >= m) {
-      final paint = Paint();
-      for (final s in _sparks.at(t - m)) {
-        paint.color = Color.lerp(look.color, const Color(0xFFFFFFFF), .4)!.withValues(alpha: s.alpha);
-        canvas.drawRect(Rect.fromCenter(center: center + Offset(s.x.roundToDouble(), s.y.roundToDouble()), width: s.size, height: s.size), paint);
-      }
-    }
   }
 
   @override

@@ -43,20 +43,20 @@ enum MikkyProp {
   /// Rolls: whole turns, back to 0 when done.
   spin,
 
-  /// His arms (a trial, 2026-10-06: « des bras plutôt » than paws): 0
-  /// tucked into his body, out of sight; 1 out, hanging at his sides.
+  /// His arms (a trial, 2026-10-06: « des bras plutôt » than paws; the
+  /// melted stumps kept): 0 melted into his body, out of sight; 1 out of
+  /// his sides.
   arms,
 
-  /// Each hand away from its place at his side, in units of the radius
-  /// (x right, y down): up beside the head is about (±0.23, -1.17).
-  handLeftX,
-  handLeftY,
-  handRightX,
-  handRightY,
+  /// How far each arm is raised, turned from its shoulder (radians, up
+  /// > 0; it stays where it grows out of him, never slides up).
+  armLeftLift,
+  armRightLift,
 
-  /// Each hand turned (radians): a wave.
-  handLeftTurn,
-  handRightTurn,
+  /// How much bigger each arm gets (0: as at rest; 0.2: a fifth longer
+  /// and a little wider), when raised or reaching.
+  armLeftGrow,
+  armRightGrow,
 }
 
 /// Shape of one eye. No pupils, ever. [round]: big round eyes (surprise).

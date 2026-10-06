@@ -60,15 +60,6 @@ class MikkyPainter extends CustomPainter {
       for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1]),
     ];
     final body = Path()..addPolygon(points, true);
-    // His arms, when out, are one with him: one outline, one rim.
-    var outline = body;
-    for (final part in g.arms) {
-      outline = Path.combine(
-        PathOperation.union,
-        outline,
-        Path()..addPolygon([for (var i = 0; i < part.length ~/ 2; i++) Offset(part[i * 2], part[i * 2 + 1])], true),
-      );
-    }
 
     canvas.save();
     canvas.translate(center.dx + g.translateX, center.dy + g.translateY);
@@ -77,7 +68,7 @@ class MikkyPainter extends CustomPainter {
 
     // The body and the fur balls that came out of it: all of them are him.
     final parts = [
-      outline,
+      body,
       for (final s in g.satellites)
         Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
     ];
@@ -87,17 +78,23 @@ class MikkyPainter extends CustomPainter {
     if (power != null && lit > 0) {
       // The glow, behind him.
       canvas.drawPath(
-        outline,
+        body,
         Paint()
-          ..color = power.color.withValues(alpha: .7 * lit * power.glow)
-          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .5),
+          ..color = power.color.withValues(alpha: .75 * lit * power.glow)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .55),
       );
     }
     final fur = Paint()..color = _ink;
     if (power != null && lit > 0) {
-      final color = Color.lerp(_ink, power.color, lit)!;
-      final heart = Color.lerp(_ink, Color.lerp(power.color, const Color(0xFFFFFFFF), .35)!, lit)!;
-      fur.shader = ui.Gradient.radial(Offset(0, -r * .15), r * 1.25, [heart, color]);
+      // Lit from inside: almost white in the middle, the color at the
+      // edge, a little see-through.
+      Color at(Color c) => Color.lerp(_ink, c, lit)!.withValues(alpha: 1 - .1 * lit);
+      fur.shader = ui.Gradient.radial(
+        Offset(0, -r * .2),
+        r * 1.3,
+        [at(Color.lerp(power.color, const Color(0xFFFFFFFF), .6)!), at(power.color), at(Color.lerp(power.color, _ink, .12)!)],
+        const [0, .6, 1],
+      );
     }
     for (final part in parts) {
       canvas.drawPath(part, fur);
@@ -114,6 +111,17 @@ class MikkyPainter extends CustomPainter {
 
     canvas.save();
     canvas.clipPath(body);
+    if (power != null && lit > 0) {
+      // A soft light along his edge, inside: he glows.
+      canvas.drawPath(
+        body,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = r * .22
+          ..color = Color.lerp(power.color, const Color(0xFFFFFFFF), .5)!.withValues(alpha: .55 * lit)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .12),
+      );
+    }
     for (final eye in g.eyes) {
       canvas.save();
       canvas.translate(eye.x, eye.y);
