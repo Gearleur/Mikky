@@ -64,11 +64,15 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les pieds',
-      note: 'Les pieds de Kirby gardés : deux gros ovales devant le bas de son corps, de son noir. Avec et sans ses bras dodus, et d’autres façons de les faire ressortir que le trait tout autour. Choisi : le liseré en pixels ; mais des pieds très rarement : une idée gardée de côté.',
+      note: 'Gardés en test, pour des moments rares : les pieds de Kirby, deux gros ovales devant le bas de son corps, de son noir, un liseré de petits carrés de lumière sur leur haut ; et avec les pieds, toujours les bras.',
       kind: FrameKind.trial,
       frames: [
-        BoardFrame(label: 'Cinq façons de les voir', child: _FeetGrid()),
-        BoardFrame(label: 'Avec les bras, ses poses', child: _FeetPoses()),
+        for (final pose in ArmPoses.all)
+          BoardFrame(
+            label: pose.name,
+            width: 200,
+            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: FeetScene(pose, size: const Size(200, 160), radius: 38)),
+          ),
       ],
     ),
     BoardSection(
@@ -195,6 +199,43 @@ class _CurvePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CurvePainter old) => old.ease != ease || old.ui != ui;
+}
+
+/// The pixel styles of his powers in rows, the colors in columns.
+class _PixelPowerGrid extends StatelessWidget {
+  const _PixelPowerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final label = uiText(TextSize.label, color: ui.text2);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const SizedBox(width: 130),
+          for (final (name, _) in PixelPowerColors.all) SizedBox(width: 174, child: Center(child: Text(name, style: label))),
+        ]),
+        const SizedBox(height: 6),
+        for (final arms in const [true, false])
+          for (final style in PixelPowerStyle.values)
+            Padding(
+              padding: EdgeInsets.only(bottom: 6, top: !arms && style == PixelPowerStyle.values.first ? 14 : 0),
+              child: Row(children: [
+                SizedBox(
+                  width: 130,
+                  child: Text(arms ? style.label : '${style.label}, sans les bras', style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+                ),
+                for (final (_, palette) in PixelPowerColors.all)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette, arms: arms)),
+                  ),
+              ]),
+            ),
+      ],
+    );
+  }
 }
 
 /// The pixel styles of his powers in rows, the colors in columns.
