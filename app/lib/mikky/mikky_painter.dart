@@ -41,6 +41,15 @@ class MikkyPainter extends CustomPainter {
       for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1]),
     ];
     final body = Path()..addPolygon(points, true);
+    // His paws, when out, are one with him: one outline, one rim.
+    var outline = body;
+    for (final paw in g.paws) {
+      outline = Path.combine(
+        PathOperation.union,
+        outline,
+        Path()..addPolygon([for (var i = 0; i < paw.length ~/ 2; i++) Offset(paw[i * 2], paw[i * 2 + 1])], true),
+      );
+    }
 
     canvas.save();
     canvas.translate(center.dx + g.translateX, center.dy + g.translateY);
@@ -49,7 +58,7 @@ class MikkyPainter extends CustomPainter {
 
     // The body and the fur balls that came out of it: all of them are him.
     final parts = [
-      body,
+      outline,
       for (final s in g.satellites)
         Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
     ];

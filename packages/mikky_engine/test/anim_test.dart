@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -65,6 +67,74 @@ void main() {
       expect(track.isDone, isFalse);
       expect(track.sample(.25), 0);
       expect(track.isDone, isTrue);
+    });
+  });
+
+  group('Easings.spring', () {
+    test('ends on 1 and overshoots when soft', () {
+      final e = Easings.spring(const SpringSpec(120, .42), .8);
+      expect(e(0), closeTo(0, 1e-9));
+      expect(e(1), closeTo(1, 1e-9));
+      expect(List.generate(100, (i) => e(i / 100)).any((v) => v > 1), isTrue);
+    });
+
+    test('critically damped and overdamped never overshoot', () {
+      for (final z in [1.0, 1.4]) {
+        final e = Easings.spring(SpringSpec(100, z), 1.2);
+        expect(List.generate(100, (i) => e(i / 100)).every((v) => v <= 1 + 1e-9), isTrue);
+        expect(e(1), closeTo(1, 1e-9));
+      }
+    });
+  });
+
+  group('Choreography', () {
+    final c = Choreography(
+      name: 'essai',
+      duration: 2,
+      tracks: {
+        'y': const [Beat(1, 10, Easings.linear), Beat(0, 0)],
+      },
+      marks: const [Mark(.5, 'pop'), Mark(1.5, 'end')],
+    );
+
+    test('holds before its first beat and after its last', () {
+      expect(c.value('y', -1), 0);
+      expect(c.value('y', 1.8), 10);
+      expect(c.value('nope', .5, 3), 3);
+    });
+
+    test('goes from beat to beat along the ease', () {
+      expect(c.value('y', .5), closeTo(5, 1e-9));
+      expect(c.sample(.25)['y'], closeTo(2.5, 1e-9));
+    });
+
+    test('tells the marks passed between two frames, once', () {
+      expect(c.passed(0, .5).map((m) => m.name), ['pop']);
+      expect(c.passed(.5, 1), isEmpty);
+      expect(c.at('end'), 1.5);
+    });
+
+    test('a wiggle ends on its rest value', () {
+      final w = Choreography.wiggle(1, 2, .2, .5, 3);
+      expect(w, hasLength(6));
+      expect(w.last.at, closeTo(2, 1e-9));
+      expect(w.last.value, .2);
+    });
+  });
+
+  group('Burst', () {
+    Burst make() => Burst(seed: 3, count: 20, speedMin: 50, speedMax: 100, sizeMin: 1, sizeMax: 2, lifeMin: .5, lifeMax: .8, drag: 2, gravity: 40);
+
+    test('is the same every time', () {
+      final a = make().at(.3).map((s) => s.x).toList(), b = make().at(.3).map((s) => s.x).toList();
+      expect(a, b);
+    });
+
+    test('flies out, then is gone', () {
+      final b = make();
+      expect(b.at(.2), hasLength(20));
+      expect(b.at(.2).every((s) => math.sqrt(s.x * s.x + s.y * s.y) > 1), isTrue);
+      expect(b.at(.9), isEmpty);
     });
   });
 }

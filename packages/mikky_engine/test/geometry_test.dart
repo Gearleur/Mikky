@@ -48,4 +48,24 @@ void main() {
     final eye = MikkyGeometry.of(m, 100).eyes.first;
     expect(eye.height, closeTo(eye.width * .25, 1e-9));
   });
+
+  test('his paws are out of sight until the pose brings them out', () {
+    final pose = MikkyPose();
+    expect(MikkyGeometry.posed(pose, 40).paws, isEmpty);
+    pose[MikkyProp.paws] = 1;
+    final g = MikkyGeometry.posed(pose, 40);
+    expect(g.paws, hasLength(2));
+    // Under him, on each side.
+    final left = g.paws[0], right = g.paws[1];
+    expect(left[0] < 0 || left[2] < 0, isTrue);
+    double meanX(List<double> p) => [for (var i = 0; i < p.length; i += 2) p[i]].reduce((a, b) => a + b) / (p.length / 2);
+    expect(meanX(left), lessThan(0));
+    expect(meanX(right), greaterThan(0));
+    // Raised beside the cheek.
+    pose[MikkyProp.pawRightX] = .78;
+    pose[MikkyProp.pawRightY] = -.95;
+    final up = MikkyGeometry.posed(pose, 40).paws[1];
+    double meanY(List<double> p) => [for (var i = 1; i < p.length; i += 2) p[i]].reduce((a, b) => a + b) / (p.length / 2);
+    expect(meanY(up), lessThan(0));
+  });
 }

@@ -42,6 +42,22 @@ enum MikkyProp {
 
   /// Rolls: whole turns, back to 0 when done.
   spin,
+
+  /// His two front paws (a trial, 2026-10-05: « peut-être avec des
+  /// pattes »): 0 tucked under him, out of sight; 1 out, the tips under
+  /// his body.
+  paws,
+
+  /// Each paw away from its place, in units of the radius (x right, y
+  /// down): up beside the cheek is about (±0.78, -0.95).
+  pawLeftX,
+  pawLeftY,
+  pawRightX,
+  pawRightY,
+
+  /// Each paw turned (radians): a wave.
+  pawLeftTurn,
+  pawRightTurn,
 }
 
 /// Shape of one eye. No pupils, ever. [round]: big round eyes (surprise).

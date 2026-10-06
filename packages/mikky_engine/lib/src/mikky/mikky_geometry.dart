@@ -64,6 +64,7 @@ class MikkyGeometry {
     required this.time,
     required this.contour,
     required this.satellites,
+    required this.paws,
     required this.eyes,
     required this.translateX,
     required this.translateY,
@@ -87,6 +88,10 @@ class MikkyGeometry {
   /// Other bits of him (the dot of "!"), same format and same transform as
   /// [contour]. Eyes are only on [contour].
   final List<Float64List> satellites;
+
+  /// His front paws, when out: same format and transform as [contour],
+  /// one with his body (the eyes stay on [contour]).
+  final List<Float64List> paws;
   final List<EyeGeometry> eyes;
   final double translateX, translateY, tilt, scaleX, scaleY;
 
@@ -102,10 +107,64 @@ class MikkyGeometry {
 
   /// Geometry of [mikky] drawn with radius [radius] pixels, with [points]
   /// points on the outline.
-  factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) {
+  factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) => _build(
+        pose: mikky.pose,
+        time: mikky.time,
+        form: mikky.form,
+        morph: mikky.morph,
+        eyeLeft: mikky.eyeLeft,
+        eyeRight: mikky.eyeRight,
+        badge: mikky.badge,
+        particles: mikky.particles,
+        radius: radius,
+        points: points,
+        tuning: tuning,
+      );
+
+  /// Mikky in a [pose] chosen from outside (a choreography), at [time] for
+  /// what moves by itself (his fur), without his own life (no blinks,
+  /// no breath, no badge).
+  factory MikkyGeometry.posed(
+    MikkyPose pose,
+    double radius, {
+    double time = 0,
+    EyeShape eyeLeft = EyeShape.oval,
+    EyeShape eyeRight = EyeShape.oval,
+    MikkyForm form = MikkyForm.cat,
+    double morph = 0,
+    int points = 360,
+    MikkyTuning? tuning,
+  }) =>
+      _build(
+        pose: pose,
+        time: time,
+        form: form,
+        morph: morph,
+        eyeLeft: eyeLeft,
+        eyeRight: eyeRight,
+        badge: null,
+        particles: const [],
+        radius: radius,
+        points: points,
+        tuning: tuning,
+      );
+
+  static MikkyGeometry _build({
+    required MikkyPose pose,
+    required double time,
+    required MikkyForm form,
+    required double morph,
+    required EyeShape eyeLeft,
+    required EyeShape eyeRight,
+    required MikkyBadge? badge,
+    required List<MikkyParticle> particles,
+    required double radius,
+    required int points,
+    MikkyTuning? tuning,
+  }) {
     final tu = tuning ?? MikkyTuning.defaults;
-    final p = mikky.pose;
-    final t = mikky.time;
+    final p = pose;
+    final t = time;
     final r = radius;
     final rx = r * MikkyShape.halfWidth, ry = r * MikkyShape.halfHeight;
     const ex = 2 / MikkyShape.exponent;
@@ -113,8 +172,7 @@ class MikkyGeometry {
 
     // m: how far into the form (may overshoot, like jelly); w: the same,
     // kept in 0..1 for what must not overshoot (ears, fur, eyes).
-    final form = mikky.form;
-    final m = form == MikkyForm.cat ? 0.0 : mikky.morph;
+    final m = form == MikkyForm.cat ? 0.0 : morph;
     final w = m.clamp(0.0, 1.0);
     // The heart and the fur ball are still the mascot, a little changed:
     // they keep his outline and his eyes. The heart keeps its ears too; the
@@ -214,7 +272,7 @@ class MikkyGeometry {
       if (grow < .05) continue;
       final width = r * MikkyShape.eyeWidth * tu.eyeSize;
       final fullHeight = r * MikkyShape.eyeBaseHeight * tu.eyeElongation * tu.eyeSize;
-      final shape = side < 0 ? mikky.eyeLeft : mikky.eyeRight;
+      final shape = side < 0 ? eyeLeft : eyeRight;
       // Eyelids close the eyes that have lids; the other shapes keep their
       // look.
       final lid = shape == EyeShape.oval || shape == EyeShape.round || shape == EyeShape.tired ? p.open : 1.0;
@@ -238,22 +296,39 @@ class MikkyGeometry {
         _furBall(.03 * r * _easeOut(w), (.88 + math.sin(t * 2.2 + .8) * .035) * r * _easeOut(w), .27 * r * w, t, 120),
     ];
 
+    // His front paws: tucked under him, they come out at the bottom, the
+    // tips under his body; from there they go where the pose sends them.
+    final show = p[MikkyProp.paws].clamp(0.0, 1.0);
+    final paws = <Float64List>[
+      if (show > .01)
+        for (final side in const [-1.0, 1.0])
+          _paw(
+            side * .46 * r + (side < 0 ? p[MikkyProp.pawLeftX] : p[MikkyProp.pawRightX]) * r,
+            (.66 + .26 * show) * r + (side < 0 ? p[MikkyProp.pawLeftY] : p[MikkyProp.pawRightY]) * r,
+            r * (.6 + .4 * show),
+            side,
+            side < 0 ? p[MikkyProp.pawLeftTurn] : p[MikkyProp.pawRightTurn],
+            t,
+          ),
+    ];
+
     return MikkyGeometry._(
       radius: r,
       time: t,
       contour: contour,
       satellites: satellites,
+      paws: paws,
       eyes: eyes,
       translateX: p.offsetX * r,
       translateY: p.offsetY * r,
       tilt: p.tilt,
       scaleX: p.scaleX,
       scaleY: p.scaleY,
-      badge: mikky.badge,
+      badge: badge,
       badgeX: r * 1.12 + p.offsetX * r,
       badgeY: -r * .95 + p.offsetY * r,
       particles: [
-        for (final q in mikky.particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
+        for (final q in particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
       ],
     );
   }
@@ -303,6 +378,27 @@ double _lumpy(double th, double t, double seed) =>
   final x = half * c.sign * math.pow(c.abs(), 2 / 2.6) + .05 * math.sin(v * math.pi + t * .7) - (y - cy) * .07;
   final g = _wobble(th, t, .6) * (1 + _fur(th, t, .035));
   return (x * g, cy + (y - cy) * g + math.sin(t * 2.2) * .03);
+}
+
+/// A front paw at ([cx], [cy]), for a radius [r]: a soft bean, wider than
+/// high, with three small toes at its tip, furry like him. [turn] turns it
+/// around its middle; [side] mirrors it.
+Float64List _paw(double cx, double cy, double r, double side, double turn, double t) {
+  const n = 72;
+  final out = Float64List((n + 1) * 2);
+  final rx = .27 * r, ry = .2 * r;
+  final c = math.cos(turn), s = math.sin(turn);
+  for (var i = 0; i <= n; i++) {
+    final th = i / n * math.pi * 2;
+    // The toes, at the bottom (th = π/2): three small bumps.
+    final tip = math.max(0.0, math.sin(th));
+    final toes = 1 + .09 * tip * tip * math.cos(th * 6).abs();
+    final f = toes * (1 + _fur(th, t + side, .018)) * _lumpy(th, t, side + 4) / 1.02;
+    final x = math.cos(th) * rx * f, y = math.sin(th) * ry * f;
+    out[i * 2] = cx + (x * c - y * s) * side;
+    out[i * 2 + 1] = cy + x * s + y * c;
+  }
+  return out;
 }
 
 /// Outline of a small, lopsided, softly furry ball, in pixels.
