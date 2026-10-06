@@ -92,7 +92,7 @@ class _PixelPowerPainter extends CustomPainter {
     final cols = size.width.floor(), rows = size.height.floor();
     final center = Offset(size.width / 2, size.height * .58);
     final r = radius;
-    final g = geometryAt(Powers.pose, 0, r);
+    final g = geometryAt(ArmPoses.all.first, 0, r);
     final body = Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])], true);
     Offset local(double x, double y) => Offset((x - center.dx - g.translateX) / g.scaleX, (y - center.dy - g.translateY) / g.scaleY);
 

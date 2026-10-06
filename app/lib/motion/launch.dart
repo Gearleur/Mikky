@@ -131,7 +131,7 @@ abstract final class Launches {
 
 /// His arms, still (2026-10-06: « pour l'instant ne fais pas d'animation,
 /// juste des keyframes »; the arms are animated once these are right):
-/// the melted stumps and three variants, in four poses. Raised, an arm
+/// the plump ones (« on garde que la version dodus »), in four poses. Raised, an arm
 /// turns from where it grows, a little bigger; it never slides up.
 abstract final class ArmPoses {
   static Choreography _pose(String name, Map<String, double> values) => Choreography(
@@ -146,40 +146,6 @@ abstract final class ArmPoses {
     _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .12, 'armRightGrow': .85, 'yaw': .5}),
     _pose('Youpi', {'arms': 1, 'armLeftLift': .85, 'armRightLift': .85, 'armLeftGrow': .4, 'armRightGrow': .4, 'happy': 1}),
   ];
-
-  static const names = {
-    ArmStyle.soft: 'Moignons fondus',
-    ArmStyle.plump: 'Dodus',
-    ArmStyle.tapered: 'Effilés',
-  };
-
-  static const notes = {
-    ArmStyle.soft: 'Gardés : ronds au bout, sortis de son contour, sans jointure.',
-    ArmStyle.plump: 'Un bout plus rond et plus large, sur une base plus fine.',
-    ArmStyle.tapered: 'Un peu plus longs, qui s’affinent doucement vers le bout.',
-  };
-}
-
-/// A color his powers light him in, and whether his eyes go dark then.
-typedef PowerLook = ({Color color, bool darkEyes});
-
-/// The colors of his powers (2026-10-06, like the Luma that stays bright
-/// red while it uses its powers; « juste des couleurs », not animated):
-/// luminous, a little see-through, glowing.
-abstract final class Powers {
-  static const colors = <(String, Color)>[
-    ('Rouge fluo', Color(0xFFFF2D55)),
-    ('Bleu', Color(0xFF2E9BFF)),
-    ('Orange', Color(0xFFFF8A1F)),
-    ('Vert', Color(0xFF34E07A)),
-    ('Cyan', Color(0xFF33D6FF)),
-    ('Rose', Color(0xFFFF5FC8)),
-    ('Jaune', Color(0xFFFFD23F)),
-    ('Violet', Color(0xFFBF5AF2)),
-  ];
-
-  /// At rest, his melted stumps out.
-  static final pose = ArmPoses.all.first;
 }
 
 /// Mikky's pose at [t] in [c].
@@ -192,7 +158,7 @@ MikkyPose poseAt(Choreography c, double t) {
 }
 
 /// Mikky as [c] has him at [t], with radius [r].
-MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = ArmStyle.soft}) {
+MikkyGeometry geometryAt(Choreography c, double t, double r) {
   final furball = c.value('furball', t);
   final eyes = c.value('happy', t) > .5
       ? EyeShape.happy
@@ -207,7 +173,6 @@ MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = Ar
     eyeRight: eyes,
     form: furball.abs() > .001 ? MikkyForm.furball : MikkyForm.cat,
     morph: furball,
-    arms: arms,
   );
 }
 
@@ -217,12 +182,11 @@ final Future<ui.FragmentProgram?> _program = loadIslandProgram();
 /// The top of a screen at the instant [t] of a launch: the island glued
 /// to its top edge, Mikky in it, the particles.
 class LaunchScene extends StatelessWidget {
-  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190), this.arms = ArmStyle.soft});
+  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190)});
 
   final Choreography choreography;
   final double t;
   final Size size;
-  final ArmStyle arms;
 
   @override
   Widget build(BuildContext context) {
@@ -238,7 +202,6 @@ class LaunchScene extends StatelessWidget {
           mui.isLight ? MikkyTheme.light : MikkyTheme.dark,
           mui,
           MediaQuery.maybeDevicePixelRatioOf(context) ?? 1,
-          arms,
         ),
       ),
     );
@@ -246,7 +209,7 @@ class LaunchScene extends StatelessWidget {
 }
 
 class _LaunchPainter extends CustomPainter {
-  _LaunchPainter(this.c, this.t, this.shader, this.theme, this.mui, this.dpr, this.arms);
+  _LaunchPainter(this.c, this.t, this.shader, this.theme, this.mui, this.dpr);
 
   final Choreography c;
   final double t;
@@ -254,7 +217,6 @@ class _LaunchPainter extends CustomPainter {
   final MikkyTheme theme;
   final MikkyUi mui;
   final double dpr;
-  final ArmStyle arms;
 
   static final _ring = Burst(
     seed: 11,
@@ -347,7 +309,7 @@ class _LaunchPainter extends CustomPainter {
     // sides shows.
 
     // Mikky.
-    final g = geometryAt(c, t, Launches.radius, arms: arms);
+    final g = geometryAt(c, t, Launches.radius);
     MikkyPainter(
       geometry: g,
       center: Offset(mx, my),
@@ -383,21 +345,17 @@ class _LaunchPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LaunchPainter old) => old.t != t || old.c != c || old.shader != shader || old.theme != theme || old.arms != arms;
+  bool shouldRepaint(_LaunchPainter old) => old.t != t || old.c != c || old.shader != shader || old.theme != theme;
 }
 
-/// Mikky alone, in a pose (his arms, his powers).
+/// Mikky alone, in a pose (his arms).
 class PoseScene extends StatelessWidget {
-  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.arms = ArmStyle.soft, this.radius = 34, this.power});
+  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.radius = 34});
 
   final Choreography choreography;
   final double t;
   final Size size;
-  final ArmStyle arms;
   final double radius;
-
-  /// The color of his powers, lit; null: as always.
-  final PowerLook? power;
 
   @override
   Widget build(BuildContext context) {
@@ -407,41 +365,32 @@ class PoseScene extends StatelessWidget {
       width: size.width,
       height: size.height,
       color: mui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
-      child: CustomPaint(
-        painter: _PosePainter(choreography, t, theme, arms, radius, power),
-      ),
+      child: CustomPaint(painter: _PosePainter(choreography, t, theme, radius)),
     );
   }
 }
 
 class _PosePainter extends CustomPainter {
-  _PosePainter(this.c, this.t, this.theme, this.arms, this.radius, this.look);
+  _PosePainter(this.c, this.t, this.theme, this.radius);
 
   final Choreography c;
   final double t;
   final MikkyTheme theme;
-  final ArmStyle arms;
   final double radius;
-  final PowerLook? look;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * .58 + c.value('y', t) * radius);
-    final look = this.look;
-    final lit = look == null ? 0.0 : 1.0;
     MikkyPainter(
-      geometry: geometryAt(c, t, radius, arms: arms),
+      geometry: geometryAt(c, t, radius),
       // `y` moves him (units of his radius): his hops.
-      center: center,
-      rim: lit > .5 ? null : theme.mikkyRim,
+      center: Offset(size.width / 2, size.height * .58 + c.value('y', t) * radius),
+      rim: theme.mikkyRim,
       statusColor: theme.status,
       foreground: theme.foreground,
       showBadge: false,
-      power: look == null ? null : MikkyPower(look.color, lit, darkEyes: look.darkEyes),
     ).paint(canvas, size);
   }
 
   @override
-  bool shouldRepaint(_PosePainter old) =>
-      old.t != t || old.c != c || old.theme != theme || old.arms != arms || old.radius != radius || old.look != look;
+  bool shouldRepaint(_PosePainter old) => old.t != t || old.c != c || old.theme != theme || old.radius != radius;
 }

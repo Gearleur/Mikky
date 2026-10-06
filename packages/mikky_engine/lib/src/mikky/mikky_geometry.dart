@@ -22,22 +22,6 @@ abstract final class MikkyShape {
   static const eyeBaseHeight = .50; // × R, × elongation
 }
 
-/// How his arms are drawn (trials, 2026-10-06). Of all the ideas the
-/// melted stumps were kept (« les moignons fondus et les pointes sont les
-/// meilleurs », then « on va garder les moignons fondus uniquement »):
-/// arms grown out of his outline with no seam, like his ears; here, the
-/// melted stumps and three variants of them.
-enum ArmStyle {
-  /// Rounded at the end, grown out of his sides with no seam.
-  soft,
-
-  /// Plumper: a round, wider end on a narrower base.
-  plump,
-
-  /// Tapering to a soft, narrower end.
-  tapered,
-}
-
 /// One eye, in the body's local frame (before the body transform).
 class EyeGeometry {
   const EyeGeometry({
@@ -144,7 +128,6 @@ class MikkyGeometry {
     EyeShape eyeRight = EyeShape.oval,
     MikkyForm form = MikkyForm.cat,
     double morph = 0,
-    ArmStyle arms = ArmStyle.soft,
     int points = 360,
     MikkyTuning? tuning,
   }) =>
@@ -157,7 +140,6 @@ class MikkyGeometry {
         eyeRight: eyeRight,
         badge: null,
         particles: const [],
-        armStyle: arms,
         radius: radius,
         points: points,
         tuning: tuning,
@@ -171,7 +153,6 @@ class MikkyGeometry {
     required EyeShape eyeLeft,
     required EyeShape eyeRight,
     required MikkyBadge? badge,
-    ArmStyle armStyle = ArmStyle.soft,
     required List<MikkyParticle> particles,
     required double radius,
     required int points,
@@ -231,14 +212,14 @@ class MikkyGeometry {
       return best;
     }
 
-    // Arms grown out of the outline (every style but the stumps).
+    // His arms (a trial, 2026-10-06; « on garde que la version dodus »):
+    // grown out of his outline with no seam, like his ears.
     final armsOut = p[MikkyProp.arms].clamp(0.0, 1.0);
     final lobes = armsOut <= .01
         ? const <_Lobe>[]
         : [
             for (final side in const [-1.0, 1.0])
               _Lobe.arm(
-                armStyle,
                 side,
                 armsOut,
                 side < 0 ? p[MikkyProp.armLeftLift] : p[MikkyProp.armRightLift],
@@ -413,16 +394,14 @@ double _lumpy(double th, double t, double seed) =>
 class _Lobe {
   const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile, [this.stretch = 0, this.radius = 0]);
 
-  /// The arm of [style] on [side], [show] out of him, [lift] raised (up
-  /// > 0), [grow] bigger.
-  factory _Lobe.arm(ArmStyle style, double side, double show, double lift, double grow, double r) {
-    // Where it grows (a little below his middle), how long, how wide, and
-    // its shape; at rest it points a little down.
-    final (anchor, length, halfWidth, profile, rest) = switch (style) {
-      ArmStyle.soft => (.12, .32, .36, round, .1),
-      ArmStyle.plump => (.12, .3, .34, plump, .1),
-      ArmStyle.tapered => (.1, .36, .38, tapered, .1),
-    };
+  /// The arm on [side], [show] out of him, [lift] raised (up > 0),
+  /// [grow] longer: plump, a round, wide end on a narrower base (« dodus »,
+  /// kept of the melted stumps and their variants).
+  factory _Lobe.arm(double side, double show, double lift, double grow, double r) {
+    // Where it grows (a little below his middle), how long, how wide; at
+    // rest it points a little down.
+    const anchor = .12, length = .3, halfWidth = .34, rest = .1;
+    const profile = plump;
     // On the right side, then mirrored. Raised, it gets a little bigger;
     // reaching, it gets longer, hardly thicker (« trop épais » when it
     // grew both ways, 2026-10-06).
@@ -453,14 +432,8 @@ class _Lobe {
   /// His radius, for the round end of a reaching arm.
   final double radius;
 
-  /// Round at the end, no seam at the base.
-  static double round(double u) => math.pow(1 - u * u, 2).toDouble();
-
-  /// A wider, rounder end.
+  /// A wide, round end, no seam at the base.
   static double plump(double u) => math.pow(1 - math.pow(u, 3), 2.2).toDouble();
-
-  /// A softly narrowing end.
-  static double tapered(double u) => math.pow(1 - math.pow(u, 1.4), 2).toDouble();
 
   /// How far, and which way, the outline at the angle [at] is pushed.
   (double, double) push(double at) {

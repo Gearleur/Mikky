@@ -54,15 +54,6 @@ void main() {
     double widest(MikkyGeometry g) => [for (var i = 0; i < g.contour.length; i += 2) g.contour[i].abs()].reduce(math.max);
     final still = MikkyGeometry.posed(pose, 40);
     pose[MikkyProp.arms] = 1;
-    // Each style pushes his outline out somewhere, by a few pixels.
-    for (final style in ArmStyle.values) {
-      final g = MikkyGeometry.posed(pose, 40, arms: style);
-      var most = 0.0;
-      for (var i = 0; i < g.contour.length; i += 2) {
-        most = math.max(most, math.sqrt(math.pow(g.contour[i] - still.contour[i], 2) + math.pow(g.contour[i + 1] - still.contour[i + 1], 2)));
-      }
-      expect(most, greaterThan(7), reason: '$style');
-    }
     expect(widest(MikkyGeometry.posed(pose, 40)), greaterThan(widest(still) + 5));
     // Raised, the right arm turns up from where it grows: its outline
     // goes up, on the right only.
