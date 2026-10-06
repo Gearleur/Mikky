@@ -48,4 +48,25 @@ void main() {
     final eye = MikkyGeometry.of(m, 100).eyes.first;
     expect(eye.height, closeTo(eye.width * .25, 1e-9));
   });
+
+  test('his arms are out of sight until the pose brings them out', () {
+    final pose = MikkyPose();
+    double widest(MikkyGeometry g) => [for (var i = 0; i < g.contour.length; i += 2) g.contour[i].abs()].reduce(math.max);
+    final still = MikkyGeometry.posed(pose, 40);
+    pose[MikkyProp.arms] = 1;
+    expect(widest(MikkyGeometry.posed(pose, 40)), greaterThan(widest(still) + 5));
+    // Raised, the right arm turns up from where it grows: its outline
+    // goes up, on the right only.
+    final rest = MikkyGeometry.posed(pose, 40);
+    pose[MikkyProp.armRightLift] = 1.2;
+    final up = MikkyGeometry.posed(pose, 40);
+    var rightUp = 0.0, leftMoved = 0.0;
+    for (var i = 0; i < up.contour.length; i += 2) {
+      final dy = up.contour[i + 1] - rest.contour[i + 1];
+      if (rest.contour[i] > 0) rightUp += dy;
+      if (rest.contour[i] < 0) leftMoved += dy.abs();
+    }
+    expect(rightUp, lessThan(-50));
+    expect(leftMoved, closeTo(0, 1e-6));
+  });
 }

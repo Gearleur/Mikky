@@ -45,6 +45,9 @@ enum MikkyCue {
   dizzy,
   sleep,
   wake,
+
+  /// Mikky casts a spell (his powers: the greeting's star bursting).
+  spell,
 }
 
 /// A one-off movement of Mikky (see [Mikky]'s gestures).

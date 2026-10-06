@@ -4,6 +4,8 @@ library;
 export 'src/agents/agent.dart';
 export 'src/agents/agent_source.dart';
 export 'src/agents/demo_agent_source.dart';
+export 'src/anim/burst.dart';
+export 'src/anim/choreography.dart';
 export 'src/anim/easing.dart';
 export 'src/anim/keyframes.dart';
 export 'src/anim/smoothing.dart';

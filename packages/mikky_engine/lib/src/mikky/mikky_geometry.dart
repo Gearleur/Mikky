@@ -87,6 +87,7 @@ class MikkyGeometry {
   /// Other bits of him (the dot of "!"), same format and same transform as
   /// [contour]. Eyes are only on [contour].
   final List<Float64List> satellites;
+
   final List<EyeGeometry> eyes;
   final double translateX, translateY, tilt, scaleX, scaleY;
 
@@ -102,10 +103,64 @@ class MikkyGeometry {
 
   /// Geometry of [mikky] drawn with radius [radius] pixels, with [points]
   /// points on the outline.
-  factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) {
+  factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) => _build(
+        pose: mikky.pose,
+        time: mikky.time,
+        form: mikky.form,
+        morph: mikky.morph,
+        eyeLeft: mikky.eyeLeft,
+        eyeRight: mikky.eyeRight,
+        badge: mikky.badge,
+        particles: mikky.particles,
+        radius: radius,
+        points: points,
+        tuning: tuning,
+      );
+
+  /// Mikky in a [pose] chosen from outside (a choreography), at [time] for
+  /// what moves by itself (his fur), without his own life (no blinks,
+  /// no breath, no badge).
+  factory MikkyGeometry.posed(
+    MikkyPose pose,
+    double radius, {
+    double time = 0,
+    EyeShape eyeLeft = EyeShape.oval,
+    EyeShape eyeRight = EyeShape.oval,
+    MikkyForm form = MikkyForm.cat,
+    double morph = 0,
+    int points = 360,
+    MikkyTuning? tuning,
+  }) =>
+      _build(
+        pose: pose,
+        time: time,
+        form: form,
+        morph: morph,
+        eyeLeft: eyeLeft,
+        eyeRight: eyeRight,
+        badge: null,
+        particles: const [],
+        radius: radius,
+        points: points,
+        tuning: tuning,
+      );
+
+  static MikkyGeometry _build({
+    required MikkyPose pose,
+    required double time,
+    required MikkyForm form,
+    required double morph,
+    required EyeShape eyeLeft,
+    required EyeShape eyeRight,
+    required MikkyBadge? badge,
+    required List<MikkyParticle> particles,
+    required double radius,
+    required int points,
+    MikkyTuning? tuning,
+  }) {
     final tu = tuning ?? MikkyTuning.defaults;
-    final p = mikky.pose;
-    final t = mikky.time;
+    final p = pose;
+    final t = time;
     final r = radius;
     final rx = r * MikkyShape.halfWidth, ry = r * MikkyShape.halfHeight;
     const ex = 2 / MikkyShape.exponent;
@@ -113,8 +168,7 @@ class MikkyGeometry {
 
     // m: how far into the form (may overshoot, like jelly); w: the same,
     // kept in 0..1 for what must not overshoot (ears, fur, eyes).
-    final form = mikky.form;
-    final m = form == MikkyForm.cat ? 0.0 : mikky.morph;
+    final m = form == MikkyForm.cat ? 0.0 : morph;
     final w = m.clamp(0.0, 1.0);
     // The heart and the fur ball are still the mascot, a little changed:
     // they keep his outline and his eyes. The heart keeps its ears too; the
@@ -158,6 +212,22 @@ class MikkyGeometry {
       return best;
     }
 
+    // His arms (a trial, 2026-10-06; « on garde que la version dodus »):
+    // grown out of his outline with no seam, like his ears.
+    final armsOut = p[MikkyProp.arms].clamp(0.0, 1.0);
+    final lobes = armsOut <= .01
+        ? const <_Lobe>[]
+        : [
+            for (final side in const [-1.0, 1.0])
+              _Lobe.arm(
+                side,
+                armsOut,
+                side < 0 ? p[MikkyProp.armLeftLift] : p[MikkyProp.armRightLift],
+                side < 0 ? p[MikkyProp.armLeftGrow] : p[MikkyProp.armRightGrow],
+                r,
+              ),
+          ];
+
     final contour = Float64List((points + 1) * 2);
     for (var i = 0; i <= points; i++) {
       final th = i / points * math.pi * 2;
@@ -184,6 +254,17 @@ class MikkyGeometry {
       final fluff = 1 + amount * wave;
       x *= fluff;
       y *= fluff;
+      if (lobes.isNotEmpty) {
+        // Each arm pushes his outline out where it grows, toward where the
+        // arm points: raised, it leans up from its shoulder. Gone as he
+        // turns into another form.
+        final at = math.atan2(ry * py, rx * px);
+        for (final lobe in lobes) {
+          final (dx, dy) = lobe.push(at);
+          x += dx * (1 - w);
+          y += dy * (1 - w);
+        }
+      }
       if (heart != 0 && py > 0) {
         // The bottom narrows a little and goes down to a soft, round point:
         // only a hint of a heart.
@@ -214,7 +295,7 @@ class MikkyGeometry {
       if (grow < .05) continue;
       final width = r * MikkyShape.eyeWidth * tu.eyeSize;
       final fullHeight = r * MikkyShape.eyeBaseHeight * tu.eyeElongation * tu.eyeSize;
-      final shape = side < 0 ? mikky.eyeLeft : mikky.eyeRight;
+      final shape = side < 0 ? eyeLeft : eyeRight;
       // Eyelids close the eyes that have lids; the other shapes keep their
       // look.
       final lid = shape == EyeShape.oval || shape == EyeShape.round || shape == EyeShape.tired ? p.open : 1.0;
@@ -249,11 +330,11 @@ class MikkyGeometry {
       tilt: p.tilt,
       scaleX: p.scaleX,
       scaleY: p.scaleY,
-      badge: mikky.badge,
+      badge: badge,
       badgeX: r * 1.12 + p.offsetX * r,
       badgeY: -r * .95 + p.offsetY * r,
       particles: [
-        for (final q in mikky.particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
+        for (final q in particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
       ],
     );
   }
@@ -304,6 +385,73 @@ double _lumpy(double th, double t, double seed) =>
   final g = _wobble(th, t, .6) * (1 + _fur(th, t, .035));
   return (x * g, cy + (y - cy) * g + math.sin(t * 2.2) * .03);
 }
+
+/// An arm grown out of his outline: around the angle [anchor] where it
+/// grows (from his center, y down), [halfWidth] radians to each side, the
+/// outline is pushed [length] pixels at its middle (by [profile]) in the
+/// direction [direction]: straight out at rest, up when the arm is raised,
+/// so it turns from its shoulder instead of sliding along him.
+class _Lobe {
+  const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile, [this.stretch = 0, this.radius = 0]);
+
+  /// The arm on [side], [show] out of him, [lift] raised (up > 0),
+  /// [grow] longer: plump, a round, wide end on a narrower base (« dodus »,
+  /// kept of the melted stumps and their variants).
+  factory _Lobe.arm(double side, double show, double lift, double grow, double r) {
+    // Where it grows (a little below his middle), how long, how wide; at
+    // rest it points a little down.
+    const anchor = .12, length = .3, halfWidth = .34, rest = .1;
+    const profile = plump;
+    // On the right side, then mirrored. Raised, it gets a little bigger;
+    // reaching, it gets longer, hardly thicker (« trop épais » when it
+    // grew both ways, 2026-10-06).
+    final up = lift.clamp(-.6, 1.4);
+    final dir = anchor + rest - up;
+    final raised = .12 * math.max(0.0, math.sin(up));
+    return _Lobe(
+      side > 0 ? anchor : math.pi - anchor,
+      side > 0 ? dir : math.pi - dir,
+      length * r * show * (1 + grow + raised),
+      // Reaching, a little thinner than its base at rest: an arm, not a
+      // wing.
+      halfWidth * (1 + .5 * raised) * (1 - .3 * grow.clamp(0.0, 1.0)),
+      profile,
+      grow.clamp(0.0, 1.0),
+      r,
+    );
+  }
+
+  final double anchor, direction, length, halfWidth;
+  final double Function(double u) profile;
+
+  /// 0: a bump (the arm at rest); 1: a reaching arm, its middle carried
+  /// out whole, so its sides stay parallel and its end round, as thick as
+  /// at rest (« tu l'as juste grossi et pas allongé »).
+  final double stretch;
+
+  /// His radius, for the round end of a reaching arm.
+  final double radius;
+
+  /// A wide, round end, no seam at the base.
+  static double plump(double u) => math.pow(1 - math.pow(u, 3), 2.2).toDouble();
+
+  /// How far, and which way, the outline at the angle [at] is pushed.
+  (double, double) push(double at) {
+    var d = (at - anchor) % (2 * math.pi);
+    if (d > math.pi) d -= 2 * math.pi;
+    final u = d.abs() / halfWidth;
+    if (u >= 1) return (0, 0);
+    // Reaching: the middle carried out whole, its end rounded like a
+    // fingertip (half as long as the arm is thick).
+    const whole = .5;
+    final reach = u < whole ? 1.0 : _smoothstep((1 - u) / (1 - whole));
+    final tip = u < whole ? math.sqrt(1 - math.pow(u / whole, 2)) * whole * halfWidth : 0.0;
+    final out = length * (profile(u) + (reach - profile(u)) * stretch) + tip * stretch * radius;
+    return (math.cos(direction) * out, math.sin(direction) * out);
+  }
+}
+
+double _smoothstep(double t) => t * t * (3 - 2 * t);
 
 /// Outline of a small, lopsided, softly furry ball, in pixels.
 Float64List _furBall(double cx, double cy, double radius, double t, int n) {

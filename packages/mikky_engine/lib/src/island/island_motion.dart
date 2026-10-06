@@ -7,7 +7,14 @@ enum IslandShape { hidden, compact, open }
 /// What the open island shows: [focus], one agent and its answers (an
 /// alert at the top); [list], the home; [page], a page over the home (an
 /// agent's page; at the top 700 × 380, under the notch's 700 × 200).
-enum IslandLayout { focus, list, page }
+enum IslandLayout {
+  focus,
+  list,
+  page,
+
+  /// Mikky's greeting when the app starts (2026-10-06, the pop).
+  greet,
+}
 
 /// The screen edge the island is glued to.
 enum IslandEdge {
@@ -30,6 +37,7 @@ class IslandMetrics {
     required this.list,
     required this.page,
     required this.hidden,
+    required this.greet,
     required this.compactRadius,
     required this.openRadius,
     required this.mikkyCompact,
@@ -50,6 +58,7 @@ class IslandMetrics {
     list: (width: 700, height: 200),
     page: (width: 700, height: 380),
     hidden: (width: 150, height: 0),
+    greet: (width: 380, height: 160),
     compactRadius: 18,
     openRadius: 30,
     mikkyCompact: (x: 21, y: 20, radius: 9),
@@ -76,6 +85,7 @@ class IslandMetrics {
     list: (width: 290, height: 408),
     page: (width: 344, height: 520),
     hidden: (width: 0, height: 80),
+    greet: (width: 290, height: 220),
     compactRadius: 22,
     openRadius: 30,
     mikkyCompact: (x: 37, y: 32, radius: 15),
@@ -90,6 +100,9 @@ class IslandMetrics {
       };
 
   final IslandSize compact, focus, list, page, hidden;
+
+  /// While Mikky greets, at the start.
+  final IslandSize greet;
   final double compactRadius, openRadius;
   final MikkySpot mikkyCompact, mikkyOpen;
 
@@ -104,12 +117,14 @@ class IslandMetrics {
         IslandLayout.focus => mikkyOpen,
         IslandLayout.list => mikkyList,
         IslandLayout.page => mikkyPage,
+        IslandLayout.greet => mikkyOpen,
       };
 
   IslandSize open(IslandLayout layout) => switch (layout) {
         IslandLayout.focus => focus,
         IslandLayout.list => list,
         IslandLayout.page => page,
+        IslandLayout.greet => greet,
       };
 }
 
