@@ -242,20 +242,59 @@ abstract final class ArmLoops {
   static const stills = [('Au repos', .6), ('Coucou', 1.5), ('Montre', 2.9), ('Youpi', 4.4)];
 
   static const notes = {
-    ArmStyle.noodle: 'Souples, pliés comme un tuyau, une main ronde (les dessins animés des années 30).',
-    ArmStyle.stick: 'Des traits fins et une petite main ronde : un personnage d’autocollant, très épuré.',
-    ArmStyle.nub: 'Courts, épais et ronds : des bosses de son corps, comme ses oreilles.',
-    ArmStyle.fluffy: 'Poilus comme lui, une touffe au bout.',
-    ArmStyle.mitten: 'Souples, avec des moufles et un pouce.',
+    ArmStyle.nub: 'Le préféré des cinq premiers dessins : courts, épais et ronds, posés contre lui.',
+    ArmStyle.star: 'Comme un Luma : de petites pointes qui sortent de ses côtés et se lèvent un peu ; le contour s’y plie, sans jointure.',
+    ArmStyle.soft: 'Les moignons fondus en lui : ronds au bout, sortis de son contour, sans jointure.',
+    ArmStyle.fin: 'De larges nageoires douces, un peu basses.',
+    ArmStyle.starFeet: 'Les pointes, et deux tout petits pieds sous lui, comme un Luma.',
   };
 
   static const names = {
-    ArmStyle.noodle: 'Bras souples',
-    ArmStyle.stick: 'Bras fins',
     ArmStyle.nub: 'Moignons',
-    ArmStyle.fluffy: 'Bras poilus',
-    ArmStyle.mitten: 'Moufles',
+    ArmStyle.star: 'Pointes',
+    ArmStyle.soft: 'Moignons fondus',
+    ArmStyle.fin: 'Nageoires',
+    ArmStyle.starFeet: 'Pointes et petits pieds',
   };
+}
+
+/// A color his powers light him in, and whether his eyes go dark then.
+typedef PowerLook = ({Color color, bool darkEyes});
+
+/// Mikky uses his powers (2026-10-06, like a Luma that stays bright red
+/// while it uses its powers): he gathers himself, bursts into color with
+/// sparks, floats glowing for a moment, and goes back to black.
+abstract final class PowerLoops {
+  static final power = Choreography(
+    name: 'Ses pouvoirs',
+    duration: 5.0,
+    marks: const [Mark(.4, 'se concentre'), Mark(1.05, 'pouvoir'), Mark(3.5, 's’éteint')],
+    tracks: {
+      'arms': const [Beat(.1, 0), Beat(.4, 1, Easings.back), Beat(4.2, 1), Beat(4.6, 0, Easings.inOut)],
+      // He gathers himself: crouches, eyes closed, arms in close.
+      'scaleY': const [Beat(.4, 1), Beat(1.0, .86, Easings.inOut), Beat(1.15, 1.12, Easings.out), Beat(1.5, 1, Easings.back)],
+      'scaleX': const [Beat(.4, 1), Beat(1.0, 1.1, Easings.inOut), Beat(1.15, .92, Easings.out), Beat(1.5, 1, Easings.back)],
+      'open': const [Beat(.45, 1), Beat(.6, .08, Easings.out), Beat(1.0, .08), Beat(1.12, 1, Easings.out)],
+      'handLeftY': const [Beat(.4, 0), Beat(1.0, .1), Beat(1.15, -.3, Easings.out), Beat(3.4, -.3), Beat(3.9, 0, Easings.inOut)],
+      'handRightY': const [Beat(.4, 0), Beat(1.0, .1), Beat(1.15, -.3, Easings.out), Beat(3.4, -.3), Beat(3.9, 0, Easings.inOut)],
+      'eyeScale': const [Beat(1.05, 1), Beat(1.25, 1.15, Easings.back), Beat(3.4, 1.15), Beat(3.8, 1)],
+      // He floats while lit.
+      'y': [const Beat(1.05, 0), const Beat(1.4, -.22, Easings.out), ...Choreography.wiggle(1.4, 3.4, -.22, .06, 3), const Beat(3.9, 0, Easings.inOut)],
+      'power': const [Beat(1.05, 0), Beat(1.2, 1, Easings.out), Beat(3.5, 1), Beat(4.1, 0, Easings.inOut)],
+      'glow': const [Beat(1.2, 1), Beat(1.7, .65), Beat(2.2, 1), Beat(2.7, .65), Beat(3.2, 1)],
+      'earLeft': const [Beat(1.05, 0), Beat(1.2, .5, Easings.out), Beat(1.6, 0)],
+      'earRight': const [Beat(1.1, 0), Beat(1.25, .5, Easings.out), Beat(1.65, 0)],
+    },
+  );
+
+  /// The colors to try: the Luma's bright red, with white eyes or dark
+  /// ones like it; the blue of work; the violet of « Ensorcelé ».
+  static const looks = <(String, String, PowerLook)>[
+    ('Rouge fluo', 'Comme le Luma : rouge vif, ses yeux blancs.', (color: Color(0xFFFF2D55), darkEyes: false)),
+    ('Rouge fluo, yeux sombres', 'Comme le Luma jusqu’aux yeux : sombres sur le rouge.', (color: Color(0xFFFF2D55), darkEyes: true)),
+    ('Bleu du travail', 'La couleur de l’agent au travail : un pouvoir par état ?', (color: Color(0xFF0A84FF), darkEyes: false)),
+    ('Violet « Ensorcelé »', 'La couleur de la relance magique.', (color: Color(0xFFBF5AF2), darkEyes: false)),
+  ];
 }
 
 /// Mikky's pose at [t] in [c].
@@ -268,7 +307,7 @@ MikkyPose poseAt(Choreography c, double t) {
 }
 
 /// Mikky as [c] has him at [t], with radius [r].
-MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = ArmStyle.noodle}) {
+MikkyGeometry geometryAt(Choreography c, double t, double r, {ArmStyle arms = ArmStyle.nub}) {
   final furball = c.value('furball', t);
   final eyes = c.value('happy', t) > .5
       ? EyeShape.happy
@@ -293,7 +332,7 @@ final Future<ui.FragmentProgram?> _program = loadIslandProgram();
 /// The top of a screen at the instant [t] of a launch: the island glued
 /// to its top edge, Mikky in it, the particles.
 class LaunchScene extends StatelessWidget {
-  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190), this.arms = ArmStyle.noodle});
+  const LaunchScene(this.choreography, this.t, {super.key, this.size = const Size(520, 190), this.arms = ArmStyle.nub});
 
   final Choreography choreography;
   final double t;
@@ -479,13 +518,17 @@ class _LaunchPainter extends CustomPainter {
 
 /// Mikky alone at the instant [t] of a loop of his (the arms).
 class PoseScene extends StatelessWidget {
-  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.arms = ArmStyle.noodle, this.radius = 34});
+  const PoseScene(this.choreography, this.t, {super.key, this.size = const Size(240, 150), this.arms = ArmStyle.nub, this.radius = 34, this.power});
 
   final Choreography choreography;
   final double t;
   final Size size;
   final ArmStyle arms;
   final double radius;
+
+  /// The look of his powers, lit by the `power` track (pulsing with
+  /// `glow`); null: none.
+  final PowerLook? power;
 
   @override
   Widget build(BuildContext context) {
@@ -496,34 +539,51 @@ class PoseScene extends StatelessWidget {
       height: size.height,
       color: mui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
       child: CustomPaint(
-        painter: _PosePainter(choreography, t, theme, arms, radius),
+        painter: _PosePainter(choreography, t, theme, arms, radius, power),
       ),
     );
   }
 }
 
 class _PosePainter extends CustomPainter {
-  _PosePainter(this.c, this.t, this.theme, this.arms, this.radius);
+  _PosePainter(this.c, this.t, this.theme, this.arms, this.radius, this.look);
 
   final Choreography c;
   final double t;
   final MikkyTheme theme;
   final ArmStyle arms;
   final double radius;
+  final PowerLook? look;
+
+  static final _sparks = Burst(seed: 21, count: 26, speedMin: 60, speedMax: 150, sizeMin: 1.2, sizeMax: 2.6, lifeMin: .5, lifeMax: .9, drag: 2.4);
 
   @override
   void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * .58 + c.value('y', t) * radius);
+    final look = this.look;
+    final lit = look == null ? 0.0 : c.value('power', t);
     MikkyPainter(
       geometry: geometryAt(c, t, radius, arms: arms),
       // `y` moves him (units of his radius): his hops.
-      center: Offset(size.width / 2, size.height * .58 + c.value('y', t) * radius),
-      rim: theme.mikkyRim,
+      center: center,
+      rim: lit > .5 ? null : theme.mikkyRim,
       statusColor: theme.status,
       foreground: theme.foreground,
       showBadge: false,
+      power: look == null ? null : MikkyPower(look.color, lit, glow: c.value('glow', t, 1), darkEyes: look.darkEyes),
     ).paint(canvas, size);
+    // Sparks when his power bursts out.
+    final m = c.at('pouvoir');
+    if (look != null && m != null && t >= m) {
+      final paint = Paint();
+      for (final s in _sparks.at(t - m)) {
+        paint.color = Color.lerp(look.color, const Color(0xFFFFFFFF), .4)!.withValues(alpha: s.alpha);
+        canvas.drawRect(Rect.fromCenter(center: center + Offset(s.x.roundToDouble(), s.y.roundToDouble()), width: s.size, height: s.size), paint);
+      }
+    }
   }
 
   @override
-  bool shouldRepaint(_PosePainter old) => old.t != t || old.c != c || old.theme != theme || old.arms != arms || old.radius != radius;
+  bool shouldRepaint(_PosePainter old) =>
+      old.t != t || old.c != c || old.theme != theme || old.arms != arms || old.radius != radius || old.look != look;
 }

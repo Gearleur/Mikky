@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -9,6 +10,17 @@ const _heartPink = Color(0xFFFF4D6D);
 const _starGold = Color(0xFFFFD25A);
 const _sweatBlue = Color(0xFF7CC4FF);
 
+/// Mikky using his powers: his fur lit in [color] by [amount] (0 to 1),
+/// a glow around him ([glow] 0 to 1, its pulse), and, like a Luma, his
+/// eyes dark when [darkEyes].
+class MikkyPower {
+  const MikkyPower(this.color, this.amount, {this.glow = 1, this.darkEyes = false});
+
+  final Color color;
+  final double amount, glow;
+  final bool darkEyes;
+}
+
 /// Draws one frame of Mikky's geometry, centered on [center].
 class MikkyPainter extends CustomPainter {
   MikkyPainter({
@@ -18,7 +30,14 @@ class MikkyPainter extends CustomPainter {
     required this.foreground,
     this.rim,
     this.showBadge = true,
+    this.power,
   });
+
+  /// He uses his powers (a trial, 2026-10-06, like a Luma: « il reste
+  /// rouge fluo quand il utilise ses pouvoirs »): his fur lights up in a
+  /// color, softly lighter in the middle, with a glow around; null: as
+  /// always.
+  final MikkyPower? power;
 
   final MikkyGeometry geometry;
   final Offset center;
@@ -63,8 +82,25 @@ class MikkyPainter extends CustomPainter {
         Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
     ];
     final rim = this.rim;
+    final power = this.power;
+    final lit = power == null ? 0.0 : power.amount.clamp(0.0, 1.0);
+    if (power != null && lit > 0) {
+      // The glow, behind him.
+      canvas.drawPath(
+        outline,
+        Paint()
+          ..color = power.color.withValues(alpha: .7 * lit * power.glow)
+          ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .5),
+      );
+    }
+    final fur = Paint()..color = _ink;
+    if (power != null && lit > 0) {
+      final color = Color.lerp(_ink, power.color, lit)!;
+      final heart = Color.lerp(_ink, Color.lerp(power.color, const Color(0xFFFFFFFF), .35)!, lit)!;
+      fur.shader = ui.Gradient.radial(Offset(0, -r * .15), r * 1.25, [heart, color]);
+    }
     for (final part in parts) {
-      canvas.drawPath(part, Paint()..color = _ink);
+      canvas.drawPath(part, fur);
       if (rim != null) {
         canvas.drawPath(
           part,
@@ -83,7 +119,7 @@ class MikkyPainter extends CustomPainter {
       canvas.translate(eye.x, eye.y);
       canvas.rotate(eye.rotation);
       canvas.scale(eye.scaleX, eye.scaleY);
-      _eye(canvas, eye, r, g.time);
+      _eye(canvas, eye, r, g.time, power == null || !power.darkEyes ? _eyeWhite : Color.lerp(_eyeWhite, const Color(0xFF1A0508), lit)!);
       canvas.restore();
     }
     canvas.restore();
@@ -99,14 +135,14 @@ class MikkyPainter extends CustomPainter {
     canvas.restore();
   }
 
-  void _eye(Canvas canvas, EyeGeometry e, double r, double time) {
+  void _eye(Canvas canvas, EyeGeometry e, double r, double time, Color white) {
     final w = e.width, h = e.height, full = e.fullHeight;
-    final fill = Paint()..color = _eyeWhite;
+    final fill = Paint()..color = white;
     Paint line(double width) => Paint()
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round
       ..strokeWidth = width
-      ..color = _eyeWhite;
+      ..color = white;
     switch (e.shape) {
       case EyeShape.oval:
         canvas.drawOval(Rect.fromCenter(center: Offset.zero, width: w, height: h), fill);

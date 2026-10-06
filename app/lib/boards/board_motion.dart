@@ -48,8 +48,8 @@ final motionBoard = BoardSpec(
       ],
     ),
     BoardSection(
-      title: 'Les bras · cinq dessins',
-      note: 'Des bras plutôt que des pattes (« les pattes sont moches ») : cinq dessins, qui font la même chose. Ils sortent de ses côtés, font coucou, montrent la tâche, youpi, et rentrent dans son corps ; d’un seul contour avec lui, invisibles quand ils sont rentrés.',
+      title: 'Les bras · moignons et idées de Luma',
+      note: 'Les moignons, gardés des cinq premiers dessins, et des idées d’après le Luma de Mario Galaxy, sans le copier : des bras qui sortent de son contour, sans jointure, comme ses oreilles. Tous font la même chose : ils sortent de ses côtés, font coucou, montrent la tâche, youpi, et rentrent dans son corps.',
       kind: FrameKind.trial,
       frames: [
         for (final style in ArmStyle.values)
@@ -68,9 +68,28 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les bras · côte à côte',
-      note: 'Les cinq dessins, figés aux mêmes instants, pour comparer.',
+      note: 'Les mêmes, figés aux mêmes instants, pour comparer.',
       kind: FrameKind.trial,
-      frames: [BoardFrame(label: 'Les cinq dessins', child: _ArmGrid())],
+      frames: [BoardFrame(label: 'Côte à côte', child: _ArmGrid())],
+    ),
+    BoardSection(
+      title: 'Ses pouvoirs',
+      note: 'Comme le Luma qui reste rouge fluo quand il utilise ses pouvoirs : Mikky se concentre, éclate en couleur parmi des étincelles, flotte en brillant un moment, puis redevient noir. Avec les pointes. Quatre couleurs à essayer ; on pourrait lier la couleur à ce qu’il fait.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final (name, note, look) in PowerLoops.looks)
+          BoardFrame(
+            label: name,
+            note: note,
+            width: 300,
+            child: MotionPlayer(
+              choreography: PowerLoops.power,
+              width: 300,
+              poster: 2.2,
+              scene: (context, t) => PoseScene(PowerLoops.power, t, size: const Size(300, 190), arms: ArmStyle.star, power: look),
+            ),
+          ),
+      ],
     ),
     BoardSection(
       title: 'Les courbes',
