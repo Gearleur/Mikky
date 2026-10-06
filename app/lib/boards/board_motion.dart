@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../motion/dot_waves.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
+import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
 
@@ -64,6 +66,27 @@ final motionBoard = BoardSpec(
       note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, avec ses bras dodus, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres.',
       kind: FrameKind.trial,
       frames: [BoardFrame(label: '128 bits', child: _PixelPowerGrid())],
+    ),
+    BoardSection(
+      title: 'Les ondes · réfléchir',
+      note: 'D’après tes images d’une « vague de réflexion » : des points sur une petite grille, en notre bleu. L’onde, puis d’autres formes (pouls, vague, spirale, losange, carré, radar, égaliseur). Chacune en boucle, dans sa couche, sur l’horloge commune (30 images par seconde).',
+      kind: FrameKind.trial,
+      frames: [
+        for (final w in DotWave.values)
+          BoardFrame(
+            label: w.label,
+            note: w.note,
+            width: 176,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Looping(
+                period: w.period,
+                frozenAt: .3,
+                builder: (context, t) => DotWaveScene(w, t * w.periodMs / 1000),
+              ),
+            ),
+          ),
+      ],
     ),
     BoardSection(
       title: 'Les courbes',
