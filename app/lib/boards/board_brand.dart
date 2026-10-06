@@ -292,13 +292,29 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
       title: 'Logo simple · le symbole',
       note: 'Un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Gardés des premiers essais : les crochets-oreilles et le M-oreilles. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
       kind: FrameKind.trial,
-      frames: [for (final m in MarkSymbol.values.where((m) => !m.fresh)) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+      frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
     ),
     BoardSection(
-      title: 'Logo simple · d’autres formes',
-      note: 'D’autres formes, sans partir de SFEIR : l’île de l’app, une encoche d’écran, un autocollant, une fenêtre-chat, sa tête qui dépasse, un curseur de terminal, une étincelle, une pastille. Toujours ses signes : ses yeux hauts, ses oreilles.',
+      title: 'Logo · lisse et pro',
+      note: 'Plus pro, lisible, lisse, avec une touche de magie, dans notre DA (chat magique, pixels, ordinateur, un peu de sorcier) : sa vraie silhouette, nettoyée (sans poils, oreilles aux bouts ronds), et au plus une touche magique. Sur des carrés aux coins doux, en noir et en blanc, puis en petit.',
       kind: FrameKind.trial,
-      frames: [for (final m in MarkSymbol.values.where((m) => m.fresh)) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+      frames: [for (final m in SmoothMark.values) BoardFrame(label: m.label, note: m.note, width: 250, child: SmoothSheet(m))],
+    ),
+    BoardSection(
+      title: 'Logo · lisse, avec son nom',
+      note: 'Le symbole à côté de son nom en Geist, simple, en minuscules.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final m in const [SmoothMark.silhouette, SmoothMark.sparkle, SmoothMark.moon, SmoothMark.line])
+          BoardFrame(
+            label: m.label,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              SmoothSignature(m),
+              const SizedBox(height: 8),
+              SmoothSignature(m, dark: false),
+            ]),
+          ),
+      ],
     ),
     BoardSection(
       title: 'Logo simple · le nom',
@@ -323,12 +339,7 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
       note: 'Le symbole et le nom côte à côte, comme une signature.',
       kind: FrameKind.trial,
       frames: [
-        for (final (m, w) in const [
-          (MarkSymbol.ears, MarkWord.bracketed),
-          (MarkSymbol.monogram, MarkWord.eyes),
-          (MarkSymbol.island, MarkWord.bracketed),
-          (MarkSymbol.sticker, MarkWord.bracketed),
-        ])
+        for (final (m, w) in const [(MarkSymbol.ears, MarkWord.bracketed), (MarkSymbol.monogram, MarkWord.eyes)])
           BoardFrame(
             label: '${m.label} + ${w.label}',
             child: Row(mainAxisSize: MainAxisSize.min, children: [MarkTile(m, size: 90), MarkName(w)]),
