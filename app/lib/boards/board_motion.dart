@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
-import '../motion/feet.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
@@ -59,19 +58,6 @@ final motionBoard = BoardSpec(
             label: pose.name,
             width: 200,
             child: ClipRRect(borderRadius: BorderRadius.circular(12), child: PoseScene(pose, 0, size: const Size(200, 160), radius: 38)),
-          ),
-      ],
-    ),
-    BoardSection(
-      title: 'Les pieds',
-      note: 'Gardés en test, pour des moments rares : les pieds de Kirby, deux gros ovales devant le bas de son corps, de son noir, un liseré de petits carrés de lumière sur leur haut ; et avec les pieds, toujours les bras.',
-      kind: FrameKind.trial,
-      frames: [
-        for (final pose in ArmPoses.all)
-          BoardFrame(
-            label: pose.name,
-            width: 200,
-            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: FeetScene(pose, size: const Size(200, 160), radius: 38)),
           ),
       ],
     ),
