@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/pixel_fx.dart';
 import '../ui/tokens.dart';
@@ -44,12 +45,15 @@ abstract final class PixelPowerColors {
 
 /// Mikky lit by his powers, in pixels, in one [palette].
 class PixelPowerScene extends StatelessWidget {
-  const PixelPowerScene(this.style, this.palette, {super.key, this.size = const Size(170, 150), this.radius = 36});
+  const PixelPowerScene(this.style, this.palette, {super.key, this.size = const Size(170, 150), this.radius = 36, this.arms = true});
 
   final PixelPowerStyle style;
   final PixelFxPalette palette;
   final Size size;
   final double radius;
+
+  /// His plump arms out; false: just him.
+  final bool arms;
 
   @override
   Widget build(BuildContext context) {
@@ -58,22 +62,26 @@ class PixelPowerScene extends StatelessWidget {
       width: size.width,
       height: size.height,
       color: ui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
-      child: CustomPaint(painter: _PixelPowerPainter(style, palette, radius, size)),
+      child: CustomPaint(painter: _PixelPowerPainter(style, palette, radius, size, arms)),
     );
   }
 }
 
 class _PixelPowerPainter extends CustomPainter {
-  _PixelPowerPainter(this.style, this.palette, this.radius, this.size);
+  _PixelPowerPainter(this.style, this.palette, this.radius, this.size, this.arms);
 
   final PixelPowerStyle style;
   final PixelFxPalette palette;
   final double radius;
   final Size size;
+  final bool arms;
+
+  /// Him without arms.
+  static final _plain = Choreography(name: 'Sans les bras', duration: 1, tracks: const {});
 
   /// Each one drawn once into an image (thousands of pixels: drawn again
   /// at each frame, they made the board lag), shared by both themes.
-  static final _images = <(PixelPowerStyle, PixelFxPalette, double, Size), ui.Image>{};
+  static final _images = <(PixelPowerStyle, PixelFxPalette, double, Size, bool), ui.Image>{};
 
   /// 4 × 4 ordered dither.
   static const _bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
@@ -81,7 +89,7 @@ class _PixelPowerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size _) {
-    final image = _images.putIfAbsent((style, palette, radius, size), () {
+    final image = _images.putIfAbsent((style, palette, radius, size, arms), () {
       final recorder = ui.PictureRecorder();
       _draw(Canvas(recorder));
       final picture = recorder.endRecording();
@@ -97,7 +105,7 @@ class _PixelPowerPainter extends CustomPainter {
     final cols = size.width.floor(), rows = size.height.floor();
     final center = Offset(size.width / 2, size.height * .58);
     final r = radius;
-    final g = geometryAt(ArmPoses.all.first, 0, r);
+    final g = geometryAt(arms ? ArmPoses.all.first : _plain, 0, r);
     final body = Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])], true);
     Offset local(double x, double y) => Offset((x - center.dx - g.translateX) / g.scaleX, (y - center.dy - g.translateY) / g.scaleY);
 
@@ -239,5 +247,6 @@ class _PixelPowerPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_PixelPowerPainter old) => old.style != style || old.palette != palette || old.radius != radius || old.size != size;
+  bool shouldRepaint(_PixelPowerPainter old) =>
+      old.style != style || old.palette != palette || old.radius != radius || old.size != size || old.arms != arms;
 }

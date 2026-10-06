@@ -63,7 +63,7 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Ses pouvoirs · en pixels',
-      note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, avec ses bras dodus, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres.',
+      note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, avec ses bras dodus, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres ; avec ses bras dodus, puis sans.',
       kind: FrameKind.trial,
       frames: [BoardFrame(label: '128 bits', child: _PixelPowerGrid())],
     ),
@@ -203,18 +203,22 @@ class _PixelPowerGrid extends StatelessWidget {
           for (final (name, _) in PixelPowerColors.all) SizedBox(width: 174, child: Center(child: Text(name, style: label))),
         ]),
         const SizedBox(height: 6),
-        for (final style in PixelPowerStyle.values)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 6),
-            child: Row(children: [
-              SizedBox(width: 130, child: Text(style.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text))),
-              for (final (_, palette) in PixelPowerColors.all)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette)),
+        for (final arms in const [true, false])
+          for (final style in PixelPowerStyle.values)
+            Padding(
+              padding: EdgeInsets.only(bottom: 6, top: !arms && style == PixelPowerStyle.values.first ? 14 : 0),
+              child: Row(children: [
+                SizedBox(
+                  width: 130,
+                  child: Text(arms ? style.label : '${style.label}, sans les bras', style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
                 ),
-            ]),
-          ),
+                for (final (_, palette) in PixelPowerColors.all)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette, arms: arms)),
+                  ),
+              ]),
+            ),
       ],
     );
   }
