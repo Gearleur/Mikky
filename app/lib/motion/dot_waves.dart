@@ -18,7 +18,15 @@ enum DotWave {
   diamond('Losange', 'L’onde en losange : la même vague, en marches.', 1600),
   square('Carré', 'L’onde en carré arrondi, comme l’île.', 1600),
   radar('Radar', 'Un rayon qui balaie le cercle et laisse une traîne qui s’éteint.', 2000),
-  equalizer('Égaliseur', 'Des colonnes de points qui montent et descendent, chacune à son rythme.', 1600);
+  equalizer('Égaliseur', 'Des colonnes de points qui montent et descendent, chacune à son rythme.', 1600),
+  spiralFade('Spirale qui s’efface', 'Un bras qui se dessine en tournant depuis le centre, sa tête vive, et s’efface derrière elle.', 2600),
+  orbit('Orbite', 'Une comète qui tourne sur l’ovale, sa traîne en dégradé.', 1800),
+  drops('Gouttes', 'Des gouttes qui tombent ici et là, chacune ouvre son petit cercle.', 2400),
+  breath('Respiration', 'Un disque en dégradé qui grandit et rapetisse, comme un souffle.', 2800),
+  vortex('Tourbillon', 'Des anneaux en pointillés qui tournent en sens contraires.', 3000),
+  infinity('Infini', 'Un point qui dessine un huit couché, sa traîne en dégradé derrière lui.', 2400),
+  scanner('Scanner', 'Une barre qui monte et descend, sa traîne qui s’éteint derrière.', 1800),
+  star('Étoile', 'Une étoile à quatre branches qui s’allume et s’éteint, ses rayons en dégradé.', 1600);
 
   const DotWave(this.label, this.note, this.periodMs);
 
@@ -68,6 +76,8 @@ class _DotWavePainter extends CustomPainter {
   static const _tall = 1.6;
 
   static double _ring(double d, double r, double width) => math.exp(-math.pow((d - r) / width, 2));
+
+  static double _hash(int i) => pixelHash(i * 7919 + 13);
 
   /// How lit the dot at ([dx], [dy]) from the middle is (0 to 1), at the
   /// point [u] (0 to 1) of the loop.
@@ -125,6 +135,81 @@ class _DotWavePainter extends CustomPainter {
         final h = rows * .42 * (.15 + .85 * math.pow(math.sin(u * math.pi * 2 * (1 + (column % 3)) + seed).abs(), 1.4) * math.exp(-math.pow(column / (half / 2), 2) * .6));
         if (dy.abs() > h) return 0;
         return .45 + .55 * (1 - dy.abs() / math.max(h, .5));
+      case DotWave.spiralFade:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        // Its head runs out from the center; its tail follows and erases.
+        final head = u * half * 1.7, tail = head - half * .9;
+        if (d > head || d < tail) return 0;
+        final angle = math.atan2(dy * _tall, dx);
+        var diff = (angle - (d * .62 - u * math.pi * 1.2)) % (math.pi * 2);
+        if (diff > math.pi) diff -= math.pi * 2;
+        final along = (d - math.max(tail, 0)) / math.max(head - math.max(tail, 0), .1);
+        return math.exp(-math.pow(diff / .5, 2)) * math.pow(along, 1.3);
+      case DotWave.orbit:
+        final rx = half * .78, ry = rows / 2 * .78;
+        final e = math.sqrt(math.pow(dx / rx, 2) + math.pow(dy / ry, 2));
+        final near = math.exp(-math.pow((e - 1) / .1, 2));
+        if (near < .05) return 0;
+        final angle = math.atan2(dy / ry, dx / rx);
+        final behind = (u * math.pi * 2 - angle) % (math.pi * 2);
+        return near * math.exp(-behind / 1.4);
+      case DotWave.drops:
+        var lit = 0.0;
+        for (var k = 0; k < 6; k++) {
+          // Each drop at its own place and moment, again and again.
+          final p = (u + k / 6) % 1;
+          final cx = (_hash(k * 3 + 1) - .5) * cols * .8, cy = (_hash(k * 3 + 2) - .5) * rows * .7;
+          final d = math.sqrt(math.pow(dx - cx, 2) + math.pow((dy - cy) * _tall, 2));
+          final r = p * 6;
+          final splash = d < 1 ? math.max(0.0, 1 - p * 6) : 0.0;
+          lit = math.max(lit, math.max(splash, _ring(d, r, .6) * math.pow(1 - p, 1.2)));
+        }
+        return lit;
+      case DotWave.breath:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        final r = 3 + 9 * (.5 - .5 * math.cos(u * math.pi * 2));
+        return math.pow((1 - d / r).clamp(0.0, 1.0), .8).toDouble();
+      case DotWave.vortex:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        final angle = math.atan2(dy * _tall, dx);
+        var lit = 0.0;
+        for (var k = 1; k <= 3; k++) {
+          final turn = (k.isEven ? 1 : -1) * u * math.pi * 2;
+          // A few long dashes per ring, soft at their ends.
+          final dash = math.pow(.5 + .5 * math.sin(angle * k + turn), 2).toDouble();
+          lit = math.max(lit, _ring(d, k * 5.0, .65) * dash * (1.2 - k * .15));
+        }
+        return lit;
+      case DotWave.infinity:
+        // The figure eight, sampled; how far behind the head each dot is.
+        const n = 120;
+        final a = half * .85;
+        var best = 1e9, at = 0;
+        for (var i = 0; i < n; i++) {
+          final q = i / n * math.pi * 2, den = 1 + math.pow(math.sin(q), 2);
+          final px = a * math.cos(q) / den, py = a * math.sin(q) * math.cos(q) / den / _tall * 1.6;
+          final dd = math.pow(dx - px, 2) + math.pow((dy - py) * _tall, 2);
+          if (dd < best) {
+            best = dd.toDouble();
+            at = i;
+          }
+        }
+        if (best > 1.1) return 0;
+        final behind = ((u * n).floor() - at) % n;
+        return math.exp(-behind / 26) * math.exp(-best / .7);
+      case DotWave.scanner:
+        final y = math.sin(u * math.pi * 2) * rows / 2 * .82;
+        final going = math.cos(u * math.pi * 2);
+        final behind = (y - dy) * going.sign;
+        return behind > 0 ? math.exp(-behind / 2.6) * .85 : math.exp(-math.pow(behind / .5, 2));
+      case DotWave.star:
+        final pulse = .5 - .5 * math.cos(u * math.pi * 2);
+        final reach = 2 + 12 * pulse;
+        final ax = dx.abs(), ay = (dy * _tall).abs();
+        final straight = ay < .7 ? 1 - ax / reach : (ax < .7 ? 1 - ay / reach : 0.0);
+        final diagonal = (ax - ay).abs() < .8 ? 1 - (ax + ay) / (reach * .9) : 0.0;
+        final core = math.sqrt(ax * ax + ay * ay) < 1.6 ? .6 + .4 * pulse : 0.0;
+        return math.max(core, math.max(straight, diagonal * .7).clamp(0.0, 1.0) * (.4 + .6 * pulse));
     }
   }
 
@@ -139,17 +224,27 @@ class _DotWavePainter extends CustomPainter {
     for (var y = 0; y < rows; y++) {
       for (var x = 0; x < cols; x++) {
         final rect = Rect.fromLTWH(x * step, y * step, dot, dot);
-        // Brighter than linear: the shapes read in the light blues.
-        final level = pixelLevel(math.pow(_at(x - (cols - 1) / 2, y - (rows - 1) / 2, u).clamp(0.0, 1.0), .65).toDouble());
-        if (level == null) {
+        final lit = _at(x - (cols - 1) / 2, y - (rows - 1) / 2, u).clamp(0.0, 1.0);
+        if (lit < .06) {
           // The grid, barely there.
           canvas.drawRect(rect, faint);
           continue;
         }
-        paint.color = palette.levels[level];
+        // A continuous gradient (« plus de gradient, plus voyant »): from
+        // almost white where it is brightest, through the palette, to its
+        // deepest blue fading out.
+        paint.color = _shade(math.pow(lit, .7).toDouble());
         canvas.drawRect(rect, paint);
       }
     }
+  }
+
+  Color _shade(double i) {
+    final ramp = [palette.levels[3], palette.levels[2], palette.levels[1], palette.levels[0], Color.lerp(palette.levels[0], const Color(0xFFFFFFFF), .7)!];
+    final f = i * (ramp.length - 1);
+    final k = math.min(f.floor(), ramp.length - 2);
+    final color = Color.lerp(ramp[k], ramp[k + 1], f - k)!;
+    return color.withValues(alpha: (i * 2.2).clamp(.25, 1.0));
   }
 
   @override

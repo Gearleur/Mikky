@@ -69,7 +69,7 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les ondes · réfléchir',
-      note: 'D’après tes images d’une « vague de réflexion » : des points sur une petite grille, en notre bleu. L’onde, puis d’autres formes (pouls, vague, spirale, losange, carré, radar, égaliseur). Chacune en boucle, dans sa couche, sur l’horloge commune (30 images par seconde).',
+      note: 'D’après tes images d’une « vague de réflexion » : des points sur une petite grille, en notre bleu. L’onde, puis d’autres formes, en dégradé continu. Chacune en boucle, dans sa couche, sur l’horloge commune (30 images par seconde).',
       kind: FrameKind.trial,
       frames: [
         for (final w in DotWave.values)
