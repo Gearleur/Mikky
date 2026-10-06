@@ -143,7 +143,7 @@ abstract final class ArmPoses {
   static final all = [
     _pose('Au repos', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': -.15}),
     _pose('Coucou', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .95, 'armRightGrow': .5, 'happy': 1, 'tilt': -.08}),
-    _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .12, 'armRightGrow': 1.1, 'yaw': .5}),
+    _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .12, 'armRightGrow': .85, 'yaw': .5}),
     _pose('Youpi', {'arms': 1, 'armLeftLift': .85, 'armRightLift': .85, 'armLeftGrow': .4, 'armRightGrow': .4, 'happy': 1}),
   ];
 

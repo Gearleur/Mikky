@@ -5,7 +5,6 @@ import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/particles.dart';
 import '../motion/pixel_power.dart';
-import '../ui/pixel_fx.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
@@ -61,12 +60,13 @@ final motionBoard = BoardSpec(
       kind: FrameKind.trial,
       frames: [
         BoardFrame(label: 'Huit couleurs', child: _PowerGrid()),
-        BoardFrame(
-          label: 'En pixels, orange et bleu',
-          note: 'Notre direction pixel, nos deux couleurs signature : Mikky en sprite quand il lance un sort, en 16 bits (gros pixels, quatre teintes) ou en 32 bits (petits pixels, une trame), et en magicien (étoiles et étincelles en pixels).',
-          child: _PixelPowerGrid(),
-        ),
       ],
+    ),
+    BoardSection(
+      title: 'Ses pouvoirs · en pixels',
+      note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres.',
+      kind: FrameKind.trial,
+      frames: [BoardFrame(label: '128 bits', child: _PixelPowerGrid())],
     ),
     BoardSection(
       title: 'Les particules',
@@ -246,8 +246,7 @@ class _PowerGrid extends StatelessWidget {
   }
 }
 
-/// The pixel styles of his powers in columns, our two signature colors in
-/// rows.
+/// The pixel styles of his powers in rows, the colors in columns.
 class _PixelPowerGrid extends StatelessWidget {
   const _PixelPowerGrid();
 
@@ -259,27 +258,19 @@ class _PixelPowerGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(children: [
-          const SizedBox(width: 80),
-          for (final style in PixelPowerStyle.values)
-            SizedBox(
-              width: 184,
-              child: Column(children: [
-                Text(style.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-                const SizedBox(height: 2),
-                Text(style.note, style: uiText(11, color: ui.text3), textAlign: TextAlign.center),
-                const SizedBox(height: 6),
-              ]),
-            ),
+          const SizedBox(width: 130),
+          for (final (name, _) in PixelPowerColors.all) SizedBox(width: 174, child: Center(child: Text(name, style: label))),
         ]),
-        for (final (name, palette) in const [('Orange', PixelFxPalette.signatureOrange), ('Bleu', PixelFxPalette.signatureBlue)])
+        const SizedBox(height: 6),
+        for (final style in PixelPowerStyle.values)
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(children: [
-              SizedBox(width: 80, child: Text(name, style: label)),
-              for (final style in PixelPowerStyle.values)
+              SizedBox(width: 130, child: Text(style.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text))),
+              for (final (_, palette) in PixelPowerColors.all)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette, size: const Size(180, 150), radius: 32)),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette)),
                 ),
             ]),
           ),
