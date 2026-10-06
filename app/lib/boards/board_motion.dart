@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
+import '../motion/intro.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
@@ -28,23 +29,19 @@ final motionBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Le lancement',
-      note: 'Quand Mikky démarre : l’île sort du haut de l’écran, Mikky y arrive, dit coucou, et ils repartent. Deux essais (sans les bras pour l’instant), chacun une chorégraphie écrite à la main (comme la salutation de Mochi) : la barre de temps va à n’importe quel instant (clic ou glisser), ×0,25 pour le ralenti ; sous la barre, ses moments et les courbes de quelques pistes.',
+      note: 'Une petite apparition, simple et souple, à la Disney / Pixar : sur un fond blanc, son ombre douce au sol ; l’anticipation, l’écrasement et l’étirement, des arcs, des oreilles qui suivent en retard. Lecture, ×0,25 pour le ralenti, la barre de temps pour aller à un instant ; dessous, ses moments et quelques courbes.',
       kind: FrameKind.trial,
       frames: [
-        for (final (c, note, curves) in [
-          (Launches.fall, 'Il tombe du haut de l’écran avec des traînées, atterrit écrasé dans un anneau de poussière, rebondit, regarde à gauche et à droite, coucou des oreilles.', ['ih', 'y', 'scaleY', 'yaw']),
-          (Launches.hatch, 'Une petite boule de poils arrive en tournant, tremble, et éclot en Mikky parmi trois petits feux d’artifice ; il ouvre les yeux, ses oreilles sortent l’une après l’autre, coucou avec un saut.', ['furball', 'scaleY', 'open', 'earLeft']),
+        for (final (c, note, curves, poster) in [
+          (Intros.hops, 'Il arrive en trois sauts, de plus en plus petits, comme la lampe de Pixar ; il se pose, se tourne vers nous, cligne, sourit des yeux.', ['h', 'scaleY', 'earLeft', 'yaw'], 1.8),
+          (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre, penche la tête, curieux, et fait un petit saut content.', ['size', 'h', 'scaleY', 'earLeft'], 1.7),
+          (Intros.drop, 'Il tombe doucement d’en haut, son ombre grandit sous lui ; il s’étire, s’écrase en touchant le sol, rebondit une fois, ses oreilles retombent et reviennent ; il nous regarde et sourit.', ['h', 'scaleY', 'earLeft', 'pitch'], .76),
         ])
           BoardFrame(
             label: c.name,
             note: note,
             width: 520,
-            child: MotionPlayer(
-              choreography: c,
-              curves: curves,
-              poster: c.at('coucou')! + .35,
-              scene: (context, t) => LaunchScene(c, t),
-            ),
+            child: MotionPlayer(choreography: c, curves: curves, poster: poster, scene: (context, t) => IntroScene(c, t)),
           ),
       ],
     ),
