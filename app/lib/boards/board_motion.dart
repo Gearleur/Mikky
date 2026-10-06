@@ -64,7 +64,7 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les pieds',
-      note: 'Les pieds de Kirby gardés : deux gros ovales devant le bas de son corps, de son noir. Avec et sans ses bras dodus, et d’autres façons de les faire ressortir que le trait tout autour (« je suis dubitatif »).',
+      note: 'Les pieds de Kirby gardés : deux gros ovales devant le bas de son corps, de son noir. Avec et sans ses bras dodus, et d’autres façons de les faire ressortir que le trait tout autour. Choisi : le liseré en pixels ; mais des pieds très rarement : une idée gardée de côté.',
       kind: FrameKind.trial,
       frames: [
         BoardFrame(label: 'Cinq façons de les voir', child: _FeetGrid()),
