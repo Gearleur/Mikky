@@ -21,13 +21,37 @@ import '../ui/tokens.dart';
 /// Marks: what happens, and where particles start.
 abstract final class Launches {
   /// The island while it greets, and Mikky's place in it.
-  static const width = 340.0, height = 116.0, restY = 62.0, radius = 27.0;
+  static const width = 340.0, height = 116.0, restY = 64.0, radius = 32.0;
+
+  /// The closed island, and Mikky's place in it (`IslandMetrics.top`):
+  /// where the greeting starts and where it ends.
+  static const compactW = 186.0, compactH = 36.0, compactX = -186 / 2 + 21, compactY = 20.0, compactSize = 9 / radius;
 
   static final all = [fall, hatch];
 
-  static List<Beat> _islandIn(String track, double to) => [Beat(0, track == 'iw' ? 150 : 0), Beat(.5, to, Easings.back)];
+  /// The island: out of the top edge as its closed pill, then open on the
+  /// app's own spring.
+  static List<Beat> _islandIn(String track, double to) => [
+        Beat(0, track == 'iw' ? 150 : 0),
+        Beat(.14, track == 'iw' ? compactW : compactH, Easings.out),
+        Beat(.62, to, Easings.spring(SpringSpec.island, .48)),
+      ];
 
-  static List<Beat> _islandOut(double at, String track) => [Beat(at, track == 'iw' ? width : height), Beat(at + .55, track == 'iw' ? 150 : 0, Easings.inOut)];
+  /// At [at], it closes back into its pill with Mikky at his place in it,
+  /// stays a moment, and goes up into the top edge.
+  static List<Beat> _islandOut(double at, String track) => [
+        Beat(at, track == 'iw' ? width : height),
+        Beat(at + .55, track == 'iw' ? compactW : compactH, Easings.spring(SpringSpec.island, .55)),
+        Beat(at + 1.1, track == 'iw' ? compactW : compactH),
+        Beat(at + 1.4, track == 'iw' ? 150 : 0, Easings.inOut),
+      ];
+
+  /// Mikky goes to his place in the closed island, small, at [at].
+  static Map<String, List<Beat>> _settle(double at, List<Beat> y) => {
+        'x': [Beat(at, 0), Beat(at + .55, compactX, Easings.spring(SpringSpec.glideAcross, .55))],
+        'y': [...y, Beat(at, restY), Beat(at + .55, compactY, Easings.spring(SpringSpec.glideUpDown, .55)), Beat(at + 1.1, compactY), Beat(at + 1.4, compactY - 30, Easings.inOut)],
+        'size': [Beat(at, 1), Beat(at + .55, compactSize, Easings.spring(SpringSpec.glideAcross, .55))],
+      };
 
   /// Hello with the ears: both flick, one after the other, three times.
   static Map<String, List<Beat>> _earHello(double from, double to) => {
@@ -40,20 +64,18 @@ abstract final class Launches {
   /// with his ears.
   static final fall = Choreography(
     name: 'La chute',
-    duration: 5.3,
-    marks: const [Mark(0, 'l’île sort'), Mark(.3, 'il tombe'), Mark(.68, 'atterrit'), Mark(1.6, 'regarde'), Mark(3.2, 'coucou'), Mark(4.6, 'repart')],
+    duration: 5.9,
+    marks: const [Mark(0, 'l’île sort'), Mark(.3, 'il tombe'), Mark(.68, 'atterrit'), Mark(1.6, 'regarde'), Mark(3.2, 'coucou'), Mark(4.4, 'se range')],
     tracks: {
-      'iw': [..._islandIn('iw', width), ..._islandOut(4.7, 'iw')],
-      'ih': [..._islandIn('ih', height), ..._islandOut(4.7, 'ih')],
-      'y': const [
+      'iw': [..._islandIn('iw', width), ..._islandOut(4.4, 'iw')],
+      'ih': [..._islandIn('ih', height), ..._islandOut(4.4, 'ih')],
+      ..._settle(4.4, const [
         Beat(.3, -50),
         Beat(.68, restY + 9, Easings.inCubic),
         Beat(.94, restY - 22, Easings.out),
         Beat(1.16, restY + 2, Easings.inCubic),
         Beat(1.36, restY, Easings.out),
-        Beat(4.6, restY),
-        Beat(5.15, restY + 95, Easings.inCubic),
-      ],
+      ]),
       'scaleY': [
         const Beat(.3, 1),
         const Beat(.62, 1.24, Easings.inCubic),
@@ -86,12 +108,12 @@ abstract final class Launches {
   /// spring up one after the other, he looks, says hello with a hop.
   static final hatch = Choreography(
     name: 'L’éclosion',
-    duration: 5.6,
-    marks: const [Mark(0, 'l’île sort'), Mark(.25, 'une boule'), Mark(1.2, 'éclot'), Mark(1.5, 'ouvre les yeux'), Mark(3.2, 'coucou'), Mark(4.8, 'repart')],
+    duration: 6.1,
+    marks: const [Mark(0, 'l’île sort'), Mark(.25, 'une boule'), Mark(1.2, 'éclot'), Mark(1.5, 'ouvre les yeux'), Mark(3.2, 'coucou'), Mark(4.6, 'se range')],
     tracks: {
-      'iw': [..._islandIn('iw', width), ..._islandOut(4.9, 'iw')],
-      'ih': [..._islandIn('ih', height), ..._islandOut(4.9, 'ih')],
-      'y': const [Beat(0, restY + 4), Beat(3.3, restY), Beat(3.5, restY - 16, Easings.out), Beat(3.72, restY, Easings.inCubic), Beat(4.8, restY), Beat(5.35, restY + 95, Easings.inCubic)],
+      'iw': [..._islandIn('iw', width), ..._islandOut(4.6, 'iw')],
+      'ih': [..._islandIn('ih', height), ..._islandOut(4.6, 'ih')],
+      ..._settle(4.6, const [Beat(0, restY + 4), Beat(3.3, restY), Beat(3.5, restY - 16, Easings.out), Beat(3.72, restY, Easings.inCubic)]),
       'furball': [const Beat(1.2, 1), Beat(1.65, 0, Easings.spring(const SpringSpec(95, .38), .45))],
       'scaleX': [
         const Beat(.25, 0),
@@ -309,7 +331,8 @@ class _LaunchPainter extends CustomPainter {
     // sides shows.
 
     // Mikky.
-    final g = geometryAt(c, t, Launches.radius);
+    // `size`: how big he is (smaller once in the closed island).
+    final g = geometryAt(c, t, Launches.radius * c.value('size', t, 1));
     MikkyPainter(
       geometry: g,
       center: Offset(mx, my),
