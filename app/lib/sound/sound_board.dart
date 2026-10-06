@@ -30,6 +30,8 @@ const Map<MikkyCue, String?> soundFiles = {
   MikkyCue.dizzy: 'back',
   MikkyCue.sleep: 'folder_close',
   MikkyCue.wake: 'folder_open',
+  // His spell (2026-10-06): ours, made by `tool/make_spell_sound.py`.
+  MikkyCue.spell: 'spell',
 };
 
 /// Plays Mikky's sounds: off or on and how loud in the settings, never two

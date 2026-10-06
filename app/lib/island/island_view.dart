@@ -196,6 +196,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   bool get _greeting => _greetAt != null;
 
+  /// Where the pop was at the last frame: its sounds play as their moment
+  /// passes.
+  double _greetLast = -1;
+
   /// Where in the pop we are (seconds).
   double get _greetT => _clock.now - (_greetAt ?? 0) - _greetLead;
 
@@ -891,6 +895,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// One frame of the island. [calm]: on the decor clock; with Mikky out
   /// of sight and no countdown, nothing to draw.
   void _step(double dt, {bool calm = false}) {
+    if (_greeting) {
+      final now = _greetT;
+      // His spell: its sound gathers with the magic and rings as the star
+      // bursts.
+      for (final m in Intros.pop.passed(_greetLast, now)) {
+        if (m.name == 'pouvoir') _sound.play(MikkyCue.spell);
+      }
+      _greetLast = now;
+    }
     // The greeting is over: the island goes back to what the rules want.
     if (_greeting && _greetT > Intros.pop.duration + _greetFade) {
       _greetAt = null;
