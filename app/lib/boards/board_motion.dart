@@ -64,9 +64,12 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les pieds',
-      note: 'D’après les pieds de Kirby : deux ovales un peu gros, devant le bas de son corps, de son noir. Quatre formes, et trois façons de les voir sur lui sans changer leur couleur : un trait, un reflet, les deux.',
+      note: 'Les pieds de Kirby gardés : deux gros ovales devant le bas de son corps, de son noir. Avec et sans ses bras dodus, et d’autres façons de les faire ressortir que le trait tout autour (« je suis dubitatif »).',
       kind: FrameKind.trial,
-      frames: [BoardFrame(label: 'Quatre formes, trois façons de les voir', child: _FeetGrid())],
+      frames: [
+        BoardFrame(label: 'Cinq façons de les voir', child: _FeetGrid()),
+        BoardFrame(label: 'Avec les bras, ses poses', child: _FeetPoses()),
+      ],
     ),
     BoardSection(
       title: 'Ses pouvoirs · en pixels',
@@ -231,7 +234,7 @@ class _PixelPowerGrid extends StatelessWidget {
   }
 }
 
-/// The feet: their shapes in rows, the ways to see them in columns.
+/// The ways to see the feet in columns; without, then with his arms.
 class _FeetGrid extends StatelessWidget {
   const _FeetGrid();
 
@@ -242,10 +245,10 @@ class _FeetGrid extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(width: 160),
+          const SizedBox(width: 120),
           for (final look in FootLook.values)
             SizedBox(
-              width: 194,
+              width: 184,
               child: Column(children: [
                 Text(look.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
                 const SizedBox(height: 2),
@@ -254,22 +257,48 @@ class _FeetGrid extends StatelessWidget {
               ]),
             ),
         ]),
-        for (final shape in FootShape.values)
+        for (final (name, pose) in [('Sans les bras', null), ('Avec les bras', ArmPoses.all.first)])
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: Row(children: [
-              SizedBox(
-                width: 160,
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(shape.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-                  const SizedBox(height: 2),
-                  Text(shape.note, style: uiText(11, color: ui.text3)),
-                ]),
-              ),
+              SizedBox(width: 120, child: Text(name, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text))),
               for (final look in FootLook.values)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: FeetScene(shape, look, size: const Size(190, 150), radius: 38)),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: FeetScene(look, pose: pose, size: const Size(180, 150), radius: 38)),
+                ),
+            ]),
+          ),
+      ],
+    );
+  }
+}
+
+/// His arms' poses on his feet, with a trait and with a liseré.
+class _FeetPoses extends StatelessWidget {
+  const _FeetPoses();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final label = uiText(TextSize.label, color: ui.text2);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const SizedBox(width: 120),
+          for (final pose in ArmPoses.all) SizedBox(width: 184, child: Center(child: Text(pose.name, style: label))),
+        ]),
+        const SizedBox(height: 6),
+        for (final look in const [FootLook.line, FootLook.topRim])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              SizedBox(width: 120, child: Text(look.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text))),
+              for (final pose in ArmPoses.all)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: FeetScene(look, pose: pose, size: const Size(180, 150), radius: 38)),
                 ),
             ]),
           ),
