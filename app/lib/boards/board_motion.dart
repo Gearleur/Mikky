@@ -33,8 +33,10 @@ final motionBoard = BoardSpec(
       kind: FrameKind.trial,
       frames: [
         for (final (c, note, curves, poster) in [
+          (Intros.fly, 'Comme un Luma : il arrive en volant sur une courbe douce, les oreilles qui battent comme de petites ailes, une traîne d’étincelles en pixels ; il ralentit au milieu et reste en l’air, se balance, nous regarde, sourit.', ['h', 'x', 'tilt', 'trail'], 2.6),
+          (Intros.float, 'Une étincelle bleue s’ouvre dans l’air, il en sort les yeux fermés ; il les ouvre et flotte, se balance, dérive un peu d’un côté à l’autre, sourit.', ['size', 'h', 'x', 'tilt'], 2.0),
           (Intros.hops, 'Il arrive en trois sauts, de plus en plus petits, comme la lampe de Pixar ; il se pose, se tourne vers nous, cligne, sourit des yeux.', ['h', 'scaleY', 'earLeft', 'yaw'], 1.8),
-          (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre, penche la tête, curieux, et fait un petit saut content.', ['size', 'h', 'scaleY', 'earLeft'], 1.7),
+          (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre. Puis sa magie, ultra rapide : il devient orange un instant et une petite étoile éclate à côté de lui. Il penche la tête, curieux, et fait un petit saut content.', ['size', 'power', 'star', 'scaleY'], 1.3),
           (Intros.drop, 'Il tombe doucement d’en haut, son ombre grandit sous lui ; il s’étire, s’écrase en touchant le sol, rebondit une fois, ses oreilles retombent et reviennent ; il nous regarde et sourit.', ['h', 'scaleY', 'earLeft', 'pitch'], .76),
         ])
           BoardFrame(
