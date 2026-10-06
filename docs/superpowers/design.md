@@ -33,6 +33,7 @@ Tout ce qui est décidé sur l'apparence de Mikky : direction artistique, marque
 
 - **Nom** : Mikky (validé).
 - **Logo** : **Mikky lui-même**, la mascotte bien présente. Retenue : **C, Mikky qui dépasse du bas du carré** (« de loin la mieux »). Restent à côté : **C2** plus près (juste les oreilles et les yeux), **C3** penché par le coin, **C4** par le côté. **À ajouter plus tard : un petit quelque chose de magique.** Ensuite : l'icône de l'app et de la zone de notification. Sur blanc et sur gris anthracite `#2A2A2E` (sur noir, un chat noir disparaît).
+- **Essai : un logo simple pour l'entreprise** (2026-10-06, comme SFEIR — une mascotte, un symbole, un nom entre crochets — ou Anthropic), à côté de Mikky la mascotte, planche Marque : **symboles** (crochets et ses deux yeux ; crochets dont le haut se lève en oreilles ; sa tête en 9 × 8 pixels ; un M dont les pointes sont ses oreilles), en blanc sur noir et noir sur blanc, jusqu'à 16 px ; **noms** (`[mikky]` en Geist Mono ; « mikky » dont le i est un de ses yeux ; `[m]` et ses deux yeux ; Mikky en Jacquard 24) ; et des **signatures** symbole + nom (`app/lib/boards/logo_trials.dart`).
 - **Nom de l'app en lettres** : police pixel **Jacquard 24**, choisie le 2026-10-01 et posée sur la petite île, **seulement pour le nom** (`app/assets/fonts/`) ; Jersey 10 en second choix (`assets/fonts/trial/`).
 - **Texte** : **Geist** et **Geist Mono** partout (choisies).
 - **Couleurs signature** (validées, **gardées pour plus tard**) :

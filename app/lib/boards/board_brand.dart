@@ -12,6 +12,7 @@ import '../ui/tokens.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';
+import 'logo_trials.dart';
 
 String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
 
@@ -285,6 +286,42 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
         BoardFrame(label: 'C2 · Plus près', note: 'Juste ses oreilles et ses yeux.', width: 252, child: _LogoProposal(_LogoKind.close)),
         BoardFrame(label: 'C3 · Penché', note: 'Par le coin, la tête inclinée.', width: 252, child: _LogoProposal(_LogoKind.tilt)),
         BoardFrame(label: 'C4 · Par le côté', note: 'Il entre par le bord droit.', width: 252, child: _LogoProposal(_LogoKind.side)),
+      ],
+    ),
+    BoardSection(
+      title: 'Logo simple · le symbole',
+      note: 'Comme SFEIR (une mascotte, un symbole, un nom entre crochets) ou Anthropic : un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Ses signes à lui : ses deux yeux hauts, ses oreilles, des crochets pour l’informatique, des pixels. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
+      kind: FrameKind.trial,
+      frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+    ),
+    BoardSection(
+      title: 'Logo simple · le nom',
+      note: 'Son nom en lettres, sur un bandeau, comme celui de SFEIR : en blanc sur noir et en noir sur blanc.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final w in MarkWord.values)
+          BoardFrame(
+            label: w.label,
+            note: w.note,
+            width: 300,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              MarkName(w),
+              const SizedBox(height: 8),
+              MarkName(w, dark: false),
+            ]),
+          ),
+      ],
+    ),
+    BoardSection(
+      title: 'Logo simple · ensemble',
+      note: 'Le symbole et le nom côte à côte, comme une signature.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final (m, w) in const [(MarkSymbol.brackets, MarkWord.bracketed), (MarkSymbol.ears, MarkWord.eye), (MarkSymbol.pixel, MarkWord.pixel)])
+          BoardFrame(
+            label: '${m.label} + ${w.label}',
+            child: Row(mainAxisSize: MainAxisSize.min, children: [MarkTile(m, size: 90), MarkName(w)]),
+          ),
       ],
     ),
     BoardSection(
