@@ -295,28 +295,6 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
       frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
     ),
     BoardSection(
-      title: 'Logo · lisse et pro',
-      note: 'Plus pro, lisible, lisse, avec une touche de magie, dans notre DA (chat magique, pixels, ordinateur, un peu de sorcier) : sa vraie silhouette, nettoyée (sans poils, oreilles aux bouts ronds), et au plus une touche magique. Sur des carrés aux coins doux, en noir et en blanc, puis en petit.',
-      kind: FrameKind.trial,
-      frames: [for (final m in SmoothMark.values) BoardFrame(label: m.label, note: m.note, width: 250, child: SmoothSheet(m))],
-    ),
-    BoardSection(
-      title: 'Logo · lisse, avec son nom',
-      note: 'Le symbole à côté de son nom en Geist, simple, en minuscules.',
-      kind: FrameKind.trial,
-      frames: [
-        for (final m in const [SmoothMark.silhouette, SmoothMark.sparkle, SmoothMark.moon, SmoothMark.line])
-          BoardFrame(
-            label: m.label,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              SmoothSignature(m),
-              const SizedBox(height: 8),
-              SmoothSignature(m, dark: false),
-            ]),
-          ),
-      ],
-    ),
-    BoardSection(
       title: 'Logo simple · le nom',
       note: 'Son nom en lettres, sur un bandeau : en blanc sur noir et en noir sur blanc. Gardés : [mikky] et [m] avec ses yeux.',
       kind: FrameKind.trial,
