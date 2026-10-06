@@ -7,6 +7,7 @@ import '../mikky/mikky_painter.dart';
 import '../theme.dart';
 import '../ui/pixel_fx.dart';
 import 'launch.dart';
+import 'sprite128.dart';
 
 /// Mikky's entrance (2026-10-06: « plus simple, plus smooth, plus animé…
 /// une intro à la Disney, une petite apparition à la Pixar, vraiment
@@ -144,50 +145,74 @@ class _IntroPainter extends CustomPainter {
     }
     final x = here.dx, y = here.dy;
     _shadow(canvas, size, Offset(x, ground), h, grow, c.value('shadow', t, 1));
-    // His magic: a glow behind him, his fur orange for an instant.
+    // His magic (« dès que Mikky change de couleur, il doit être en 128
+    // bits »): in color, he and all his effects are 128-bit sprites.
     final power = c.value('power', t);
-    // The little star beside him, and its burst of pixel sparks.
     final star = c.value('star', t);
     final starAt = here + Offset(r * 1.85, -r * 1.05);
+    final g = geometryAt(c, t, r * grow);
+    MikkyPainter(
+      geometry: g,
+      center: Offset(x, y),
+      statusColor: MikkyTheme.light.status,
+      foreground: MikkyTheme.light.foreground,
+      showBadge: false,
+    ).paint(canvas, size);
+    if (power > .01) {
+      final (body, eyes) = _bodyAndEyes(g, Offset(x, y));
+      drawSprite128(canvas, body, palette: _palette, light: Offset(x, y - r * grow * .25), reach: r * grow * 1.3, holes: eyes, halo: 9, fade: power);
+    }
+    // The star beside him, then its burst: a ring that opens, sparks.
     if (star > .01) {
-      canvas.drawCircle(starAt, r * .9 * star, Paint()
-        ..color = _orange.withValues(alpha: .45 * math.min(1, star))
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .35));
-      canvas.drawPath(_sparkle(starAt, r * .7 * star), Paint()..color = _orange.withValues(alpha: math.min(1, star * 1.3)));
-      canvas.drawPath(_sparkle(starAt, r * .34 * star), Paint()..color = const Color(0xFFFFF4B8));
+      drawSprite128(canvas, _sparkle(starAt, r * .7 * star), palette: _palette, light: starAt, reach: r * .55 * star, halo: 5);
     }
     final burst = c.at('éclate');
     if (burst != null && t >= burst) {
       final age = t - burst;
-      // A ring that opens and fades.
       if (age < .35) {
         final q = age / .35;
-        canvas.drawCircle(starAt, r * (.3 + 1.4 * Easings.out(q)), Paint()
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = r * .12 * (1 - q)
-          ..color = _orange.withValues(alpha: (1 - q) * .9));
+        final out = r * (.3 + 1.4 * Easings.out(q)), width = math.max(1.5, r * .14 * (1 - q));
+        final ring = Path.combine(
+          PathOperation.difference,
+          Path()..addOval(Rect.fromCircle(center: starAt, radius: out)),
+          Path()..addOval(Rect.fromCircle(center: starAt, radius: out - width)),
+        );
+        drawSprite128(canvas, ring, palette: _palette, light: starAt, reach: out, halo: 2, fade: 1 - q);
       }
       final paint = Paint()..isAntiAlias = false;
       final px = (r * .1).roundToDouble().clamp(2.0, 6.0);
       for (final s in _burst.at(age)) {
         final o = starAt + Offset(s.x, s.y);
-        paint.color = PixelFxPalette.signatureOrange.levels[(s.progress * 4).floor().clamp(0, 3)].withValues(alpha: s.alpha);
+        paint.color = _palette.levels[(s.progress * 4).floor().clamp(0, 3)].withValues(alpha: s.alpha);
         final big = s.size > 3.6 ? px * 1.5 : px;
         canvas.drawRect(Rect.fromLTWH((o.dx / px).roundToDouble() * px, (o.dy / px).roundToDouble() * px, big, big), paint);
       }
     }
-    MikkyPainter(
-      geometry: geometryAt(c, t, r * grow),
-      center: Offset(x, y),
-      statusColor: MikkyTheme.light.status,
-      foreground: MikkyTheme.light.foreground,
-      showBadge: false,
-      fur: power > 0 ? Color.lerp(MikkyPainter.ink, _orange, power) : null,
-      glow: power > 0 ? _orange.withValues(alpha: .95 * power) : null,
-    ).paint(canvas, size);
   }
 
-  static const _orange = Color(0xFFFF8204);
+  /// His body and his eyes where they are drawn, for the sprites.
+  static (Path, List<Path>) _bodyAndEyes(MikkyGeometry g, Offset center) {
+    final m = Matrix4.identity()
+      ..translateByDouble(center.dx + g.translateX, center.dy + g.translateY, 0, 1)
+      ..rotateZ(g.tilt)
+      ..scaleByDouble(g.scaleX, g.scaleY, 1, 1);
+    final body = Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])], true);
+    final eyes = [
+      for (final e in g.eyes)
+        (Path()..addOval(Rect.fromCenter(center: Offset.zero, width: e.width, height: e.height))).transform(
+          (Matrix4.copy(m)
+                ..translateByDouble(e.x, e.y, 0, 1)
+                ..rotateZ(e.rotation)
+                ..scaleByDouble(e.scaleX, e.scaleY, 1, 1))
+              .storage,
+        ),
+    ];
+    return (body.transform(m.storage), eyes);
+  }
+
+  /// Our signature orange.
+  static const _palette = PixelFxPalette.signatureOrange;
+
   static final _burst = Burst(seed: 31, count: 44, speedMin: 120, speedMax: 280, sizeMin: 2, sizeMax: 4.5, lifeMin: .4, lifeMax: .75, drag: 3, alphaMin: .85);
 
   /// A four-pointed sparkle at [c], [o] from its middle to a point.

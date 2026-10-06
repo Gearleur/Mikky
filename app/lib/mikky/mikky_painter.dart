@@ -18,18 +18,7 @@ class MikkyPainter extends CustomPainter {
     required this.foreground,
     this.rim,
     this.showBadge = true,
-    this.fur,
-    this.glow,
   });
-
-  /// His black.
-  static const ink = _ink;
-
-  /// His fur in another color (his powers, a flash); null: his black.
-  final Color? fur;
-
-  /// A soft glow behind him (his powers); null: none.
-  final Color? glow;
 
   final MikkyGeometry geometry;
   final Offset center;
@@ -65,14 +54,8 @@ class MikkyPainter extends CustomPainter {
         Path()..addPolygon([for (var i = 0; i < s.length ~/ 2; i++) Offset(s[i * 2], s[i * 2 + 1])], true),
     ];
     final rim = this.rim;
-    final glow = this.glow;
-    if (glow != null) {
-      canvas.drawPath(body, Paint()
-        ..color = glow
-        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .45));
-    }
     for (final part in parts) {
-      canvas.drawPath(part, Paint()..color = fur ?? _ink);
+      canvas.drawPath(part, Paint()..color = _ink);
       if (rim != null) {
         canvas.drawPath(
           part,
