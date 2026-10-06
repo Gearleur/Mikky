@@ -290,13 +290,19 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
     ),
     BoardSection(
       title: 'Logo simple · le symbole',
-      note: 'Comme SFEIR (une mascotte, un symbole, un nom entre crochets) ou Anthropic : un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Ses signes à lui : ses deux yeux hauts, ses oreilles, des crochets pour l’informatique, des pixels. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
+      note: 'Un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Gardés des premiers essais : les crochets-oreilles et le M-oreilles. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
       kind: FrameKind.trial,
-      frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+      frames: [for (final m in MarkSymbol.values.where((m) => !m.fresh)) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+    ),
+    BoardSection(
+      title: 'Logo simple · d’autres formes',
+      note: 'D’autres formes, sans partir de SFEIR : l’île de l’app, une encoche d’écran, un autocollant, une fenêtre-chat, sa tête qui dépasse, un curseur de terminal, une étincelle, une pastille. Toujours ses signes : ses yeux hauts, ses oreilles.',
+      kind: FrameKind.trial,
+      frames: [for (final m in MarkSymbol.values.where((m) => m.fresh)) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
     ),
     BoardSection(
       title: 'Logo simple · le nom',
-      note: 'Son nom en lettres, sur un bandeau, comme celui de SFEIR : en blanc sur noir et en noir sur blanc.',
+      note: 'Son nom en lettres, sur un bandeau : en blanc sur noir et en noir sur blanc. Gardés : [mikky] et [m] avec ses yeux.',
       kind: FrameKind.trial,
       frames: [
         for (final w in MarkWord.values)
@@ -317,7 +323,12 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
       note: 'Le symbole et le nom côte à côte, comme une signature.',
       kind: FrameKind.trial,
       frames: [
-        for (final (m, w) in const [(MarkSymbol.brackets, MarkWord.bracketed), (MarkSymbol.ears, MarkWord.eye), (MarkSymbol.pixel, MarkWord.pixel)])
+        for (final (m, w) in const [
+          (MarkSymbol.ears, MarkWord.bracketed),
+          (MarkSymbol.monogram, MarkWord.eyes),
+          (MarkSymbol.island, MarkWord.bracketed),
+          (MarkSymbol.sticker, MarkWord.bracketed),
+        ])
           BoardFrame(
             label: '${m.label} + ${w.label}',
             child: Row(mainAxisSize: MainAxisSize.min, children: [MarkTile(m, size: 90), MarkName(w)]),

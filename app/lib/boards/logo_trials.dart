@@ -9,14 +9,26 @@ import '../ui/tokens.dart';
 /// symbol and his name in letters, as trials. Mikky's own marks: his two
 /// tall eyes, his ears, brackets for the computer, pixels.
 enum MarkSymbol {
-  brackets('Crochets et yeux', 'Des crochets et ses deux yeux : l’informatique, et lui qui regarde.'),
+  // Kept from the first trials (2026-10-06, « j'aime bien »).
   ears('Crochets-oreilles', 'Le haut des crochets se lève en oreilles : sa tête, faite de crochets.'),
-  pixel('Tête en pixels', 'Sa tête en 9 × 8 pixels : les oreilles, les yeux, rien d’autre.'),
-  monogram('M-oreilles', 'Un M dont les deux pointes sont ses oreilles, ses yeux dessous.');
+  monogram('M-oreilles', 'Un M dont les deux pointes sont ses oreilles, ses yeux dessous.'),
 
-  const MarkSymbol(this.label, this.note);
+  // Other shapes, not after SFEIR (« trouve d'autres formes »).
+  island('L’île', 'Une pilule noire, l’île de Mikky en haut de l’écran, et ses deux yeux dedans.', fresh: true),
+  notch('L’encoche', 'L’île qui pend du haut du carré comme une encoche d’écran, ses yeux qui regardent en bas.', fresh: true),
+  sticker('Autocollant', 'Sa tête pleine, deux oreilles pointues, ses yeux en creux : un autocollant.', fresh: true),
+  window('Fenêtre-chat', 'Une fenêtre dont le haut fait deux oreilles : un ordinateur qui est un chat.', fresh: true),
+  peek('Qui dépasse', 'Sa tête monte du bas du carré, en formes simples : le logo actuel, épuré.', fresh: true),
+  caret('Curseur', 'Le curseur plein d’un terminal, avec deux oreilles et ses yeux : il tape.', fresh: true),
+  sparkle('Étincelle', 'Ses deux yeux et une étincelle à quatre branches : la magie.', fresh: true),
+  ring('Pastille', 'Un anneau, deux petites oreilles qui le traversent, ses yeux au milieu.', fresh: true);
+
+  const MarkSymbol(this.label, this.note, {this.fresh = false});
 
   final String label, note;
+
+  /// One of the new shapes.
+  final bool fresh;
 }
 
 /// The mark on a square tile: white on black (as SFEIR's), or black on
@@ -36,15 +48,20 @@ class MarkTile extends StatelessWidget {
           color: dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
           border: dark ? null : Border.all(color: const Color(0x1F000000)),
         ),
-        child: CustomPaint(painter: _MarkPainter(symbol, dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E))),
+        child: CustomPaint(
+          painter: _MarkPainter(symbol, dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E), dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF)),
+        ),
       );
 }
 
 class _MarkPainter extends CustomPainter {
-  _MarkPainter(this.symbol, this.ink);
+  _MarkPainter(this.symbol, this.ink, this.paper);
 
   final MarkSymbol symbol;
   final Color ink;
+
+  /// The tile's color: what shows through (eyes cut out of a full shape).
+  final Color paper;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -56,32 +73,24 @@ class _MarkPainter extends CustomPainter {
       ..strokeWidth = math.max(1.5, s * .085)
       ..strokeCap = StrokeCap.square
       ..strokeJoin = StrokeJoin.miter;
-    // His eyes: two tall rounded bars, a little apart.
-    void eyes(double cy, double h, double gap) {
+    // His eyes: two tall rounded bars, a little apart; [cut]: in the
+    // tile's color, out of a full shape.
+    void eyes(double cy, double h, double gap, {bool cut = false, double cx = .5}) {
       final w = math.max(1.5, s * .1);
       for (final side in const [-1.0, 1.0]) {
         canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s / 2 + side * gap, cy), width: w, height: h), Radius.circular(w / 2)),
-          fill,
+          RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s * cx + side * gap, cy), width: w, height: h), Radius.circular(w / 2)),
+          cut ? (Paint()..color = paper) : fill,
         );
       }
     }
 
+    // Two pointed ears standing on a line at [base], their tips at [tip].
+    Path earsOn(double left, double right, double base, double tip) => Path()
+      ..addPolygon([Offset(left, base), Offset(left + s * .05, tip), Offset(left + s * .2, base)], true)
+      ..addPolygon([Offset(right, base), Offset(right - s * .05, tip), Offset(right - s * .2, base)], true);
+
     switch (symbol) {
-      case MarkSymbol.brackets:
-        final top = s * .24, bottom = s * .76, serif = s * .1;
-        for (final side in const [-1.0, 1.0]) {
-          final x = s / 2 + side * s * .3;
-          canvas.drawPath(
-            Path()
-              ..moveTo(x - side * serif, top)
-              ..lineTo(x, top)
-              ..lineTo(x, bottom)
-              ..lineTo(x - side * serif, bottom),
-            stroke,
-          );
-        }
-        eyes(s / 2, s * .26, s * .095);
       case MarkSymbol.ears:
         final top = s * .34, bottom = s * .78, serif = s * .12;
         for (final side in const [-1.0, 1.0]) {
@@ -98,27 +107,6 @@ class _MarkPainter extends CustomPainter {
           );
         }
         eyes(s * .56, s * .22, s * .095);
-      case MarkSymbol.pixel:
-        const rows = [
-          'X.......X',
-          'XX.....XX',
-          'XXXXXXXXX',
-          'XXXXXXXXX',
-          'XX.XXX.XX',
-          'XX.XXX.XX',
-          'XXXXXXXXX',
-          '.XXXXXXX.',
-        ];
-        final cell = (s * .62 / 9).floorToDouble().clamp(1.0, 1e9);
-        final left = ((s - cell * 9) / 2).roundToDouble(), top = ((s - cell * 8) / 2).roundToDouble();
-        final paint = Paint()
-          ..color = ink
-          ..isAntiAlias = false;
-        for (var y = 0; y < rows.length; y++) {
-          for (var x = 0; x < 9; x++) {
-            if (rows[y][x] == 'X') canvas.drawRect(Rect.fromLTWH(left + x * cell, top + y * cell, cell, cell), paint);
-          }
-        }
       case MarkSymbol.monogram:
         final l = s * .2, r = s * .8, t = s * .2, b = s * .66;
         // M: its two points up like ears, its middle dipping between them.
@@ -132,19 +120,101 @@ class _MarkPainter extends CustomPainter {
           stroke..strokeJoin = StrokeJoin.round,
         );
         eyes(s * .78, s * .12, s * .095);
+      case MarkSymbol.island:
+        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s / 2, s / 2), width: s * .72, height: s * .32), Radius.circular(s)), fill);
+        eyes(s / 2, s * .16, s * .085, cut: true);
+      case MarkSymbol.notch:
+        canvas.drawRRect(
+          RRect.fromRectAndCorners(Rect.fromLTRB(s * .18, 0, s * .82, s * .42), bottomLeft: Radius.circular(s * .2), bottomRight: Radius.circular(s * .2)),
+          fill,
+        );
+        eyes(s * .25, s * .15, s * .085, cut: true);
+        // The top of a screen, its edge.
+        canvas.drawRect(Rect.fromLTWH(0, 0, s, math.max(1, s * .04)), fill);
+      case MarkSymbol.sticker:
+        final head = Path.combine(
+          PathOperation.union,
+          Path()..addRRect(RRect.fromRectAndRadius(Rect.fromLTRB(s * .17, s * .36, s * .83, s * .84), Radius.circular(s * .22))),
+          earsOn(s * .19, s * .81, s * .46, s * .14),
+        );
+        canvas.drawPath(head, fill);
+        eyes(s * .6, s * .2, s * .1, cut: true);
+      case MarkSymbol.window:
+        final t = s * .3, b = s * .8, l = s * .16, r = s * .84, k = s * .07;
+        canvas.drawPath(
+          Path()
+            ..moveTo(l, t + k)
+            ..lineTo(l, b - k)
+            ..quadraticBezierTo(l, b, l + k, b)
+            ..lineTo(r - k, b)
+            ..quadraticBezierTo(r, b, r, b - k)
+            ..lineTo(r, t + k)
+            ..lineTo(r - s * .05, s * .12)
+            ..lineTo(r - s * .2, t)
+            ..lineTo(l + s * .2, t)
+            ..lineTo(l + s * .05, s * .12)
+            ..close(),
+          stroke..strokeJoin = StrokeJoin.round,
+        );
+        eyes(s * .56, s * .2, s * .1);
+      case MarkSymbol.peek:
+        final head = Path.combine(
+          PathOperation.union,
+          Path()..addRRect(RRect.fromRectAndCorners(Rect.fromLTRB(s * .18, s * .5, s * .82, s * 1.02), topLeft: Radius.circular(s * .26), topRight: Radius.circular(s * .26))),
+          earsOn(s * .2, s * .8, s * .6, s * .3),
+        );
+        canvas.save();
+        canvas.clipRect(Offset.zero & size);
+        canvas.drawPath(head, fill);
+        canvas.restore();
+        eyes(s * .76, s * .18, s * .1, cut: true);
+      case MarkSymbol.caret:
+        final block = Path.combine(
+          PathOperation.union,
+          Path()..addRect(Rect.fromLTRB(s * .3, s * .34, s * .7, s * .8)),
+          earsOn(s * .3, s * .7, s * .4, s * .16),
+        );
+        canvas.drawPath(block, fill);
+        eyes(s * .56, s * .17, s * .075, cut: true);
+      case MarkSymbol.sparkle:
+        eyes(s * .6, s * .3, s * .11, cx: .44);
+        // A four-pointed sparkle, its sides hollow.
+        final c = Offset(s * .74, s * .27), o = s * .15, i = s * .035;
+        canvas.drawPath(
+          Path()
+            ..moveTo(c.dx, c.dy - o)
+            ..quadraticBezierTo(c.dx + i, c.dy - i, c.dx + o, c.dy)
+            ..quadraticBezierTo(c.dx + i, c.dy + i, c.dx, c.dy + o)
+            ..quadraticBezierTo(c.dx - i, c.dy + i, c.dx - o, c.dy)
+            ..quadraticBezierTo(c.dx - i, c.dy - i, c.dx, c.dy - o)
+            ..close(),
+          fill,
+        );
+      case MarkSymbol.ring:
+        canvas.drawCircle(Offset(s / 2, s * .54), s * .3, stroke);
+        // Two small ears through the top of the ring.
+        canvas.drawPath(
+          Path()
+            ..moveTo(s * .27, s * .38)
+            ..lineTo(s * .3, s * .16)
+            ..lineTo(s * .44, s * .27)
+            ..moveTo(s * .73, s * .38)
+            ..lineTo(s * .7, s * .16)
+            ..lineTo(s * .56, s * .27),
+          stroke..strokeJoin = StrokeJoin.round,
+        );
+        eyes(s * .56, s * .16, s * .075);
     }
   }
 
   @override
-  bool shouldRepaint(_MarkPainter old) => old.symbol != symbol || old.ink != ink;
+  bool shouldRepaint(_MarkPainter old) => old.symbol != symbol || old.ink != ink || old.paper != paper;
 }
 
 /// Mikky's name in letters.
 enum MarkWord {
-  bracketed('[mikky]', 'Son nom entre crochets, en Geist Mono, comme celui de SFEIR.'),
-  eye('L’œil pour le i', 'Le « i » devient un de ses yeux : une barre haute et ronde, sans point.'),
-  eyes('[m] et ses yeux', 'Court : « m » et ses deux yeux, entre crochets ; aussi un symbole.'),
-  pixel('Mikky en pixels', 'Son nom en Jacquard 24, la police pixel déjà choisie pour le nom.');
+  bracketed('[mikky]', 'Son nom entre crochets, en Geist Mono.'),
+  eyes('[m] et ses yeux', 'Court : « m » et ses deux yeux, entre crochets ; aussi un symbole.');
 
   const MarkWord(this.label, this.note);
 
@@ -164,7 +234,6 @@ class MarkName extends StatelessWidget {
     final ink = dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E);
     final h = height;
     TextStyle mono(double size) => TextStyle(fontFamily: 'Geist Mono', fontSize: size, fontWeight: FontWeight.w500, color: ink, height: 1, letterSpacing: -size * .02);
-    TextStyle sans(double size) => TextStyle(fontFamily: 'Geist', fontSize: size, fontWeight: FontWeight.w600, color: ink, height: 1, letterSpacing: -size * .03);
     // One of his eyes, standing in for a letter: on the baseline, a little
     // taller than the small letters, like his own tall eyes.
     InlineSpan eye(double size) => WidgetSpan(
@@ -182,9 +251,7 @@ class MarkName extends StatelessWidget {
     final f = h * .42;
     final child = switch (word) {
       MarkWord.bracketed => Text('[mikky]', style: mono(f)),
-      MarkWord.eye => Text.rich(TextSpan(style: sans(f), children: [const TextSpan(text: 'm'), eye(f), const TextSpan(text: 'kky')])),
       MarkWord.eyes => Text.rich(TextSpan(style: mono(f), children: [const TextSpan(text: '[m'), eye(f), eye(f), const TextSpan(text: ']')])),
-      MarkWord.pixel => Text('Mikky', style: TextStyle(fontFamily: 'Jacquard 24', fontSize: f * 1.5, color: ink, height: 1)),
     };
     return Container(
       height: h,
