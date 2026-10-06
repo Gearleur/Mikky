@@ -72,7 +72,28 @@ final motionBoard = BoardSpec(
       note: 'D’après tes images d’une « vague de réflexion » : des points sur une petite grille, en notre bleu. L’onde, puis d’autres formes, en dégradé continu. Chacune en boucle, dans sa couche, sur l’horloge commune (30 images par seconde).',
       kind: FrameKind.trial,
       frames: [
-        for (final w in DotWave.values)
+        for (final w in DotWave.values.where((w) => !w.magic))
+          BoardFrame(
+            label: w.label,
+            note: w.note,
+            width: 176,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Looping(
+                period: w.period,
+                frozenAt: .3,
+                builder: (context, t) => DotWaveScene(w, t * w.periodMs / 1000),
+              ),
+            ),
+          ),
+      ],
+    ),
+    BoardSection(
+      title: 'Les ondes · maths et magie',
+      note: 'Des courbes et des champs mathématiques, et un peu de magie, dans notre DA : la même grille de points, un dégradé plus étalé, du bleu nuit presque noir au blanc, qui remplit la grille.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final w in DotWave.values.where((w) => w.magic))
           BoardFrame(
             label: w.label,
             note: w.note,

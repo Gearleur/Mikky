@@ -26,12 +26,29 @@ enum DotWave {
   vortex('Tourbillon', 'Des anneaux en pointillés qui tournent en sens contraires.', 3000),
   infinity('Infini', 'Un point qui dessine un huit couché, sa traîne en dégradé derrière lui.', 2400),
   scanner('Scanner', 'Une barre qui monte et descend, sa traîne qui s’éteint derrière.', 1800),
-  star('Étoile', 'Une étoile à quatre branches qui s’allume et s’éteint, ses rayons en dégradé.', 1600);
+  star('Étoile', 'Une étoile à quatre branches qui s’allume et s’éteint, ses rayons en dégradé.', 1600),
 
-  const DotWave(this.label, this.note, this.periodMs);
+  // Maths and magic (2026-10-06, « des choses mathématiques, des choses
+  // magiques, dans la DA de notre app »): fields and curves that fill the
+  // grid, on a wider gradient, from night blue to white.
+  lissajous('Lissajous', 'Une courbe de Lissajous (3 : 2) parcourue par un point, sa traîne en dégradé.', 3200, magic: true),
+  rose('Rosace', 'Une rose à trois pétales (r = cos 3θ) qui tourne lentement, plus vive au bout des pétales.', 3000, magic: true),
+  interference('Interférences', 'Deux sources d’ondes qui se croisent : leurs franges vont et viennent sur toute la grille.', 2200, magic: true),
+  plasma('Plasma', 'Une somme de sinus qui coule sur toute la grille, comme les démos des vieux ordinateurs.', 4000, magic: true),
+  goldenSpiral('Spirale d’or', 'Une spirale logarithmique (celle du nombre d’or) parcourue depuis le cœur, sa traîne en dégradé.', 2600, magic: true),
+  magicCircle('Cercle magique', 'Deux cercles, un hexagramme qui tourne, des runes qui tournent en sens inverse.', 6000, magic: true),
+  chladni('Chladni', 'Les lignes de sable d’une plaque qui vibre : elles se déforment d’un motif à l’autre.', 4000, magic: true),
+  codeRain('Pluie de code', 'Des colonnes de points qui tombent, leur tête vive : du calcul.', 2000, magic: true),
+  kaleidoscope('Kaléidoscope', 'Un motif à huit branches symétriques qui pulse depuis le centre.', 3000, magic: true),
+  aurora('Aurore', 'Un ruban de lumière qui ondule, strié comme une aurore.', 4000, magic: true);
+
+  const DotWave(this.label, this.note, this.periodMs, {this.magic = false});
 
   final String label, note;
   final int periodMs;
+
+  /// One of the maths and magic ones, on the wide gradient.
+  final bool magic;
 
   Duration get period => Duration(milliseconds: periodMs);
 }
@@ -210,7 +227,121 @@ class _DotWavePainter extends CustomPainter {
         final diagonal = (ax - ay).abs() < .8 ? 1 - (ax + ay) / (reach * .9) : 0.0;
         final core = math.sqrt(ax * ax + ay * ay) < 1.6 ? .6 + .4 * pulse : 0.0;
         return math.max(core, math.max(straight, diagonal * .7).clamp(0.0, 1.0) * (.4 + .6 * pulse));
+      case DotWave.lissajous:
+        // x = sin(3s + ½), y = sin(2s): a point runs on it, its trail fades.
+        return _trail(dx, dy, u, (s) => (half * .85 * math.sin(3 * s + .5), rows / 2 * .8 * math.sin(2 * s)), 26);
+      case DotWave.rose:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        final angle = math.atan2(dy * _tall, dx);
+        // A third of a turn per loop: the same rose again.
+        final petal = math.cos(3 * (angle - u * math.pi * 2 / 3)).abs();
+        final r = rows / 2 * _tall * .92 * petal;
+        return _ring(d, r, .8) * (.35 + .65 * petal) + (d < 1.2 ? .5 : 0);
+      case DotWave.interference:
+        final d1 = math.sqrt(math.pow(dx + half * .45, 2) + math.pow(dy * _tall, 2));
+        final d2 = math.sqrt(math.pow(dx - half * .45, 2) + math.pow(dy * _tall, 2));
+        final w = u * math.pi * 2;
+        final v = .5 + .25 * (math.cos(d1 * 1.05 - w) + math.cos(d2 * 1.05 - w));
+        return math.pow(v, 2.2).toDouble();
+      case DotWave.plasma:
+        final w = u * math.pi * 2;
+        final v = math.sin(dx * .32 + w) +
+            math.sin(dy * .55 - w) +
+            math.sin((dx + dy) * .22 + w) +
+            math.sin(math.sqrt(dx * dx + dy * dy * 2.5) * .42 - w);
+        return math.pow((v + 4) / 8, 1.6).toDouble();
+      case DotWave.goldenSpiral:
+        // r = a·e^(bθ) over two turns, run from the heart outward.
+        return _trail(dx, dy, u, (s) {
+          final theta = s * 2;
+          final r = .55 * math.exp(.235 * theta);
+          return (r * math.cos(theta), r * math.sin(theta) / _tall);
+        }, 70);
+      case DotWave.magicCircle:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        final angle = math.atan2(dy * _tall, dx);
+        final outer = rows / 2 * _tall * .95, inner = outer * .72;
+        var lit = math.max(_ring(d, outer, .55) * .6, _ring(d, inner, .5) * .45);
+        // The hexagram: two triangles on the inner circle, a sixth of a
+        // turn per loop.
+        final turn = u * math.pi * 2 / 6;
+        for (var k = 0; k < 6; k++) {
+          final a0 = turn + k * math.pi / 3, a1 = a0 + math.pi * 2 / 3;
+          final p0 = (inner * math.cos(a0), inner * math.sin(a0)), p1 = (inner * math.cos(a1), inner * math.sin(a1));
+          final line = _segment(dx, dy * _tall, p0, p1);
+          // A light runs along each line.
+          final glow = .55 + .45 * math.cos(u * math.pi * 2 * 2 + k);
+          lit = math.max(lit, math.exp(-math.pow(line / .5, 2)) * glow);
+        }
+        // Runes on the outer ring, turning the other way.
+        for (var k = 0; k < 12; k++) {
+          final a = -u * math.pi * 2 / 12 + k * math.pi / 6;
+          var diff = (angle - a) % (math.pi * 2);
+          if (diff > math.pi) diff -= math.pi * 2;
+          if (diff.abs() < .09 && (d - outer - 1.6).abs() < .9) lit = math.max(lit, k.isEven ? 1.0 : .6);
+        }
+        return lit;
+      case DotWave.chladni:
+        final x = dx / half, y = dy / (rows / 2);
+        final a = .5 - .5 * math.cos(u * math.pi * 2);
+        // Never the same two frequencies: the plate would be all lines.
+        final n = 1 + .8 * a, m = 3.2 - .8 * a;
+        final f = math.cos(n * math.pi * x) * math.cos(m * math.pi * y) - math.cos(m * math.pi * x) * math.cos(n * math.pi * y);
+        return math.exp(-math.pow(f / .32, 2));
+      case DotWave.codeRain:
+        final column = (dx / 2).round();
+        if ((dx - column * 2).abs() > .5) return 0;
+        final speed = 1 + (_hash(column + 40) * 2).floor();
+        final length = 4 + _hash(column + 80) * 7;
+        final head = ((u * speed + _hash(column + 20)) % 1) * (rows + length) - rows / 2;
+        final behind = head - dy;
+        if (behind < 0 || behind > length) return 0;
+        // The cells flicker a little, like changing characters.
+        final flicker = .75 + .25 * _hash((dy * 7 + column * 31 + (u * 12).floor() * 13).round());
+        return (behind < .6 ? 1.0 : math.pow(1 - behind / length, 1.4) * .85) * flicker;
+      case DotWave.kaleidoscope:
+        final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
+        final angle = math.atan2(dy * _tall, dx);
+        // Eight mirrored slices.
+        final slice = math.pi / 4;
+        final folded = ((angle + u * slice) % slice - slice / 2).abs();
+        final v = math.cos(d * .55 - u * math.pi * 2) * math.cos(folded * 5 + d * .2);
+        final fade = (1 - d / (half * 1.1)).clamp(0.0, 1.0);
+        return math.pow((v + 1) / 2, 1.8) * fade * 1.2;
+      case DotWave.aurora:
+        final w = u * math.pi * 2;
+        final y0 = math.sin(dx * .17 + w) * 3 + math.sin(dx * .07 - w) * 2;
+        final band = math.exp(-math.pow((dy - y0) / 3.2, 2));
+        final rays = .45 + .55 * math.pow(.5 + .5 * math.sin(dx * .55 + w * 2), 2);
+        return band * rays;
     }
+  }
+
+  /// A point running on [curve] (its parameter 0 to 2π, one turn per
+  /// loop), and how lit the dot at ([dx], [dy]) is from its trail.
+  double _trail(double dx, double dy, double u, (double, double) Function(double s) curve, double length) {
+    const n = 160;
+    var best = 1e9, at = 0;
+    for (var i = 0; i < n; i++) {
+      final (px, py) = curve(i / n * math.pi * 2);
+      final dd = math.pow(dx - px, 2) + math.pow((dy - py) * _tall, 2);
+      if (dd < best) {
+        best = dd.toDouble();
+        at = i;
+      }
+    }
+    if (best > 1.2) return 0;
+    final behind = ((u * n).floor() - at) % n;
+    return math.exp(-behind / length) * math.exp(-best / .8);
+  }
+
+  /// Distance from ([x], [y]) to the segment [a]–[b].
+  static double _segment(double x, double y, (double, double) a, (double, double) b) {
+    final (ax, ay) = a;
+    final (bx, by) = b;
+    final vx = bx - ax, vy = by - ay;
+    final t = (((x - ax) * vx + (y - ay) * vy) / (vx * vx + vy * vy)).clamp(0.0, 1.0);
+    return math.sqrt(math.pow(x - ax - vx * t, 2) + math.pow(y - ay - vy * t, 2));
   }
 
   @override
@@ -225,7 +356,7 @@ class _DotWavePainter extends CustomPainter {
       for (var x = 0; x < cols; x++) {
         final rect = Rect.fromLTWH(x * step, y * step, dot, dot);
         final lit = _at(x - (cols - 1) / 2, y - (rows - 1) / 2, u).clamp(0.0, 1.0);
-        if (lit < .06) {
+        if (lit < (wave.magic ? .03 : .06)) {
           // The grid, barely there.
           canvas.drawRect(rect, faint);
           continue;
@@ -233,10 +364,29 @@ class _DotWavePainter extends CustomPainter {
         // A continuous gradient (« plus de gradient, plus voyant »): from
         // almost white where it is brightest, through the palette, to its
         // deepest blue fading out.
-        paint.color = _shade(math.pow(lit, .7).toDouble());
+        paint.color = wave.magic ? _deep(math.pow(lit, .85).toDouble()) : _shade(math.pow(lit, .7).toDouble());
         canvas.drawRect(rect, paint);
       }
     }
+  }
+
+  /// The wide gradient of the maths and magic ones (« plus étalé, plus
+  /// sombres et plus clairs »): night blue, deep blue, our blues, cyan,
+  /// white; the dark end stays visible instead of fading out.
+  static const _night = [
+    Color(0xFF0A0F3D),
+    Color(0xFF0B1E8F),
+    Color(0xFF0045E5),
+    Color(0xFF0F84FA),
+    Color(0xFF04BCFF),
+    Color(0xFF8CE8FF),
+    Color(0xFFFFFFFF),
+  ];
+
+  Color _deep(double i) {
+    final f = i * (_night.length - 1);
+    final k = math.min(f.floor(), _night.length - 2);
+    return Color.lerp(_night[k], _night[k + 1], f - k)!.withValues(alpha: (i * 5).clamp(.4, 1.0));
   }
 
   Color _shade(double i) {
