@@ -26,13 +26,13 @@ abstract final class Intros {
   /// little and settling, eyes shut, then open; ears flop late. Then his
   /// magic, ultra fast (2026-10-06, « ses pouvoirs magiques, orange, mais
   /// vraiment ultra rapide, avec une petite étoile qui explose sur le
-  /// côté »): he flashes orange, a little star bursts beside him. A curious
-  /// tilt, and a small happy hop.
+  /// côté »): he flashes orange, a little star bursts beside him. Then a
+  /// small happy hop (no curious tilt: « enlève-le »).
   // A little slower (2026-10-06, « ralentis ×0,8 »).
   static final pop = Choreography(
     name: 'Le pop',
     duration: 3.35,
-    marks: const [Mark(0, 'l’ombre'), Mark(.32, 'pop'), Mark(.9, 'ouvre les yeux'), Mark(1.25, 'pouvoir'), Mark(1.41, 'éclate'), Mark(1.75, 'curieux'), Mark(2.55, 'content')],
+    marks: const [Mark(0, 'l’ombre'), Mark(.32, 'pop'), Mark(.9, 'ouvre les yeux'), Mark(1.25, 'pouvoir'), Mark(1.41, 'éclate'), Mark(2.55, 'content')],
     tracks: {
       'shadow': const [Beat(0, 0), Beat(.32, 1, Easings.out)],
       'size': [const Beat(.3, 0), Beat(.85, 1, Easings.spring(const SpringSpec(240, .42), .55))],
@@ -86,8 +86,9 @@ abstract final class Intros {
       // His magic: orange in a flash, ultra fast.
       'power': const [Beat(1.25, 0), Beat(1.29, 1, Easings.out), Beat(1.4, 1), Beat(1.62, 0, Easings.out)],
       'star': const [Beat(1.2, 0), Beat(1.3, 1, Easings.back), Beat(1.38, 1.15), Beat(1.42, 0, Easings.inCubic)],
-      'tilt': const [Beat(1.75, 0), Beat(2.0, .2, Easings.inOut), Beat(2.3, .2), Beat(2.5, 0, Easings.inOut)],
-      'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0, Easings.inOut), Beat(2.0, .3, Easings.inOut), Beat(2.3, .3), Beat(2.5, 0, Easings.inOut)],
+      // A little shake as the magic goes out of him.
+      'offsetX': [const Beat(1.27, 0), ...Choreography.wiggle(1.27, 1.45, 0, .05, 3)],
+      'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0, Easings.inOut)],
       'happy': const [Beat(2.55, 0), Beat(2.56, 1, Easings.linear)],
     },
   ).atSpeed(.8);
