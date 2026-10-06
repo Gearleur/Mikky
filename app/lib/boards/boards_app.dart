@@ -11,7 +11,7 @@ import 'board_brand.dart';
 import 'board_components.dart';
 import 'board_home.dart';
 import 'board_island.dart';
-import 'board_motion.dart';
+import 'board_mikky.dart';
 import 'board_notch.dart';
 import 'board_screens.dart';
 import 'board_technical.dart';
@@ -38,7 +38,7 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, motionBoard, islandBoard, notchTopBoard, notchRightBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
+final boards = [brandBoard, componentsBoard, mikkyBoard, islandBoard, notchTopBoard, notchRightBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});

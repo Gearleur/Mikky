@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/brand_logo.dart';
 import '../ui/icons.dart';
@@ -275,7 +274,7 @@ String _fxNote(SignatureFxKind k) => switch (k) {
   SignatureFxKind.waves => 'Des ondes carrées, bleue puis orange.',
 };
 
-final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui manque', (context) {
+final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
     const BoardSection(
@@ -473,30 +472,6 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
                 ),
                 const SizedBox(height: 4),
                 Text('$name · ${_px(r)}', style: uiText(TextSize.caption, mono: true, color: ui.text3)),
-              ]),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Mikky',
-      note: 'Le vrai dessin de Mikky, en petit, dans quelques états (l’île et l’écran de réglage les montrent tous).',
-      frames: [
-        BoardFrame(
-          label: 'En petit',
-          width: 560,
-          child: Wrap(spacing: 22, runSpacing: 12, children: [
-            for (final (st, name) in [
-              (MikkyState.idle, 'repos'),
-              (MikkyState.working, 'travaille'),
-              (MikkyState.thinking, 'réfléchit'),
-              (MikkyState.approval, 'attend'),
-              (MikkyState.finished, 'terminé'),
-              (MikkyState.sleeping, 'dort'),
-            ])
-              Column(mainAxisSize: MainAxisSize.min, children: [
-                MiniMikky(size: 64, state: st),
-                Text(name, style: uiText(TextSize.caption, color: ui.text3)),
               ]),
           ]),
         ),

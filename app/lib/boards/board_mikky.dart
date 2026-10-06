@@ -7,6 +7,7 @@ import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
 import '../ui/motion.dart';
+import '../ui/side.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
 
@@ -23,14 +24,44 @@ final _curves = <(String, String, Easing)>[
   ('Ressort de Mikky qui glisse', '60 / 0,9 : flottant, lent.', Easings.spring(SpringSpec.glideAcross, 1.2)),
 ];
 
-final motionBoard = BoardSpec(
-  'Mouvement',
-  'Les outils du mouvement, à regarder au ralenti : chorégraphies, ressorts, courbes, particules, et les essais qui s’en servent',
-  (context) => [
+/// Everything about Mikky himself (2026-10-06: the Mouvement board renamed
+/// « Mikky », with his drawing from the Marque board): his states, his
+/// greeting, his arms, his powers; and the motion tools and effects they
+/// are made with.
+final mikkyBoard = BoardSpec(
+  'Mikky',
+  'Mikky lui-même : ses états, sa salutation, ses bras, ses pouvoirs ; et les outils du mouvement, à regarder au ralenti',
+  (context) {
+    final ui = MikkyUi.of(context);
+    return [
+    BoardSection(
+      title: 'Ses états',
+      note: 'Son vrai dessin, en petit, dans quelques états (l’île et l’écran de réglage les montrent tous).',
+      frames: [
+        BoardFrame(
+          label: 'En petit',
+          width: 560,
+          child: Wrap(spacing: 22, runSpacing: 12, children: [
+            for (final (st, name) in [
+              (MikkyState.idle, 'repos'),
+              (MikkyState.working, 'travaille'),
+              (MikkyState.thinking, 'réfléchit'),
+              (MikkyState.approval, 'attend'),
+              (MikkyState.finished, 'terminé'),
+              (MikkyState.sleeping, 'dort'),
+            ])
+              Column(mainAxisSize: MainAxisSize.min, children: [
+                MiniMikky(size: 64, state: st),
+                Text(name, style: uiText(TextSize.caption, color: ui.text3)),
+              ]),
+          ]),
+        ),
+      ],
+    ),
     BoardSection(
       title: 'Le lancement',
-      note: 'Une petite apparition, simple et souple, à la Disney / Pixar : sur un fond blanc, son ombre douce au sol ; l’anticipation, l’écrasement et l’étirement, des arcs, des oreilles qui suivent en retard. Lecture, ×0,25 pour le ralenti, la barre de temps pour aller à un instant ; dessous, ses moments et quelques courbes.',
-      kind: FrameKind.trial,
+      note: 'Sa salutation au démarrage de l’app (dans l’île, qui en est le fond) : une petite apparition, simple et souple, à la Disney / Pixar : sur un fond blanc, son ombre douce au sol ; l’anticipation, l’écrasement et l’étirement, des arcs, des oreilles qui suivent en retard. Lecture, ×0,25 pour le ralenti, la barre de temps pour aller à un instant ; dessous, ses moments et quelques courbes.',
+      kind: FrameKind.app,
       frames: [
         for (final (c, note, curves, poster) in [
           (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre. Puis sa magie, ultra rapide : il devient orange un instant, en 128 bits, tremble un peu, et une étoile éclate à côté de lui (un anneau, des étincelles en pixels). Puis il fait un petit saut content.', ['size', 'power', 'star', 'scaleY'], 1.65),
@@ -128,7 +159,8 @@ final motionBoard = BoardSpec(
         ),
       ],
     ),
-  ],
+  ];
+  },
 );
 
 /// One curve, still: dots at equal times along it and along a line under
