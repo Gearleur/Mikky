@@ -49,23 +49,24 @@ void main() {
     expect(eye.height, closeTo(eye.width * .25, 1e-9));
   });
 
-  test('his paws are out of sight until the pose brings them out', () {
+  test('his arms are out of sight until the pose brings them out', () {
     final pose = MikkyPose();
-    expect(MikkyGeometry.posed(pose, 40).paws, isEmpty);
-    pose[MikkyProp.paws] = 1;
-    final g = MikkyGeometry.posed(pose, 40);
-    expect(g.paws, hasLength(2));
-    // Under him, on each side.
-    final left = g.paws[0], right = g.paws[1];
-    expect(left[0] < 0 || left[2] < 0, isTrue);
+    expect(MikkyGeometry.posed(pose, 40).arms, isEmpty);
+    pose[MikkyProp.arms] = 1;
     double meanX(List<double> p) => [for (var i = 0; i < p.length; i += 2) p[i]].reduce((a, b) => a + b) / (p.length / 2);
-    expect(meanX(left), lessThan(0));
-    expect(meanX(right), greaterThan(0));
-    // Raised beside the cheek.
-    pose[MikkyProp.pawRightX] = .78;
-    pose[MikkyProp.pawRightY] = -.95;
-    final up = MikkyGeometry.posed(pose, 40).paws[1];
     double meanY(List<double> p) => [for (var i = 1; i < p.length; i += 2) p[i]].reduce((a, b) => a + b) / (p.length / 2);
-    expect(meanY(up), lessThan(0));
+    for (final style in ArmStyle.values) {
+      final arms = MikkyGeometry.posed(pose, 40, arms: style).arms;
+      // A tube and a hand (the mitten has a thumb too), on each side.
+      expect(arms.length, style == ArmStyle.mitten ? 6 : 4, reason: '$style');
+      expect(meanX(arms.first), lessThan(0));
+      expect(meanX(arms.last), greaterThan(0));
+    }
+    // A hand raised beside the head.
+    pose[MikkyProp.handRightX] = .23;
+    pose[MikkyProp.handRightY] = -1.17;
+    final hand = MikkyGeometry.posed(pose, 40).arms.last;
+    expect(meanY(hand), lessThan(-10));
+    expect(meanX(hand), greaterThan(40));
   });
 }

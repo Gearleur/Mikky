@@ -41,13 +41,13 @@ class MikkyPainter extends CustomPainter {
       for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1]),
     ];
     final body = Path()..addPolygon(points, true);
-    // His paws, when out, are one with him: one outline, one rim.
+    // His arms, when out, are one with him: one outline, one rim.
     var outline = body;
-    for (final paw in g.paws) {
+    for (final part in g.arms) {
       outline = Path.combine(
         PathOperation.union,
         outline,
-        Path()..addPolygon([for (var i = 0; i < paw.length ~/ 2; i++) Offset(paw[i * 2], paw[i * 2 + 1])], true),
+        Path()..addPolygon([for (var i = 0; i < part.length ~/ 2; i++) Offset(part[i * 2], part[i * 2 + 1])], true),
       );
     }
 

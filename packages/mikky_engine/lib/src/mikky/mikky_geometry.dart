@@ -22,6 +22,24 @@ abstract final class MikkyShape {
   static const eyeBaseHeight = .50; // × R, × elongation
 }
 
+/// How his arms are drawn (trials, 2026-10-06: « des bras plutôt »).
+enum ArmStyle {
+  /// Soft, bent like a rubber hose, a round hand.
+  noodle,
+
+  /// Thin lines and a small round hand: a sticker character.
+  stick,
+
+  /// Short, thick and round: bumps of his own body, like his ears.
+  nub,
+
+  /// Furry like him, ending in a tuft.
+  fluffy,
+
+  /// Rubber-hose arms in mittens, a thumb.
+  mitten,
+}
+
 /// One eye, in the body's local frame (before the body transform).
 class EyeGeometry {
   const EyeGeometry({
@@ -64,7 +82,7 @@ class MikkyGeometry {
     required this.time,
     required this.contour,
     required this.satellites,
-    required this.paws,
+    required this.arms,
     required this.eyes,
     required this.translateX,
     required this.translateY,
@@ -89,9 +107,9 @@ class MikkyGeometry {
   /// [contour]. Eyes are only on [contour].
   final List<Float64List> satellites;
 
-  /// His front paws, when out: same format and transform as [contour],
-  /// one with his body (the eyes stay on [contour]).
-  final List<Float64List> paws;
+  /// His arms and hands, when out: same format and transform as
+  /// [contour], one with his body (the eyes stay on [contour]).
+  final List<Float64List> arms;
   final List<EyeGeometry> eyes;
   final double translateX, translateY, tilt, scaleX, scaleY;
 
@@ -132,6 +150,7 @@ class MikkyGeometry {
     EyeShape eyeRight = EyeShape.oval,
     MikkyForm form = MikkyForm.cat,
     double morph = 0,
+    ArmStyle arms = ArmStyle.noodle,
     int points = 360,
     MikkyTuning? tuning,
   }) =>
@@ -144,6 +163,7 @@ class MikkyGeometry {
         eyeRight: eyeRight,
         badge: null,
         particles: const [],
+        armStyle: arms,
         radius: radius,
         points: points,
         tuning: tuning,
@@ -157,6 +177,7 @@ class MikkyGeometry {
     required EyeShape eyeLeft,
     required EyeShape eyeRight,
     required MikkyBadge? badge,
+    ArmStyle armStyle = ArmStyle.noodle,
     required List<MikkyParticle> particles,
     required double radius,
     required int points,
@@ -296,19 +317,21 @@ class MikkyGeometry {
         _furBall(.03 * r * _easeOut(w), (.88 + math.sin(t * 2.2 + .8) * .035) * r * _easeOut(w), .27 * r * w, t, 120),
     ];
 
-    // His front paws: tucked under him, they come out at the bottom, the
-    // tips under his body; from there they go where the pose sends them.
-    final show = p[MikkyProp.paws].clamp(0.0, 1.0);
-    final paws = <Float64List>[
+    // His arms: tucked into his body, they come out of his sides and hang
+    // there; from there the hands go where the pose sends them.
+    final show = p[MikkyProp.arms].clamp(0.0, 1.0);
+    final arms = <Float64List>[
       if (show > .01)
         for (final side in const [-1.0, 1.0])
-          _paw(
-            side * .46 * r + (side < 0 ? p[MikkyProp.pawLeftX] : p[MikkyProp.pawRightX]) * r,
-            (.66 + .26 * show) * r + (side < 0 ? p[MikkyProp.pawLeftY] : p[MikkyProp.pawRightY]) * r,
-            r * (.6 + .4 * show),
+          ..._arm(
             side,
-            side < 0 ? p[MikkyProp.pawLeftTurn] : p[MikkyProp.pawRightTurn],
+            show,
+            side < 0 ? p[MikkyProp.handLeftX] : p[MikkyProp.handRightX],
+            side < 0 ? p[MikkyProp.handLeftY] : p[MikkyProp.handRightY],
+            side < 0 ? p[MikkyProp.handLeftTurn] : p[MikkyProp.handRightTurn],
+            r,
             t,
+            armStyle,
           ),
     ];
 
@@ -317,7 +340,7 @@ class MikkyGeometry {
       time: t,
       contour: contour,
       satellites: satellites,
-      paws: paws,
+      arms: arms,
       eyes: eyes,
       translateX: p.offsetX * r,
       translateY: p.offsetY * r,
@@ -380,22 +403,101 @@ double _lumpy(double th, double t, double seed) =>
   return (x * g, cy + (y - cy) * g + math.sin(t * 2.2) * .03);
 }
 
-/// A front paw at ([cx], [cy]), for a radius [r]: a soft bean, wider than
-/// high, with three small toes at its tip, furry like him. [turn] turns it
-/// around its middle; [side] mirrors it.
-Float64List _paw(double cx, double cy, double r, double side, double turn, double t) {
-  const n = 72;
+/// One arm, on [side] (-1 left), [show] out of his body: a tube from his
+/// shoulder to his hand, bent a little outward like a rubber hose, and the
+/// hand; [hx], [hy] move the hand from its place (units of [r]), [turn]
+/// turns it. The parts overlap: they are joined when drawn.
+List<Float64List> _arm(double side, double show, double hx, double hy, double turn, double r, double t, ArmStyle style) {
+  // The shoulder, inside his side; the hand tucked in, then hanging
+  // beside him.
+  final sx = side * .84 * r, sy = .12 * r;
+  var ex = side * (.7 + .42 * show) * r + hx * r, ey = (.3 + .32 * show) * r + hy * r;
+  if (style == ArmStyle.nub) {
+    // Short: the hand stays near the body.
+    ex = sx + (ex - sx) * .58;
+    ey = sy + (ey - sy) * .58;
+  }
+  final dx = ex - sx, dy = ey - sy;
+  final len = math.max(1e-6, math.sqrt(dx * dx + dy * dy));
+  // The elbow bends away from him.
+  var px = -dy / len, py = dx / len;
+  if (px * side < 0) {
+    px = -px;
+    py = -py;
+  }
+  final bend = len *
+      switch (style) {
+        ArmStyle.stick => .12,
+        ArmStyle.nub => 0.0,
+        _ => .2,
+      };
+  final cx = (sx + ex) / 2 + px * bend, cy = (sy + ey) / 2 + py * bend;
+  // Its width at the shoulder and at the wrist (× r).
+  final (w0, w1) = switch (style) {
+    ArmStyle.noodle => (.2, .15),
+    ArmStyle.stick => (.075, .065),
+    ArmStyle.nub => (.36, .3),
+    ArmStyle.fluffy => (.19, .15),
+    ArmStyle.mitten => (.19, .14),
+  };
+  const n = 28;
+  final left = <double>[], right = <double>[];
+  var tx = 0.0, ty = 0.0;
+  for (var i = 0; i <= n; i++) {
+    final q = i / n, u = 1 - q;
+    final bx = u * u * sx + 2 * u * q * cx + q * q * ex;
+    final by = u * u * sy + 2 * u * q * cy + q * q * ey;
+    tx = 2 * u * (cx - sx) + 2 * q * (ex - cx);
+    ty = 2 * u * (cy - sy) + 2 * q * (ey - cy);
+    final tl = math.max(1e-6, math.sqrt(tx * tx + ty * ty));
+    final nx = -ty / tl, ny = tx / tl;
+    var half = (w0 + (w1 - w0) * q) * r / 2;
+    // Fur along the arm, moving a little.
+    if (style == ArmStyle.fluffy) half *= 1 + .28 * math.sin(q * 26 + t * 3 + side).abs();
+    left.addAll([bx + nx * half, by + ny * half]);
+    right.addAll([bx - nx * half, by - ny * half]);
+  }
+  final tube = Float64List(left.length + right.length);
+  tube.setAll(0, left);
+  for (var i = 0; i < right.length ~/ 2; i++) {
+    final j = right.length ~/ 2 - 1 - i;
+    tube[left.length + i * 2] = right[j * 2];
+    tube[left.length + i * 2 + 1] = right[j * 2 + 1];
+  }
+  // The hand, along the way the arm goes, then turned.
+  final angle = math.atan2(ty, tx) + turn;
+  final hand = switch (style) {
+    ArmStyle.noodle => [_blob(ex, ey, .13 * r, .125 * r, angle, t, side)],
+    ArmStyle.stick => [_blob(ex, ey, .085 * r, .085 * r, angle, t, side)],
+    ArmStyle.nub => [_blob(ex, ey, w1 / 2 * r, w1 / 2 * r, angle, t, side)],
+    ArmStyle.fluffy => [_blob(ex, ey, .15 * r, .15 * r, angle, t, side, fur: .16)],
+    ArmStyle.mitten => [
+        _blob(ex + math.cos(angle) * .04 * r, ey + math.sin(angle) * .04 * r, .17 * r, .14 * r, angle, t, side),
+        // The thumb, up and toward him.
+        _blob(
+          ex + math.cos(angle - side * 1.35) * .13 * r,
+          ey + math.sin(angle - side * 1.35) * .13 * r,
+          .075 * r,
+          .06 * r,
+          angle - side * 1.35,
+          t,
+          side,
+        ),
+      ],
+  };
+  return [tube, ...hand];
+}
+
+/// A small soft oval (a hand), lopsided like him, [fur] for a tuft.
+Float64List _blob(double cx, double cy, double rx, double ry, double angle, double t, double seed, {double fur = .02}) {
+  const n = 40;
   final out = Float64List((n + 1) * 2);
-  final rx = .27 * r, ry = .2 * r;
-  final c = math.cos(turn), s = math.sin(turn);
+  final c = math.cos(angle), s = math.sin(angle);
   for (var i = 0; i <= n; i++) {
     final th = i / n * math.pi * 2;
-    // The toes, at the bottom (th = π/2): three small bumps.
-    final tip = math.max(0.0, math.sin(th));
-    final toes = 1 + .09 * tip * tip * math.cos(th * 6).abs();
-    final f = toes * (1 + _fur(th, t + side, .018)) * _lumpy(th, t, side + 4) / 1.02;
+    final f = (1 + _fur(th, t + seed, fur)) * (1 + .5 * (_lumpy(th, t, seed + 4) - 1));
     final x = math.cos(th) * rx * f, y = math.sin(th) * ry * f;
-    out[i * 2] = cx + (x * c - y * s) * side;
+    out[i * 2] = cx + x * c - y * s;
     out[i * 2 + 1] = cy + x * s + y * c;
   }
   return out;
