@@ -33,7 +33,10 @@ Future<void> main() async {
         'id': a.id, 'status': a.status.name, 'origin': a.origin.name,
         'homeGroup': homeGroupOf(source.entry(a.id)!.homeStatus, source.entry(a.id)!.lastActivity, now).name,
         'ageMinutes': now.difference(source.entry(a.id)!.lastActivity).inMinutes,
+        'app': source.entry(a.id)!.app?.name,
       }],
+      // The software of the most recent sessions (what the notch shows).
+      'recentApps': [for (final e in (source.homeEntries.toList()..sort((a, b) => b.lastActivity.compareTo(a.lastActivity))).take(5)) e.app?.name],
     }));
   } finally {
     await watcher.stop();

@@ -6,6 +6,8 @@
 //! store, keeps working after the last screen leaves.
 //! `mikkyd --stdout-endpoint`: prints the endpoint and ends
 //! when its stdin closes (tests).
+//! `mikkyd --latest`: what the logon task starts; runs the newest built
+//! bundle's `mikkyd` instead, if this one is older.
 
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
@@ -32,6 +34,20 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
+    if std::env::args().any(|a| a == "--latest") {
+        if let Some(newest) = std::env::current_exe().ok().and_then(|exe| autostart::latest_exe(&exe)) {
+            // Waits for it, so the logon task keeps it as its own.
+            let mut command = std::process::Command::new(newest);
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                command.creation_flags(0x0800_0000);
+            }
+            if let Ok(status) = command.status() {
+                std::process::exit(status.code().unwrap_or(0));
+            }
+        }
+    }
     if let Some(mode) = std::env::args().skip_while(|a| a != "--autostart").nth(1) {
         let enabled = match mode.as_str() {
             "enable" => Some(true), "disable" => Some(false), "status" => None,
