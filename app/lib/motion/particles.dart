@@ -14,7 +14,7 @@ enum ParticleEffect {
   dust('Poussière magique', 'Des grains de lumière qui montent lentement et scintillent : un fond qui vit.', Duration(milliseconds: 6000), Color(0xFFFFD27A)),
   fireflies('Lucioles', 'Quelques lumières qui flottent au hasard et respirent : il réfléchit, il attend.', Duration(milliseconds: 8000), Color(0xFFB8FF6A)),
   confetti('Confettis', 'Des confettis en pixels lancés en l’air, qui retombent en tournant : une tâche finie.', Duration(milliseconds: 2600), Color(0xFFFF8A1F)),
-  shooting('Étoiles filantes', 'Des traits de lumière qui traversent en biais, de temps en temps.', Duration(milliseconds: 4000), Color(0xFFE6E6FF)),
+  shooting('Étoiles filantes', 'Des étoiles en pixels qui traversent en biais, de temps en temps, leur traîne en marches.', Duration(milliseconds: 4000), Color(0xFFE6E6FF)),
   pixels('Pixels qui montent', 'Des petits carrés qui montent et s’effacent, comme du calcul : il travaille.', Duration(milliseconds: 3000), Color(0xFF2E9BFF));
 
   const ParticleEffect(this.label, this.note, this.period, this.color);
@@ -162,24 +162,31 @@ class _ParticlesPainter extends CustomPainter {
           i++;
         }
       case ParticleEffect.shooting:
+        // In pixels (« pas assez pixelisé »): a head of light, a cross
+        // around it, a trail in steps on a 2 px grid, fading.
+        const px = 2.0;
+        Offset snap(Offset o) => Offset((o.dx / px).floorToDouble() * px, (o.dy / px).floorToDouble() * px);
         for (var k = 0; k < 3; k++) {
           // Each star crosses in .7 s, at its own moment of the loop.
           final p = ((t / 4) + k * .37) % 1 / .18;
           if (p > 1) continue;
           final startX = size.width * (.2 + .25 * k), startY = size.height * (.08 + .12 * k);
           final head = Offset(startX + p * 180, startY + p * 90);
-          final tail = head - const Offset(46, 23);
           final a = math.sin(p * math.pi);
-          paint
-            ..shader = LinearGradient(colors: [tone(c, 0), tone(hot, a)]).createShader(Rect.fromPoints(tail, head))
-            ..strokeWidth = 1.6
-            ..strokeCap = StrokeCap.round;
-          canvas.drawLine(tail, head, paint);
-          paint.shader = null;
-          glow
-            ..color = tone(c, a * .7)
-            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
-          canvas.drawCircle(head, 3.5, glow);
+          const steps = 22;
+          for (var i = steps; i >= 1; i--) {
+            final q = i / steps;
+            final o = snap(head - Offset(46, 23) * q);
+            paint.color = tone(Color.lerp(hot, c, q)!, a * math.pow(1 - q, 1.2));
+            canvas.drawRect(Rect.fromLTWH(o.dx, o.dy, px, px), paint);
+          }
+          final h = snap(head);
+          paint.color = tone(const Color(0xFFFFFFFF), a);
+          canvas.drawRect(Rect.fromLTWH(h.dx - px / 2, h.dy - px / 2, px * 2, px * 2), paint);
+          paint.color = tone(hot, a * .7);
+          for (final (dx, dy) in const [(2, 0), (-2, 0), (0, 2), (0, -2)]) {
+            canvas.drawRect(Rect.fromLTWH(h.dx - px / 2 + dx * px, h.dy - px / 2 + dy * px, px, px), paint);
+          }
         }
       case ParticleEffect.pixels:
         for (final (x, phase, speed, sz, sway) in _motes) {

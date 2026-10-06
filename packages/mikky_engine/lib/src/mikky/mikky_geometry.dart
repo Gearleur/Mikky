@@ -36,9 +36,6 @@ enum ArmStyle {
 
   /// Tapering to a soft, narrower end.
   tapered,
-
-  /// Smaller and lower on his sides, like a seated cat's.
-  low,
 }
 
 /// One eye, in the body's local frame (before the body transform).
@@ -414,7 +411,7 @@ double _lumpy(double th, double t, double seed) =>
 /// direction [direction]: straight out at rest, up when the arm is raised,
 /// so it turns from its shoulder instead of sliding along him.
 class _Lobe {
-  const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile);
+  const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile, [this.stretch = 0, this.radius = 0]);
 
   /// The arm of [style] on [side], [show] out of him, [lift] raised (up
   /// > 0), [grow] bigger.
@@ -425,23 +422,36 @@ class _Lobe {
       ArmStyle.soft => (.12, .32, .36, round, .1),
       ArmStyle.plump => (.12, .3, .34, plump, .1),
       ArmStyle.tapered => (.1, .36, .38, tapered, .1),
-      ArmStyle.low => (.42, .25, .3, round, .25),
     };
-    // On the right side, then mirrored. Raised, it gets a little bigger.
+    // On the right side, then mirrored. Raised, it gets a little bigger;
+    // reaching, it gets longer, hardly thicker (« trop épais » when it
+    // grew both ways, 2026-10-06).
     final up = lift.clamp(-.6, 1.4);
     final dir = anchor + rest - up;
-    final bigger = 1 + grow + .12 * math.max(0.0, math.sin(up));
+    final raised = .12 * math.max(0.0, math.sin(up));
     return _Lobe(
       side > 0 ? anchor : math.pi - anchor,
       side > 0 ? dir : math.pi - dir,
-      length * r * show * bigger,
-      halfWidth * (1 + .5 * (bigger - 1)),
+      length * r * show * (1 + grow + raised),
+      // Reaching, a little thinner than its base at rest: an arm, not a
+      // wing.
+      halfWidth * (1 + .5 * raised) * (1 - .3 * grow.clamp(0.0, 1.0)),
       profile,
+      grow.clamp(0.0, 1.0),
+      r,
     );
   }
 
   final double anchor, direction, length, halfWidth;
   final double Function(double u) profile;
+
+  /// 0: a bump (the arm at rest); 1: a reaching arm, its middle carried
+  /// out whole, so its sides stay parallel and its end round, as thick as
+  /// at rest (« tu l'as juste grossi et pas allongé »).
+  final double stretch;
+
+  /// His radius, for the round end of a reaching arm.
+  final double radius;
 
   /// Round at the end, no seam at the base.
   static double round(double u) => math.pow(1 - u * u, 2).toDouble();
@@ -458,10 +468,17 @@ class _Lobe {
     if (d > math.pi) d -= 2 * math.pi;
     final u = d.abs() / halfWidth;
     if (u >= 1) return (0, 0);
-    final out = length * profile(u);
+    // Reaching: the middle carried out whole, its end rounded like a
+    // fingertip (half as long as the arm is thick).
+    const whole = .5;
+    final reach = u < whole ? 1.0 : _smoothstep((1 - u) / (1 - whole));
+    final tip = u < whole ? math.sqrt(1 - math.pow(u / whole, 2)) * whole * halfWidth : 0.0;
+    final out = length * (profile(u) + (reach - profile(u)) * stretch) + tip * stretch * radius;
     return (math.cos(direction) * out, math.sin(direction) * out);
   }
 }
+
+double _smoothstep(double t) => t * t * (3 - 2 * t);
 
 /// Outline of a small, lopsided, softly furry ball, in pixels.
 Float64List _furBall(double cx, double cy, double radius, double t, int n) {

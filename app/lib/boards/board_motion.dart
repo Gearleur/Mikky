@@ -4,6 +4,8 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/particles.dart';
+import '../motion/pixel_power.dart';
+import '../ui/pixel_fx.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
@@ -49,15 +51,22 @@ final motionBoard = BoardSpec(
     ),
     BoardSection(
       title: 'Les bras · moignons fondus',
-      note: 'Gardés de tous les essais : des bras sortis de son contour, sans jointure, comme ses oreilles ; et trois variantes. Des poses fixes seulement (« juste des keyframes ») : on les animera quand elles seront bonnes. Levé, un bras tourne depuis l’endroit où il pousse, un peu plus gros ; il ne glisse jamais vers le haut.',
+      note: 'Gardés de tous les essais : des bras sortis de son contour, sans jointure, comme ses oreilles ; et deux variantes. Des poses fixes seulement (« juste des keyframes ») : on les animera quand elles seront bonnes. Levé, un bras tourne depuis l’endroit où il pousse, un peu plus gros ; il ne glisse jamais vers le haut.',
       kind: FrameKind.trial,
-      frames: [BoardFrame(label: 'Quatre dessins, quatre poses', child: _ArmGrid())],
+      frames: [BoardFrame(label: 'Trois dessins, quatre poses', child: _ArmGrid())],
     ),
     BoardSection(
       title: 'Ses pouvoirs · les couleurs',
       note: 'Comme le Luma qui reste rouge fluo quand il utilise ses pouvoirs : Mikky allumé de l’intérieur, presque blanc au milieu, lumineux, un peu transparent, un halo autour. Juste des couleurs, pas d’animation ; en haut ses yeux blancs, en bas sombres comme le Luma.',
       kind: FrameKind.trial,
-      frames: [BoardFrame(label: 'Huit couleurs', child: _PowerGrid())],
+      frames: [
+        BoardFrame(label: 'Huit couleurs', child: _PowerGrid()),
+        BoardFrame(
+          label: 'En pixels, orange et bleu',
+          note: 'Notre direction pixel, nos deux couleurs signature : Mikky en sprite quand il lance un sort, en 16 bits (gros pixels, quatre teintes) ou en 32 bits (petits pixels, une trame), et en magicien (étoiles et étincelles en pixels).',
+          child: _PixelPowerGrid(),
+        ),
+      ],
     ),
     BoardSection(
       title: 'Les particules',
@@ -229,6 +238,48 @@ class _PowerGrid extends StatelessWidget {
                     borderRadius: BorderRadius.circular(10),
                     child: PoseScene(Powers.pose, 0, size: const Size(150, 130), radius: 30, power: (color: color, darkEyes: dark)),
                   ),
+                ),
+            ]),
+          ),
+      ],
+    );
+  }
+}
+
+/// The pixel styles of his powers in columns, our two signature colors in
+/// rows.
+class _PixelPowerGrid extends StatelessWidget {
+  const _PixelPowerGrid();
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final label = uiText(TextSize.label, color: ui.text2);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          const SizedBox(width: 80),
+          for (final style in PixelPowerStyle.values)
+            SizedBox(
+              width: 184,
+              child: Column(children: [
+                Text(style.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+                const SizedBox(height: 2),
+                Text(style.note, style: uiText(11, color: ui.text3), textAlign: TextAlign.center),
+                const SizedBox(height: 6),
+              ]),
+            ),
+        ]),
+        for (final (name, palette) in const [('Orange', PixelFxPalette.signatureOrange), ('Bleu', PixelFxPalette.signatureBlue)])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 6),
+            child: Row(children: [
+              SizedBox(width: 80, child: Text(name, style: label)),
+              for (final style in PixelPowerStyle.values)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: ClipRRect(borderRadius: BorderRadius.circular(10), child: PixelPowerScene(style, palette, size: const Size(180, 150), radius: 32)),
                 ),
             ]),
           ),

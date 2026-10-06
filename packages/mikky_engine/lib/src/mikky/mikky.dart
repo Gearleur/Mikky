@@ -53,8 +53,8 @@ enum MikkyProp {
   armLeftLift,
   armRightLift,
 
-  /// How much bigger each arm gets (0: as at rest; 0.2: a fifth longer
-  /// and a little wider), when raised or reaching.
+  /// How much longer each arm gets (0: as at rest; 0.2: a fifth longer,
+  /// hardly thicker), when raised or reaching.
   armLeftGrow,
   armRightGrow,
 }

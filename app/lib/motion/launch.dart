@@ -143,7 +143,7 @@ abstract final class ArmPoses {
   static final all = [
     _pose('Au repos', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': -.15}),
     _pose('Coucou', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .95, 'armRightGrow': .5, 'happy': 1, 'tilt': -.08}),
-    _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .2, 'armRightGrow': .55, 'yaw': .5}),
+    _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .12, 'armRightGrow': 1.1, 'yaw': .5}),
     _pose('Youpi', {'arms': 1, 'armLeftLift': .85, 'armRightLift': .85, 'armLeftGrow': .4, 'armRightGrow': .4, 'happy': 1}),
   ];
 
@@ -151,14 +151,12 @@ abstract final class ArmPoses {
     ArmStyle.soft: 'Moignons fondus',
     ArmStyle.plump: 'Dodus',
     ArmStyle.tapered: 'Effilés',
-    ArmStyle.low: 'Bas',
   };
 
   static const notes = {
     ArmStyle.soft: 'Gardés : ronds au bout, sortis de son contour, sans jointure.',
     ArmStyle.plump: 'Un bout plus rond et plus large, sur une base plus fine.',
     ArmStyle.tapered: 'Un peu plus longs, qui s’affinent doucement vers le bout.',
-    ArmStyle.low: 'Plus petits et plus bas sur ses côtés, comme un chat assis.',
   };
 }
 
