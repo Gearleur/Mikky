@@ -28,6 +28,7 @@ abstract final class Intros {
   /// vraiment ultra rapide, avec une petite étoile qui explose sur le
   /// côté »): he flashes orange, a little star bursts beside him. A curious
   /// tilt, and a small happy hop.
+  // A little slower (2026-10-06, « ralentis ×0,8 »).
   static final pop = Choreography(
     name: 'Le pop',
     duration: 3.35,
@@ -85,13 +86,11 @@ abstract final class Intros {
       // His magic: orange in a flash, ultra fast.
       'power': const [Beat(1.25, 0), Beat(1.29, 1, Easings.out), Beat(1.4, 1), Beat(1.62, 0, Easings.out)],
       'star': const [Beat(1.2, 0), Beat(1.3, 1, Easings.back), Beat(1.38, 1.15), Beat(1.42, 0, Easings.inCubic)],
-      // A little shake as the magic goes out of him.
-      'offsetX': [const Beat(1.27, 0), ...Choreography.wiggle(1.27, 1.45, 0, .05, 3)],
       'tilt': const [Beat(1.75, 0), Beat(2.0, .2, Easings.inOut), Beat(2.3, .2), Beat(2.5, 0, Easings.inOut)],
       'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0, Easings.inOut), Beat(2.0, .3, Easings.inOut), Beat(2.3, .3), Beat(2.5, 0, Easings.inOut)],
       'happy': const [Beat(2.55, 0), Beat(2.56, 1, Easings.linear)],
     },
-  );
+  ).atSpeed(.8);
 
 }
 

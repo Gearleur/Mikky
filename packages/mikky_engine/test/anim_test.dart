@@ -114,6 +114,14 @@ void main() {
       expect(c.at('end'), 1.5);
     });
 
+    test('played slower, everything comes later', () {
+      final slow = c.atSpeed(.8);
+      expect(slow.duration, closeTo(2.5, 1e-9));
+      expect(slow.value('y', 1.25), closeTo(10, 1e-9));
+      expect(slow.value('y', .625), closeTo(5, 1e-9));
+      expect(slow.at('pop'), closeTo(.625, 1e-9));
+    });
+
     test('a wiggle ends on its rest value', () {
       final w = Choreography.wiggle(1, 2, .2, .5, 3);
       expect(w, hasLength(6));

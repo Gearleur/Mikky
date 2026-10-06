@@ -33,7 +33,7 @@ final motionBoard = BoardSpec(
       kind: FrameKind.trial,
       frames: [
         for (final (c, note, curves, poster) in [
-          (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre. Puis sa magie, ultra rapide : il devient orange un instant, tremble un peu, et une étoile éclate à côté de lui (un anneau, des étincelles en pixels). Il penche la tête, curieux, et fait un petit saut content.', ['size', 'power', 'star', 'scaleY'], 1.3),
+          (Intros.pop, 'Son ombre d’abord, puis il en jaillit, dépasse un peu sa taille et se pose, les yeux fermés ; il les ouvre. Puis sa magie, ultra rapide : il devient orange un instant, en 128 bits, et une étoile éclate à côté de lui (un anneau, des étincelles en pixels). Il penche la tête, curieux, et fait un petit saut content.', ['size', 'power', 'star', 'scaleY'], 1.65),
         ])
           BoardFrame(
             label: c.name,

@@ -58,6 +58,17 @@ class Choreography {
   /// after [from], up to [to] included.
   Iterable<Mark> passed(double from, double to) => marks.where((m) => m.at > from && m.at <= to);
 
+  /// The same, played at [speed] (0.8: slower, every moment a quarter
+  /// later): its beats, marks and length stretched in time.
+  Choreography atSpeed(double speed) => Choreography(
+        name: name,
+        duration: duration / speed,
+        tracks: {
+          for (final e in tracks.entries) e.key: [for (final b in e.value) Beat(b.at / speed, b.value, b.ease)],
+        },
+        marks: [for (final m in marks) Mark(m.at / speed, m.name)],
+      );
+
   /// When the mark [name] is, or null.
   double? at(String name) {
     for (final m in marks) {
