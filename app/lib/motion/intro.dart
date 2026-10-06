@@ -31,12 +31,12 @@ abstract final class Intros {
   // A little slower (2026-10-06, « ralentis ×0,8 »).
   static final pop = Choreography(
     name: 'Le pop',
-    duration: 3.35,
-    marks: const [Mark(0, 'l’ombre'), Mark(.32, 'pop'), Mark(.9, 'ouvre les yeux'), Mark(1.25, 'pouvoir'), Mark(1.41, 'éclate'), Mark(2.55, 'content')],
+    duration: 2.6,
+    marks: const [Mark(0, 'l’ombre'), Mark(.32, 'pop'), Mark(.9, 'ouvre les yeux'), Mark(1.25, 'pouvoir'), Mark(1.41, 'éclate'), Mark(1.8, 'content')],
     tracks: {
       'shadow': const [Beat(0, 0), Beat(.32, 1, Easings.out)],
       'size': [const Beat(.3, 0), Beat(.85, 1, Easings.spring(const SpringSpec(240, .42), .55))],
-      'h': const [Beat(.3, 0), Beat(.52, .45, Easings.out), Beat(.72, 0, Easings.inCubic), Beat(2.55, 0), Beat(2.73, .35, Easings.out), Beat(2.91, 0, Easings.inCubic)],
+      'h': const [Beat(.3, 0), Beat(.52, .45, Easings.out), Beat(.72, 0, Easings.inCubic), Beat(1.8, 0), Beat(1.98, .35, Easings.out), Beat(2.16, 0, Easings.inCubic)],
       'scaleY': [
         const Beat(.3, 1.2),
         const Beat(.72, 1.12),
@@ -45,11 +45,11 @@ abstract final class Intros {
         const Beat(1.25, 1),
         const Beat(1.29, 1.1, Easings.out),
         Beat(1.5, 1, Easings.spring(const SpringSpec(300, .4), .21)),
-        const Beat(2.49, 1),
-        const Beat(2.55, .88, Easings.out),
-        const Beat(2.73, 1.06),
-        const Beat(2.95, .9, Easings.out),
-        Beat(3.2, 1, Easings.spring(const SpringSpec(260, .45), .25)),
+        const Beat(1.74, 1),
+        const Beat(1.8, .88, Easings.out),
+        const Beat(1.98, 1.06),
+        const Beat(2.2, .9, Easings.out),
+        Beat(2.45, 1, Easings.spring(const SpringSpec(260, .45), .25)),
       ],
       'scaleX': [
         const Beat(.3, .85),
@@ -59,13 +59,13 @@ abstract final class Intros {
         const Beat(1.25, 1),
         const Beat(1.29, .93, Easings.out),
         Beat(1.5, 1, Easings.spring(const SpringSpec(300, .4), .21)),
-        const Beat(2.49, 1),
-        const Beat(2.55, 1.1, Easings.out),
-        const Beat(2.73, .95),
-        const Beat(2.95, 1.1, Easings.out),
-        Beat(3.2, 1, Easings.spring(const SpringSpec(260, .45), .25)),
+        const Beat(1.74, 1),
+        const Beat(1.8, 1.1, Easings.out),
+        const Beat(1.98, .95),
+        const Beat(2.2, 1.1, Easings.out),
+        Beat(2.45, 1, Easings.spring(const SpringSpec(260, .45), .25)),
       ],
-      'open': const [Beat(.3, .08), Beat(.88, .08), Beat(1.0, 1, Easings.out)],
+      'open': const [Beat(.3, .08), Beat(.88, .08), Beat(1, 1, Easings.out)],
       'eyeScale': const [Beat(.9, 1), Beat(1.05, 1.15, Easings.back), Beat(1.2, 1), Beat(1.29, 1.22, Easings.out), Beat(1.6, 1, Easings.inOut)],
       'earLeft': [
         const Beat(.3, -.6),
@@ -89,7 +89,7 @@ abstract final class Intros {
       // A little shake as the magic goes out of him.
       'offsetX': [const Beat(1.27, 0), ...Choreography.wiggle(1.27, 1.45, 0, .05, 3)],
       'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0, Easings.inOut)],
-      'happy': const [Beat(2.55, 0), Beat(2.56, 1, Easings.linear)],
+      'happy': const [Beat(1.8, 0), Beat(1.81, 1, Easings.linear)],
     },
   ).atSpeed(.8);
 
