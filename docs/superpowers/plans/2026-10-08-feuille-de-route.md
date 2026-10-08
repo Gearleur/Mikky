@@ -36,6 +36,8 @@ Propriétaire de : `daemon/`, `packages/mikky_agents/`, la partie données de `p
 
 ### 2. Front : les interactions
 
+**État (8 octobre, après-midi)** : le sous-agent front a été coupé par la limite. On ne lance plus de sous-agents en parallèle (trop de jetons) : le reste se fait **une sous-tâche à la fois, supervisée par l'utilisateur**. Fait et fusionné : le moteur (`line_diff.dart` : diff de lignes Myers borné et plié ; `requests.dart` : `requestQueue`, l'ordre des demandes, branché dans `IslandMachine` ; `MikkyProp.mouth` et `puff` pour avaler). Les écrans commencés (carte de question, page des demandes, touches, vue du diff, avalé) sont sur la branche `worktree-agent-a856394d1274baacc`, commit « En cours », **pas finis ni testés** : à reprendre sous-tâche par sous-tâche (Ctrl + clic, carte de question, notch droit à la demande, essai réel, diff, Kirby).
+
 Propriétaire de : `app/lib/island/`, `app/lib/side/` (sauf ce qui est à la droite), `app/lib/motion/`, `app/lib/ui/`, `packages/mikky_engine/lib/src/mikky/` et `anim/`, le dépôt de fichiers natif.
 
 1. **Le notch va droit à la demande** : quand quelque chose attend (question, permission), l'île ouverte montre la demande la plus prioritaire (questions et permissions d'abord, puis erreurs, puis limites ; les plus anciennes d'abord), « 1/3 », puis la suivante après la réponse, puis revient où on était. Clavier : Y / N / T (Toujours), 1–4 pour les choix, Entrée, Échap.
