@@ -9,6 +9,12 @@ const _heartPink = Color(0xFFFF4D6D);
 const _starGold = Color(0xFFFFD25A);
 const _sweatBlue = Color(0xFF7CC4FF);
 
+/// His mouth while he swallows a file (2026-10-08, « une bouche à la
+/// Kirby », to validate): deep red inside, a pink tongue.
+const _mouthInside = Color(0xFF5C1024);
+const _mouthThroat = Color(0xFF2E0610);
+const _tongue = Color(0xFFE8687F);
+
 /// Draws one frame of Mikky's geometry, centered on [center].
 class MikkyPainter extends CustomPainter {
   MikkyPainter({
@@ -69,6 +75,7 @@ class MikkyPainter extends CustomPainter {
 
     canvas.save();
     canvas.clipPath(body);
+    if (g.mouth case final m?) _mouth(canvas, m);
     for (final eye in g.eyes) {
       canvas.save();
       canvas.translate(eye.x, eye.y);
@@ -87,6 +94,18 @@ class MikkyPainter extends CustomPainter {
     }
     // Too small to read in the closed island.
     if (showBadge && r >= 16) _badge(canvas, g);
+    canvas.restore();
+  }
+
+  void _mouth(Canvas canvas, MouthGeometry m) {
+    final rect = Rect.fromCenter(center: Offset(m.x, m.y), width: m.width, height: m.height);
+    final oval = Path()..addOval(rect);
+    canvas.drawPath(oval, Paint()..color = _mouthInside);
+    canvas.save();
+    canvas.clipPath(oval);
+    // The throat, darker, a little up; the tongue at the bottom.
+    canvas.drawOval(Rect.fromCenter(center: Offset(m.x, m.y - m.height * .08), width: m.width * .55, height: m.height * .5), Paint()..color = _mouthThroat);
+    canvas.drawOval(Rect.fromCenter(center: Offset(m.x, m.y + m.height * .42), width: m.width * .8, height: m.height * .55), Paint()..color = _tongue);
     canvas.restore();
   }
 
