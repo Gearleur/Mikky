@@ -169,12 +169,17 @@ class RealAgentSource implements AgentSource {
   final List<AgentEntry> _entries = [];
   final Map<String, StoredAgent> _stored = {};
 
-  /// Permissions asked through Claude's hooks, by session.
+  /// Permissions and questions asked through Claude's hooks, by session.
   final Map<String, HookAsk> _hookAsks = {};
 
-  /// Sends the answer to a hook request (`hooks.answer`): `allow`, `deny`,
-  /// or null to leave it to the terminal.
+  /// Sends the answer to a hook permission (`hooks.answer`): `allow`,
+  /// `deny`, or null to leave it to the terminal.
   void Function(int id, String? decision)? answerHook;
+
+  /// Sends the answers to a hook question (`hooks.answer`), by question
+  /// text as Claude takes them ([HookAsk.answersFor]); null leaves it to
+  /// the terminal.
+  void Function(int id, Map<String, Object>? answers)? answerHookQuestion;
   final _changes = StreamController<void>.broadcast();
   final List<StreamSubscription<Object?>> _subs = [];
   int _ids = 0;
@@ -236,10 +241,34 @@ class RealAgentSource implements AgentSource {
     return e == null ? null : _agentOf(e);
   }
 
-  /// The permission agent [id] asks through Claude's hooks, if any.
+  /// The permission agent [id] asks through Claude's hooks, if any (its
+  /// questions: [questionOf]).
   HookAsk? hookAskOf(String id) {
+    final ask = _hookAskOf(id);
+    return ask == null || ask.isQuestion ? null : ask;
+  }
+
+  /// The question agent [id] asks through Claude's hooks, if any.
+  HookAsk? hookQuestionOf(String id) {
+    final ask = _hookAskOf(id);
+    return ask != null && ask.isQuestion ? ask : null;
+  }
+
+  HookAsk? _hookAskOf(String id) {
     final sessionId = entry(id)?.sessionId;
     return sessionId == null ? null : _hookAsks[sessionId];
+  }
+
+  /// The question agent [id] waits on, wherever it comes from: Claude's
+  /// hooks (a session in a terminal or VS Code) or ACP (an agent Mikky
+  /// runs). The same card answers both, through [answerQuestion].
+  QuestionAsked? questionOf(String id) => hookQuestionOf(id)?.question ?? entry(id)?.log.question;
+
+  /// True when [answerQuestion] can reach whoever asks [questionOf].
+  bool canAnswerQuestion(String id) {
+    if (hookQuestionOf(id) != null) return true;
+    final e = entry(id);
+    return e != null && e.live && e.log.question != null;
   }
 
   /// The requests waiting on `mikkyd` from Claude's hooks, all of them: each
@@ -514,7 +543,7 @@ class RealAgentSource implements AgentSource {
       // Paused: once its stopped turn is over, until it is taken off hold.
       if (e.mark.pausedAt != null && !e.log.working && !s.needsYou) s = AgentStatus.paused;
       // Asked through Claude's hooks: waits for the user.
-      if (_hookAsks.containsKey(e.sessionId)) s = AgentStatus.approval;
+      if (_hookAsks[e.sessionId] case final ask?) s = ask.isQuestion ? AgentStatus.question : AgentStatus.approval;
       if (s != e.status) _setStatus(e, s);
     }
   }
@@ -603,6 +632,12 @@ class RealAgentSource implements AgentSource {
     final e = entry(id);
     if (e == null) return false;
     final hook = _hookAsks[e.sessionId];
+    if (hook != null && hook.isQuestion) {
+      // A question takes answers ([answerQuestion]); « Ignorer » leaves it
+      // to the terminal.
+      if (answer != AgentAnswer.dismiss) return false;
+      return answerQuestion(id, null);
+    }
     if (hook != null && answer != AgentAnswer.retry) {
       // Claude's hooks know yes and no; « Toujours » stays a yes there.
       final allow = switch (answer) {
@@ -662,9 +697,23 @@ class RealAgentSource implements AgentSource {
     );
   }
 
-  /// Answers agent [id]'s question (see [AgentRun.answerQuestion]).
+  /// Answers agent [id]'s question ([questionOf]): the answers by
+  /// [Question.key], free text by [Question.otherKey]; null skips it (ACP)
+  /// or leaves it to the terminal (hooks). False if nobody asks, or if a
+  /// hook question is left unanswered (it then stays).
   bool answerQuestion(String id, Map<String, Object>? answers) {
-    final ok = entry(id)?.run?.answerQuestion(answers) ?? false;
+    final e = entry(id);
+    if (e == null) return false;
+    final hook = hookQuestionOf(id);
+    if (hook != null) {
+      final claude = answers == null ? null : hook.answersFor(answers);
+      if (answers != null && claude == null) return false;
+      _hookAsks.remove(e.sessionId);
+      answerHookQuestion?.call(hook.id, claude);
+      _changed();
+      return true;
+    }
+    final ok = e.run?.answerQuestion(answers) ?? false;
     if (ok) _changed();
     return ok;
   }
