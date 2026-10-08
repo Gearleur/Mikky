@@ -5,7 +5,7 @@
 //! `run.prompt`, `run.answer`, `run.answerQuestion`, `run.cancel`,
 //! `run.stop`, `run.subscribe`; Claude Code's hooks (`hooks.rs`):
 //! `hook.event` (from `mikky-hook`), `hooks.list`, `hooks.answer`,
-//! `hooks.status`, `hooks.preview`, `hooks.write`. Notifications to the
+//! `hooks.origin`, `hooks.status`, `hooks.preview`, `hooks.write`. Notifications to the
 //! client: `run.traffic` (every ACP message of a run, the past ones first
 //! on subscribe), `run.closed`, `hooks.changed`.
 
@@ -310,8 +310,13 @@ async fn dispatch(
                 .get("id")
                 .and_then(Value::as_u64)
                 .ok_or_else(|| RpcError::new(-32602, "missing id"))?;
-            Ok(json!(daemon.hooks.answer(id, params.get("decision").and_then(Value::as_str))))
+            Ok(json!(daemon.hooks.answer(
+                id,
+                params.get("decision").and_then(Value::as_str),
+                params.get("answers").filter(|a| !a.is_null()),
+            )))
         }
+        "hooks.origin" => Ok(daemon.hooks.origin(str_param(params, "sessionId")?)),
         "hooks.status" => Ok(crate::claude_settings::status(hook_tool(params)?)),
         "hooks.preview" => crate::claude_settings::preview(
             hook_tool(params)?,

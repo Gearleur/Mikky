@@ -11,6 +11,7 @@
 
 #include "flutter/generated_plugin_registrant.h"
 #include "resource.h"
+#include "reveal.h"
 
 namespace {
 
@@ -480,6 +481,20 @@ void FlutterWindow::HandleMethodCall(
       }
     }
     result->Success(flutter::EncodableValue(refused));
+  } else if (call.method_name() == "revealWindow") {
+    // [pid, handle]: the window an agent's session runs in (reveal.cpp).
+    bool shown = false;
+    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
+    if (args && args->size() == 2) {
+      const auto number = [](const flutter::EncodableValue& v) -> int64_t {
+        if (const auto* i = std::get_if<int32_t>(&v)) return *i;
+        if (const auto* l = std::get_if<int64_t>(&v)) return *l;
+        return 0;
+      };
+      shown = RevealWindow(static_cast<DWORD>(number((*args)[0])),
+                           number((*args)[1]));
+    }
+    result->Success(flutter::EncodableValue(shown));
   } else if (call.method_name() == "quit") {
     result->Success();
     PostMessage(GetHandle(), WM_CLOSE, 0, 0);

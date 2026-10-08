@@ -288,4 +288,106 @@ void main() {
     source.hookAsks(const []);
     expect(source.hookAskOf(agent.id), isNull);
   });
+
+  test('a question from the hooks of Claude: the same QuestionAsked as ACP, answered through mikkyd', () {
+    final sent = <(int, Map<String, Object>?)>[];
+    final decisions = <(int, String?)>[];
+    source
+      ..answerHookQuestion = ((id, answers) => sent.add((id, answers)))
+      ..answerHook = ((id, decision) => decisions.add((id, decision)));
+    final ask = HookAsk.fromJson({
+      'id': 9,
+      'kind': 'question',
+      'sessionId': 's-q',
+      'tool': 'AskUserQuestion',
+      'title': 'Quelle base ?',
+      'cwd': r'C:\p',
+      'agent': 'claude',
+      'questions': [
+        {
+          'question': 'Quelle base ?',
+          'header': 'Base',
+          'multiSelect': false,
+          'options': [
+            {'label': 'SQLite', 'description': 'Un fichier'},
+            {'label': 'Postgres', 'description': 'Un serveur'},
+          ],
+        },
+        {
+          'question': 'Quels tests ?',
+          'header': '',
+          'multiSelect': true,
+          'options': [
+            {'label': 'Unitaires', 'description': ''},
+            {'label': 'Bout en bout', 'description': ''},
+          ],
+        },
+      ],
+    });
+    source.hookAsks([ask]);
+    final agent = source.agents.single;
+    expect(agent.status, AgentStatus.question);
+    expect(agent.detail, 'Quelle base ?');
+    // Not a permission: the permission card does not take it.
+    expect(source.hookAskOf(agent.id), isNull);
+    expect(source.hookQuestionOf(agent.id)?.id, 9);
+    expect(source.canAnswerQuestion(agent.id), isTrue);
+
+    final q = source.questionOf(agent.id)!;
+    expect(q.requestId, 'hook:9');
+    expect(q.questions.map((x) => x.key), ['q1', 'q2']);
+    expect(q.questions.first.title, 'Base');
+    expect(q.questions.last.title, isNull);
+    expect(q.questions.last.multiple, isTrue);
+    expect(q.questions.first.otherKey, 'q1_custom');
+    expect(q.questions.first.choices.map((c) => (c.label, c.description)), [('SQLite', 'Un fichier'), ('Postgres', 'Un serveur')]);
+
+    // Yes / no mean nothing to a question; half an answer is refused.
+    expect(source.answer(agent.id, AgentAnswer.allow, clock), isFalse);
+    expect(source.answerQuestion(agent.id, {'q1': 'SQLite'}), isFalse);
+    expect(sent, isEmpty);
+
+    // A label, then free text winning over the choice, several labels.
+    expect(source.answerQuestion(agent.id, {'q1': 'SQLite', 'q1_custom': ' DuckDB ', 'q2': ['Unitaires', 'Bout en bout']}), isTrue);
+    expect(sent.single.$1, 9);
+    expect(sent.single.$2, {'Quelle base ?': 'DuckDB', 'Quels tests ?': ['Unitaires', 'Bout en bout']});
+    expect(source.questionOf(agent.id), isNull);
+    expect(source.agents.where((a) => a.status.needsYou), isEmpty);
+
+    // Again; « Répondre dans le terminal » (Ignorer) sends no answers.
+    source.hookAsks([ask]);
+    expect(source.answer(agent.id, AgentAnswer.dismiss, clock), isTrue);
+    expect(sent.last, (9, null));
+    expect(decisions, isEmpty);
+  });
+
+  test('HookAsk.answersFor: as Claude takes them', () {
+    final ask = HookAsk.fromJson({
+      'id': 1,
+      'kind': 'question',
+      'sessionId': 's',
+      'title': 'A ?',
+      'questions': [
+        {
+          'question': 'A ?',
+          'multiSelect': true,
+          'options': [
+            {'label': 'x'},
+            {'label': 'y'},
+          ],
+        },
+      ],
+    });
+    expect(ask.isQuestion, isTrue);
+    expect(ask.question!.message, 'A ?');
+    expect(ask.answersFor({'q1': 'x'}), {'A ?': ['x']});
+    expect(ask.answersFor({'q1': ['y', 'y']}), {'A ?': ['y']});
+    expect(ask.answersFor({'q1': <String>[], 'q1_custom': 'z'}), {'A ?': 'z'});
+    expect(ask.answersFor({'q1': <String>[]}), isNull);
+    expect(ask.answersFor({}), isNull);
+    // A permission, as before.
+    final permission = HookAsk.fromJson({'id': 2, 'sessionId': 's', 'tool': 'Bash', 'title': 'Bash ls', 'command': 'ls'});
+    expect(permission.kind, HookKind.permission);
+    expect(permission.question, isNull);
+  });
 }
