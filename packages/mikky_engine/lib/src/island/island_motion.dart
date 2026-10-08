@@ -75,14 +75,21 @@ class IslandMetrics {
     mikkyPage: (x: 64, y: 193.36, radius: 24.36),
   );
 
-  /// A small tab when closed. Open, the home: the top's, upright (user,
-  /// 2026-10-02: « une version verticale de la version haut »), 290 × 408;
-  /// an agent's page grows to the phone-shaped 344 × 520. Mikky at the
-  /// top left.
+  /// The home at the right is the notch of the top, upright (2026-10-08,
+  /// « transformer le notch du haut en notch de droite »; to validate with
+  /// the user). False: back to the home of 2026-10-02 (eight square tiles,
+  /// 290 × 408). The app's `HomeLayout.right` follows it.
+  static const rightNotch = true;
+
+  /// A small tab when closed. Open, the home: the notch upright (since
+  /// 2026-10-08, [rightNotch]), 320 × 416 — Mikky (96) and the task he
+  /// looks at side by side as at the top, the other apps under them in a
+  /// column of wide tiles; before, the top's old home upright, 290 × 408.
+  /// An agent's page grows to the phone-shaped 344 × 520.
   static const right = IslandMetrics._(
     compact: (width: 74, height: 82),
     focus: (width: 344, height: 520),
-    list: (width: 290, height: 408),
+    list: rightNotch ? (width: 320, height: 416) : (width: 290, height: 408),
     page: (width: 344, height: 520),
     hidden: (width: 0, height: 80),
     greet: (width: 290, height: 220),
@@ -90,7 +97,10 @@ class IslandMetrics {
     openRadius: 30,
     mikkyCompact: (x: 37, y: 32, radius: 15),
     mikkyOpen: (x: 40, y: 35, radius: 21),
-    mikkyList: (x: 40, y: 35, radius: 21),
+    // In the notch, 96 px at (10, 58) beside his task, as at the top — and
+    // there too when nothing is at work: his place does not move; in the
+    // old home, 72 px at the top left.
+    mikkyList: rightNotch ? (x: 58, y: 109.84, radius: 27.84) : (x: 40, y: 35, radius: 21),
     mikkyPage: (x: 40, y: 35, radius: 21),
   );
 

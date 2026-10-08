@@ -16,13 +16,16 @@ import '../ui/status.dart';
 import '../ui/tabs.dart';
 import '../ui/tokens.dart';
 import '../ui/thread_page.dart';
+import 'board_home.dart' show sampleApps;
 import 'board_screens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
 
 // The notch (user, 2026-10-05): the home at the top since « Côte à côte »
 // was chosen — Mikky looking at the latest task, the other apps as wide
-// tiles with the software they run in. At the right, trials only for now.
+// tiles with the software they run in. At the right (2026-10-08, to
+// validate): the same notch upright, in three layouts, beside the home of
+// 2026-10-02; the first trials of 2026-10-05 last.
 
 /// The other apps, as the notch shows them: a title, a line that changes,
 /// the software they run in.
@@ -299,11 +302,130 @@ class _Centered extends StatelessWidget {
   }
 }
 
-final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir : des essais', (context) => [
+/// Many apps: several pages.
+const _manyApps = [
+  ...sampleNotchApps,
+  HomeApp(id: 'n8', name: 'Range les planches', line: 'Terminée · hier', app: AgentApp.claude, status: UiStatus.finished),
+  HomeApp(id: 'n9', name: 'Mesure le CPU de l’île', line: 'Lance une commande', app: AgentApp.terminal, status: UiStatus.working),
+  HomeApp(id: 'n10', name: 'Écris le README', line: 'En erreur', app: AgentApp.vscode, status: UiStatus.error),
+  HomeApp(id: 'n11', name: 'Traduis les réglages', line: 'Terminée · lundi', app: AgentApp.codex, status: UiStatus.finished),
+  HomeApp(id: 'n12', name: 'Prépare la démo', line: 'Terminée · lundi', app: AgentApp.mikky, status: UiStatus.finished),
+];
+
+/// The notch at the right in its window, on a board (as [_notch]).
+Widget _right(HomeLayout layout, {WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
+  layout: layout,
+  child: HomeView(
+    layout: layout,
+    apps: [for (final a in apps) if (a.name != watched?.name) a],
+    watched: watched,
+    animate: false,
+    mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
+    onNew: () {},
+    onHistory: (_) {},
+  ),
+);
+
+/// The situations of the notch at the right, in [layout].
+List<BoardFrame> _situations(HomeLayout layout) {
+  final w = layout.size.width;
+  return [
+    BoardFrame(label: 'Au travail, sans plan', width: w, child: _right(layout, watched: _watched(FakeSessions.workingNoPlan(), name: 'Ajoute un test Codex', app: AgentApp.terminal))),
+    BoardFrame(label: 'Attend ton feu vert', width: w, child: _right(layout, watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex))),
+    BoardFrame(label: 'Te pose une question', width: w, child: _right(layout, watched: _watched(FakeSessions.question(), name: 'Prépare le stockage', app: AgentApp.claude))),
+    BoardFrame(label: 'En erreur', width: w, child: _right(layout, watched: _watched(FakeSessions.error(), app: AgentApp.vscode))),
+    BoardFrame(label: 'Limite atteinte', width: w, child: _right(layout, watched: _watched(FakeSessions.limited(), app: AgentApp.claude))),
+    BoardFrame(label: 'Terminée', width: w, child: _right(layout, watched: _watched(FakeSessions.done(), app: AgentApp.mikky))),
+    BoardFrame(label: 'Rien en cours', note: 'Mikky dort à sa place (l’île l’y garde) ; les applications ne bougent pas.', width: w, child: _right(layout, apps: sampleNotchApps.skip(3).toList())),
+    BoardFrame(label: 'Une application', note: 'La tâche que Mikky regarde, puis « + » et de petits points.', width: w, child: _right(layout, watched: _watched(FakeSessions.working()), apps: sampleNotchApps.take(1).toList())),
+    BoardFrame(label: 'Aucun agent', width: w, child: _right(layout, apps: const [])),
+    BoardFrame(label: 'Beaucoup d’applications', note: 'Douze autres : des pages, la flèche de droite.', width: w, child: _right(layout, watched: _watched(FakeSessions.working()), apps: _manyApps)),
+  ];
+}
+
+final notchRightBoard = BoardSpec('Notch Right', 'L’accueil dans l’île à droite de l’écran : le notch du haut, debout', (context) => [
   BoardSection(
     title: 'Notch Right',
     kind: FrameKind.trial,
-    note: '300 de large, collé au bord droit, avec les pièces du notch du haut. Trois idées, après la première (Mikky à côté de sa tâche, au-dessus d’une liste) qui ne convainquait pas. Dans l’app, la droite reste l’accueil de la planche Accueil Right en attendant.',
+    note: 'Le notch du haut (« Côte à côte ») debout, comme une app de téléphone, jamais tourné (8 octobre, à valider) : les mêmes pièces, la même qualité. En haut la même barre (modes au milieu, outils sortis du bord) ; puis, exactement comme en haut, Mikky (96) qui regarde la dernière tâche à côté de lui : le logiciel, le titre, l’état et sa progression, trois étapes en retrait ; dessous, les autres applications en tuiles larges (le signe du logiciel, le titre, la ligne qui change, l’état au coin), « + Nouvelle tâche » puis un petit point à chaque place libre ; les points gris qui vivent à peine derrière elles, fondus vers la tâche ; les pages en fondu, flèches de 22 px de chaque côté ; le même pied en petit. Trois mises en page ; la première est dans l’app (pour revenir à l’ancienne droite : `IslandMetrics.rightNotch = false`), la dernière est l’accueil d’avant, pour comparer.',
+    frames: [
+      BoardFrame(
+        label: 'Empilé · dans l’app',
+        note: '320 × 416. Les applications en une colonne de tuiles 248 × 42, quatre par page : les titres se lisent en entier.',
+        width: 320,
+        child: _right(HomeLayout.rightNotch, watched: _watched(FakeSessions.working())),
+      ),
+      BoardFrame(
+        label: 'Deux colonnes',
+        note: '360 × 366. Les applications deux par deux, 140 × 42, six par page ; plus courte mais plus large, et les titres se coupent.',
+        width: 360,
+        child: _right(HomeLayout.rightTwoColumns, watched: _watched(FakeSessions.working())),
+      ),
+      BoardFrame(
+        label: 'Taille de la page',
+        note: '344 × 520, la taille de la page d’un agent : l’île ne change plus de taille en l’ouvrant. Six applications par page, 272 × 42.',
+        width: 344,
+        child: _right(HomeLayout.rightPage, watched: _watched(FakeSessions.working())),
+      ),
+      BoardFrame(
+        label: 'Avant : l’accueil de droite',
+        note: '290 × 408, huit tuiles de 64 px (planche Accueil Right), dans l’app jusqu’au 8 octobre.',
+        width: 290,
+        child: HomeFrame(layout: HomeLayout.rightTiles, child: HomeView(layout: HomeLayout.rightTiles, apps: sampleApps, animate: false, onNew: () {}, onHistory: (_) {})),
+      ),
+    ],
+  ),
+  BoardSection(
+    title: 'Empilé : toutes les situations',
+    kind: FrameKind.trial,
+    note: 'La tâche que Mikky regarde : la dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min ; sinon rien. Elle n’est pas parmi les applications.',
+    frames: _situations(HomeLayout.rightNotch),
+  ),
+  BoardSection(
+    title: 'Deux colonnes et Taille de la page',
+    kind: FrameKind.trial,
+    frames: [
+      for (final (name, layout) in [('Deux colonnes', HomeLayout.rightTwoColumns), ('Taille de la page', HomeLayout.rightPage)]) ...[
+        BoardFrame(label: '$name · attend', width: layout.size.width, child: _right(layout, watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex))),
+        BoardFrame(label: '$name · rien en cours', width: layout.size.width, child: _right(layout, apps: sampleNotchApps.skip(3).toList())),
+        BoardFrame(label: '$name · beaucoup', width: layout.size.width, child: _right(layout, watched: _watched(FakeSessions.limited(), app: AgentApp.claude), apps: _manyApps)),
+      ],
+    ],
+  ),
+  BoardSection(
+    title: 'La page d’un agent',
+    note: 'Sans changement : une tuile ou la tâche ouvre la page de l’agent, l’île grandit en forme de téléphone, 344 × 520, sur le même ressort, la page arrive en fondu avec un léger zoom ; le retour la ramène à l’accueil (320 × 416).',
+    frames: [
+      BoardFrame(
+        label: 'Au travail',
+        width: 344,
+        child: HomeFrame(layout: HomeLayout.rightNotch, size: HomeLayout.rightNotch.pageSize, child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false)),
+      ),
+    ],
+  ),
+  const BoardSection(
+    title: 'Fonctionnement',
+    kind: FrameKind.trial,
+    frames: [
+      BoardFrame(
+        label: 'Règles du notch de droite (Empilé)',
+        child: BoardRules([
+          ('Taille', 'Île ouverte 320 × 416, coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 420 × 700). La page d’un agent : 344 × 520. Barre à 10 px du haut, 32 px de haut ; la tâche de 46 à 166 ; les applications à 176 ; le pied à 8 px du bas.'),
+          ('Mikky', '96 px à (10, 58), à 8 px de sa tâche (194 de large, jusqu’à 12 px du bord), tourné vers elle, comme en haut. Rien en cours : il dort à la même place (l’île ne le déplace qu’en haut).'),
+          ('La tâche', 'Comme en haut : la dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min ; sinon rien. Logiciel (signe et nom), titre, état et progression, 3 étapes au plus, en retrait. Un clic l’ouvre.'),
+          ('Applications', 'Une colonne de tuiles larges 248 × 42, 8 px d’écart, 4 par page : le signe du logiciel, le titre, une ligne qui change ; l’état au coin. Après elles, « + » (Nouvelle tâche), puis un petit point à chaque place libre.'),
+          ('Points', 'Derrière les applications, les points gris du haut (1,2 px tous les 8 px, glitchés, qui vivent à peine) ; ils naissent sous la tâche et se fondent vers elle, en bas, et un peu à droite.'),
+          ('Pages', 'Elles glissent de côté, en fondu sur 20 px aux bords : glisser à la souris ou au pavé, molette, flèches de 22 px de chaque côté des applications, points, ← → au clavier.'),
+          ('Pied', 'Historique en petit bouton de 24 à gauche ; les points des pages au milieu ; « Local » en petit (24 px) à droite, dans un halo de flou léger.'),
+          ('Revenir', 'L’accueil d’avant (huit tuiles de 64 px, 290 × 408) : `IslandMetrics.rightNotch = false` dans le moteur ; l’app et l’île suivent.'),
+        ]),
+      ),
+    ],
+  ),
+  BoardSection(
+    title: 'Essais du 5 octobre',
+    kind: FrameKind.trial,
+    note: 'Les premiers essais, avant la version debout du notch : 300 de large, avec les pièces du notch du haut.',
     frames: [
       BoardFrame(
         label: 'Au centre',
@@ -323,14 +445,6 @@ final notchRightBoard = BoardSpec('Notch Right', 'L’accueil de droite à venir
         width: 300,
         child: NotchRight(task: _watched(FakeSessions.working()), style: RightStyle.dock),
       ),
-    ],
-  ),
-  BoardSection(
-    title: 'Attend ton feu vert',
-    kind: FrameKind.trial,
-    frames: [
-      for (final (label, style) in [('Au centre', RightStyle.center), ('En-tête', RightStyle.header), ('Dock', RightStyle.dock)])
-        BoardFrame(label: label, width: 300, child: NotchRight(task: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex), style: style)),
     ],
   ),
 ]);

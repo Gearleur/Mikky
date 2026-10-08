@@ -155,11 +155,12 @@ final homeRightBoard = BoardSpec(
   (context) => [
     BoardSection(
       title: 'Accueil Right',
-      note: 'L’ancien accueil du haut, debout (2 octobre : « une version verticale de la version haut ») : tuiles de 64 px, huit applications par page en 2 × 4, dans l’île ouverte à droite, 290 × 408, plate du côté de l’écran. Sur la page d’un agent, elle grandit en forme de téléphone, 344 × 520. Le notch viendra ici aussi (planche Notch Right, essais).',
+      kind: FrameKind.trial,
+      note: 'L’ancien accueil du haut, debout (2 octobre : « une version verticale de la version haut ») : tuiles de 64 px, huit applications par page en 2 × 4, dans l’île ouverte à droite, 290 × 408, plate du côté de l’écran. Depuis le 8 octobre, dans l’app, la droite est le notch du haut debout (planche Notch Right, à valider) ; pour revenir à cet accueil : `IslandMetrics.rightNotch = false`. Sur la page d’un agent, l’île grandit toujours en forme de téléphone, 344 × 520.',
       frames: [
-        BoardFrame(label: 'Dans l’app', note: 'Un clic : la page de l’agent ; « + » et les outils : le Chat.', width: 290, child: _home(HomeLayout.right, sampleApps)),
-        BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 290, child: _home(HomeLayout.right, HomeApp.placeholders(20))),
-        BoardFrame(label: 'Aucun agent', width: 290, child: _home(HomeLayout.right, const [])),
+        BoardFrame(label: 'Avant le 8 octobre', note: 'Un clic : la page de l’agent ; « + » et les outils : le Chat.', width: 290, child: _home(HomeLayout.rightTiles, sampleApps)),
+        BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 290, child: _home(HomeLayout.rightTiles, HomeApp.placeholders(20))),
+        BoardFrame(label: 'Aucun agent', width: 290, child: _home(HomeLayout.rightTiles, const [])),
       ],
     ),
     BoardSection(
@@ -172,7 +173,7 @@ final homeRightBoard = BoardSpec(
     ),
     BoardSection(
       title: 'La page d’un agent',
-      note: 'Une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 344 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à 290 × 408.',
+      note: 'Une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 344 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à l’accueil (320 × 416 depuis le notch de droite, 290 × 408 avant).',
       frames: [
         BoardFrame(label: 'Au travail', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
         BoardFrame(label: 'Feu vert', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
@@ -180,9 +181,10 @@ final homeRightBoard = BoardSpec(
     ),
     const BoardSection(
       title: 'Fonctionnement',
+      kind: FrameKind.trial,
       frames: [
         BoardFrame(
-          label: 'Règles de l’accueil Right',
+          label: 'Règles de l’accueil Right (avant le 8 octobre)',
           child: BoardRules([
             ('Taille', 'Île ouverte 290 × 408, coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 420 × 700). Barre à 12 px du haut, 44 px de haut, puis 10 px entre la barre, les tuiles, le pied et le bord. Sur la page d’un agent : 344 × 520, sur le même ressort.'),
             _appRule,
@@ -229,7 +231,7 @@ class HistoryTry extends StatelessWidget {
     layout: layout,
     child: HomeView(
       layout: layout,
-      apps: layout.isTop ? sampleNotchApps : sampleApps,
+      apps: layout.notch ? sampleNotchApps : sampleApps,
       animate: false,
       onNew: () {},
       onHistory: (within) => showHistory(within, rows: sampleHistory, onMenu: _noId),
@@ -247,7 +249,7 @@ class HistoryOpen extends StatelessWidget {
   Widget build(BuildContext context) => HomeFrame(
     layout: layout,
     child: Stack(children: [
-      HomeView(layout: layout, apps: layout.isTop ? sampleNotchApps : sampleApps, animate: false, onNew: () {}, onHistory: (_) {}),
+      HomeView(layout: layout, apps: layout.notch ? sampleNotchApps : sampleApps, animate: false, onNew: () {}, onHistory: (_) {}),
       Positioned.fill(
         child: SheetScene(
           t: 1,

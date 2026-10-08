@@ -107,8 +107,24 @@ void main() {
     test('the home at the right is the top one, upright', () {
       final m = IslandMotion(edge: IslandEdge.right)..setShape(IslandShape.open, layout: IslandLayout.list);
       run(m, 2);
-      expect((m.currentWidth, m.currentHeight), (290, 408));
-      expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+      if (!IslandMetrics.rightNotch) {
+        expect((m.currentWidth, m.currentHeight), (290, 408));
+        expect((m.mikkyX, m.mikkyY, m.mikkyRadius), (40, 35, 21));
+        return;
+      }
+      // The notch upright (2026-10-08): Mikky beside his task, as at the top.
+      expect((m.currentWidth, m.currentHeight), (320, 416));
+      void beside() {
+        expect(m.mikkyX, closeTo(58, 1e-9));
+        expect(m.mikkyY, closeTo(109.84, 1e-9));
+        expect(m.mikkyRadius, closeTo(27.84, 1e-9));
+      }
+
+      beside();
+      // Nothing at work: he keeps his place.
+      m.listIdle = true;
+      run(m, 2);
+      beside();
     });
 
     test('hides into the right edge', () {
