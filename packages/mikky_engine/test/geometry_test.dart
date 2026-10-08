@@ -69,4 +69,33 @@ void main() {
     expect(rightUp, lessThan(-50));
     expect(leftMoved, closeTo(0, 1e-6));
   });
+
+  test('no mouth at rest; open, an oval under his eyes, his eyes pushed up', () {
+    expect(MikkyGeometry.posed(MikkyPose(), 100).mouth, isNull);
+    final open = MikkyGeometry.posed(MikkyPose()..[MikkyProp.mouth] = 1, 100);
+    final rest = MikkyGeometry.posed(MikkyPose(), 100);
+    final m = open.mouth!;
+    expect(m.x, closeTo(0, 1e-9));
+    expect(m.y, greaterThan(rest.eyes[0].y));
+    expect(m.height, greaterThan(m.width * .9));
+    expect(open.eyes[0].y, lessThan(rest.eyes[0].y));
+  });
+
+  test('puffed up: bigger and rounder, still him (two eyes, ears)', () {
+    double extent(MikkyGeometry g, int axis) {
+      var lo = 0.0, hi = 0.0;
+      for (var i = 0; i < g.pointCount; i++) {
+        final v = g.contour[i * 2 + axis];
+        lo = math.min(lo, v);
+        hi = math.max(hi, v);
+      }
+      return hi - lo;
+    }
+
+    final rest = MikkyGeometry.posed(MikkyPose(), 100);
+    final full = MikkyGeometry.posed(MikkyPose()..[MikkyProp.puff] = 1, 100);
+    expect(extent(full, 0), greaterThan(extent(rest, 0) * 1.12));
+    expect(extent(full, 1), greaterThan(extent(rest, 1) * 1.05));
+    expect(full.eyes, hasLength(2));
+  });
 }

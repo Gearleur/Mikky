@@ -52,6 +52,17 @@ class EyeGeometry {
   final double side;
 }
 
+/// His mouth, open (in the body's local frame, like the eyes): an oval
+/// centered at ([x], [y]) (2026-10-08, only while he swallows a file).
+class MouthGeometry {
+  const MouthGeometry({required this.x, required this.y, required this.width, required this.height, required this.open});
+
+  final double x, y, width, height;
+
+  /// How open, 0 to 1 (and a little more).
+  final double open;
+}
+
 /// Everything needed to draw Mikky at one instant, in pixels.
 ///
 /// To draw: translate([translateX], [translateY]) from Mikky's anchor,
@@ -74,9 +85,13 @@ class MikkyGeometry {
     required this.badgeX,
     required this.badgeY,
     required this.particles,
+    this.mouth,
   });
 
   final double radius;
+
+  /// His mouth while it is open (swallowing a file), else null.
+  final MouthGeometry? mouth;
 
   /// Mikky's clock, for the shapes that move by themselves (spiral, dots).
   final double time;
@@ -162,8 +177,12 @@ class MikkyGeometry {
     final p = pose;
     final t = time;
     final r = radius;
-    final rx = r * MikkyShape.halfWidth, ry = r * MikkyShape.halfHeight;
-    const ex = 2 / MikkyShape.exponent;
+    // Puffed up (full of a file he swallowed): bigger, rounder, taller
+    // more than wider; his mouth open drops his lower body a little.
+    final puffed = p[MikkyProp.puff].clamp(0.0, 1.6);
+    final mouthOpen = p[MikkyProp.mouth].clamp(0.0, 1.3);
+    final rx = r * MikkyShape.halfWidth * (1 + .16 * puffed), ry = r * MikkyShape.halfHeight * (1 + .2 * puffed);
+    final ex = 2 / (MikkyShape.exponent - .35 * puffed.clamp(0.0, 1.0));
     final k = tu.bottomWiden;
 
     // m: how far into the form (may overshoot, like jelly); w: the same,
@@ -239,7 +258,12 @@ class MikkyGeometry {
       // The ears melt into the form. Lowered ears reach the sides: they fade
       // out toward the middle of the side, so the outline stays smooth where
       // it starts and ends.
-      if (py < 0) y -= earBump(x) * (1 - earMelt) * (-py / .3).clamp(0.0, 1.0);
+      if (py < 0) y -= earBump(x) * (1 - earMelt) * (1 - .3 * puffed.clamp(0.0, 1.0)) * (-py / .3).clamp(0.0, 1.0);
+      if (py > 0 && mouthOpen > 0) {
+        // The jaw: his lower body drops and widens a little with his mouth.
+        y += mouthOpen * .12 * ry * py * py;
+        x *= 1 + .06 * mouthOpen * py;
+      }
       // His fur: a tuft on top of the head, fluffy cheeks, slowly waving.
       // Angles wrap around, so the right cheek is the same at both ends.
       final top = _bell(th, math.pi * 1.5, .16);
@@ -299,12 +323,14 @@ class MikkyGeometry {
       // Eyelids close the eyes that have lids; the other shapes keep their
       // look.
       final lid = shape == EyeShape.oval || shape == EyeShape.round || shape == EyeShape.tired ? p.open : 1.0;
+      // A wide mouth pushes his eyes up and squeezes them a little.
+      final squeeze = 1 - .14 * mouthOpen;
       eyes.add(EyeGeometry(
         x: math.sin(yaw) * cp * rx * (1 - k * math.sin(pitch)),
-        y: -math.sin(pitch) * ry,
+        y: -math.sin(pitch) * ry - mouthOpen * .12 * ry,
         rotation: -.04 - p.yaw * .25,
-        scaleX: math.max(.2, math.cos(yaw)) * p.eyeScale * grow,
-        scaleY: math.max(.2, cp) * p.eyeScale * grow,
+        scaleX: math.max(.2, math.cos(yaw)) * p.eyeScale * grow * squeeze,
+        scaleY: math.max(.2, cp) * p.eyeScale * grow * squeeze,
         width: width,
         height: math.max(width * .25, fullHeight * lid),
         fullHeight: fullHeight,
@@ -319,9 +345,21 @@ class MikkyGeometry {
         _furBall(.03 * r * _easeOut(w), (.88 + math.sin(t * 2.2 + .8) * .035) * r * _easeOut(w), .27 * r * w, t, 120),
     ];
 
+    // His mouth, under his eyes, turned with his head.
+    final mouth = mouthOpen < .01 || bang > .5
+        ? null
+        : MouthGeometry(
+            x: math.sin(p.yaw) * rx * .8,
+            y: ry * (.34 - .3 * p.pitch) + mouthOpen * .08 * ry,
+            width: r * (.14 + .5 * mouthOpen) * math.max(.35, math.cos(p.yaw)),
+            height: r * (.05 + .62 * mouthOpen),
+            open: mouthOpen,
+          );
+
     return MikkyGeometry._(
       radius: r,
       time: t,
+      mouth: mouth,
       contour: contour,
       satellites: satellites,
       eyes: eyes,

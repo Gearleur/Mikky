@@ -1,4 +1,5 @@
 import '../agents/agent.dart';
+import '../sessions/requests.dart';
 import 'island_motion.dart';
 
 /// Why the island is open.
@@ -270,12 +271,14 @@ class IslandMachine {
           if (!_retired.contains(a.id)) a,
       ];
 
-  /// The alert shown (rule 9: first come, first served), unless closed.
+  /// The alert shown, unless closed: the most pressing ([requestQueue]:
+  /// questions and permissions, then errors), the oldest first (rule 9,
+  /// 2026-10-08).
   String? get _alertHead {
-    for (final id in _alerts) {
-      if (!_escaped.contains(id)) return id;
-    }
-    return null;
+    final open = {for (final id in _alerts) if (!_escaped.contains(id)) id};
+    if (open.isEmpty) return null;
+    final queue = requestQueue(_agents.where((a) => open.contains(a.id)), limits: false);
+    return queue.isEmpty ? null : queue.first.id;
   }
 
   Agent? _agent(String? id) {

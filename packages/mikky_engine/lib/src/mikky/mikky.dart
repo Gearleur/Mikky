@@ -57,6 +57,15 @@ enum MikkyProp {
   /// hardly thicker), when raised or reaching.
   armLeftGrow,
   armRightGrow,
+
+  /// His mouth (2026-10-08, the user: « une bouche à la Kirby », only while
+  /// he swallows a file — the one exception to « no mouth »): 0 shut, out
+  /// of sight; 1 wide open, his lower body dropping a little with it.
+  mouth,
+
+  /// Puffed up, rounder and bigger (0: himself; 1: full, after
+  /// swallowing). His ears keep their place, a little shorter.
+  puff,
 }
 
 /// Shape of one eye. No pupils, ever. [round]: big round eyes (surprise).

@@ -22,6 +22,8 @@ export 'src/mikky/reactions.dart';
 
 export 'src/sessions/brief.dart';
 export 'src/sessions/home_groups.dart';
+export 'src/sessions/line_diff.dart';
 export 'src/sessions/rate_limit.dart';
+export 'src/sessions/requests.dart';
 export 'src/sessions/session_event.dart';
 export 'src/sessions/session_log.dart';
