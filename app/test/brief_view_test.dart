@@ -102,7 +102,7 @@ void main() {
   group('SoundBoard', () {
     test('every cue has a known file or none', () {
       // The files of app/assets/sounds (README.md).
-      const files = {'back', 'discord_close', 'discord_open', 'folder_close', 'folder_open', 'launch', 'navigate', 'retroachievements', 'select'};
+      const files = {'back', 'discord_close', 'discord_open', 'folder_close', 'folder_open', 'launch', 'navigate', 'retroachievements', 'select', 'spell'};
       for (final cue in MikkyCue.values) {
         expect(soundFiles.containsKey(cue), isTrue, reason: '$cue');
         final f = soundFiles[cue];

@@ -176,7 +176,9 @@ class BoardFrame extends StatelessWidget {
       children: [
         if (height == null) head else SizedBox(height: height, child: Align(alignment: Alignment.topLeft, child: head)),
         const SizedBox(height: 10),
-        child,
+        // Its own layer: what moves in one frame does not draw the others
+        // again.
+        RepaintBoundary(child: child),
       ],
     );
   }

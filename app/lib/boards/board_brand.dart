@@ -1,7 +1,6 @@
 import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
-import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/brand_logo.dart';
 import '../ui/icons.dart';
@@ -12,6 +11,7 @@ import '../ui/tokens.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';
+import 'logo_trials.dart';
 
 String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
 
@@ -274,7 +274,7 @@ String _fxNote(SignatureFxKind k) => switch (k) {
   SignatureFxKind.waves => 'Des ondes carrées, bleue puis orange.',
 };
 
-final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui manque', (context) {
+final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
     const BoardSection(
@@ -285,6 +285,42 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
         BoardFrame(label: 'C2 · Plus près', note: 'Juste ses oreilles et ses yeux.', width: 252, child: _LogoProposal(_LogoKind.close)),
         BoardFrame(label: 'C3 · Penché', note: 'Par le coin, la tête inclinée.', width: 252, child: _LogoProposal(_LogoKind.tilt)),
         BoardFrame(label: 'C4 · Par le côté', note: 'Il entre par le bord droit.', width: 252, child: _LogoProposal(_LogoKind.side)),
+      ],
+    ),
+    BoardSection(
+      title: 'Logo simple · le symbole',
+      note: 'Un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Gardés des premiers essais : les crochets-oreilles et le M-oreilles. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
+      kind: FrameKind.trial,
+      frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+    ),
+    BoardSection(
+      title: 'Logo simple · le nom',
+      note: 'Son nom en lettres, sur un bandeau : en blanc sur noir et en noir sur blanc. Gardés : [mikky] et [m] avec ses yeux.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final w in MarkWord.values)
+          BoardFrame(
+            label: w.label,
+            note: w.note,
+            width: 300,
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+              MarkName(w),
+              const SizedBox(height: 8),
+              MarkName(w, dark: false),
+            ]),
+          ),
+      ],
+    ),
+    BoardSection(
+      title: 'Logo simple · ensemble',
+      note: 'Le symbole et le nom côte à côte, comme une signature.',
+      kind: FrameKind.trial,
+      frames: [
+        for (final (m, w) in const [(MarkSymbol.ears, MarkWord.bracketed), (MarkSymbol.monogram, MarkWord.eyes)])
+          BoardFrame(
+            label: '${m.label} + ${w.label}',
+            child: Row(mainAxisSize: MainAxisSize.min, children: [MarkTile(m, size: 90), MarkName(w)]),
+          ),
       ],
     ),
     BoardSection(
@@ -436,30 +472,6 @@ final brandBoard = BoardSpec('Marque', 'Couleurs, pixels, lettres, Mikky, ce qui
                 ),
                 const SizedBox(height: 4),
                 Text('$name · ${_px(r)}', style: uiText(TextSize.caption, mono: true, color: ui.text3)),
-              ]),
-          ]),
-        ),
-      ],
-    ),
-    BoardSection(
-      title: 'Mikky',
-      note: 'Le vrai dessin de Mikky, en petit, dans quelques états (l’île et l’écran de réglage les montrent tous).',
-      frames: [
-        BoardFrame(
-          label: 'En petit',
-          width: 560,
-          child: Wrap(spacing: 22, runSpacing: 12, children: [
-            for (final (st, name) in [
-              (MikkyState.idle, 'repos'),
-              (MikkyState.working, 'travaille'),
-              (MikkyState.thinking, 'réfléchit'),
-              (MikkyState.approval, 'attend'),
-              (MikkyState.finished, 'terminé'),
-              (MikkyState.sleeping, 'dort'),
-            ])
-              Column(mainAxisSize: MainAxisSize.min, children: [
-                MiniMikky(size: 64, state: st),
-                Text(name, style: uiText(TextSize.caption, color: ui.text3)),
               ]),
           ]),
         ),

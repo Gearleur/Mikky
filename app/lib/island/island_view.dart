@@ -11,6 +11,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
 import '../mikky/mikky_painter.dart';
+import '../motion/intro.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
 import '../home/home_view.dart';
@@ -182,6 +183,22 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   double _mikkyOpacity = 1;
   Offset _cursor = const Offset(-10000, -10000);
 
+  /// Mikky's greeting when the app starts (2026-10-06: the pop, chosen on
+  /// the boards): when it began (clock time); null once done, or skipped
+  /// (fewer animations asked, bench).
+  double? _greetAt;
+
+  /// The island opens first; the pop starts this much later.
+  static const _greetLead = .35;
+
+  /// After the pop, its layer fades out while the island closes.
+  static const _greetFade = .25;
+
+  bool get _greeting => _greetAt != null;
+
+  /// Where in the pop we are (seconds).
+  double get _greetT => _clock.now - (_greetAt ?? 0) - _greetLead;
+
   Widget? _openContent;
   Object? _openContentKey;
 
@@ -202,6 +219,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _mikky.onSound = _sound.play;
     _sound.preload();
     _sound.play(MikkyCue.hello);
+    if (widget.bench == null && !ui.PlatformDispatcher.instance.accessibilityFeatures.disableAnimations) {
+      _greetAt = _clock.now;
+      _motion.setShape(IslandShape.open, layout: IslandLayout.greet);
+      // His usual self stays out of sight while he greets.
+      _mikkyOpacity = 0;
+    }
     unawaited(_setHotkeys());
     _ticker = createTicker(_onTick);
     WidgetsBinding.instance.addObserver(this);
@@ -372,7 +395,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // as the home draws it (`HomeLayout.top`).
     _motion.listIdle = _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
     final relaid = layout != _motion.layout;
-    if (s.shape != _motion.shape || relaid) {
+    // While Mikky greets, the island stays open for him.
+    if (!_greeting && (s.shape != _motion.shape || relaid)) {
       final opening = s.shape != _motion.shape && s.shape == IslandShape.open;
       _motion.setShape(s.shape, layout: layout);
       if (opening) _mikky.blink();
@@ -791,6 +815,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// Moves the window to [edge]; the island takes its current shape there.
   Future<void> _moveTo(IslandEdge edge) async {
     _ticker.stop();
+    _greetAt = null;
     await _overlay.setPlacement(edge, windowSizeFor(edge));
     if (!mounted) return;
     setState(() {
@@ -805,9 +830,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   // ---------------------------------------------------------------- frames
 
-  /// Nothing springs: the island, the bubble and Mikky's fade are still.
+  /// Nothing springs: the island, the bubble and Mikky's fade are still;
+  /// he is not greeting.
   bool get _settled =>
-      _motion.isAtRest && _bubble.isAtRest() && (_mikkyOpacity == 0 || _mikkyOpacity == 1);
+      !_greeting && _motion.isAtRest && _bubble.isAtRest() && (_mikkyOpacity == 0 || _mikkyOpacity == 1);
 
   /// Hidden and still: no frames at all until something happens.
   bool get _gone => _motion.isGone && _bubble.isAtRest();
@@ -865,6 +891,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// One frame of the island. [calm]: on the decor clock; with Mikky out
   /// of sight and no countdown, nothing to draw.
   void _step(double dt, {bool calm = false}) {
+    // The greeting is over: the island goes back to what the rules want.
+    if (_greeting && _greetT > Intros.pop.duration + _greetFade) {
+      _greetAt = null;
+      _apply();
+    } else if (_greeting && _greetT > Intros.pop.duration && _motion.shape == IslandShape.open) {
+      _motion.setShape(_snap.shape, layout: _layoutWanted);
+    }
 
     // The countdown before closing moves every frame.
     if (_snap.openReason == OpenReason.click) {
@@ -887,7 +920,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // notch on an agent's page, beside the thread (2026-10-05).
     final top = _sideKey.currentState?.topKey ?? '';
     final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
-    final mikkyTarget = (_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage ? 0.0 : 1.0;
+    final mikkyTarget = _greeting || ((_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage) ? 0.0 : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
@@ -979,6 +1012,36 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _forcePage = true;
     _apply();
     _sideKey.currentState?.openAgent(id);
+  }
+
+  /// Mikky's greeting (the pop) in the island, its stage the island
+  /// itself, centered in the greeting's size whatever the island's size
+  /// while it opens and closes.
+  Widget _greet(MikkyTheme theme, Rect rect) {
+    final size = _motion.metrics.greet;
+    final t = _greetT;
+    final fade = t <= Intros.pop.duration ? 1.0 : (1 - (t - Intros.pop.duration) / _greetFade).clamp(0.0, 1.0);
+    return Positioned.fromRect(
+      rect: rect,
+      child: IgnorePointer(
+        child: ClipPath(
+          clipper: IslandClip(_shapeRect.shift(-rect.topLeft), _motion.cornerRadius, _corners),
+          child: OverflowBox(
+            minWidth: size.width,
+            maxWidth: size.width,
+            minHeight: size.height,
+            maxHeight: size.height,
+            child: Opacity(
+              opacity: fade,
+              child: CustomPaint(
+                size: Size(size.width, size.height),
+                painter: IntroPainter(Intros.pop, math.max(0, math.min(t, Intros.pop.duration)), _edge == IslandEdge.top ? 30 : 32, stage: false, theme: theme),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   /// Content appears with a fade, a slight blur and a small shift.
@@ -1175,9 +1238,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-            ..._compactContent(theme, rect),
-            _sideWindow(theme, rect, _edge == IslandEdge.right || _topHomeShown ? openOpacity : 0, _side),
-            if (openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
+            if (!_greeting) ..._compactContent(theme, rect),
+            _sideWindow(theme, rect, !_greeting && (_edge == IslandEdge.right || _topHomeShown) ? openOpacity : 0, _side),
+            if (_greeting) _greet(theme, rect),
+            if (!_greeting && openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
               Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
             ?countdown,
             if (_mikkyOpacity > 0)

@@ -30,6 +30,10 @@ const Map<MikkyCue, String?> soundFiles = {
   MikkyCue.dizzy: 'back',
   MikkyCue.sleep: 'folder_close',
   MikkyCue.wake: 'folder_open',
+  // His spell (2026-10-06): ours, made by `tool/make_spell_sound.py`;
+  // not played at the greeting any more (2026-10-08: only the launch
+  // sound there, as before), kept for his powers later.
+  MikkyCue.spell: 'spell',
 };
 
 /// Plays Mikky's sounds: off or on and how loud in the settings, never two
