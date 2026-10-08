@@ -34,6 +34,15 @@ Mis à jour le 2026-10-08 · branche `main` (commits jusqu'à `203b530`, **pas e
 - **Le notch en haut** (2026-10-05) : Mikky regarde la dernière tâche (le logiciel où elle tourne, son titre, ses étapes), les autres applications en tuiles larges, des points gris qui vivent à peine derrière elles, des pages en fondu.
 - **Planches** (`--kit`, la référence visuelle) : Marque, Composants, **Mikky** (ex-Mouvement), Petite île, Notch Top, Notch Right, Accueil Right, Agent, Messages, Technique.
 
+## 8 octobre, droite : le notch du haut, debout
+
+- Demande : « transformer le notch du haut en notch de droite ». **Dans l'app, à valider avec l'utilisateur** (planche Notch Right, frames « Essai »). Détails : `design.md`, « Notch ».
+- **Le même `HomeView`** : `HomeLayout` a gagné `notch` (l'aspect du notch : la tâche regardée, tuiles larges, points, petites commandes) et `stacked` (la tâche au-dessus des applications) ; le haut n'a pas bougé (ses images de test sont identiques). `HomeScreen` cherche la tâche regardée dès que la disposition est un notch.
+- **À droite, 320 × 416** : la barre ; Mikky (96) et sa tâche côte à côte comme en haut ; dessous, une colonne de tuiles larges 248 × 42, 4 par page ; les points vivants derrière ; le petit pied. La page d'un agent reste 344 × 520. Rien en cours : Mikky dort à sa place (l'île ne le déplace qu'en haut : `island_view.dart` ne règle `listIdle` qu'en haut), les points prennent la place de la tâche.
+- **Revenir à l'ancienne droite** : `IslandMetrics.rightNotch = false` (moteur, `island_motion.dart`) ; `HomeLayout.right` (`rightNotch` ou `rightTiles`) et la place de Mikky dans l'île suivent. Un test vérifie que l'île et l'accueil gardent les mêmes tailles et la même place de Mikky.
+- Sur la planche, deux autres mises en page à comparer (Deux colonnes 360 × 366, Taille de la page 344 × 520) et l'accueil d'avant ; toutes les situations (sans plan, attend, question, erreur, limite, terminée, rien en cours, une application, aucun agent, beaucoup) en clair et en sombre. Planche Accueil Right : l'ancien accueil marqué « Essai ». L'historique à droite (planche Composants) montre maintenant le notch de droite.
+- **À faire avec l'utilisateur** : choisir la mise en page (ou en demander une autre), puis la voir dans l'app (bundle à refaire). `CLAUDE.md` parle encore des « tuiles du 2 octobre » à droite : à mettre à jour une fois la droite validée.
+
 ## 6 et 8 octobre : le mouvement, Mikky, la marque
 
 - **Outils du mouvement** (moteur) : `Choreography` (pistes de `Beat`, repères `Mark`, `atSpeed`), `Easings.spring` (un ressort joué exactement), `Burst` (particules à graine fixe), `MikkyGeometry.posed` (Mikky dans une pose donnée). App : `lib/motion/` (`MotionPlayer` : barre de temps, ralenti ×0,25 / ×0,5, boucle, courbes ; `intro.dart` ; `sprite128.dart` ; `pixel_power.dart` ; `dot_waves.dart`).

@@ -50,6 +50,11 @@ Propriétaire de : la disposition de droite dans `app/lib/home/` (`HomeLayout.ri
 
 Faire de la droite la vraie version verticale du notch du haut (« Côte à côte », 730 × 216) : Mikky qui regarde la dernière tâche (le logiciel, son titre, ses étapes), les autres applications en tuiles avec leur logiciel, les points gris vivants, les pages en fondu, + Nouvelle tâche ; texte posé comme une app de téléphone, jamais tourné. Le même `HomeView` ; d'abord sur la planche Notch Right, à côté de l'accueil de droite actuel, pour que l'utilisateur compare.
 
+- [x] Planche Notch Right : trois mises en page (Empilé, Deux colonnes, Taille de la page) à côté de l'accueil d'avant, toutes les situations, clair et sombre (8 octobre).
+- [x] Dans l'app : « Empilé » dans `HomeView` (`HomeLayout.rightNotch`, 320 × 416, page d'un agent 344 × 520) ; retour à l'ancienne droite par `IslandMetrics.rightNotch = false`.
+- [x] Images de test refaites et regardées ; `design.md` (« Notch ») et `reprise.md` à jour.
+- [ ] **Choix de l'utilisateur** sur la planche, puis essai dans l'app (bundle).
+
 ### Règles pour les trois
 
 - `CLAUDE.md`, `reprise.md`, `design.md` d'abord. Parler en français dans les docs.
