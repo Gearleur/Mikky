@@ -1,12 +1,13 @@
 # Mikky — où on en est
 
-Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
+Mis à jour le 2026-10-08 · branche `main` (commits jusqu'à `203b530`, **pas encore poussés** depuis le 5 au soir) · https://github.com/Gearleur/Mikky
 
 À lire en premier, avec `CLAUDE.md`. Le design est dans `design.md`, les idées dans `idees.md`, les specs validées dans `specs/`.
 
 ## Le cap
 
-- Mikky est un petit chat noir dans une **île flottante** (overlay Windows), et un **compagnon d'agents** : il lance et suit Claude Code et Codex, comme un Paperclip plus simple. Abonnements seulement, pas de clé d'API, pas de harnais maison.
+- Mikky est un petit chat noir dans une **île flottante** (overlay Windows), et un **compagnon d'agents** : il lance et suit Claude Code et Codex, comme un Paperclip plus simple, sur les abonnements de l'utilisateur, sans harnais maison. **Depuis le 5 octobre, les API sont permises aussi** pour un chat (Claude, OpenAI, Gemini, modèles locaux ; clés dans le coffre de Windows) : pas encore fait.
+- **Une app ultra premium** (5 octobre au soir, `plans/2026-10-06-premium.md`) : d'abord les outils du mouvement (chorégraphies, ressorts, particules, pixels), puis chaque moment de Mikky refait avec eux, validé sur les planches.
 - **L'île est l'interface** (décision du 1er octobre). La grande fenêtre de suivi est reportée ; elle est gardée sur la branche `feature/r4-workspace`.
 - **`mikkyd` (Rust) fait tout le travail d'agents** ; l'app Flutter n'est qu'un écran.
 - **Priorité** : une île fiable, juste et légère. Ensuite : de nouveaux outils (R5), puis des agents qui se parlent (R6), puis le VPS (R7).
@@ -29,7 +30,22 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
   - SQLite, protocole 3, WebSocket sur 127.0.0.1 avec un jeton gardé dans le coffre de Windows ;
   - un moteur natif dans WSL.
   - Fermer l'app n'arrête pas les agents.
-- **Planches** (`--kit`, la référence visuelle) : Marque, Composants, Petite île, Accueil Top, Accueil Right, Agent, Messages, Technique.
+- **Mikky salue au démarrage** (2026-10-06) : l'île s'ouvre et il fait son « pop » (il jaillit de son ombre, devient orange en 128 bits, une étoile éclate, il est content), puis l'île revient à son état ; seul le son de lancement.
+- **Le notch en haut** (2026-10-05) : Mikky regarde la dernière tâche (le logiciel où elle tourne, son titre, ses étapes), les autres applications en tuiles larges, des points gris qui vivent à peine derrière elles, des pages en fondu.
+- **Planches** (`--kit`, la référence visuelle) : Marque, Composants, **Mikky** (ex-Mouvement), Petite île, Notch Top, Notch Right, Accueil Right, Agent, Messages, Technique.
+
+## 6 et 8 octobre : le mouvement, Mikky, la marque
+
+- **Outils du mouvement** (moteur) : `Choreography` (pistes de `Beat`, repères `Mark`, `atSpeed`), `Easings.spring` (un ressort joué exactement), `Burst` (particules à graine fixe), `MikkyGeometry.posed` (Mikky dans une pose donnée). App : `lib/motion/` (`MotionPlayer` : barre de temps, ralenti ×0,25 / ×0,5, boucle, courbes ; `intro.dart` ; `sprite128.dart` ; `pixel_power.dart` ; `dot_waves.dart`).
+- **Planche Mikky** (ex-Mouvement, ses états venus de la Marque) : le lancement, les bras dodus, ses pouvoirs en pixels, les ondes de points, les courbes. Rendue légère (« elle lag de fou ») : lecteurs à la demande, une couche par cadre, sprites dessinés une fois.
+- **Le lancement : le pop**, choisi parmi beaucoup d'essais (dans l'île, sauts à la Pixar, chute, vol de Luma…) et **branché dans l'app** (`IslandLayout.greet`, `island_view.dart` `_greet`) : sur le fond de l'île, son ombre au sol ; ralenti à ×0,8 ; 3,25 s. Le son du sort (`spell.mp3`, le nôtre, `app/tool/make_spell_sound.py`) a été retiré de la salutation (« seulement le son du launch ») et gardé pour plus tard.
+- **Règle : dès que Mikky change de couleur, il est en 128 bits** (sprite de pixels fins tramés, halo en marches, dissolution par blocs ; `drawSprite128`).
+- **Essais gardés en test, pas dans l'app** : les bras dodus (quatre poses fixes ; « pas d'animation avant d'avoir les bonnes keyframes ») ; ses pouvoirs en pixels 128 bits et magicien, huit couleurs, avec ou sans bras ; les ondes de points (réfléchir, puis maths et magie).
+- **Écartés** (`design.md` §9) : les pattes, les autres bras, les pieds de Kirby, Mikky blanc en sombre, les particules seules, les couleurs lisses, les logos lisses et les huit formes de logo.
+- **Marque** : essais d'un logo simple pour l'entreprise ; aimés : crochets-oreilles, M-oreilles, `[mikky]`, `[m]` et ses yeux. Rien n'est choisi.
+- **Notch** (5 au soir) : tuiles en « relief doux » en sombre ; les points derrière les applications vivent à peine (clignotements, glitches, rares petits feux d'artifice) ; fluidité (pages ni reconstruites ni redessinées pendant les transitions).
+- **`mikkyd` au démarrage de Windows** : la tâche planifiée lançait le moteur du 1er octobre (le logiciel des tâches n'apparaissait pas) ; elle lance maintenant `mikkyd --latest`, qui passe la main au bundle le plus récent. Moteur en service vérifié : le bundle du 6 octobre.
+- **README** (5 au soir) : à quoi sert Mikky, son fonctionnement, des images des planches.
 
 ## 5 octobre (suite) : le notch remplace l'accueil du haut
 
@@ -41,7 +57,7 @@ Mis à jour le 2026-10-04 · branche `main` · https://github.com/Gearleur/Mikky
 
 - Demande de l'utilisateur : une tâche lancée dans VS Code ne montrait pas la réponse de Claude ; le chat et les actions doivent être au même endroit. Pour une session extérieure qui travaille, il n'y avait pas de champ, donc pas de bascule : la page restait sur la ligne de métro, sans messages.
 - **Suivi et Chat remplacés par un seul fil** (`threadOf`, `session_views.dart`) : chaque tâche déroule dans l'ordre ce que l'agent dit, ses actions groupées (code en direct sous l'action en cours), les messages glissés ; sa réponse dessous. Logique pure : `turnFlow`, `turnAnswer`, `planSteps`, `toolSteps` (`session_steps.dart`). Planches Agent, Messages, Accueil Top / Right à jour. **À valider sur les planches.**
-- `mikkyd` : le résumé que Claude écrit après une compaction (`isCompactSummary`) n'est plus pris pour un message de l'utilisateur (il coupait la tâche en deux). **Le moteur en service doit être reconstruit et relancé** (sans agent actif) pour en profiter.
+- `mikkyd` : le résumé que Claude écrit après une compaction (`isCompactSummary`) n'est plus pris pour un message de l'utilisateur (il coupait la tâche en deux). Le moteur en service a été relancé sur un bundle qui le contient le 6 octobre.
 
 ## Session du 4 octobre : Mikky au centre, le fonctionnel
 
@@ -78,6 +94,11 @@ Comparaison avec Coucou (`~/projects/coucou`, MIT) : Mikky avait le moteur de Mo
 
 ## À valider avec l'utilisateur
 
+- **Le pop dans l'app, en thème sombre** (vérifié en clair seulement, par captures).
+- **Les bras dodus** : les poses, puis leur animation (pas avant de bonnes keyframes).
+- **Ses pouvoirs** : une couleur (orange et bleu aimés), magicien ou pas ; où et quand il les montre.
+- **Les ondes de points** : lesquelles, et pour quels moments (réfléchir, travailler, attendre).
+- **Le logo de l'entreprise** : rien de choisi.
 - **Dans l'app** : la bulle, la petite île à la fin d'un agent, la confirmation de suppression.
 - **Choix en attente** (`design.md` §12) : l'animation de Claude au travail, l'accueil épuré.
 - **Nouvelle exploration UI/UX** (`idees.md` §9) : juste milieu mascotte/outil professionnel, accueil en tuiles inspiré de Cocoon et iiSU, réglages dédiés, vue Agent/Consommation et Projets. La direction actuelle en lignes plates reste la référence tant qu'une variante n'a pas été choisie sur les planches.
@@ -86,7 +107,7 @@ Comparaison avec Coucou (`~/projects/coucou`, MIT) : Mikky avait le moteur de Mo
 
 **Périmètre du MVP** : une île Windows fiable pour voir les sessions locales de Claude Code et Codex, lancer et piloter des agents sur Windows ou WSL, répondre aux permissions et retrouver les agents après fermeture de l'écran. Ne pas promettre qu'une session extérieure « tourne » tant que son processus n'a pas été vérifié : le JSONL prouve une activité, pas la vie d'un processus.
 
-**Demain (5 octobre) : le visuel et le son, avec l'utilisateur** : `plans/2026-10-05-visuel-et-son.md` (les animations de Mikky une par une, les sons un par un, la carte de demande en haut et à droite, la page Réglages qui remplace le menu du clic droit). Puis l'essai réel des hooks et la suite technique : `plans/2026-10-05-plateforme.md` §6.
+**Ensuite, avec l'utilisateur** (`plans/2026-10-06-premium.md`, `plans/2026-10-05-visuel-et-son.md`) : les animations de Mikky une par une avec les nouveaux outils (apporter une demande, poser une question, erreur, limite, s'endormir, ta réponse, coucou au bord, gifle et vertige), puis ses pouvoirs à leurs moments ; les autres outils du plan premium (gestes, transitions de mise en page, chemins, shaders) ; les sons un par un ; la carte de demande en haut et à droite ; la page Réglages qui remplace le menu du clic droit ; le chat par API. Côté technique : l'essai réel des hooks et la suite de `plans/2026-10-05-plateforme.md` §6. **Pousser les commits** quand l'utilisateur le demande.
 
 **Le menu du clic droit** (les réglages de Mikky) : depuis que c'est notre menu flottant dans l'accueil, il est devenu grand et « trop gluant, bouncy, perturbant » (l'utilisateur, 2026-10-02) ; il a encore grandi le 4 (sons, raccourcis, hooks). À reprendre sur les planches : une vraie page Réglages.
 
@@ -130,6 +151,8 @@ app/lib/island/          l'île (island_view, compact_view = petite île, conten
 app/lib/side/            petite fenêtre : accueil (side_app), agent_page, brief_page, hooks_page, session_*
 app/lib/sound/           sound_board.dart : quel fichier pour quel signal
 app/lib/ui/              composants, pixels (pixel_fx), menu flottant
+app/lib/motion/          le mouvement : lecteur de chorégraphies, la salutation (intro), sprites 128 bits,
+                         pouvoirs en pixels, ondes de points ; planche Mikky (boards/board_mikky.dart)
 app/lib/boards/          planches --kit ; images de test dans app/test/goldens/
 app/windows/runner/      overlay natif (clics traversants, crochet souris, menus, raccourcis
                          globaux, sons : sound.cpp)
