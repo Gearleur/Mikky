@@ -56,6 +56,9 @@ class GulpPose {
     this.air = GulpAir.lines,
     this.spread = .6,
     this.file = false,
+    this.mouthX = 0,
+    this.pitch = 0,
+    this.mouthShape = GulpMouth.oval,
   });
 
   final String name, note;
@@ -98,104 +101,124 @@ class GulpPose {
 
   /// A file pulled toward his mouth.
   final bool file;
+
+  /// The mouth moved sideways (his head turned), in his radius.
+  final double mouthX;
+
+  /// His face raised on the ball (> 0: he looks up, leaning back).
+  final double pitch;
+
+  final GulpMouth mouthShape;
+}
+
+/// The mouth's outline, always wider than tall (2026-10-08, the user:
+/// « pas forcément ronde mais ovale de façon horizontale »).
+enum GulpMouth {
+  /// A wide oval.
+  oval,
+
+  /// The top lip almost flat, the bottom deep and round, like Kirby's.
+  dee,
+
+  /// A wide, soft rectangle: a shout.
+  soft,
 }
 
 abstract final class GulpPoses {
-  static const all = [front, profile, greedy, jelly];
+  static const all = [front, rolled, skyward, full];
 
-  /// Kirby's front view: a huge mouth in his lower body, the jaw dropped,
-  /// the air coming from all around.
+  /// Kirby's front view: a wide mouth in his lower body, the jaw dropped a
+  /// little, the air coming from all around. He stays a ball.
   static const front = GulpPose(
     name: 'De face',
-    note: 'Comme Kirby de face : une bouche immense dans le bas du corps, la mâchoire descendue, les yeux poussés en haut. Il se penche à peine en arrière ; l’air arrive de partout.',
+    note: 'Celle que tu as gardée, la bouche en ovale horizontal : une grande bouche dans le bas du corps, les yeux poussés en haut, il reste une boule qui se penche à peine en arrière. L’air arrive de partout.',
     toward: math.pi / 2,
-    mouthAt: .34,
-    mouthSpan: 1.26,
-    mouthDepth: 1.1,
-    stretch: .22,
-    squash: .12,
+    mouthAt: .36,
+    mouthSpan: 1.34,
+    mouthDepth: .82,
+    stretch: .14,
+    squash: .08,
     lean: -.1,
+    puff: .3,
     earSweep: 0,
     ears: .35,
     eyeLift: .16,
     eyeScale: 1.08,
-    wobble: .028,
+    wobble: .022,
     period: 1.15,
     spread: math.pi,
+  );
+
+  /// The whole ball leans back, all of a piece, his face a little turned:
+  /// the mouth with a flat top lip.
+  static const rolled = GulpPose(
+    name: 'La boule penchée',
+    note: 'Toute la boule bascule en arrière d’un bloc, sans se déformer, la tête un peu tournée vers le fichier. La bouche en « D » couché : la lèvre du haut presque plate, le bas profond, comme Kirby qui aspire.',
+    toward: math.pi / 2,
+    yaw: .34,
+    mouthX: .2,
+    mouthAt: .34,
+    mouthSpan: 1.24,
+    mouthDepth: .86,
+    stretch: .06,
+    squash: .04,
+    lean: -.34,
     puff: .3,
+    earSweep: 0,
+    ears: .2,
+    eyeLift: .16,
+    eyeScale: 1.06,
+    wobble: .016,
+    period: 1.15,
+    spread: math.pi,
+    mouthShape: GulpMouth.dee,
   );
 
-  /// Kirby from the side: leaning far back, the mouth facing the file, his
-  /// eyes shut tight, his ears blown back.
-  static const profile = GulpPose(
-    name: 'De profil, penché',
-    note: 'Comme ta deuxième image : il se penche en arrière, la bouche vers le fichier, le corps tiré vers l’avant ; les yeux plissés de l’effort, les oreilles soufflées en arrière. Des traits fins filent dans sa bouche.',
-    toward: .32,
-    yaw: .78,
-    mouthAt: .66,
-    mouthSpan: 1.15,
-    mouthDepth: .95,
-    stretch: .3,
-    squash: .12,
-    lean: -.42,
-    earSweep: .1,
-    ears: .25,
-    eyes: EyeShape.happy,
-    eyeLift: .2,
-    wobble: .032,
-    period: 1.1,
-    spread: .55,
-    file: true,
+  /// Leaning back toward us: his face slides up the ball, as if he looked
+  /// at the sky, the mouth up with it.
+  static const skyward = GulpPose(
+    name: 'La tête en arrière',
+    note: 'Il se penche en arrière vers nous : son visage remonte sur la boule comme s’il regardait en l’air, la bouche grande ouverte au milieu du corps ; ses oreilles reculent. Un peu de côté, pour la vie.',
+    toward: math.pi / 2,
+    pitch: .3,
+    mouthAt: .1,
+    mouthSpan: 1.3,
+    mouthDepth: .78,
+    stretch: .08,
+    squash: .06,
+    lean: -.16,
+    puff: .35,
+    earSweep: 0,
+    ears: -.25,
+    eyeLift: .1,
+    eyeScale: 1.04,
+    wobble: .02,
+    period: 1.2,
+    spread: math.pi,
   );
 
-  /// Greedy: puffed up with air, leaning back hard, a mouth wider than
-  /// tall, the air in pixels.
-  static const greedy = GulpPose(
-    name: 'Gourmand, gonflé',
-    note: 'Il se remplit d’air : plus gros, plus rond, très penché en arrière, une bouche plus large que haute. Ça tremble davantage, plus vite. L’air en traînées de pixels, notre bleu.',
-    toward: .22,
-    yaw: .42,
-    mouthAt: .62,
-    mouthSpan: 1.35,
-    mouthDepth: 1.0,
-    stretch: .3,
-    squash: .2,
-    lean: -.5,
-    puff: 1,
-    earSweep: .14,
-    ears: 0,
-    eyes: EyeShape.closed,
-    eyeLift: .22,
-    wobble: .045,
-    period: .9,
-    air: GulpAir.pixels,
-    spread: .7,
-    file: true,
-  );
-
-  /// Pulled like elastic toward the file: a long drop of jelly, the mouth
-  /// at its tip, big round eyes.
-  static const jelly = GulpPose(
-    name: 'Élastique',
-    note: 'Tiré comme une gelée vers le fichier : une longue goutte, la bouche au bout, la base qui reste au sol. Les yeux ronds, les oreilles qui traînent derrière. L’air tourne en tourbillon.',
-    toward: .2,
-    yaw: .55,
-    mouthAt: .82,
-    mouthSpan: 1.0,
-    mouthDepth: .75,
-    stretch: .7,
-    squash: .22,
+  /// Full of air, a perfect ball, his eyes shut from the effort, the
+  /// mouth a very wide soft rectangle.
+  static const full = GulpPose(
+    name: 'Gonflé, tout rond',
+    note: 'Plein d’air comme Kirby : une boule parfaite, plus grosse, les yeux fermés de l’effort, une bouche très large aux coins doux, comme un cri. Il rebondit un peu ; l’air en pixels, notre bleu.',
+    toward: math.pi / 2,
+    mouthAt: .3,
+    mouthSpan: 1.5,
+    mouthDepth: .72,
+    stretch: .1,
+    squash: .06,
     lean: -.12,
-    earSweep: .16,
+    puff: .7,
+    earSweep: 0,
     ears: .1,
-    eyes: EyeShape.round,
-    eyeLift: .14,
-    eyeScale: 1.12,
-    wobble: .04,
-    period: 1.3,
-    air: GulpAir.whirl,
-    spread: .5,
-    file: true,
+    eyes: EyeShape.closed,
+    eyeLift: .2,
+    wobble: .03,
+    period: 1.0,
+    air: GulpAir.pixels,
+    spread: math.pi,
+    mouthShape: GulpMouth.soft,
   );
 }
 
@@ -280,6 +303,7 @@ class GulpPainter extends CustomPainter {
 
     final mp = MikkyPose()
       ..[MikkyProp.yaw] = p.yaw
+      ..[MikkyProp.pitch] = p.pitch
       ..[MikkyProp.eyeScale] = p.eyeScale
       ..[MikkyProp.earLeft] = p.ears + .1 * math.sin(ph - 1.6)
       ..[MikkyProp.earRight] = p.ears + .1 * math.sin(ph - 1.9);
@@ -352,25 +376,14 @@ class GulpPainter extends CustomPainter {
     canvas.translate(pivot.dx, pivot.dy);
     canvas.rotate(lean);
     canvas.translate(-pivot.dx, -pivot.dy);
-    MikkyPainter(
-      geometry: g,
-      center: center,
-      rim: theme.mikkyRim,
-      statusColor: theme.status,
-      foreground: theme.foreground,
-      showBadge: false,
-    ).paint(canvas, size);
-
-    canvas.translate(center.dx, center.dy);
-    final mouth = bend(dx * r * p.mouthAt, dy * r * p.mouthAt, jelly: false);
+    final mouth = bend(dx * r * p.mouthAt + r * p.mouthX, dy * r * p.mouthAt, jelly: false);
     final along = p.mouthDepth * r * open, across = p.mouthSpan * r * open;
-    canvas.save();
-    canvas.clipPath(Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(contour[i * 2], contour[i * 2 + 1])], true));
-    _mouth(canvas, mouth, along, across, p.toward, r);
-    canvas.restore();
 
-    // Where the air goes in: the front of his mouth.
+    // The air first, behind him: it rushes in and goes out of sight behind
+    // his outline, as if he breathed it in.
     final lip = mouth + Offset(dx, dy) * (p.toward > 1 ? 0 : along * .35);
+    canvas.save();
+    canvas.translate(center.dx, center.dy);
     if (p.file) _file(canvas, lip, Offset(dx, dy), r, breath, t);
     switch (p.air) {
       case GulpAir.lines:
@@ -381,54 +394,66 @@ class GulpPainter extends CustomPainter {
         _whirl(canvas, lip, r, t);
     }
     canvas.restore();
+
+    MikkyPainter(
+      geometry: g,
+      center: center,
+      rim: theme.mikkyRim,
+      statusColor: theme.status,
+      foreground: theme.foreground,
+      showBadge: false,
+    ).paint(canvas, size);
+
+    canvas.translate(center.dx, center.dy);
+    canvas.clipPath(Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(contour[i * 2], contour[i * 2 + 1])], true));
+    _mouth(canvas, mouth, along, across, p.toward, r, p.mouthShape);
+    canvas.restore();
   }
 
-  /// The inside of his mouth: dark at the rim, lit in the middle, the
-  /// throat deep at the back, a tongue at the bottom, a shine on the lip.
-  void _mouth(Canvas canvas, Offset at, double along, double across, double angle, double r) {
+  /// The inside of his mouth, drawn with its depth going down [angle]
+  /// (straight down for a front view): dark at the rim, lit in the middle,
+  /// the throat at the back, a tongue at the bottom, a shine on the top lip.
+  void _mouth(Canvas canvas, Offset at, double along, double across, double angle, double r, GulpMouth shape) {
     canvas.save();
     canvas.translate(at.dx, at.dy);
-    canvas.rotate(angle);
-    final rect = Rect.fromCenter(center: Offset.zero, width: along, height: across);
-    final oval = Path()..addOval(rect);
+    canvas.rotate(angle - math.pi / 2);
+    final w = across, h = along;
+    final rect = Rect.fromCenter(center: Offset.zero, width: w, height: h);
+    final outline = switch (shape) {
+      GulpMouth.oval => Path()..addOval(rect),
+      // The top lip nearly flat, a little dipped; the bottom a deep curve.
+      GulpMouth.dee => Path()
+        ..moveTo(-w / 2, -h * .22)
+        ..quadraticBezierTo(0, -h * .62, w / 2, -h * .22)
+        ..cubicTo(w / 2, h * .42, w * .22, h / 2, 0, h / 2)
+        ..cubicTo(-w * .22, h / 2, -w / 2, h * .42, -w / 2, -h * .22)
+        ..close(),
+      GulpMouth.soft => Path()..addRRect(RRect.fromRectAndCorners(rect, topLeft: Radius.elliptical(w * .3, h * .45), topRight: Radius.elliptical(w * .3, h * .45), bottomLeft: Radius.elliptical(w * .4, h * .55), bottomRight: Radius.elliptical(w * .4, h * .55))),
+    };
     canvas.drawPath(
-      oval,
+      outline,
       Paint()
         ..shader = const RadialGradient(
-          center: Alignment(.2, 0),
-          radius: .78,
+          center: Alignment(0, .15),
+          radius: .8,
           colors: [Color(0xFFFF6676), Color(0xFFE5243F), Color(0xFF9C0B24), Color(0xFF52040F)],
-          stops: [0, .38, .78, 1],
+          stops: [0, .4, .8, 1],
         ).createShader(rect),
     );
-    canvas.clipPath(oval);
-    // The throat, back inside him.
-    final throat = Rect.fromCenter(center: Offset(-along * .3, -across * .05), width: along * .8, height: across * .75);
-    canvas.drawOval(
-      throat,
-      Paint()
-        ..shader = const RadialGradient(colors: [Color(0x992A020A), Color(0x002A020A)]).createShader(throat),
-    );
-    // Back to the screen's way up, for the tongue and the shine.
-    canvas.rotate(-angle);
-    final c = math.cos(angle).abs(), s = math.sin(angle).abs();
-    final halfW = math.sqrt(math.pow(along / 2 * c, 2) + math.pow(across / 2 * s, 2));
-    final halfH = math.sqrt(math.pow(along / 2 * s, 2) + math.pow(across / 2 * c, 2));
-    final tongue = Rect.fromCenter(center: Offset(0, halfH * .72), width: halfW * 1.5, height: halfH * .85);
-    canvas.drawOval(
-      tongue,
-      Paint()
-        ..shader = const RadialGradient(center: Alignment(0, -.4), colors: [Color(0xFFFF9AA8), Color(0xFFE5506A)]).createShader(tongue),
-    );
-    // The upper lip's shadow, then a soft shine, like a lit sweet.
-    final top = Rect.fromLTWH(-halfW, -halfH, halfW * 2, halfH * .7);
+    canvas.clipPath(outline);
+    // The throat, at the back: up and in the middle, seen from the front.
+    final throat = Rect.fromCenter(center: Offset(0, -h * .1), width: w * .85, height: h * .6);
+    canvas.drawOval(throat, Paint()..shader = const RadialGradient(colors: [Color(0x662A020A), Color(0x002A020A)]).createShader(throat));
+    // The tongue, at the bottom.
+    final tongue = Rect.fromCenter(center: Offset(0, h * .4), width: w * .72, height: h * .48);
+    canvas.drawOval(tongue, Paint()..shader = const RadialGradient(center: Alignment(0, -.4), colors: [Color(0xFFFF9AA8), Color(0xFFE5506A)]).createShader(tongue));
+    // The top lip's shadow, then a soft shine, like a lit sweet.
+    final top = Rect.fromLTWH(-w / 2, -h / 2, w, h * .38);
     canvas.drawRect(
       top,
-      Paint()
-        ..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99300208), Color(0x00300208)])
-            .createShader(top),
+      Paint()..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99300208), Color(0x00300208)]).createShader(top),
     );
-    final shine = Rect.fromCenter(center: Offset(-halfW * .35, -halfH * .1), width: halfW * .5, height: halfH * .28);
+    final shine = Rect.fromCenter(center: Offset(-w * .22, -h * .08), width: w * .22, height: h * .13);
     canvas.drawOval(shine, Paint()..color = const Color(0x40FFFFFF)..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .03));
     canvas.restore();
   }

@@ -77,7 +77,7 @@ final mikkyBoard = BoardSpec(
     ),
     BoardSection(
       title: 'La bouche ouverte · quatre propositions',
-      note: 'Demande du 8 octobre : Mikky plus Kirby, dans la forme et le mouvement, pour avaler un fichier (la seule fois où il a une bouche). Pas encore d’animation : quatre postures, chacune vivante en boucle, gluante et rebondissante. Il se penche en arrière depuis le sol, son corps s’étire vers la bouche et se tasse derrière, ses oreilles sont soufflées ; chaque partie bouge un peu après l’autre (le corps, puis la bouche, puis les oreilles), comme une gelée. À choisir, ou à mélanger.',
+      note: 'Demande du 8 octobre : Mikky plus Kirby pour avaler un fichier (la seule fois où il a une bouche). Après le premier essai (« seul De face est cool ») : il reste une boule qui se penche en arrière d’un bloc, presque sans se déformer, et la bouche est un ovale horizontal, plus large que haut. Chacune vit en boucle, un peu gluante : le corps, puis la bouche, puis les oreilles. À choisir, ou à mélanger.',
       kind: FrameKind.trial,
       frames: [
         for (final pose in GulpPoses.all)
