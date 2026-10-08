@@ -218,3 +218,38 @@ Après le premier essai de la petite fenêtre. ✔ = fait. Rien d'autre n'est d�
 - Gamifier la **lecture de l'état** : Mikky réagit, les tuiles vivent doucement, un travail terminé reçoit une courte célébration, une tâche en attente attire l'œil. La commande, le risque, la provenance et les chiffres restent sobres. Pas de score ou de niveau qui pousse à consommer des agents.
 - Mémoire locale partagée : souvenirs choisis et corrigeables, avec source, date, portée (utilisateur, projet, agent), droits de lecture, suppression et export. Une ontologie simple pourra lier personnes, projets, tâches, décisions, fichiers et sessions ; commencer par une recherche et des liens explicites avant un graphe complexe.
 - Connecteurs futurs : fichiers/Git, bases de données, MCP, Replicas et automatisations planifiées. Chacun indique ce qu'il peut lire, écrire et déclencher, son compte/lieu, et ses événements dans un journal. Accès aux bases en lecture seule par défaut ; aucune clé dans l'interface Flutter ou la mémoire transmise aux agents. La mémoire et ces connecteurs suivent la fiabilité du cœur MVP.
+
+## 10. Le « Discord » agentique et le « Jira nouvelle génération » (2026-10-08)
+
+Vision de l'utilisateur pour plus tard : aujourd'hui le notch, ensuite un **Discord agentique** avec un **kanban**, une **connexion GitHub** à la Replicas, et des **écrans qui changent selon le travail** (code, texte, email…). Rien n'est décidé au-delà de l'ordre de `plans/2026-10-08-feuille-de-route.md`. C'est la grande fenêtre (R4) reprise : l'île reste le compagnon et la télécommande, le « Discord » devient la maison de Mikky. Le « Discord » n'est qu'**un autre écran sur les données de `mikkyd`** (missions, fils, décisions, journal) : il faut d'abord ces tables et le protocole écrit.
+
+**Correspondance de départ** : serveur = projet ou dépôt GitHub ; salon = mission (son fil = la page d'agent actuelle, un seul fil) ; membres = les agents avec leur état réel ; onglet kanban du projet ; une issue GitHub → une mission, l'agent revient avec une branche ou une PR, sa CI et sa revue (worktree d'abord, bac à sable sur le VPS plus tard, V4) ; le **type** d'une mission choisit sa vue (code : diff, fichiers, terminal, PR et CI ; texte : document avec modifications suivies ; email : boîte, brouillon, envoi seulement après le Oui de l'utilisateur) ; les agents se parlent dans le salon par le canal R6.
+
+### Idées d'interface pour le « Discord » (l'utilisateur)
+
+1. **Le salon devient une mission** : au lieu de #backend ou #général, un objectif, un état (en cours, bloqué, terminé), un budget et une échéance. Il s'archive tout seul quand l'objectif est atteint. La barre de gauche montre des choses qui avancent, pas des sujets.
+2. **Une présence qui dit ce que fait l'agent** : à la place du rond vert, en direct « lit auth.ts », « lance les tests », « attend ta validation », avec une jauge de contexte et la consommation. On voit l'équipe d'agents travailler d'un coup d'œil.
+3. **Des messages en couches repliables** : par défaut une ligne (intention, résultat) ; on déplie pour le plan, puis pour les appels d'outils bruts. Trois niveaux de zoom sur le même contenu (le fil actuel a déjà « actions groupées » : c'est le niveau 2).
+4. **Une file de décisions plutôt qu'une boîte de notifications** (à la Superhuman) : seulement ce qui a besoin de l'utilisateur (valider un plan, trancher entre deux options, approuver un merge), enchaîné au clavier : approuver, refuser, commenter, suivant. Le notch qui va droit à la demande la plus prioritaire (2026-10-08) en est la première version.
+5. **Des blocs vivants au lieu de texte** : un plan éditable (supprimer l'étape 3, réordonner, valider, il exécute), un diff, une checklist qui se coche en temps réel, un graphique de résultats.
+6. **Forker une conversation comme une branche git** : deux agents partent en parallèle, on compare côte à côte, on « merge » la bonne (idée n° 33, le tournoi).
+7. **Le salon vocal devient une salle de pairing** : on parle, les agents écoutent et agissent, leur espace de travail est montré comme un partage d'écran ; « non, plutôt dans le service user » et le fichier change.
+8. **« Pendant ton absence »** : le matin, un résumé de la nuit avec une timeline qu'on fait défiler pour voir l'état du projet à n'importe quel moment (idée n° 27, le récap).
+9. **Des mentions avec permissions** : @agent-front avec des pastilles (lecture seule, peut pousser, budget, 30 min max). Le cadre de la délégation se voit dans le message.
+10. **Une vue carte** (à la tldraw ou Factorio) : les tâches sont des nœuds reliés par leurs dépendances, les agents se déplacent de l'une à l'autre ; on repère les embouteillages.
+
+### Idées pour le « Jira nouvelle génération » (l'utilisateur)
+
+- **Le tableau se met à jour tout seul** : le statut vient de l'activité réelle (une PR ouverte → en revue ; les tests passent → terminé). Plus personne ne glisse de cartes.
+- **Le ticket est une spec exécutable** : les critères d'acceptation sont des tests ou des vérifications ; le ticket se ferme quand ils sont verts (idée n° 29, « jusqu'au vert »).
+- **Décomposition assistée** : un objectif (« ajouter le paiement Stripe ») → un agent propose un arbre de sous-tâches avec dépendances ; on élague et on lance (idée n° 30, chef et équipe).
+- **Estimer en coût et en confiance** plutôt qu'en points : « environ 0,80 €, 12 min, confiance 70 % », puis estimé contre réel. Sur abonnement : en part de la limite, jamais un faux coût en euros (§9, consommation).
+- **Des colonnes pour le duo humain / agents** : À cadrer (humain), En cours (agents), À vérifier (humain), Terminé. Le temps de relecture de l'utilisateur est la ressource rare, et ça se voit.
+- **Le sprint devient un budget** : tant de jetons ou de part de limite par epic, la consommation en direct.
+- **Détection des conflits** : deux agents vont toucher au même fichier → alerte avant, avec une proposition d'ordre.
+- **Le tableau comme requête** : « qu'est-ce qui bloque la release de vendredi » filtre et réorganise la vue.
+- **La rétro automatique** : où les agents ont échoué, ce qui a été relancé trois fois, quels outils ou consignes posent problème. Le tableau sert aussi à améliorer les agents.
+
+### Où regarder
+
+Linear (vitesse, tout au clavier, ouvert aux agents), Vibe Kanban et Conductor (plusieurs agents de code en parallèle), Superhuman (le tri), Figma (le multijoueur en temps réel), tldraw (le canvas), les intégrations Slack de Devin et de Cursor (un agent qui travaille dans un fil), Replicas (§9 : un dépôt, une tâche, un agent dans un espace isolé).

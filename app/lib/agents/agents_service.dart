@@ -356,6 +356,11 @@ class AgentsService extends ChangeNotifier {
     await _backendEvents?.cancel();
   }
 
+  /// Ctrl + click on an agent: brings forward the terminal or VS Code window
+  /// the session runs in, or opens VS Code on its folder. False when there is
+  /// nowhere to go. (Contract of 2026-10-08; the back fills it in.)
+  Future<bool> reveal(String sessionId) async => false;
+
   Future<void> stopAll() async => _client.request('runs.stopAll');
   Future<void> setAutostart(bool enabled) async {
     final client = daemon;
