@@ -2,11 +2,11 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
+import '../motion/gulp.dart';
 import '../motion/intro.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
-import '../motion/swallow.dart';
 import '../ui/motion.dart';
 import '../ui/side.dart';
 import '../ui/tokens.dart';
@@ -76,74 +76,16 @@ final mikkyBoard = BoardSpec(
       ],
     ),
     BoardSection(
-      title: 'Sa bouche et son gonflement',
-      note: 'Demande du 8 octobre : une bouche à la Kirby, et Mikky qui se déforme, plus gros, pour avaler un fichier. La seule fois où il a une bouche, seulement le temps d’avaler (à valider). Bouche ouverte, le bas de son corps descend un peu, ses yeux montent et se serrent ; gonflé, il est plus gros et plus rond, ses oreilles un peu plus courtes.',
+      title: 'La bouche ouverte · quatre propositions',
+      note: 'Demande du 8 octobre : Mikky plus Kirby, dans la forme et le mouvement, pour avaler un fichier (la seule fois où il a une bouche). Pas encore d’animation : quatre postures, chacune vivante en boucle, gluante et rebondissante. Il se penche en arrière depuis le sol, son corps s’étire vers la bouche et se tasse derrière, ses oreilles sont soufflées ; chaque partie bouge un peu après l’autre (le corps, puis la bouche, puis les oreilles), comme une gelée. À choisir, ou à mélanger.',
       kind: FrameKind.trial,
       frames: [
-        for (final (name, mouth, puff) in const [
-          ('Fermée', 0.0, 0.0),
-          ('Entrouverte', .4, 0.0),
-          ('Grande ouverte', 1.0, 0.0),
-          ('Aspire', 1.15, .3),
-          ('Gonflé', 0.0, 1.0),
-          ('Très gonflé', 0.0, 1.25),
-        ])
+        for (final pose in GulpPoses.all)
           BoardFrame(
-            label: name,
-            width: 180,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: PoseScene(
-                Choreography(name: name, duration: 1, tracks: {
-                  'mouth': [Beat(0, mouth)],
-                  'puff': [Beat(0, puff)],
-                }),
-                0,
-                size: const Size(180, 150),
-                radius: 36,
-              ),
-            ),
-          ),
-      ],
-    ),
-    BoardSection(
-      title: 'Avaler un fichier · les étapes',
-      note: 'La version « Kirby », arrêtée à ses moments : il voit le fichier, ouvre grand et aspire pendant qu’il survole (en boucle tant qu’on ne lâche pas), le fichier lâché file dans sa bouche, il la ferme, reste plein et rond un instant, puis revient avec un petit saut content.',
-      kind: FrameKind.trial,
-      frames: [
-        for (final (name, t) in const [
-          ('Il le voit', .4),
-          ('Survole', 1.0),
-          ('Lâché', 1.38),
-          ('Avalé', 1.5),
-          ('Plein', 2.0),
-          ('Revient', 2.4),
-        ])
-          BoardFrame(
-            label: name,
-            width: 200,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: SwallowScene(Swallows.kirby, t, size: const Size(200, 150), radius: 30),
-            ),
-          ),
-      ],
-    ),
-    BoardSection(
-      title: 'Avaler un fichier · trois façons',
-      note: 'À jouer au ralenti (×0,25) et à parcourir avec la barre de temps. Kirby : grande bouche, gonflé en aspirant, plein et rond après, petit saut. Gloups : rapide, une petite bouche, le fichier happé, un gros gonflement. Gourmand : plus lent, très grande bouche, il gonfle beaucoup, tremble comme une gelée une fois plein, et quelques étoiles en pixels.',
-      kind: FrameKind.trial,
-      frames: [
-        for (final c in Swallows.all)
-          BoardFrame(
-            label: c.name,
-            width: 520,
-            child: MotionPlayer(
-              choreography: c,
-              curves: const ['mouth', 'puff', 'fileDist'],
-              poster: c.at('survole'),
-              scene: (context, t) => SwallowScene(c, t),
-            ),
+            label: pose.name,
+            note: pose.note,
+            width: 260,
+            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: GulpLive(pose)),
           ),
       ],
     ),
