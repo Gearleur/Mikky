@@ -101,6 +101,25 @@ class MikkyGeometry {
 
   int get pointCount => contour.length ~/ 2;
 
+  /// The same Mikky with his outline and eyes bent from outside (a squash,
+  /// a lean, jelly), the rest unchanged.
+  MikkyGeometry reshaped({Float64List? contour, List<EyeGeometry>? eyes}) => MikkyGeometry._(
+        radius: radius,
+        time: time,
+        contour: contour ?? this.contour,
+        satellites: satellites,
+        eyes: eyes ?? this.eyes,
+        translateX: translateX,
+        translateY: translateY,
+        tilt: tilt,
+        scaleX: scaleX,
+        scaleY: scaleY,
+        badge: badge,
+        badgeX: badgeX,
+        badgeY: badgeY,
+        particles: particles,
+      );
+
   /// Geometry of [mikky] drawn with radius [radius] pixels, with [points]
   /// points on the outline.
   factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) => _build(
