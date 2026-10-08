@@ -22,6 +22,14 @@ const EVENTS: &[(&str, u64)] = &[
     ("SessionEnd", 10),
 ];
 
+/// Claude's questions (`AskUserQuestion`, Claude Code 2.1.85+) come to a
+/// `PreToolUse` hook of their own: `mikky-hook --ask` waits for the answers
+/// (125 s; `hooks.rs`), Claude for the hook 130 s. Codex has no such tool
+/// for its hooks: Claude only.
+const ASK_EVENT: &str = "PreToolUse";
+const ASK_MATCHER: &str = "AskUserQuestion";
+const ASK_TIMEOUT: u64 = 130;
+
 const MARKER: &str = "mikky-hook";
 
 /// Whose hooks.
@@ -120,6 +128,29 @@ fn command(hook: &Path, tool: Tool, event: &str) -> String {
     }
 }
 
+/// Mikky's entries, event by event: (event, matcher, hook).
+fn entries(hook: &Path, tool: Tool) -> Vec<(&'static str, Option<&'static str>, Value)> {
+    let mut out = Vec::new();
+    for (event, timeout) in EVENTS {
+        let mut entry =
+            json!({"type": "command", "command": command(hook, tool, event), "timeout": timeout});
+        if tool == Tool::Codex && *event == "PermissionRequest" {
+            // Shown by Codex while it waits.
+            entry["statusMessage"] = json!("En attente de ta réponse dans Mikky");
+        }
+        out.push((*event, None, entry));
+    }
+    if tool == Tool::Claude {
+        let exe = hook.to_string_lossy().replace('\\', "/");
+        out.push((
+            ASK_EVENT,
+            Some(ASK_MATCHER),
+            json!({"type": "command", "command": format!("\"{exe}\" --ask {ASK_EVENT}"), "timeout": ASK_TIMEOUT}),
+        ));
+    }
+    out
+}
+
 fn parse(bytes: &[u8]) -> Result<Value, String> {
     let bytes = bytes.strip_prefix(&[0xEF, 0xBB, 0xBF][..]).unwrap_or(bytes);
     if bytes.iter().all(u8::is_ascii_whitespace) {
@@ -154,21 +185,23 @@ fn merged(existing: &Value, hook: &Path, tool: Tool) -> Value {
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_else(Map::new);
-    for (event, timeout) in EVENTS {
-        let mut list = hooks
-            .get(*event)
-            .and_then(Value::as_array)
-            .cloned()
-            .unwrap_or_default();
-        list.retain(|e| !is_ours(e));
-        let mut entry =
-            json!({"type": "command", "command": command(hook, tool, event), "timeout": timeout});
-        if tool == Tool::Codex && *event == "PermissionRequest" {
-            // Shown by Codex while it waits.
-            entry["statusMessage"] = json!("En attente de ta réponse dans Mikky");
+    // Ours leave each event, then come back at its end.
+    let ours = entries(hook, tool);
+    for (event, _, _) in &ours {
+        if let Some(list) = hooks.get_mut(*event).and_then(Value::as_array_mut) {
+            list.retain(|e| !is_ours(e));
         }
-        list.push(json!({"hooks": [entry]}));
-        hooks.insert((*event).into(), Value::Array(list));
+    }
+    for (event, matcher, entry) in ours {
+        let list = hooks.entry(event).or_insert_with(|| json!([]));
+        if !list.is_array() {
+            *list = json!([]);
+        }
+        let mut group = json!({"hooks": [entry]});
+        if let Some(m) = matcher {
+            group["matcher"] = json!(m);
+        }
+        list.as_array_mut().unwrap().push(group);
     }
     root.insert("hooks".into(), Value::Object(hooks));
     Value::Object(root)
@@ -231,6 +264,9 @@ pub fn status(tool: Tool) -> Value {
     let (current, _) = read(&path).unwrap_or((json!({}), Vec::new()));
     json!({
         "installed": installed(&current),
+        // Installed before a hook was added (Claude's questions): the
+        // preview shows what is missing.
+        "upToDate": installed(&current) && merged(&current, &hook, tool) == current,
         "settingsPath": path.to_string_lossy(),
         "hookPath": hook.to_string_lossy(),
         "hookReady": hook.exists() || shipped_hook().exists(),
@@ -409,6 +445,41 @@ mod tests {
         );
         assert_eq!(without_ours(&with), mine);
         assert_eq!(without_ours(&merged(&json!({}), hook, Tool::Claude)), json!({}));
+    }
+
+    #[test]
+    fn claude_questions_have_their_own_hook() {
+        let hook = Path::new("C:\\Mikky\\mikky-hook.exe");
+        let theirs = json!({"matcher": "Bash", "hooks": [{"type": "command", "command": "guard"}]});
+        let mine = json!({"hooks": {"PreToolUse": [theirs]}});
+        let with = merged(&mine, hook, Tool::Claude);
+        let pre = with["hooks"]["PreToolUse"].as_array().unwrap();
+        assert_eq!(pre.len(), 2);
+        assert_eq!(pre[0], theirs);
+        assert_eq!(pre[1]["matcher"], "AskUserQuestion");
+        assert_eq!(
+            pre[1]["hooks"][0],
+            json!({"type": "command", "command": "\"C:/Mikky/mikky-hook.exe\" --ask PreToolUse", "timeout": 130})
+        );
+        // Again: still one; uninstalled: theirs only.
+        assert_eq!(merged(&with, hook, Tool::Claude), with);
+        assert_eq!(without_ours(&with), mine);
+        // An install from before the questions is not up to date.
+        let mut old = with.clone();
+        old["hooks"].as_object_mut().unwrap().insert("PreToolUse".into(), json!([theirs]));
+        assert!(installed(&old));
+        assert_ne!(merged(&old, hook, Tool::Claude), old);
+        // Codex has no question hook.
+        let codex = merged(&json!({}), hook, Tool::Codex);
+        assert!(codex["hooks"].get("PreToolUse").is_none());
+        // The preview shows it.
+        let dir = temp_dir("ask");
+        let path = dir.join("settings.json");
+        let p = preview_at(&path, hook, Tool::Claude, true).unwrap();
+        let diff = p["diff"].as_str().unwrap();
+        assert!(diff.contains("\"matcher\": \"AskUserQuestion\""), "{diff}");
+        assert!(diff.contains("--ask PreToolUse"), "{diff}");
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

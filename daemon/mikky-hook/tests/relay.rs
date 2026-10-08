@@ -22,8 +22,12 @@ fn mikkyd() -> Option<PathBuf> {
 }
 
 fn relay(endpoint: &str, event: &Value) -> std::process::Child {
+    relay_with(endpoint, event, &["PermissionRequest"])
+}
+
+fn relay_with(endpoint: &str, event: &Value, args: &[&str]) -> std::process::Child {
     let mut child = Command::new(env!("CARGO_BIN_EXE_mikky-hook"))
-        .arg("PermissionRequest")
+        .args(args)
         .env("MIKKY_HOOK_ENDPOINT", endpoint)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
@@ -120,6 +124,62 @@ fn a_screen_answers_the_terminal_session() {
         printed["hookSpecificOutput"]["decision"]["behavior"],
         "allow"
     );
+
+    // Claude's question: answered from the screen, then left to the terminal.
+    let question = json!({
+        "hook_event_name": "PreToolUse",
+        "session_id": "s-2",
+        "cwd": "C:/projet",
+        "tool_name": "AskUserQuestion",
+        "tool_input": {"questions": [
+            {"question": "Quels tests ?", "header": "Tests", "multiSelect": true, "options": [
+                {"label": "Unitaires", "description": "Rapides"},
+                {"label": "Bout en bout", "description": "Lents"},
+            ]},
+        ]},
+    });
+    let mut next_id = 3;
+    let mut ask = |screen: &mut tungstenite::WebSocket<_>, answers: Value| {
+        let child = relay_with(&endpoint_text, &question, &["--ask", "PreToolUse"]);
+        let id = loop {
+            let Message::Text(text) = screen.read().unwrap() else {
+                continue;
+            };
+            let msg: Value = serde_json::from_str(&text).unwrap();
+            if msg["method"] == "hooks.changed" {
+                if let Some(first) = msg["params"]["requests"].as_array().and_then(|r| r.first()) {
+                    assert_eq!(first["kind"], "question");
+                    assert_eq!(first["questions"][0]["options"][1]["label"], "Bout en bout");
+                    break first["id"].as_u64().unwrap();
+                }
+            }
+        };
+        screen
+            .send(Message::text(
+                json!({"jsonrpc": "2.0", "id": next_id, "method": "hooks.answer", "params": {"id": id, "answers": answers}}).to_string(),
+            ))
+            .unwrap();
+        next_id += 1;
+        child.wait_with_output().unwrap().stdout
+    };
+    let out = ask(&mut screen, json!({"Quels tests ?": ["Unitaires"]}));
+    let printed: Value = serde_json::from_slice(&out).unwrap();
+    let o = &printed["hookSpecificOutput"];
+    assert_eq!(o["hookEventName"], "PreToolUse");
+    assert_eq!(o["permissionDecision"], "allow");
+    assert_eq!(o["updatedInput"]["questions"], question["tool_input"]["questions"]);
+    assert_eq!(o["updatedInput"]["answers"], json!({"Quels tests ?": ["Unitaires"]}));
+    // « Répondre dans le terminal »: nothing printed.
+    assert!(ask(&mut screen, Value::Null).is_empty());
+    // Any other tool on the question hook: nothing asked, nothing printed.
+    let started = Instant::now();
+    let mut bash = question.clone();
+    bash["tool_name"] = json!("Bash");
+    let out = relay_with(&endpoint_text, &bash, &["--ask", "PreToolUse"])
+        .wait_with_output()
+        .unwrap();
+    assert!(out.stdout.is_empty());
+    assert!(started.elapsed() < Duration::from_secs(2));
 
     drop(daemon.stdin.take());
     let _ = daemon.wait();
