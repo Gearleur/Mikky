@@ -125,7 +125,7 @@ enum GulpMouth {
 }
 
 abstract final class GulpPoses {
-  static const all = [front, rolled, skyward, full];
+  static const all = [front];
 
   /// Kirby's front view: a wide mouth in his lower body, the jaw dropped a
   /// little, the air coming from all around. He stays a ball.
@@ -147,78 +147,6 @@ abstract final class GulpPoses {
     wobble: .022,
     period: 1.15,
     spread: math.pi,
-  );
-
-  /// The whole ball leans back, all of a piece, his face a little turned:
-  /// the mouth with a flat top lip.
-  static const rolled = GulpPose(
-    name: 'La boule penchée',
-    note: 'Toute la boule bascule en arrière d’un bloc, sans se déformer, la tête un peu tournée vers le fichier. La bouche en « D » couché : la lèvre du haut presque plate, le bas profond, comme Kirby qui aspire.',
-    toward: math.pi / 2,
-    yaw: .34,
-    mouthX: .2,
-    mouthAt: .34,
-    mouthSpan: 1.24,
-    mouthDepth: .86,
-    stretch: .06,
-    squash: .04,
-    lean: -.34,
-    puff: .3,
-    earSweep: 0,
-    ears: .2,
-    eyeLift: .16,
-    eyeScale: 1.06,
-    wobble: .016,
-    period: 1.15,
-    spread: math.pi,
-    mouthShape: GulpMouth.dee,
-  );
-
-  /// Leaning back toward us: his face slides up the ball, as if he looked
-  /// at the sky, the mouth up with it.
-  static const skyward = GulpPose(
-    name: 'La tête en arrière',
-    note: 'Il se penche en arrière vers nous : son visage remonte sur la boule comme s’il regardait en l’air, la bouche grande ouverte au milieu du corps ; ses oreilles reculent. Un peu de côté, pour la vie.',
-    toward: math.pi / 2,
-    pitch: .3,
-    mouthAt: .1,
-    mouthSpan: 1.3,
-    mouthDepth: .78,
-    stretch: .08,
-    squash: .06,
-    lean: -.16,
-    puff: .35,
-    earSweep: 0,
-    ears: -.25,
-    eyeLift: .1,
-    eyeScale: 1.04,
-    wobble: .02,
-    period: 1.2,
-    spread: math.pi,
-  );
-
-  /// Full of air, a perfect ball, his eyes shut from the effort, the
-  /// mouth a very wide soft rectangle.
-  static const full = GulpPose(
-    name: 'Gonflé, tout rond',
-    note: 'Plein d’air comme Kirby : une boule parfaite, plus grosse, les yeux fermés de l’effort, une bouche très large aux coins doux, comme un cri. Il rebondit un peu ; l’air en pixels, notre bleu.',
-    toward: math.pi / 2,
-    mouthAt: .3,
-    mouthSpan: 1.5,
-    mouthDepth: .72,
-    stretch: .1,
-    squash: .06,
-    lean: -.12,
-    puff: .7,
-    earSweep: 0,
-    ears: .1,
-    eyes: EyeShape.closed,
-    eyeLift: .2,
-    wobble: .03,
-    period: 1.0,
-    air: GulpAir.pixels,
-    spread: math.pi,
-    mouthShape: GulpMouth.soft,
   );
 }
 
