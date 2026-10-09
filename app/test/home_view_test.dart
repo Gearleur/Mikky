@@ -109,16 +109,77 @@ void main() {
     expect(opened?.id, 'w');
   });
 
+  testWidgets('right: the notch upright — the task beside Mikky over a column of wide tiles, four a page', (tester) async {
+    const l = HomeLayout.rightNotch;
+    HomeApp? opened;
+    final log = SessionLog()
+      ..applyAll([
+        TurnStarted(at: DateTime(2026, 10, 8, 14)),
+        UserMessage('Corrige', at: DateTime(2026, 10, 8, 14)),
+        const ToolCallEvent('1', kind: ToolKind.read, title: 'Lire a.dart', path: 'a.dart', status: ToolStatus.running),
+      ]);
+    await tester.pumpWidget(host(SizedBox.fromSize(
+      size: l.size,
+      child: HomeView(
+        layout: l,
+        apps: HomeApp.placeholders(9),
+        watched: WatchedTask(id: 'w', name: 'Corrige les tests', log: log, status: AgentStatus.working, app: AgentApp.vscode),
+        animate: false,
+        onOpen: (a) => opened = a,
+        onNew: () {},
+      ),
+    )));
+    expect(tester.takeException(), isNull);
+    expect(find.byType(TaskGlance), findsOneWidget);
+    expect(find.text('Lit a.dart'), findsOneWidget);
+    // One column: four wide tiles a page, under the task, inside the window.
+    expect(find.byType(AppTile), findsNWidgets(4));
+    expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
+    final task = tester.getRect(find.byType(TaskGlance));
+    final first = tester.getRect(find.byType(AppTile).first), last = tester.getRect(find.byType(AppTile).at(3));
+    expect(first.size, Size(l.tileWidth, 42));
+    expect(first.top, greaterThanOrEqualTo(task.bottom));
+    expect(task.right, lessThanOrEqualTo(l.size.width - l.side));
+    expect(last.bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
+    // The arrow beside the tiles, inside the window.
+    final next = tester.getRect(find.bySemanticsLabel('Page suivante'));
+    expect(next.left, greaterThan(first.right));
+    expect(next.right, lessThanOrEqualTo(l.size.width));
+    await tester.tap(find.text('Corrige les tests'));
+    await tester.pump();
+    expect(opened?.id, 'w');
+
+    // Nothing at work: the same column, Mikky keeps his place.
+    await tester.pumpWidget(host(SizedBox.fromSize(size: l.size, child: HomeView(layout: l, apps: HomeApp.placeholders(3), animate: false, onNew: () {}))));
+    expect(find.byType(TaskGlance), findsNothing);
+    expect(find.byType(AppTile), findsNWidgets(4));
+    expect(l.mikkyIdle, l.mikky);
+    expect(l.mikkyIdleAt, l.mikkyAt);
+  });
+
+  testWidgets('right: the layout follows the engine (the notch upright, or the old home)', (tester) async {
+    expect(HomeLayout.right.notch, IslandMetrics.rightNotch);
+    final m = IslandMetrics.right;
+    expect(Size(m.list.width, m.list.height), HomeLayout.right.size);
+    // Mikky's place in the island is where the home leaves room for him
+    // (his center at half his width and 54 % of his height).
+    final l = HomeLayout.right;
+    expect(m.mikkyList.x, closeTo(l.mikkyAt.dx + l.mikky / 2, .01));
+    expect(m.mikkyList.y, closeTo(l.mikkyAt.dy + l.mikky * .54, .01));
+    expect(m.mikkyList.radius, closeTo(l.mikky * .29, .01));
+    expect(Size(m.page.width, m.page.height), l.pageSize);
+  });
+
   testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(20), animate: false)));
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(20), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     expect(find.byType(AppTile), findsNWidgets(8));
     final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), c = tester.getRect(find.byType(AppTile).at(2));
     expect(a.size, const Size(64, 64));
     expect(a.top, b.top);
     expect(c.left, a.left);
-    expect(c.top - a.bottom, HomeLayout.right.rowGap);
-    expect(b.left - a.right, HomeLayout.right.gap);
+    expect(c.top - a.bottom, HomeLayout.rightTiles.rowGap);
+    expect(b.left - a.right, HomeLayout.rightTiles.gap);
     // The whole page inside the island, above the dots; the arrows clear
     // of the tiles.
     expect(tester.getRect(find.byType(AppTile).at(7)).bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
@@ -146,7 +207,7 @@ void main() {
     HomeApp? opened;
     var tools = 0;
     await tester.pumpWidget(host(HomeView(
-      layout: HomeLayout.right,
+      layout: HomeLayout.rightTiles,
       apps: HomeApp.placeholders(3),
       animate: false,
       onOpen: (a) => opened = a,
@@ -164,7 +225,7 @@ void main() {
     expect(tools, 2);
     expect(find.byType(AppSlot), findsNWidgets(4));
 
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, animate: false)));
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, animate: false)));
     // Nothing to launch from there: no « + », eight waiting tokens.
     expect(find.byType(AppTile), findsNothing);
     expect(find.byType(AppSlot), findsNWidgets(8));
@@ -177,7 +238,7 @@ void main() {
   });
 
   testWidgets('« + » takes a place: eight apps and « + » make two pages at the right', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.right, apps: HomeApp.placeholders(8), animate: false, onNew: () {})));
+    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(8), animate: false, onNew: () {})));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 2);
     expect(find.byKey(const ValueKey('add')), findsNothing);
     await tester.tap(find.bySemanticsLabel('Page suivante'));

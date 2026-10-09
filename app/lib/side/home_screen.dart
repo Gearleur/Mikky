@@ -175,7 +175,8 @@ class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
-    final watched = layout.isTop ? watchedTask(entries, now) : null;
+    // The notch, at the top and (since 2026-10-08) at the right.
+    final watched = layout.notch ? watchedTask(entries, now) : null;
     return HomeView(
       key: ValueKey(layout.placement),
       layout: layout,

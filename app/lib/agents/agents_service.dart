@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -32,9 +34,16 @@ enum BackendState { connecting, online, reconnecting, unavailable }
 /// launches, and who is signed in. The island and the small window both
 /// read it. Nothing polls: files are watched, agents talk.
 class AgentsService extends ChangeNotifier {
-  AgentsService({required double Function() clock, AgentStore? store, Future<DaemonClient?> Function()? connectBackend})
-    : store = store ?? AgentStore.standard(),
-      _connectBackend = connectBackend ?? _defaultConnection {
+  AgentsService({
+    required double Function() clock,
+    AgentStore? store,
+    Future<DaemonClient?> Function()? connectBackend,
+    Future<bool> Function(int pid, int handle)? bringForward,
+    Future<bool> Function(List<String> args)? openVsCode,
+  }) : store = store ?? AgentStore.standard(),
+       _connectBackend = connectBackend ?? _defaultConnection,
+       _bringForward = bringForward ?? _bringWindowForward,
+       _openVsCode = openVsCode ?? _startVsCode {
     source = RealAgentSource(
       clock: clock,
       store: this.store,
@@ -44,15 +53,46 @@ class AgentsService extends ChangeNotifier {
       },
     );
     _sub = source.changes.listen((_) => _changed());
-    source.answerHook = (id, decision) {
-      final client = daemon;
-      if (client == null || client.isClosed) return;
-      unawaited(client.request('hooks.answer', {'id': id, 'decision': decision}).catchError((Object _) => null));
-    };
+    source
+      ..answerHook = ((id, decision) => _answerHook({'id': id, 'decision': decision}))
+      ..answerHookQuestion = ((id, answers) => _answerHook({'id': id, 'answers': answers}));
   }
 
   final AgentStore store;
   final Future<DaemonClient?> Function() _connectBackend;
+  final Future<bool> Function(int pid, int handle) _bringForward;
+  final Future<bool> Function(List<String> args) _openVsCode;
+
+  /// `hooks.answer`: a permission's `decision`, or a question's `answers`
+  /// (null for either: Claude asks in its terminal).
+  void _answerHook(Map<String, Object?> params) {
+    final client = daemon;
+    if (client == null || client.isClosed) return;
+    unawaited(client.request('hooks.answer', params).catchError((Object _) => null));
+  }
+
+  /// The overlay's native side (`windows/runner/reveal.cpp`): only the
+  /// app that got the click may take the foreground.
+  static Future<bool> _bringWindowForward(int pid, int handle) async {
+    try {
+      return await const MethodChannel('mikky/overlay').invokeMethod<bool>('revealWindow', [pid, handle]) ?? false;
+    } on MissingPluginException {
+      return false;
+    } on PlatformException {
+      return false;
+    }
+  }
+
+  static Future<bool> _startVsCode(List<String> args) async {
+    final code = findVsCode();
+    if (code == null) return false;
+    try {
+      await Process.start(code, args, runInShell: Platform.isWindows, mode: ProcessStartMode.detached);
+      return true;
+    } on ProcessException {
+      return false;
+    }
+  }
 
   static Future<DaemonClient?> _defaultConnection() async {
     final exe = DaemonClient.findExecutable();
@@ -223,7 +263,8 @@ class AgentsService extends ChangeNotifier {
     }
   }
 
-  /// The permissions asked through Claude's hooks, as `mikkyd` lists them.
+  /// The permissions and questions asked through Claude's hooks, as
+  /// `mikkyd` lists them.
   void _hookAsks(Object? list) {
     if (list is! List) return;
     source.hookAsks([
@@ -354,6 +395,40 @@ class AgentsService extends ChangeNotifier {
     await _remoteWatcher?.stop();
     await daemon?.close();
     await _backendEvents?.cancel();
+  }
+
+  /// Ctrl + click on an agent: brings forward the terminal or VS Code window
+  /// the session runs in, or opens VS Code on its folder (through WSL for a
+  /// WSL session). False when there is nowhere to go. Call it right from the
+  /// click: Windows lets only the app that got it take the foreground.
+  /// Steps: `revealSteps` (`mikky_agents`); the window comes from the
+  /// session's hooks (`hooks.origin`), so only once they are installed.
+  Future<bool> reveal(String sessionId) async {
+    final e = source.entries.where((x) => x.sessionId == sessionId).lastOrNull;
+    SessionOrigin? seen;
+    final client = daemon;
+    if (e?.origin != AgentOrigin.mikky && client != null && !client.isClosed) {
+      try {
+        final r = await client.request('hooks.origin', {'sessionId': sessionId}).timeout(const Duration(seconds: 2));
+        if (r is Map) seen = SessionOrigin.fromJson(r.cast<String, Object?>());
+      } catch (_) {
+        // An older engine, or gone: the folder still works.
+      }
+    }
+    final steps = revealSteps(
+      origin: e?.origin ?? AgentOrigin.external,
+      host: e?.host ?? AgentHost.windows,
+      cwd: e?.cwd ?? e?.log.cwd,
+      seen: seen,
+    );
+    for (final step in steps) {
+      final done = switch (step) {
+        BringWindow(:final pid, :final handle) => await _bringForward(pid, handle),
+        OpenInVsCode(:final args) => await _openVsCode(args),
+      };
+      if (done) return true;
+    }
+    return false;
   }
 
   Future<void> stopAll() async => _client.request('runs.stopAll');
