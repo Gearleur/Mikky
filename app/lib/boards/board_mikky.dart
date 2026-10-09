@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
-import '../motion/figurine.dart';
 import '../motion/gulp.dart';
 import '../motion/intro.dart';
 import '../motion/launch.dart';
@@ -87,20 +86,6 @@ final mikkyBoard = BoardSpec(
             note: pose.note,
             width: 260,
             child: ClipRRect(borderRadius: BorderRadius.circular(12), child: GulpLive(pose)),
-          ),
-      ],
-    ),
-    BoardSection(
-      title: 'En figurine · style Hirono',
-      note: 'Exploration du 8 octobre : Mikky en figurine de collection, d’après Hirono de Pop Mart (ton image) — plus physique, fatigué, en pyjama, avec un oreiller. Sa vraie tête en vinyle noir mat (un reflet satiné, la lumière d’une fenêtre à gauche), les paupières lourdes, les joues roses et des taches de rousseur ; un pyjama en tissu, sa capuche, son imprimé, des manches trop longues (ni mains ni pieds) ; une photo de produit avec son ombre au sol. Il respire lentement et pique du nez de temps en temps.',
-      kind: FrameKind.trial,
-      frames: [
-        for (final look in FigurineLooks.all)
-          BoardFrame(
-            label: look.name,
-            note: look.note,
-            width: 300,
-            child: ClipRRect(borderRadius: BorderRadius.circular(12), child: FigurineLive(look)),
           ),
       ],
     ),
