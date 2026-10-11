@@ -103,7 +103,7 @@ class AcpConnection {
       return;
     }
     _traffic.add(AcpTraffic(msg, outgoing: false, at: _now()));
-    final id = msg['id'];
+    final id = msg['id'] as Object?;
     final method = msg['method'] as String?;
     if (method == null) {
       final c = id is int ? _pending.remove(id) : null;

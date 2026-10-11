@@ -85,11 +85,11 @@ void main(List<String> argv) async {
   String sessionId;
   final load = a['load']?.single;
   if (load != null) {
-    final r = await _request('session/load', {'sessionId': load, 'cwd': cwd, 'mcpServers': []});
+    final r = await _request('session/load', {'sessionId': load, 'cwd': cwd, 'mcpServers': <Object>[]});
     sessionId = load;
     _note('session/load → ${_short(r)} · updates so far $_gotUpdates');
   } else {
-    final r = await _request('session/new', {'cwd': cwd, 'mcpServers': []});
+    final r = await _request('session/new', {'cwd': cwd, 'mcpServers': <Object>[]});
     final res = r['result'] as Map<String, dynamic>?;
     if (res == null) return _quit(1);
     sessionId = res['sessionId'] as String;

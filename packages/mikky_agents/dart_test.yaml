@@ -1,0 +1,4 @@
+# The daemon tests start real mikkyd processes and watch real files: run
+# one test file at a time, so they never compete for the CPU and the disk
+# (they failed now and then when run side by side).
+concurrency: 1

@@ -1,12 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:mikky_engine/mikky_engine.dart';
 import 'package:mikky_agents/src/acp/agent_run.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
-import 'target.dart';
-import 'acp_connection.dart';
 import '../../../mikky_engine/test/support/readers/acp_reader.dart';
+import 'acp_connection.dart';
+import 'target.dart';
 
 /// An [AgentRun] that talks to the adapter itself, on its stdin / stdout.
 class LocalAgentRun implements AgentRun {
@@ -34,7 +34,7 @@ class LocalAgentRun implements AgentRun {
     final process = await target.start(executable, args, cwd: cwd, env: env);
     target.contain(process);
     // Adapters log on stderr: drained so the pipe never fills.
-    process.stderr.drain<void>();
+    unawaited(process.stderr.drain<void>());
     return LocalAgentRun._(AcpConnection(process.stdout, process.stdin), process, target, cwd);
   }
 
@@ -76,9 +76,9 @@ class LocalAgentRun implements AgentRun {
       'clientInfo': {'name': 'mikky', 'version': '0.1.0'},
     });
     if (resume == null) {
-      await _connection.request('session/new', {'cwd': cwd, 'mcpServers': []});
+      await _connection.request('session/new', {'cwd': cwd, 'mcpServers': <Object>[]});
     } else {
-      await _connection.request('session/load', {'sessionId': resume, 'cwd': cwd, 'mcpServers': []});
+      await _connection.request('session/load', {'sessionId': resume, 'cwd': cwd, 'mcpServers': <Object>[]});
     }
     if (mode != null) await setMode(mode);
   }

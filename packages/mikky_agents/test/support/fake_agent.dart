@@ -18,7 +18,9 @@ class FakeAgent {
 
   /// In memory: [clientInput] / [clientOutput] go to the client.
   factory FakeAgent.inMemory({bool autoFallback = false}) {
+    // ignore: close_sinks, lives as long as the test's fake agent.
     final toAgent = StreamController<List<int>>();
+    // ignore: close_sinks, same.
     final fromAgent = StreamController<List<int>>();
     final agent = FakeAgent(toAgent.stream, fromAgent.sink, autoFallback: autoFallback);
     agent.clientInput = fromAgent.stream;
@@ -32,6 +34,7 @@ class FakeAgent {
   final bool autoFallback;
 
   late Stream<List<int>> clientInput;
+  // ignore: close_sinks, the client under test owns it.
   late StreamSink<List<int>> clientOutput;
 
   /// Methods received, in order.
@@ -90,9 +93,9 @@ class FakeAgent {
         if (params['modeId'] == 'auto' && autoFallback) {
           _update({'sessionUpdate': 'current_mode_update', 'currentModeId': 'acceptEdits'});
         }
-        _send({'id': id, 'result': {}});
+        _send({'id': id, 'result': <String, Object?>{}});
       case 'session/set_model':
-        _send({'id': id, 'result': {}});
+        _send({'id': id, 'result': <String, Object?>{}});
       case 'session/cancel':
         final slow = _slow;
         _slow = null;

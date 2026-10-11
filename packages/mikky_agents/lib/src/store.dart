@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'daemon/daemon_client.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
+
+import 'daemon/daemon_client.dart';
 
 /// An agent Mikky launched, as kept on disk to find it again after a
 /// restart. Never a conversation (it stays in Claude's / Codex's files),
@@ -313,12 +313,7 @@ class AgentStore {
       throw StateError('Le stockage attend la connexion au moteur.');
     }
     if (client != null) {
-      final next = <String, dynamic>{
-        'agents': {for (final a in agents) a.id: a.toJson()},
-        'marks': {for (final e in marks.entries) e.key: e.value.toJson()},
-        'choices': {for (final e in choices.entries) e.key: e.value.toJson()},
-        'recentFolders': List<String>.of(recentFolders),
-      };
+      final next = _snapshot();
       final patch = <String, dynamic>{};
       for (final field in ['agents', 'marks', 'choices']) {
         final before = (_baseline[field] as Map?) ?? const {};

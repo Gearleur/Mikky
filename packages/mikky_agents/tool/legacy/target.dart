@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:mikky_agents/mikky_agents.dart' show WslPath;
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'job.dart';
@@ -113,30 +114,11 @@ class WslTarget extends Target {
   }
 
   @override
-  String windowsPath(String path) {
-    if (!path.startsWith('/')) return path;
-    final mnt = RegExp(r'^/mnt/([a-z])(/.*)?$').firstMatch(path);
-    if (mnt != null) return '${mnt[1]!.toUpperCase()}:${(mnt[2] ?? '/').replaceAll('/', r'\')}';
-    return '\\\\wsl.localhost\\$distro${path.replaceAll('/', r'\')}';
-  }
+  String windowsPath(String path) => WslPath(distro: distro).windowsPath(path);
 
   /// A Windows path as WSL sees it: `C:\x` → `/mnt/c/x`,
   /// `\\wsl.localhost\Ubuntu\home\x` → `/home/x`.
-  String linuxPath(String path) {
-    final unc = RegExp(r'^\\\\wsl(?:\.localhost|\$)\\[^\\]+(\\.*)?$', caseSensitive: false).firstMatch(path);
-    if (unc != null) return (unc[1] ?? r'\').replaceAll(r'\', '/');
-    final drive = RegExp(r'^([A-Za-z]):(\\.*)?$').firstMatch(path);
-    if (drive != null) return '/mnt/${drive[1]!.toLowerCase()}${(drive[2] ?? '').replaceAll(r'\', '/')}';
-    return path;
-  }
-}
-
-/// The target a folder belongs to, as the new-agent screen deduces it
-/// (MVP spec §3.4): a WSL path or a `\\wsl.localhost` share → WSL.
-AgentHost hostOfFolder(String folder) {
-  if (folder.startsWith('/')) return AgentHost.wsl;
-  if (RegExp(r'^\\\\wsl(\.localhost|\$)\\', caseSensitive: false).hasMatch(folder)) return AgentHost.wsl;
-  return AgentHost.windows;
+  String linuxPath(String path) => WslPath(distro: distro).linuxPath(path);
 }
 
 /// Single-quotes [s] for bash.

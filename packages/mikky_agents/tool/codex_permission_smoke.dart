@@ -8,8 +8,9 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 Future<void> main(List<String> args) async {
-  if (args.any((arg) => arg != '--wsl'))
+  if (args.any((arg) => arg != '--wsl')) {
     throw ArgumentError('Usage: dart run tool/codex_permission_smoke.dart [--wsl]');
+  }
   final wsl = args.contains('--wsl');
   final scratch = wsl ? null : await Directory.systemTemp.createTemp('mikky-codex-permission-');
   final cwd = scratch?.path ?? '/tmp';

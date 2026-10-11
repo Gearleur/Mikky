@@ -2,12 +2,10 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
-
-import '../tool/legacy/legacy.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
+import '../tool/legacy/legacy.dart';
 import 'support/fake_agent.dart';
 
 final _now = DateTime.now();

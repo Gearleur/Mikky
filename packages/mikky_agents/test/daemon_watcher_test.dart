@@ -2,16 +2,15 @@
 library;
 
 import 'dart:async';
-
-import '../../mikky_engine/test/support/readers/claude_transcript_reader.dart';
-import '../../mikky_engine/test/support/readers/codex_rollout_reader.dart';
-
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
+
+import '../../mikky_engine/test/support/readers/claude_transcript_reader.dart';
+import '../../mikky_engine/test/support/readers/codex_rollout_reader.dart';
 
 Object snapshot(SessionLog log) => [
   log.sessionId,
@@ -100,7 +99,9 @@ void main() {
           );
         }
         await file.writeAsString('$text\n');
-        for (var i = 0; i < 200; i++) {
+        // Up to 15 s: the engine sees the file by watching its folder.
+        final deadline = DateTime.now().add(const Duration(seconds: 15));
+        while (DateTime.now().isBefore(deadline)) {
           if (watcher.sessions.values.any(
             (s) => s.log.version == expected.version && s.log.sessionId == expected.sessionId,
           )) {

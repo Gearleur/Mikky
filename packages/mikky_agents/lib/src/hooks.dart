@@ -10,7 +10,7 @@ enum HookKind {
 }
 
 /// A request from a Claude Code or Codex session started outside Mikky (a
-/// terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks.rs`):
+/// terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks/mod.rs`):
 /// a permission, or one of Claude's questions. It waits on `mikkyd` until
 /// the user answers (105 s for a permission, 120 s for a question); then
 /// Claude asks in its own terminal.
@@ -64,7 +64,8 @@ class HookAsk {
           otherKey: 'q${i + 1}_custom',
           choices: [
             for (final o
-                in (q['options'] is List ? q['options']! as List : const []).whereType<Map<Object?, Object?>>())
+                in (q['options'] is List ? q['options']! as List : const <Object?>[])
+                    .whereType<Map<Object?, Object?>>())
               if (o['label'] is String)
                 QuestionChoice(o['label']! as String, o['description'] is String ? o['description']! as String : ''),
           ],

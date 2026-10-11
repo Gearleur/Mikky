@@ -4,119 +4,12 @@ import 'dart:io';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'acp/agent_run.dart';
+import 'agent_entry.dart';
 import 'daemon/daemon_run.dart';
 import 'hooks.dart';
+import 'limits.dart';
 import 'store.dart';
 import 'watch/session_watcher.dart';
-
-/// What the new-agent screen sends (MVP spec §5.3).
-class LaunchRequest {
-  const LaunchRequest({
-    required this.provider,
-    required this.host,
-    required this.cwd,
-    required this.prompt,
-    this.permissions = PermissionMode.ask,
-    this.model,
-  });
-
-  final AgentProvider provider;
-  final AgentHost host;
-  final String cwd;
-  final String prompt;
-  final PermissionMode permissions;
-  final String? model;
-}
-
-/// Starts an agent adapter: the real one runs `AgentSetup.spawn` on the
-/// right target; tests give a fake agent.
-typedef AgentSpawner = Future<AgentRun> Function(AgentProvider provider, AgentHost host, String cwd);
-
-/// One agent of the home: launched by Mikky ([run] while it lives) or
-/// watched in Claude's / Codex's files.
-class AgentEntry {
-  AgentEntry._(this.id, this.provider, this.host, this.origin, this.cwd, this.createdAt);
-
-  final String id;
-  final AgentProvider provider;
-  final AgentHost host;
-  AgentOrigin origin;
-  final String? cwd;
-  final DateTime createdAt;
-  PermissionMode? permissions;
-
-  AgentRun? run;
-  WatchedSession? watched;
-
-  /// The first message, until the agent names the session.
-  String? firstPrompt;
-
-  /// The name kept in `agents.json` (the agent's title, for Mikky's own).
-  String? storedTitle;
-
-  /// State as last computed, and since when (island clock).
-  AgentStatus status = AgentStatus.idle;
-  double statusSince = 0;
-  double startedAt = 0;
-
-  /// The status changed while Mikky watched (not just read at start):
-  /// only then does a finished agent show on the island for a moment.
-  bool changedLive = false;
-
-  /// Seen by the user (Ignorer): off the island until something new.
-  bool dismissed = false;
-
-  /// Why it could not start (adapter missing, not signed in…).
-  SessionLog? failure;
-
-  /// What the user did with it (see [SessionMark]), kept by the store.
-  SessionMark mark = const SessionMark();
-
-  /// Continued in another session (a « fork »): that one stands for both.
-  String? supersededBy;
-
-  /// The key of its [SessionMark]: the session, or the agent while it has
-  /// none yet.
-  String get key => sessionId == null ? id : '${provider.name}:$sessionId';
-
-  /// The state the home sorts it by: an error settled, or a limit
-  /// cancelled, by the user, with nothing new since, counts as done.
-  AgentStatus get homeStatus {
-    final settled = mark.settledAt;
-    final settles = status == AgentStatus.error || status == AgentStatus.rateLimited;
-    if (settles && settled != null && !lastActivity.isAfter(settled)) return AgentStatus.finished;
-    return status;
-  }
-
-  SessionLog get log => run?.log ?? watched?.log ?? failure ?? _empty;
-  static final _empty = SessionLog();
-
-  String? get sessionId => log.sessionId ?? watched?.sessionId;
-
-  /// The software it runs in: Mikky for its own, else what the session
-  /// file says (VS Code, a terminal, the Claude or Codex app).
-  AgentApp? get app => origin == AgentOrigin.mikky ? AgentApp.mikky : (log.app ?? watched?.log.app);
-
-  /// Can take a message now: launched by Mikky and still running.
-  bool get live => run?.alive ?? false;
-
-  DateTime get lastActivity => log.lastEventAt ?? watched?.modified ?? createdAt;
-
-  String get name {
-    final own = mark.name;
-    if (own != null && own.isNotEmpty) return own;
-    // A resumed run replays no title: the file's, or the one kept, then.
-    final title = log.title ?? watched?.log.title ?? storedTitle;
-    if (title != null && title.isNotEmpty) return title;
-    final first = firstPrompt ?? log.items.whereType<UserItem>().firstOrNull?.text;
-    if (first != null && first.isNotEmpty) {
-      final line = first.trim().split('\n').first;
-      return line.length <= 60 ? line : '${line.substring(0, 59)}…';
-    }
-    final folder = cwd?.split(RegExp(r'[\\/]')).where((p) => p.isNotEmpty).lastOrNull;
-    return folder ?? 'Agent';
-  }
-}
 
 /// The real agents behind the island and the home (MVP spec §5.5): those
 /// Mikky launched through ACP, and the sessions found in Claude's and
@@ -143,7 +36,7 @@ class RealAgentSource implements AgentSource {
       // An in-flight launch in another screen may not have its session yet.
       if (a.sessionId == null) continue;
       if (_entries.any((e) => e.id == a.id)) continue;
-      final e = AgentEntry._(a.id, a.provider, a.host, AgentOrigin.mikky, a.cwd, a.createdAt)
+      final e = AgentEntry(a.id, a.provider, a.host, AgentOrigin.mikky, a.cwd, a.createdAt)
         ..permissions = a.permissions
         ..storedTitle = a.title
         ..failure = (SessionLog()..apply(SessionStarted(a.sessionId!, cwd: a.cwd, at: a.createdAt)));
@@ -281,7 +174,7 @@ class RealAgentSource implements AgentSource {
     for (final a in asks) {
       var e = _entries.where((x) => x.provider == a.provider && x.sessionId == a.sessionId).firstOrNull;
       if (e == null) {
-        e = AgentEntry._('h${a.sessionId}', a.provider, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
+        e = AgentEntry('h${a.sessionId}', a.provider, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
           ..failure = (SessionLog()..apply(SessionStarted(a.sessionId, cwd: a.cwd)))
           ..startedAt = clock()
           ..statusSince = clock();
@@ -313,7 +206,7 @@ class RealAgentSource implements AgentSource {
   /// once; the agent shows up as it starts.
   Future<String> launch(LaunchRequest r) async {
     final id = 'm${DateTime.now().microsecondsSinceEpoch}-${_ids++}';
-    final e = AgentEntry._(id, r.provider, r.host, AgentOrigin.mikky, r.cwd, _now())
+    final e = AgentEntry(id, r.provider, r.host, AgentOrigin.mikky, r.cwd, _now())
       ..permissions = r.permissions
       ..firstPrompt = r.prompt
       ..startedAt = clock()
@@ -399,7 +292,7 @@ class RealAgentSource implements AgentSource {
               )
               .firstOrNull;
     if (e == null) {
-      e = AgentEntry._(
+      e = AgentEntry(
         'm${DateTime.now().microsecondsSinceEpoch}-${_ids++}',
         provider,
         host,
@@ -499,14 +392,15 @@ class RealAgentSource implements AgentSource {
     AgentEntry? e;
     for (final x in _entries) {
       if (x.watched == s ||
-          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId))
+          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId)) {
         e = x;
+      }
     }
     if (e != null && e.run != null) return;
     if (e == null) {
       final stored = sessionId == null ? null : store?.bySession(sessionId);
       e =
-          AgentEntry._(
+          AgentEntry(
               // Unique across runs: kept agents may carry an older one.
               stored?.id ?? 'w${DateTime.now().microsecondsSinceEpoch}-${_ids++}',
               s.provider,
@@ -693,35 +587,7 @@ class RealAgentSource implements AgentSource {
 
   /// The latest subscription limits seen for [provider] (in any of its
   /// sessions), or null.
-  LimitsSeen? limitsOf(AgentProvider provider) {
-    LimitsSeen? best;
-    for (final e in _entries) {
-      if (e.provider != provider) continue;
-      for (final l in [e.run?.log.limits, e.watched?.log.limits]) {
-        if (l != null && (best == null || (l.at ?? DateTime(0)).isAfter(best.at ?? DateTime(0)))) best = l;
-      }
-    }
-    if (best == null) return null;
-    // Codex's last reading before it refuses can say 99 %: a turn stopped
-    // by the limit since, not lifted yet, means the fullest window is full.
-    final now = _now();
-    final seen = best.at ?? DateTime(0);
-    final stopped = _entries.any((e) {
-      final resets = e.log.limitResetsAt;
-      final at = e.log.lastEventAt;
-      return e.provider == provider && resets != null && resets.isAfter(now) && at != null && !at.isBefore(seen);
-    });
-    if (!stopped) return best;
-    final short = best.short, long = best.long;
-    final shortFull = long == null || (short != null && short.usedPercent >= long.usedPercent);
-    LimitWindow? full(LimitWindow? w) => w == null ? null : LimitWindow(100, minutes: w.minutes, resetsAt: w.resetsAt);
-    return LimitsSeen(
-      short: shortFull ? full(short) : short,
-      long: shortFull ? long : full(long),
-      plan: best.plan,
-      at: best.at,
-    );
-  }
+  LimitsSeen? limitsOf(AgentProvider provider) => latestLimits(_entries, provider, now: _now());
 
   /// Answers agent [id]'s question ([questionOf]): the answers by
   /// [Question.key], free text by [Question.otherKey]; null skips it (ACP)

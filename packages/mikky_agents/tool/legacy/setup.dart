@@ -1,13 +1,11 @@
 import 'dart:io';
 
-import 'package:mikky_engine/mikky_engine.dart';
-
-import 'local_agent_run.dart';
-
 import 'package:mikky_agents/src/acp/agent_run.dart';
 import 'package:mikky_agents/src/daemon/daemon_client.dart';
 import 'package:mikky_agents/src/daemon/daemon_run.dart';
+import 'package:mikky_engine/mikky_engine.dart';
 
+import 'local_agent_run.dart';
 import 'target.dart';
 
 /// Versions checked in the A0 probe (2026-09-29).
@@ -118,8 +116,9 @@ class AgentSetup {
         codexAcpPackage,
       ]);
     }
-    if (r.exitCode != 0)
+    if (r.exitCode != 0) {
       throw ProcessException(_wsl ? 'bash' : 'npm', const [], '${r.stdout}\n${r.stderr}'.trim(), r.exitCode);
+    }
   }
 
   /// Path of the user's own `claude` on the target, if installed: the
