@@ -3,7 +3,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 /// Made-up sessions for the boards: every state an agent's page can be
 /// in, built from the same events Claude and Codex send.
 abstract final class FakeSessions {
-  static final _t0 = DateTime(2026, 9, 30, 14, 0);
+  static final _t0 = DateTime(2026, 9, 30, 14);
   static const _dir = r'C:\Users\alexa\projet\mikky';
   static const _file = r'C:\Users\alexa\projet\mikky\packages\mikky_engine\lib\src\island\island_machine.dart';
 

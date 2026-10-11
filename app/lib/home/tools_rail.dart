@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand_logo.dart';
-import '../ui/edge_rail.dart';
-import '../ui/motion.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/controls/edge_rail.dart';
+import '../ui/foundation/motion.dart';
 
 /// The tools Mikky can launch, on a rail attached to the window's edge
 /// (the home's top right, 2026-10-02): their logos in overlapping white

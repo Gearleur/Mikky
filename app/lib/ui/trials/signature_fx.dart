@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../motion.dart';
-import '../pixel_fx.dart';
+import '../foundation/motion.dart';
+import '../pixels/pixel_fx.dart';
 import 'pixel_map.dart';
 
 // Trials, shown on the design boards only: fireworks in the two signature
@@ -349,7 +349,7 @@ class _SignaturePainter extends CustomPainter {
 
   /// Mikky's head, as a line: its edge in orange, its eyes in blue.
   static final List<(int, int, int)> _catTargets = () {
-    final rows = PixelMikky.head;
+    const rows = PixelMikky.head;
     bool k(int x, int y) => y >= 0 && y < rows.length && x >= 0 && x < rows[y].length && rows[y][x] != '.';
     return [
       for (var y = 0; y < rows.length; y++)

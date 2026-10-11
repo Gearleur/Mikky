@@ -5,7 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../mikky/mikky_painter.dart';
 import '../theme.dart';
-import '../ui/pixel_fx.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'launch.dart';
 import 'sprite128.dart';
 
@@ -85,7 +85,7 @@ abstract final class Intros {
         Beat(1.05, 1.15, Easings.back),
         Beat(1.2, 1),
         Beat(1.29, 1.22, Easings.out),
-        Beat(1.6, 1, Easings.inOut),
+        Beat(1.6, 1),
       ],
       'earLeft': [
         const Beat(.3, -.6),
@@ -108,7 +108,7 @@ abstract final class Intros {
       'star': const [Beat(1.2, 0), Beat(1.3, 1, Easings.back), Beat(1.38, 1.15), Beat(1.42, 0, Easings.inCubic)],
       // A little shake as the magic goes out of him.
       'offsetX': [const Beat(1.27, 0), ...Choreography.wiggle(1.27, 1.45, 0, .05, 3)],
-      'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0, Easings.inOut)],
+      'yaw': const [Beat(1.25, 0), Beat(1.32, .35, Easings.out), Beat(1.55, .35), Beat(1.75, 0)],
       'happy': const [Beat(1.8, 0), Beat(1.81, 1, Easings.linear)],
     },
   ).atSpeed(.8);

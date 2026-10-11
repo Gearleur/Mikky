@@ -3,14 +3,14 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
 import '../side/agent_page.dart';
-import '../ui/thread_page.dart';
 import '../side/session_cards.dart';
-import '../ui/messages.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/side.dart';
-import '../ui/status.dart';
-import '../ui/tasks.dart';
-import '../ui/tokens.dart';
+import '../ui/content/messages.dart';
+import '../ui/content/side.dart';
+import '../ui/content/tasks.dart';
+import '../ui/content/thread_page.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
 
@@ -343,8 +343,8 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                 ),
                 const SizedBox(height: 8),
                 TaskStep(label: 'Crée usage_test.dart', tone: PixelFxPalette.green(ui)),
-                TaskStep(label: 'Modifie codex_reader.dart', tone: PixelFxPalette.blue),
-                TaskStep(label: 'Va sur internet', tone: PixelFxPalette.violet),
+                const TaskStep(label: 'Modifie codex_reader.dart', tone: PixelFxPalette.blue),
+                const TaskStep(label: 'Va sur internet', tone: PixelFxPalette.violet),
                 const TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec'),
                 const SizedBox(height: 8),
                 const ChatMessage(me: true, text: 'Regarde aussi le délai', meta: '14:02'),
@@ -354,7 +354,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
             ),
           ]),
         ),
-        BoardFrame(
+        const BoardFrame(
           label: 'Une étape ouverte',
           note: 'Ses outils : commande ou fichier en mono ; un clic sur un outil montre la sortie ou le code.',
           child: _Pane([
@@ -368,7 +368,7 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                   label: 'Lance une commande',
                   tone: PixelFxPalette.fire,
                   initiallyOpen: true,
-                  detail: const ToolLine(
+                  detail: ToolLine(
                     icon: 'agents',
                     title: 'Lancer les tests',
                     detail: 'dart test',

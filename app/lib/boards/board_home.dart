@@ -1,15 +1,18 @@
 import 'package:flutter/widgets.dart';
 
 import '../home/history_sheet.dart';
+import '../home/home_app.dart';
+import '../home/home_frame.dart';
+import '../home/home_layout.dart';
 import '../home/home_view.dart';
 import '../home/new_task.dart';
-import '../ui/brand_logo.dart';
-import '../ui/buttons.dart';
-import '../ui/environment_selector.dart';
-import '../ui/page_dots.dart';
-import '../ui/sheet.dart';
-import '../ui/status.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/controls/environment_selector.dart';
+import '../ui/controls/page_dots.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/overlays/sheet.dart';
 import 'board_notch.dart' show sampleNotchApps;
 import 'board_screens.dart';
 import 'canvas.dart';

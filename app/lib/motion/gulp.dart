@@ -7,9 +7,9 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../mikky/mikky_painter.dart';
 import '../theme.dart';
-import '../ui/motion.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// Mikky with his mouth wide open, breathing a file in, like Kirby
 /// (2026-10-08, the user: « déforme Mikky pour qu'il ressemble plus à

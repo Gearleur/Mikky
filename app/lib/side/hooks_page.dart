@@ -1,17 +1,17 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/buttons.dart';
-import '../ui/cards.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/cards.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/foundation/tokens.dart';
 import 'side_app.dart';
 
 /// The hooks of Claude Code or Codex (2026-10-04): with them, a session
 /// started in a terminal or VS Code asks its permissions in Mikky too. Never written
 /// without the user: the exact change to `settings.json` first, then
 /// Installer (or Désinstaller); a dated copy is kept, and a file changed
-/// meanwhile is refused (`daemon/mikkyd/src/claude_settings.rs`).
+/// meanwhile is refused (`daemon/mikkyd/src/hooks/settings.rs`).
 ///
 /// FUNCTIONAL ONLY: no design of its own yet (plan of 2026-10-05).
 class HooksPage extends StatefulWidget {

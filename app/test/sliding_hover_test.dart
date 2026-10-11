@@ -1,8 +1,8 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mikky/ui/sliding_hover.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/controls/sliding_hover.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 
 /// The hover of a list is the white square of the Oui / Non answers: it
 /// comes under the row under the mouse, slides to the next one, and goes

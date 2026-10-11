@@ -2,9 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../island/content/brief_view.dart';
-import '../ui/buttons.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/foundation/tokens.dart';
 import 'session_steps.dart';
 import 'side_app.dart';
 

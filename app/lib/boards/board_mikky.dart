@@ -7,9 +7,9 @@ import '../motion/intro.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
-import '../ui/motion.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 import 'canvas.dart';
 
 /// The curves we animate with, each seen as a curve and as a dot moving
@@ -69,7 +69,6 @@ final mikkyBoard = BoardSpec(
       BoardSection(
         title: 'Le lancement',
         note: 'Sa salutation au démarrage de l’app (dans l’île, qui en est le fond) : une petite apparition, simple et souple, à la Disney / Pixar : sur un fond blanc, son ombre douce au sol ; l’anticipation, l’écrasement et l’étirement, des arcs, des oreilles qui suivent en retard. Lecture, ×0,25 pour le ralenti, la barre de temps pour aller à un instant ; dessous, ses moments et quelques courbes.',
-        kind: FrameKind.app,
         frames: [
           for (final (c, note, curves, poster) in [
             (
@@ -122,7 +121,7 @@ final mikkyBoard = BoardSpec(
             ),
         ],
       ),
-      BoardSection(
+      const BoardSection(
         title: 'Ses pouvoirs · en pixels',
         note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, avec ses bras dodus, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres ; avec ses bras dodus, puis sans.',
         kind: FrameKind.trial,
@@ -132,43 +131,13 @@ final mikkyBoard = BoardSpec(
         title: 'Les ondes · réfléchir',
         note: 'D’après tes images d’une « vague de réflexion » : des points sur une petite grille, en notre bleu. L’onde, puis d’autres formes, en dégradé continu. Chacune en boucle, dans sa couche, sur l’horloge commune (30 images par seconde).',
         kind: FrameKind.trial,
-        frames: [
-          for (final w in DotWave.values.where((w) => !w.magic))
-            BoardFrame(
-              label: w.label,
-              note: w.note,
-              width: 176,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Looping(
-                  period: w.period,
-                  frozenAt: .3,
-                  builder: (context, t) => DotWaveScene(w, t * w.periodMs / 1000),
-                ),
-              ),
-            ),
-        ],
+        frames: [for (final w in DotWave.values.where((w) => !w.magic)) _waveFrame(w)],
       ),
       BoardSection(
         title: 'Les ondes · maths et magie',
         note: 'Des courbes et des champs mathématiques, et un peu de magie, dans notre DA : la même grille de points, un dégradé plus étalé, du bleu nuit presque noir au blanc, qui remplit la grille.',
         kind: FrameKind.trial,
-        frames: [
-          for (final w in DotWave.values.where((w) => w.magic))
-            BoardFrame(
-              label: w.label,
-              note: w.note,
-              width: 176,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Looping(
-                  period: w.period,
-                  frozenAt: .3,
-                  builder: (context, t) => DotWaveScene(w, t * w.periodMs / 1000),
-                ),
-              ),
-            ),
-        ],
+        frames: [for (final w in DotWave.values.where((w) => w.magic)) _waveFrame(w)],
       ),
       BoardSection(
         title: 'Les courbes',
@@ -322,3 +291,14 @@ class _PixelPowerGrid extends StatelessWidget {
     );
   }
 }
+
+/// One wave of dots, looping in its frame.
+BoardFrame _waveFrame(DotWave w) => BoardFrame(
+  label: w.label,
+  note: w.note,
+  width: 176,
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(12),
+    child: Looping(period: w.period, frozenAt: .3, builder: (context, t) => DotWaveScene(w, t * w.periodMs / 1000)),
+  ),
+);

@@ -2,16 +2,12 @@
 
 #include <flutter/standard_method_codec.h>
 
-#include <shobjidl.h>
-
 #include <iostream>
-#include <string>
 #include <optional>
-#include <set>
+#include <string>
 
 #include "flutter/generated_plugin_registrant.h"
 #include "resource.h"
-#include "reveal.h"
 
 namespace {
 
@@ -23,9 +19,6 @@ constexpr UINT kCursorTimerMs = 16;
 // (user report, 2026-09-30). Every 1.5 s, if the cursor moved without the
 // hook hearing it, the hook is put back.
 constexpr UINT_PTR kHookWatchTimerId = 2;
-// When the sounds playing should be over: their voices are freed, and the
-// audio engine stops once none is left.
-constexpr UINT_PTR kSoundTimerId = 3;
 constexpr UINT kHookWatchMs = 1500;
 // Posted by the hook, handled in the window procedure: the hook itself must
 // not call into Flutter.
@@ -37,61 +30,6 @@ const UINT kTaskbarCreated = RegisterWindowMessageW(L"TaskbarCreated");
 
 // The hook callback is a plain function: it reaches the window through this.
 FlutterWindow* g_hook_window = nullptr;
-
-std::string Utf8FromUtf16(const std::wstring& utf16) {
-  if (utf16.empty()) {
-    return std::string();
-  }
-  const int length = WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
-                                         static_cast<int>(utf16.size()),
-                                         nullptr, 0, nullptr, nullptr);
-  std::string utf8(length, '\0');
-  WideCharToMultiByte(CP_UTF8, 0, utf16.data(),
-                      static_cast<int>(utf16.size()), utf8.data(), length,
-                      nullptr, nullptr);
-  return utf8;
-}
-
-std::wstring Utf16FromUtf8(const std::string& utf8) {
-  if (utf8.empty()) {
-    return std::wstring();
-  }
-  const int length = MultiByteToWideChar(
-      CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()), nullptr, 0);
-  std::wstring utf16(length, L'\0');
-  MultiByteToWideChar(CP_UTF8, 0, utf8.data(), static_cast<int>(utf8.size()),
-                      utf16.data(), length);
-  return utf16;
-}
-
-// Windows' folder picker, owned by |owner|. Empty if cancelled.
-std::string PickFolder(HWND owner, const std::string& title) {
-  std::string chosen;
-  IFileOpenDialog* dialog = nullptr;
-  if (FAILED(CoCreateInstance(CLSID_FileOpenDialog, nullptr, CLSCTX_ALL,
-                              IID_PPV_ARGS(&dialog)))) {
-    return chosen;
-  }
-  DWORD options = 0;
-  dialog->GetOptions(&options);
-  dialog->SetOptions(options | FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
-  if (!title.empty()) {
-    dialog->SetTitle(Utf16FromUtf8(title).c_str());
-  }
-  if (SUCCEEDED(dialog->Show(owner))) {
-    IShellItem* item = nullptr;
-    if (SUCCEEDED(dialog->GetResult(&item))) {
-      PWSTR path = nullptr;
-      if (SUCCEEDED(item->GetDisplayName(SIGDN_FILESYSPATH, &path))) {
-        chosen = Utf8FromUtf16(path);
-        CoTaskMemFree(path);
-      }
-      item->Release();
-    }
-  }
-  dialog->Release();
-  return chosen;
-}
 
 }  // namespace
 
@@ -318,189 +256,6 @@ void FlutterWindow::FlushCursor() {
                         flutter::EncodableValue((last_cursor_.y - origin.y) /
                                                 scale),
                     }));
-}
-
-void FlutterWindow::HandleMethodCall(
-    const flutter::MethodCall<flutter::EncodableValue>& call,
-    std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
-  if (call.method_name() == "setHitRect") {
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    if (!args || args->size() != 4) {
-      result->Error("bad_args", "setHitRect expects [x, y, w, h]");
-      return;
-    }
-    double values[4];
-    for (size_t i = 0; i < 4; ++i) {
-      const auto* v = std::get_if<double>(&(*args)[i]);
-      if (!v) {
-        result->Error("bad_args", "setHitRect expects doubles");
-        return;
-      }
-      values[i] = *v;
-    }
-    hit_x_ = values[0];
-    hit_y_ = values[1];
-    hit_w_ = values[2];
-    hit_h_ = values[3];
-    // The shape may have moved under a still cursor.
-    POINT cursor;
-    if (GetCursorPos(&cursor)) {
-      UpdateClickThrough(cursor);
-    }
-    result->Success();
-  } else if (call.method_name() == "setPlacement") {
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    const std::string* edge =
-        args && args->size() == 3 ? std::get_if<std::string>(&(*args)[0])
-                                  : nullptr;
-    const double* width = edge ? std::get_if<double>(&(*args)[1]) : nullptr;
-    const double* height = edge ? std::get_if<double>(&(*args)[2]) : nullptr;
-    if (!edge || !width || !height || (*edge != "top" && *edge != "right")) {
-      result->Error("bad_args", "setPlacement expects [top|right, w, h]");
-      return;
-    }
-    // Nothing is clickable until Dart sends the new island rect.
-    hit_w_ = hit_h_ = 0;
-    SetPlacement(*edge == "top" ? Edge::kTop : Edge::kRight,
-                 Size(static_cast<unsigned int>(*width),
-                      static_cast<unsigned int>(*height)));
-    POINT cursor;
-    if (GetCursorPos(&cursor)) {
-      UpdateClickThrough(cursor);
-    }
-    result->Success();
-  } else if (call.method_name() == "showMenu") {
-    const auto* entries = std::get_if<flutter::EncodableList>(call.arguments());
-    if (!entries) {
-      result->Error("bad_args", "showMenu expects [[id, label, checked]]");
-      return;
-    }
-    HMENU menu = CreatePopupMenu();
-    for (const auto& entry : *entries) {
-      const auto* fields = std::get_if<flutter::EncodableList>(&entry);
-      if (!fields || fields->size() != 3) {
-        continue;
-      }
-      const auto* id = std::get_if<int32_t>(&(*fields)[0]);
-      const auto* label = std::get_if<std::string>(&(*fields)[1]);
-      const auto* checked = std::get_if<bool>(&(*fields)[2]);
-      if (!id || !label || !checked) {
-        continue;
-      }
-      if (*id == 0) {
-        AppendMenu(menu, MF_SEPARATOR, 0, nullptr);
-      } else {
-        AppendMenu(menu, MF_STRING | (*checked ? MF_CHECKED : MF_UNCHECKED),
-                   *id, Utf16FromUtf8(*label).c_str());
-      }
-    }
-    POINT cursor;
-    GetCursorPos(&cursor);
-    HWND hwnd = GetHandle();
-    // Without this the menu would not close when clicking elsewhere.
-    SetForegroundWindow(hwnd);
-    const int chosen = TrackPopupMenu(
-        menu, TPM_RETURNCMD | TPM_NONOTIFY | TPM_RIGHTBUTTON, cursor.x,
-        cursor.y, 0, hwnd, nullptr);
-    PostMessage(hwnd, WM_NULL, 0, 0);
-    DestroyMenu(menu);
-    result->Success(flutter::EncodableValue(chosen));
-  } else if (call.method_name() == "activate") {
-    // Only after a click on the island: the user asked for it, so taking
-    // the keyboard (Escape, N, Y) is expected. Never on its own.
-    HWND hwnd = GetHandle();
-    SetForegroundWindow(hwnd);
-    if (flutter_controller_) {
-      SetFocus(flutter_controller_->view()->GetNativeWindow());
-    }
-    result->Success();
-  } else if (call.method_name() == "pickFolder") {
-    // The new agent's folder. Modal: the dialog comes on top of the island.
-    std::string title;
-    if (const auto* s = std::get_if<std::string>(call.arguments())) {
-      title = *s;
-    }
-    const std::string chosen = PickFolder(GetHandle(), title);
-    if (chosen.empty()) {
-      result->Success();
-    } else {
-      result->Success(flutter::EncodableValue(chosen));
-    }
-  } else if (call.method_name() == "notify") {
-    // [title, body]: a notification, from the icon in the notification area.
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    if (args && args->size() == 2) {
-      const auto* title = std::get_if<std::string>(&(*args)[0]);
-      const auto* body = std::get_if<std::string>(&(*args)[1]);
-      if (title && body) {
-        ShowNotification(Utf16FromUtf8(*title), Utf16FromUtf8(*body));
-      }
-    }
-    result->Success();
-  } else if (call.method_name() == "playSound") {
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    if (args && args->size() == 2) {
-      const auto* name = std::get_if<std::string>(&(*args)[0]);
-      const auto* volume = std::get_if<double>(&(*args)[1]);
-      if (name && volume) {
-        const int ms = sound_.Play(*name, *volume);
-        if (ms > 0) SetTimer(GetHandle(), kSoundTimerId, ms + 60, nullptr);
-      }
-    }
-    result->Success();
-  } else if (call.method_name() == "preloadSounds") {
-    std::set<std::string> names;
-    if (const auto* args = std::get_if<flutter::EncodableList>(call.arguments())) {
-      for (const auto& v : *args) {
-        if (const auto* name = std::get_if<std::string>(&v)) names.insert(*name);
-      }
-    }
-    sound_.Preload(names);
-    result->Success();
-  } else if (call.method_name() == "setHotkeys") {
-    // Only the overlay has global shortcuts.
-    HWND hwnd = GetHandle();
-    for (const int id : hotkeys_) UnregisterHotKey(hwnd, id);
-    hotkeys_.clear();
-    flutter::EncodableList refused;
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    if (args && is_overlay()) {
-      for (const auto& entry : *args) {
-        const auto* fields = std::get_if<flutter::EncodableList>(&entry);
-        if (!fields || fields->size() != 3) continue;
-        const auto* id = std::get_if<int32_t>(&(*fields)[0]);
-        const auto* mods = std::get_if<int32_t>(&(*fields)[1]);
-        const auto* key = std::get_if<int32_t>(&(*fields)[2]);
-        if (!id || !mods || !key) continue;
-        if (RegisterHotKey(hwnd, *id, static_cast<UINT>(*mods) | MOD_NOREPEAT,
-                           static_cast<UINT>(*key))) {
-          hotkeys_.push_back(*id);
-        } else {
-          refused.push_back(flutter::EncodableValue(*id));
-        }
-      }
-    }
-    result->Success(flutter::EncodableValue(refused));
-  } else if (call.method_name() == "revealWindow") {
-    // [pid, handle]: the window an agent's session runs in (reveal.cpp).
-    bool shown = false;
-    const auto* args = std::get_if<flutter::EncodableList>(call.arguments());
-    if (args && args->size() == 2) {
-      const auto number = [](const flutter::EncodableValue& v) -> int64_t {
-        if (const auto* i = std::get_if<int32_t>(&v)) return *i;
-        if (const auto* l = std::get_if<int64_t>(&v)) return *l;
-        return 0;
-      };
-      shown = RevealWindow(static_cast<DWORD>(number((*args)[0])),
-                           number((*args)[1]));
-    }
-    result->Success(flutter::EncodableValue(shown));
-  } else if (call.method_name() == "quit") {
-    result->Success();
-    PostMessage(GetHandle(), WM_CLOSE, 0, 0);
-  } else {
-    result->NotImplemented();
-  }
 }
 
 LRESULT

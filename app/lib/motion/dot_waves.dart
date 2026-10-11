@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/pixel_fx.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// Waves of dots on a small grid (2026-10-06, after the user's frames of a
 /// « vague de réflexion »: a little cluster opens into an oval ring of
@@ -363,7 +363,7 @@ class _DotWavePainter extends CustomPainter {
         final d = math.sqrt(dx * dx + dy * dy * _tall * _tall);
         final angle = math.atan2(dy * _tall, dx);
         // Eight mirrored slices.
-        final slice = math.pi / 4;
+        const slice = math.pi / 4;
         final folded = ((angle + u * slice) % slice - slice / 2).abs();
         final v = math.cos(d * .55 - u * math.pi * 2) * math.cos(folded * 5 + d * .2);
         final fade = (1 - d / (half * 1.1)).clamp(0.0, 1.0);

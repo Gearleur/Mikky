@@ -6,16 +6,16 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
-import '../home/home_view.dart';
+import '../home/home_layout.dart';
 import '../overlay/overlay_channel.dart';
-import '../ui/backend_status.dart';
-import '../ui/motion.dart';
-import '../ui/tokens.dart';
-import '../ui/thread_page.dart';
+import '../ui/content/backend_status.dart';
+import '../ui/content/thread_page.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 import 'agent_page.dart';
 import 'brief_page.dart';
-import 'hooks_page.dart';
 import 'home_screen.dart';
+import 'hooks_page.dart';
 import 'new_agent_page.dart';
 import 'session_menu.dart';
 
@@ -348,7 +348,6 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         Expanded(
           child: Stack(
             fit: StackFit.expand,
-            clipBehavior: Clip.hardEdge,
             children: [
               // Pages further down keep their state but are not drawn.
               for (final p in _pages)

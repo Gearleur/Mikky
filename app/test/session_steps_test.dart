@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_steps.dart';
-import 'package:mikky/ui/status.dart';
-import 'package:mikky/ui/tasks.dart';
+import 'package:mikky/ui/content/tasks.dart';
+import 'package:mikky/ui/foundation/status.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 /// How a session becomes steps (`session_steps.dart`), without a screen.

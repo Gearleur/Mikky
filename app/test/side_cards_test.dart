@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_cards.dart';
-import 'package:mikky/ui/messages.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/content/messages.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 /// The cards that wait for the user (A7.2): a permission with « Toujours »

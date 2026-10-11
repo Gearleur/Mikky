@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/pixel_fx.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// The 128-bit look (2026-10-06: « dès que Mikky change de couleur, il
 /// doit être en 128 bits… les animations deviennent en 128 bits »): a
@@ -25,22 +25,64 @@ void drawSprite128(
   double fade = 1,
 }) {
   if (fade <= 0) return;
-  const big = 2;
-  final box = shape.getBounds().inflate(halo * big + 2.0);
-  final left = box.left.floor(), top = box.top.floor();
-  final cols = box.width.ceil(), rows = box.height.ceil();
-  if (cols <= 0 || rows <= 0) return;
-  final inside = Uint8List(cols * rows);
+  final box = shape.getBounds().inflate(halo * 2 + 2.0);
+  final mask = PixelMask(box.left.floor(), box.top.floor(), box.width.ceil(), box.height.ceil());
+  if (mask.cols <= 0 || mask.rows <= 0) return;
   final within = shape.getBounds();
-  for (var y = 0; y < rows; y++) {
-    final py = top + y + .5;
+  for (var y = 0; y < mask.rows; y++) {
+    final py = mask.top + y + .5;
     if (py < within.top || py > within.bottom) continue;
-    for (var x = 0; x < cols; x++) {
-      final p = Offset(left + x + .5, py);
-      if (shape.contains(p)) inside[y * cols + x] = holes.any((h) => h.contains(p)) ? 2 : 1;
+    for (var x = 0; x < mask.cols; x++) {
+      final p = Offset(mask.left + x + .5, py);
+      if (shape.contains(p)) mask.set(x, y, holes.any((h) => h.contains(p)) ? PixelMask.hole : PixelMask.inside);
     }
   }
-  bool isIn(int x, int y) => x >= 0 && y >= 0 && x < cols && y < rows && inside[y * cols + x] != 0;
+  paintSprite128(
+    canvas,
+    mask,
+    palette: palette,
+    light: light,
+    reach: reach,
+    holeColor: holeColor,
+    halo: halo,
+    fade: fade,
+  );
+}
+
+/// A shape on a grid of screen pixels from ([left], [top]): each cell
+/// outside (0), [inside] or in a [hole].
+class PixelMask {
+  PixelMask(this.left, this.top, this.cols, this.rows) : _cells = Uint8List(math.max(0, cols * rows));
+
+  final int left, top, cols, rows;
+  final Uint8List _cells;
+
+  static const inside = 1, hole = 2;
+
+  int at(int x, int y) => _cells[y * cols + x];
+  void set(int x, int y, int value) => _cells[y * cols + x] = value;
+
+  /// In the shape (a hole too); false off the grid.
+  bool isIn(int x, int y) => x >= 0 && y >= 0 && x < cols && y < rows && _cells[y * cols + x] != 0;
+}
+
+/// The brightest shade of a 128-bit sprite: its palette's first, toward white.
+Color sprite128Heart(PixelFxPalette palette) => Color.lerp(palette.levels.first, const Color(0xFFFFFFFF), .45)!;
+
+/// Paints [mask] the 128-bit way (see [drawSprite128]).
+void paintSprite128(
+  Canvas canvas,
+  PixelMask mask, {
+  required PixelFxPalette palette,
+  required Offset light,
+  required double reach,
+  Color holeColor = const Color(0xFF1A0508),
+  int halo = 8,
+  double fade = 1,
+}) {
+  const big = 2;
+  final left = mask.left, top = mask.top, cols = mask.cols, rows = mask.rows;
+  final isIn = mask.isIn;
   final paint = Paint()..isAntiAlias = false;
 
   // The halo, on a grid of 2, in steps.
@@ -87,7 +129,7 @@ void drawSprite128(
   }
 
   // The shape, shaded and dithered, its edge lit.
-  final heart = Color.lerp(palette.levels.first, const Color(0xFFFFFFFF), .45)!;
+  final heart = sprite128Heart(palette);
   final ramp = [heart, ...palette.levels];
   Color shade(double t) {
     final f = t.clamp(0.0, 1.0) * (ramp.length - 1);
@@ -98,10 +140,10 @@ void drawSprite128(
   const levels = 16;
   for (var y = 0; y < rows; y++) {
     for (var x = 0; x < cols; x++) {
-      final v = inside[y * cols + x];
+      final v = mask.at(x, y);
       if (v == 0 || _dither(x >> 1, (y >> 1) + 1) > fade) continue;
       final rect = Rect.fromLTWH((left + x).toDouble(), (top + y).toDouble(), 1, 1);
-      if (v == 2) {
+      if (v == PixelMask.hole) {
         paint.color = holeColor;
         canvas.drawRect(rect, paint);
         continue;

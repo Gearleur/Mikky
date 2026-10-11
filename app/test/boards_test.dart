@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/boards/boards_app.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 
 import 'load_fonts.dart';
 

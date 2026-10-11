@@ -2,12 +2,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mikky/home/home_app.dart';
+import 'package:mikky/home/home_layout.dart';
 import 'package:mikky/home/home_view.dart';
 import 'package:mikky/home/task_glance.dart';
-import 'package:mikky/ui/app_tile.dart';
-import 'package:mikky/ui/environment_selector.dart';
-import 'package:mikky/ui/page_dots.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/brand/app_tile.dart';
+import 'package:mikky/ui/controls/environment_selector.dart';
+import 'package:mikky/ui/controls/page_dots.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'load_fonts.dart';
@@ -30,7 +32,7 @@ void main() {
 
   testWidgets('notch: pages by arrows, dots and keys, arrows hidden at the ends', (tester) async {
     // Nothing at work: three columns, six wide tiles a page.
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(14), animate: false)));
+    await tester.pumpWidget(host(HomeView(apps: HomeApp.placeholders(14), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     expect(find.byType(AppTile), findsNWidgets(6));
     expect(tester.getSize(find.byType(AppTile).first), const Size(160, 42));
@@ -59,7 +61,7 @@ void main() {
   });
 
   testWidgets('notch: a dot goes to its page', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(14), animate: false)));
+    await tester.pumpWidget(host(HomeView(apps: HomeApp.placeholders(14), animate: false)));
     final dots = tester.getRect(find.byType(PageDots));
     await tester.tapAt(Offset(dots.left + PageDots.star / 2 + 2 * PageDots.step, dots.center.dy));
     await tester.pumpAndSettle();
@@ -67,7 +69,7 @@ void main() {
   });
 
   testWidgets('one page: no dots shown', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(6), animate: false)));
+    await tester.pumpWidget(host(HomeView(apps: HomeApp.placeholders(6), animate: false)));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 1);
     expect(find.byType(AppTile), findsNWidgets(6));
   });
@@ -75,15 +77,7 @@ void main() {
   testWidgets('the Chat mode, « + » and the tools open a new chat; the home stays', (tester) async {
     var chats = 0;
     await tester.pumpWidget(
-      host(
-        HomeView(
-          layout: HomeLayout.top,
-          apps: HomeApp.placeholders(3),
-          animate: false,
-          onHistory: (_) {},
-          onNew: () => chats++,
-        ),
-      ),
+      host(HomeView(apps: HomeApp.placeholders(3), animate: false, onHistory: (_) {}, onNew: () => chats++)),
     );
     await tester.tap(find.bySemanticsLabel('Chat'));
     await tester.pump();
@@ -107,7 +101,6 @@ void main() {
     await tester.pumpWidget(
       host(
         HomeView(
-          layout: HomeLayout.top,
           apps: HomeApp.placeholders(9),
           watched: WatchedTask(
             id: 'w',
@@ -206,11 +199,11 @@ void main() {
 
   testWidgets('right: the layout follows the engine (the notch upright, or the old home)', (tester) async {
     expect(HomeLayout.right.notch, IslandMetrics.rightNotch);
-    final m = IslandMetrics.right;
+    const m = IslandMetrics.right;
     expect(Size(m.list.width, m.list.height), HomeLayout.right.size);
     // Mikky's place in the island is where the home leaves room for him
     // (his center at half his width and 54 % of his height).
-    final l = HomeLayout.right;
+    const l = HomeLayout.right;
     expect(m.mikkyList.x, closeTo(l.mikkyAt.dx + l.mikky / 2, .01));
     expect(m.mikkyList.y, closeTo(l.mikkyAt.dy + l.mikky * .54, .01));
     expect(m.mikkyList.radius, closeTo(l.mikky * .29, .01));
@@ -285,13 +278,13 @@ void main() {
     expect(tools, 2);
     expect(find.byType(AppSlot), findsNWidgets(4));
 
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, animate: false)));
+    await tester.pumpWidget(host(const HomeView(layout: HomeLayout.rightTiles, animate: false)));
     // Nothing to launch from there: no « + », eight waiting tokens.
     expect(find.byType(AppTile), findsNothing);
     expect(find.byType(AppSlot), findsNWidgets(8));
 
     // The notch too: « + », then wide tokens.
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, animate: false, onNew: () {})));
+    await tester.pumpWidget(host(HomeView(animate: false, onNew: () {})));
     expect(find.byType(AddTile), findsOneWidget);
     expect(tester.getSize(find.byType(AddTile)), const Size(160, 42));
     expect(find.byType(AppSlot), findsNWidgets(5));

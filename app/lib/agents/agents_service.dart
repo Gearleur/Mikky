@@ -281,7 +281,7 @@ class AgentsService extends ChangeNotifier {
   }
 
   /// The hooks of [tool] (Claude Code or Codex) for sessions started
-  /// outside Mikky (`daemon/mikkyd/src/claude_settings.rs`): installed or
+  /// outside Mikky (`daemon/mikkyd/src/hooks/settings.rs`): installed or
   /// not.
   Future<Map<String, Object?>> hooksStatus(AgentProvider tool) async =>
       ((await _client.request('hooks.status', {'tool': tool.name})) as Map).cast();

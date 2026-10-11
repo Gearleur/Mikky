@@ -2,12 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand_logo.dart';
-import '../ui/icons.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/side.dart';
-import '../ui/status.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/side.dart';
+import '../ui/foundation/icons.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';
@@ -143,7 +143,7 @@ class _Missing extends StatelessWidget {
                           ),
                           TextSpan(
                             text: d,
-                            style: uiText(TextSize.label, color: ui.text2, height: 1.45),
+                            style: uiText(TextSize.label, color: ui.text2),
                           ),
                         ],
                       ),
@@ -257,7 +257,6 @@ class _LogoProposal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -276,13 +275,9 @@ class _LogoProposal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Logo(kind, size: px, dark: dark),
-                  const SizedBox(height: 4),
-                  Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
-                ],
+              SizeSample(
+                px,
+                child: _Logo(kind, size: px, dark: dark),
               ),
               const SizedBox(width: 10),
             ],

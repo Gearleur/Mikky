@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/selectors.dart';
-import '../ui/backend_status.dart';
-import '../ui/tokens.dart';
+import '../ui/content/backend_status.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/foundation/tokens.dart';
 import 'canvas.dart';
 
 enum _Stage {
@@ -220,7 +220,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Les agents',
           'Claude Code et Codex, via leurs adaptateurs ACP, sous Windows ou WSL. Ils utilisent leurs outils et les connexions de tes abonnements.',
-          'daemon/mikkyd/src/tools.rs',
+          'daemon/mikkyd/src/tools/mod.rs',
           width: 280,
         ),
       ],
@@ -237,19 +237,16 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
           'Un backend explicite',
           'Seul Rust prépare et lance les outils. En cas de déconnexion, les actions attendent la reconnexion. L’ancien réglage daemon et le mode --no-daemon ont été retirés de l’application.',
           'app/lib/agents/agents_service.dart',
-          stage: _Stage.ready,
         ),
         _Note(
           'Les sessions extérieures',
           'Rust surveille les fichiers Windows et Linux avec des événements natifs. Il lit les octets ajoutés et normalise les transcriptions Claude et Codex. Flutter reçoit des pages de 256 événements.',
-          'mikkyd · watch / session_reader',
-          stage: _Stage.ready,
+          'mikkyd · sessions/watch / sessions/reader',
         ),
         _Note(
           'La vie après l’app',
           'Fermer l’interface laisse les agents et leurs permissions en attente dans le démon. La reconnexion reprend les messages manqués. Un arrêt global est une action séparée ; le démarrage Windows est réglable.',
           'AgentsService.shutdown\nmikkyd · autostart / linux',
-          stage: _Stage.ready,
         ),
       ],
     ),
@@ -265,7 +262,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Lire seulement la suite',
           'Le watcher Rust conserve un offset par fichier. La reconnexion ACP reprend après le dernier numéro reçu, par pages, sans dupliquer le fil. Les rafales de changements de fichier sont regroupées côté client.',
-          'watch.rs · subscribe_page · DaemonSessionWatcher',
+          'sessions/watch.rs · subscribe_page · DaemonSessionWatcher',
         ),
         _Note(
           'Réveiller au bon moment',
@@ -303,13 +300,12 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Une porte locale',
           'Le WebSocket écoute sur 127.0.0.1. Son jeton est gardé dans le coffre Windows. Les connexions portant un en-tête Origin sont refusées.',
-          'daemon/mikkyd/src/endpoint.rs\ndaemon/mikkyd/src/api.rs',
+          'daemon/mikkyd/src/system/endpoint.rs\ndaemon/mikkyd/src/api/mod.rs',
         ),
         _Note(
           'Ce qui reste sur le PC',
           'SQLite garde les métadonnées dans le backend ; les écritures passent par un thread dédié. agents.json est importé une seule fois et conservé. Les réglages visuels restent côté Flutter. Les outils gardent leurs transcriptions.',
           'mikky.db · settings.json · tuning.json',
-          stage: _Stage.ready,
         ),
         _Note(
           'Le futur réseau',
@@ -327,7 +323,6 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
           'R2 → R3 / Le socle Rust',
           'Lancements, lecteurs et stockage appartiennent à Rust. L’ancien backend Dart est isolé dans les outils de test. Le protocole 3 diffuse les événements normalisés et synchronise les métadonnées des écrans.',
           'Parité vérifiée · app cliente uniquement',
-          stage: _Stage.ready,
         ),
         _Note(
           'Données et continuité',

@@ -39,7 +39,12 @@ void main() {
         calls.add((method, message['params']));
         final Object result = switch (method) {
           'hello' => {'protocol': 3, 'persistent': true},
-          'state.get' => {'agents': {}, 'marks': {}, 'choices': {}, 'recentFolders': []},
+          'state.get' => {
+            'agents': <String, Object?>{},
+            'marks': <String, Object?>{},
+            'choices': <String, Object?>{},
+            'recentFolders': <Object>[],
+          },
           'runs.list' || 'sessions.list' => <Object>[],
           'tools.status' => {'ready': false},
           'autostart.status' => {'enabled': false},
@@ -147,7 +152,12 @@ void main() {
         requests.add(method);
         final Object result = switch (method) {
           'hello' => {'protocol': 3, 'persistent': true},
-          'state.get' => {'agents': {}, 'marks': {}, 'choices': {}, 'recentFolders': []},
+          'state.get' => {
+            'agents': <String, Object?>{},
+            'marks': <String, Object?>{},
+            'choices': <String, Object?>{},
+            'recentFolders': <Object>[],
+          },
           'runs.list' || 'sessions.list' => <Object>[],
           'tools.status' => {'ready': false},
           'tools.auth' => {'installed': false, 'loggedIn': false},

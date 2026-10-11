@@ -1,0 +1,372 @@
+import 'package:flutter/widgets.dart';
+
+import '../controls/sliding_hover.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
+import 'markdown.dart';
+
+/// A task in the thread, part of the page (no card): its state in pixels,
+/// its title and figures, a chevron. Open: everything that happened in it,
+/// in order — the agent's words, its main steps as dots, a message slipped
+/// in (user request, 2026-10-05: the actions and the messages in one
+/// place). Past [shown] lines, the oldest fold under « N plus tôt ».
+class TaskSection extends StatefulWidget {
+  const TaskSection({
+    super.key,
+    required this.status,
+    required this.title,
+    this.meta,
+    this.children = const [],
+    this.initiallyOpen = false,
+    this.shown = 40,
+  });
+
+  final UiStatus status;
+  final String title;
+  final String? meta;
+  final List<Widget> children;
+  final bool initiallyOpen;
+  final int shown;
+
+  @override
+  State<TaskSection> createState() => _TaskSectionState();
+}
+
+class _TaskSectionState extends State<TaskSection> {
+  late bool _open = widget.initiallyOpen;
+  bool _all = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final foldable = widget.children.isNotEmpty;
+    final head = Row(
+      children: [
+        StatusFx(widget.status, size: 14),
+        const SizedBox(width: 7),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: widget.title,
+                  style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text),
+                ),
+                if (widget.meta != null)
+                  TextSpan(
+                    text: '  ${widget.meta}',
+                    style: uiText(TextSize.small, color: ui.text3, tabular: true),
+                  ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (foldable) ...[
+          const SizedBox(width: 4),
+          AnimatedRotation(
+            turns: _open ? .5 : 0,
+            duration: Motion.of(context, Motion.fold),
+            curve: const Cubic(.34, 1.4, .64, 1),
+            child: MikkyIcon('down', size: 14, color: ui.text3),
+          ),
+        ],
+      ],
+    );
+    final hidden = _all ? 0 : (widget.children.length - widget.shown).clamp(0, widget.children.length);
+    // The sliding square of the Oui / Non answers as hover (user request,
+    // 2026-09-30).
+    return SlidingHover(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Level with the text of the messages: the hover grey reaches out a
+          // little on the left instead of pushing the row right.
+          Transform.translate(
+            offset: const Offset(-4, 0),
+            child: HoverRow(
+              onTap: foldable ? () => setState(() => _open = !_open) : null,
+              padding: const EdgeInsets.fromLTRB(4, 6, 4, 6),
+              child: head,
+            ),
+          ),
+          AnimatedSize(
+            duration: Motion.of(context, Motion.fold),
+            curve: Motion.enter,
+            alignment: Alignment.topCenter,
+            child: !_open || !foldable
+                ? const SizedBox(width: double.infinity)
+                : Container(
+                    margin: const EdgeInsets.only(left: 6, bottom: 4),
+                    padding: const EdgeInsets.only(left: 10),
+                    decoration: BoxDecoration(
+                      border: Border(left: BorderSide(color: ui.line, width: 1.5)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (hidden > 0)
+                          Align(
+                            alignment: Alignment.centerLeft,
+                            child: HoverRow(
+                              onTap: () => setState(() => _all = true),
+                              child: Text(
+                                '$hidden plus tôt',
+                                style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3),
+                              ),
+                            ),
+                          ),
+                        ...widget.children.skip(hidden),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// How a main step of a task went.
+enum TaskStepState { done, now, todo, failed }
+
+/// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
+/// tap unfolds [detail], what the agent did for it.
+class TaskStep extends StatefulWidget {
+  const TaskStep({
+    super.key,
+    required this.label,
+    this.state = TaskStepState.done,
+    this.note,
+    this.detail,
+    this.tone,
+    this.initiallyOpen = false,
+  });
+
+  final String label;
+  final TaskStepState state;
+
+  /// The star's colors for what the step does (green creates, blue
+  /// changes, orange runs a command…); grey when not given.
+  final PixelFxPalette? tone;
+
+  /// [detail] shown from the start (boards).
+  final bool initiallyOpen;
+
+  /// In red after the label: « refusé », « échec ».
+  final String? note;
+  final Widget? detail;
+
+  @override
+  State<TaskStep> createState() => _TaskStepState();
+}
+
+class _TaskStepState extends State<TaskStep> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final (star, text) = switch (widget.state) {
+      TaskStepState.done => (widget.tone ?? PixelFxPalette.grey, ui.text2),
+      TaskStepState.now => (PixelFxPalette.blue, ui.text),
+      TaskStepState.todo => (PixelFxPalette.grey, ui.text3),
+      TaskStepState.failed => (PixelFxPalette.red, ui.text2),
+    };
+    final row = Row(
+      children: [
+        // A small still star of the action's color (user request,
+        // 2026-09-30); the step at work fizzes; the ones to come are faint.
+        SizedBox(
+          width: 11,
+          child: Center(
+            child: widget.state == TaskStepState.now
+                ? const StatusFx(UiStatus.working, size: 11)
+                : Opacity(opacity: widget.state == TaskStepState.todo ? .35 : 1, child: PixelStar(star, size: 11)),
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(text: widget.label),
+                if (widget.note != null)
+                  TextSpan(
+                    text: ' · ${widget.note}',
+                    style: TextStyle(color: ui.red, fontWeight: FontWeight.w500),
+                  ),
+              ],
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(
+              TextSize.label,
+              weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400,
+              color: text,
+              height: 1.35,
+            ),
+          ),
+        ),
+        if (widget.detail != null)
+          AnimatedRotation(
+            turns: _open ? .5 : 0,
+            duration: Motion.of(context, Motion.fold),
+            child: MikkyIcon('down', size: 12, color: ui.text3),
+          ),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HoverRow(onTap: widget.detail == null ? null : () => setState(() => _open = !_open), child: row),
+        AnimatedSize(
+          duration: Motion.of(context, Motion.fold),
+          curve: Motion.enter,
+          alignment: Alignment.topCenter,
+          child: _open && widget.detail != null
+              ? Padding(padding: const EdgeInsets.fromLTRB(22, 2, 0, 6), child: widget.detail)
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// One thing the agent did, in the detail of a task: an icon, what, and in
+/// mono the command or the file; on the right its state. A tap unfolds
+/// [body] (the code it changed, what the command printed).
+class ToolLine extends StatefulWidget {
+  const ToolLine({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.detail,
+    this.trailing,
+    this.body,
+    this.initiallyOpen = false,
+  });
+
+  /// [body] shown from the start (boards).
+  final bool initiallyOpen;
+  final String icon;
+  final String title;
+  final String? detail;
+  final Widget? trailing;
+  final Widget? body;
+
+  @override
+  State<ToolLine> createState() => _ToolLineState();
+}
+
+class _ToolLineState extends State<ToolLine> {
+  late bool _open = widget.initiallyOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final row = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: MikkyIcon(widget.icon, size: 14, color: ui.text3),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                widget.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.small, color: ui.text, height: 1.35),
+              ),
+              if (widget.detail != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 1),
+                  child: Text(
+                    widget.detail!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(TextSize.caption, mono: true, color: ui.text3, height: 1.4),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (widget.trailing != null) Padding(padding: const EdgeInsets.only(left: 8, top: 1), child: widget.trailing!),
+      ],
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        HoverRow(onTap: widget.body == null ? null : () => setState(() => _open = !_open), child: row),
+        AnimatedSize(
+          duration: Motion.of(context, Motion.fold),
+          curve: Motion.enter,
+          alignment: Alignment.topCenter,
+          child: _open && widget.body != null
+              ? Padding(padding: const EdgeInsets.only(left: 28, top: 4, right: 4), child: widget.body)
+              : const SizedBox(width: double.infinity),
+        ),
+      ],
+    );
+  }
+}
+
+/// The agent's own words in a task: what it said on the way, whole, in
+/// markdown (user request, 2026-10-05: the messages with the actions); or
+/// what it [thought], grey and short.
+class NoteLine extends StatelessWidget {
+  const NoteLine(this.text, {super.key, this.thought = false});
+
+  final String text;
+  final bool thought;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    if (!thought) {
+      return DefaultTextStyle(
+        style: uiText(TextSize.label, color: ui.text),
+        child: AgentText(text),
+      );
+    }
+    return Text(
+      // Short and plain: no markdown marks.
+      text.replaceAll(RegExp(r'\*\*|__|`'), ''),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: uiText(TextSize.small, color: ui.text3, height: 1.4),
+    );
+  }
+}
+
+/// What a command printed, its last lines, in mono, in a light hollow.
+class OutputBox extends StatelessWidget {
+  const OutputBox(this.text, {super.key, this.lines = 12});
+
+  final String text;
+  final int lines;
+
+  @override
+  Widget build(BuildContext context) {
+    final ui = MikkyUi.of(context);
+    final all = text.trimRight().split('\n');
+    final shown = all.length > lines ? all.sublist(all.length - lines) : all;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(Radii.md)),
+      child: Text(
+        [if (all.length > lines) '…', ...shown].join('\n'),
+        style: uiText(TextSize.code, mono: true, color: ui.text2),
+      ),
+    );
+  }
+}

@@ -2,8 +2,8 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../../side/session_cards.dart';
-import '../../ui/cards.dart';
-import '../../ui/tokens.dart';
+import '../../ui/content/cards.dart';
+import '../../ui/foundation/tokens.dart';
 
 /// What the user can do from a brief.
 class BriefActions {

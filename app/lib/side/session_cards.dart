@@ -2,14 +2,14 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
-import '../ui/brand_logo.dart';
-import '../ui/buttons.dart';
-import '../ui/cards.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/selectors.dart';
-import '../ui/status.dart';
-import '../ui/surface.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/cards.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/surface.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'session_steps.dart';
 import 'session_text.dart';
 
@@ -185,7 +185,7 @@ class SpellStar extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Enchantments.instance,
     builder: (context, _) => force || Enchantments.instance.isOn(id)
-        ? const IgnorePointer(child: SpellFx(size: 20))
+        ? const IgnorePointer(child: SpellFx())
         : limited
         ? const IgnorePointer(child: StatusFx(UiStatus.limited, size: 20))
         : const SizedBox.shrink(),
@@ -248,7 +248,7 @@ class LimitCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
       child: Row(
         children: [
-          spell ? const SpellFx(size: 20) : const StatusFx(UiStatus.limited, size: 20),
+          spell ? const SpellFx() : const StatusFx(UiStatus.limited, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(

@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/selectors.dart';
-import '../ui/motion.dart';
-import '../ui/side.dart';
-import '../ui/sliding_hover.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/controls/sliding_hover.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 import 'board_brand.dart';
 import 'board_components.dart';
 import 'board_home.dart';
@@ -111,51 +111,48 @@ class _BoardsState extends State<Boards> {
   Widget build(BuildContext context) {
     const shell = MikkyUi.light;
     final bands = [if (_themes != 1) MikkyUi.light, if (_themes != 0) MikkyUi.dark];
-    return MikkyUiTheme(
+    return MikkyUiScope(
       ui: shell,
-      child: DefaultTextStyle(
-        style: uiText(14, color: shell.text),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Sidebar(
-              selected: _picked,
-              onSelect: (i) {
-                setState(() => _picked = i);
-                _switch?.cancel();
-                _switch = Timer(Duration(milliseconds: Motion.reduced(context) ? 0 : 220), () {
-                  if (!mounted) return;
-                  setState(() => _board = i);
-                  _canvas.currentState?.reset();
-                });
-              },
-              themes: _themes,
-              onThemes: (i) => setState(() => _themes = i),
-              only: _only,
-              onOnly: (k) => setState(() => _only = k),
-            ),
-            Container(width: 1, color: shell.line),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: BoardCanvas(
-                      key: _canvas,
-                      background: bands.first.board,
-                      onScale: (s) => setState(() => _scale = s),
-                      child: _contentOf(bands),
-                    ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Sidebar(
+            selected: _picked,
+            onSelect: (i) {
+              setState(() => _picked = i);
+              _switch?.cancel();
+              _switch = Timer(Duration(milliseconds: Motion.reduced(context) ? 0 : 220), () {
+                if (!mounted) return;
+                setState(() => _board = i);
+                _canvas.currentState?.reset();
+              });
+            },
+            themes: _themes,
+            onThemes: (i) => setState(() => _themes = i),
+            only: _only,
+            onOnly: (k) => setState(() => _only = k),
+          ),
+          Container(width: 1, color: shell.line),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: BoardCanvas(
+                    key: _canvas,
+                    background: bands.first.board,
+                    onScale: (s) => setState(() => _scale = s),
+                    child: _contentOf(bands),
                   ),
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: ZoomPill(canvas: _canvas, scale: _scale),
-                  ),
-                ],
-              ),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: ZoomPill(canvas: _canvas, scale: _scale),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -250,59 +247,64 @@ class _Sidebar extends StatelessWidget {
           // The white square marks the open board and slides to the next
           // one; the hover only lights the name up (user requests,
           // 2026-09-30).
-          SlidingHover(
-            radius: 12,
-            followHover: false,
-            hairline: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                for (var i = 0; i < boards.length; i++)
-                  HoverTarget(
-                    selected: i == selected,
-                    child: HoverBuilder(
-                      builder: (context, hover) => MouseRegion(
-                        cursor: SystemMouseCursors.click,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => onSelect(i),
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 140),
-                                  // Light at rest, black under the mouse (user request, 2026-09-30).
-                                  style: uiText(
-                                    14,
-                                    weight: i == selected ? FontWeight.w600 : FontWeight.w500,
-                                    color: i == selected || hover ? ui.text : ui.text3,
-                                  ),
-                                  child: Text(boards[i].name),
+          // The list scrolls when the window is too short for it.
+          Expanded(
+            child: SingleChildScrollView(
+              child: SlidingHover(
+                radius: 12,
+                followHover: false,
+                hairline: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    for (var i = 0; i < boards.length; i++)
+                      HoverTarget(
+                        selected: i == selected,
+                        child: HoverBuilder(
+                          builder: (context, hover) => MouseRegion(
+                            cursor: SystemMouseCursors.click,
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () => onSelect(i),
+                              child: Padding(
+                                padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    AnimatedDefaultTextStyle(
+                                      duration: const Duration(milliseconds: 140),
+                                      // Light at rest, black under the mouse (user request, 2026-09-30).
+                                      style: uiText(
+                                        14,
+                                        weight: i == selected ? FontWeight.w600 : FontWeight.w500,
+                                        color: i == selected || hover ? ui.text : ui.text3,
+                                      ),
+                                      child: Text(boards[i].name),
+                                    ),
+                                    AnimatedDefaultTextStyle(
+                                      duration: const Duration(milliseconds: 140),
+                                      style: uiText(
+                                        11.5,
+                                        color: i == selected || hover
+                                            ? ui.text2
+                                            : ui.text3.withValues(alpha: ui.text3.a * .7),
+                                        height: 1.35,
+                                      ),
+                                      child: Text(boards[i].note, maxLines: 2),
+                                    ),
+                                  ],
                                 ),
-                                AnimatedDefaultTextStyle(
-                                  duration: const Duration(milliseconds: 140),
-                                  style: uiText(
-                                    11.5,
-                                    color: i == selected || hover
-                                        ? ui.text2
-                                        : ui.text3.withValues(alpha: ui.text3.a * .7),
-                                    height: 1.35,
-                                  ),
-                                  child: Text(boards[i].note, maxLines: 2),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                  ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
-          const Spacer(),
+          const SizedBox(height: 12),
           Text(
             'Glisser : déplacer (partout, ou Espace, ou le bouton du milieu) · Molette : défiler · Maj : de côté · Ctrl : zoom',
             style: uiText(11, color: ui.text3, height: 1.4),

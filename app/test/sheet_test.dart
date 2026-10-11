@@ -2,10 +2,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/boards/board_home.dart';
-import 'package:mikky/home/home_view.dart';
 import 'package:mikky/home/history_sheet.dart';
-import 'package:mikky/ui/sheet.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/home/home_layout.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
+import 'package:mikky/ui/overlays/sheet.dart';
 
 import 'load_fonts.dart';
 

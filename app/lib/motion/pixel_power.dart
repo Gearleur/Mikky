@@ -1,13 +1,13 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/pixel_fx.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'launch.dart';
+import 'sprite128.dart';
 
 /// How Mikky looks in pixels when he uses his powers (2026-10-06: « garder
 /// notre DA pixel… magicien »; the 16 and 32 bits were « trop pixelisés »,
@@ -99,10 +99,6 @@ class _PixelPowerPainter extends CustomPainter {
   /// at each frame, they made the board lag), shared by both themes.
   static final _images = <(PixelPowerStyle, PixelFxPalette, double, Size, bool), ui.Image>{};
 
-  /// 4 × 4 ordered dither.
-  static const _bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  static double _dither(int x, int y) => (_bayer[(y % 4) * 4 + x % 4] + .5) / 16;
-
   @override
   void paint(Canvas canvas, Size _) {
     final image = _images.putIfAbsent((style, palette, radius, size, arms), () {
@@ -128,90 +124,20 @@ class _PixelPowerPainter extends CustomPainter {
         Offset((x - center.dx - g.translateX) / g.scaleX, (y - center.dy - g.translateY) / g.scaleY);
 
     // Inside him, pixel by pixel; only around him.
-    final inside = Uint8List(cols * rows);
+    final mask = PixelMask(0, 0, cols, rows);
     final box = body.getBounds().shift(center).inflate(2);
     for (var y = math.max(0, box.top.floor()); y < math.min(rows, box.bottom.ceil()); y++) {
       for (var x = math.max(0, box.left.floor()); x < math.min(cols, box.right.ceil()); x++) {
-        if (body.contains(local(x + .5, y + .5))) inside[y * cols + x] = 1;
+        if (body.contains(local(x + .5, y + .5))) mask.set(x, y, PixelMask.inside);
       }
     }
-    bool isIn(int x, int y) => x >= 0 && y >= 0 && x < cols && y < rows && inside[y * cols + x] == 1;
-    final paint = Paint()..isAntiAlias = false;
-
-    // The halo, on a grid of 2: rings around him, a dither thinning them
-    // out (the pixels show there).
-    const big = 2;
-    final bc = (cols / big).ceil(), br = (rows / big).ceil();
-    final dist = Uint8List(bc * br);
-    final seen = Uint8List(bc * br);
-    var ring = <(int, int)>[];
-    for (var y = 0; y < br; y++) {
-      for (var x = 0; x < bc; x++) {
-        if (isIn(x * big, y * big) || isIn(x * big + 1, y * big + 1)) {
-          seen[y * bc + x] = 1;
-          ring.add((x, y));
-        }
-      }
-    }
-    const steps = 9;
-    for (var d = 1; d <= steps; d++) {
-      final next = <(int, int)>[];
-      for (final (x, y) in ring) {
-        for (final (dx, dy) in const [(1, 0), (-1, 0), (0, 1), (0, -1)]) {
-          final nx = x + dx, ny = y + dy;
-          if (nx < 0 || ny < 0 || nx >= bc || ny >= br) continue;
-          final i = ny * bc + nx;
-          if (seen[i] == 1) continue;
-          seen[i] = 1;
-          dist[i] = d;
-          next.add((nx, ny));
-        }
-      }
-      ring = next;
-    }
-    final glow = palette.levels[1];
-    for (var y = 0; y < br; y++) {
-      for (var x = 0; x < bc; x++) {
-        final d = dist[y * bc + x];
-        if (d == 0) continue;
-        final k = 1 - (d - 1) / steps;
-        if (_dither(x, y) > k * 1.15) continue;
-        paint.color = Color.lerp(glow, palette.levels.first, k * .5)!.withValues(alpha: .25 + .4 * k);
-        canvas.drawRect(Rect.fromLTWH(x * big * 1.0, y * big * 1.0, big * 1.0, big * 1.0), paint);
-      }
-    }
-
-    // His body: sixteen shades from his light (up, in the middle) to his
-    // edge, mixed by a fine dither; a light rim along his edge.
-    final heart = Color.lerp(palette.levels.first, const Color(0xFFFFFFFF), .45)!;
-    final ramp = [heart, ...palette.levels];
-    Color shade(double t) {
-      final f = t.clamp(0.0, 1.0) * (ramp.length - 1);
-      final i = math.min(f.floor(), ramp.length - 2);
-      return Color.lerp(ramp[i], ramp[i + 1], f - i)!;
-    }
-
+    // A halo of rings thinned by a dither, his body in sixteen shades from
+    // his light (up, in the middle) to his edge, a light rim along it.
     final light = center + Offset(g.translateX, g.translateY - r * .25);
-    const levels = 16;
-    for (var y = 0; y < rows; y++) {
-      for (var x = 0; x < cols; x++) {
-        if (!isIn(x, y)) continue;
-        final t = ((Offset(x + .5, y + .5) - light).distance / (r * 1.3)).clamp(0.0, 1.0);
-        final f = t * (levels - 1);
-        var step = f.floor();
-        if (f - step > _dither(x, y)) step++;
-        var color = shade(step / (levels - 1));
-        final edge = !isIn(x + 1, y) || !isIn(x - 1, y) || !isIn(x, y + 1) || !isIn(x, y - 1);
-        final near = !isIn(x + 2, y) || !isIn(x - 2, y) || !isIn(x, y + 2) || !isIn(x, y - 2);
-        if (edge) {
-          color = Color.lerp(color, heart, .6)!;
-        } else if (near && _dither(x, y) < .5) {
-          color = Color.lerp(color, heart, .3)!;
-        }
-        paint.color = color;
-        canvas.drawRect(Rect.fromLTWH(x * 1.0, y * 1.0, 1, 1), paint);
-      }
-    }
+    paintSprite128(canvas, mask, palette: palette, light: light, reach: r * 1.3, halo: 9);
+    final heart = sprite128Heart(palette);
+    final ramp = [heart, ...palette.levels];
+    final paint = Paint()..isAntiAlias = false;
 
     // His eyes, dark: white ones were lost in his light.
     paint.color = const Color(0xFF1A0508);

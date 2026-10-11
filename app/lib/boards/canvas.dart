@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../ui/motion.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 
 /// A board of the design boards: a name in the sidebar, and its sections.
 class BoardSpec {
@@ -88,7 +88,7 @@ class BoardSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: Text(note!, style: uiText(TextSize.label, color: ui.text2, height: 1.45)),
+                child: Text(note!, style: uiText(TextSize.label, color: ui.text2)),
               ),
             ),
           const SizedBox(height: 22),
@@ -300,11 +300,11 @@ class BoardRules extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '$title  ',
-                      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45),
+                      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text),
                     ),
                     TextSpan(
                       text: text,
-                      style: uiText(TextSize.small, color: ui.text2, height: 1.45),
+                      style: uiText(TextSize.small, color: ui.text2),
                     ),
                   ],
                 ),
@@ -487,4 +487,23 @@ class ZoomPill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// A logo or a mark with its size in px written under it (the boards' rows
+/// of sizes).
+class SizeSample extends StatelessWidget {
+  const SizeSample(this.px, {super.key, required this.child});
+
+  final double px;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      child,
+      const SizedBox(height: 4),
+      Text('${px.round()}', style: uiText(TextSize.badge, color: MikkyUi.of(context).text3, tabular: true)),
+    ],
+  );
 }

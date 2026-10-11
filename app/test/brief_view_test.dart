@@ -4,7 +4,7 @@ import 'package:mikky/island/content/brief_view.dart';
 import 'package:mikky/overlay/overlay_channel.dart';
 import 'package:mikky/settings.dart';
 import 'package:mikky/sound/sound_board.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'load_fonts.dart';

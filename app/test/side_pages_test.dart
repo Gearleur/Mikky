@@ -1,5 +1,3 @@
-import '../../packages/mikky_engine/test/support/readers/acp_reader.dart';
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -7,9 +5,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_views.dart';
-import 'package:mikky/ui/side.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/content/side.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
+
+import '../../packages/mikky_engine/test/support/readers/acp_reader.dart';
 
 /// The agent page's thread built from real sessions recorded in the A0
 /// probe: while the agent works, and once it is done. Update
