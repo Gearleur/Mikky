@@ -2,6 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mikky/home/home_app.dart';
+import 'package:mikky/home/home_layout.dart';
 import 'package:mikky/home/home_view.dart';
 import 'package:mikky/home/task_glance.dart';
 import 'package:mikky/ui/brand/app_tile.dart';

@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
 
 import '../home/history_sheet.dart';
+import '../home/home_app.dart';
+import '../home/home_frame.dart';
+import '../home/home_layout.dart';
 import '../home/home_view.dart';
 import '../home/new_task.dart';
 import '../ui/brand/brand_logo.dart';

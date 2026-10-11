@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../home/home_view.dart' show HomeLayout;
+import '../home/home_layout.dart';
 import '../home/tools_rail.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/brand/app_tile.dart';

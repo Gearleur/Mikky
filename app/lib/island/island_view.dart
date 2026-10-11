@@ -10,7 +10,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
-import '../home/home_view.dart';
+import '../home/home_layout.dart';
 import '../mikky/mikky_painter.dart';
 import '../motion/intro.dart';
 import '../overlay/overlay_channel.dart';

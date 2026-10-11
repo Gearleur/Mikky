@@ -6,7 +6,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
-import '../home/home_view.dart';
+import '../home/home_layout.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/content/backend_status.dart';
 import '../ui/content/thread_page.dart';
