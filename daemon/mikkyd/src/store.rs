@@ -189,8 +189,10 @@ mod tests {
 
     #[tokio::test]
     async fn legacy_import_is_once_and_committed_state_survives_reopen() {
-        let dir =
-            std::env::temp_dir().join(format!("mikky-store-{}", crate::endpoint::new_token()));
+        let dir = std::env::temp_dir().join(format!(
+            "mikky-store-{}",
+            crate::system::endpoint::new_token()
+        ));
         std::fs::create_dir_all(&dir).unwrap();
         let legacy = dir.join("agents.json");
         let original = r#"{"agents":[{"id":"old","sessionId":"session"}],"marks":{"session":{"pinned":true}}}"#;

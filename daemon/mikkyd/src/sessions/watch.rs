@@ -14,7 +14,7 @@ use tokio::sync::broadcast;
 
 #[derive(Default)]
 struct Session {
-    reader: crate::session_reader::Reader,
+    reader: crate::sessions::reader::Reader,
     offset: u64,
     partial: Vec<u8>,
     lines: Vec<Value>,
@@ -290,8 +290,10 @@ mod tests {
     use super::*;
     #[test]
     fn scanning_a_large_file_does_not_retain_its_raw_buffer() {
-        let home =
-            std::env::temp_dir().join(format!("mikky-watch-{}", crate::endpoint::new_token()));
+        let home = std::env::temp_dir().join(format!(
+            "mikky-watch-{}",
+            crate::system::endpoint::new_token()
+        ));
         let roots = [home.join("claude"), home.join("codex")];
         let folder = roots[0].join("project");
         std::fs::create_dir_all(&folder).unwrap();

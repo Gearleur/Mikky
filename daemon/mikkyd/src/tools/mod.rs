@@ -1,5 +1,7 @@
 //! Installation and tool discovery belong to the machine running the agent.
-use crate::target::{self, Host};
+
+pub mod login;
+use crate::system::target::{self, Host};
 use mikky_acp::RpcError;
 use serde_json::{Value, json};
 use std::{path::PathBuf, process::Stdio};

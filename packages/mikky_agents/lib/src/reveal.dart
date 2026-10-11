@@ -5,7 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 import 'paths.dart';
 
 /// Where a session started outside Mikky runs, as its hooks told `mikkyd`
-/// (`hooks.origin`, `daemon/mikkyd/src/hooks.rs`): the window found among
+/// (`hooks.origin`, `daemon/mikkyd/src/hooks/mod.rs`): the window found among
 /// the hook's parent processes (a terminal, VS Code) and the terminal's own
 /// words.
 class SessionOrigin {

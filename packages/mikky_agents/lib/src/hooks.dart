@@ -10,7 +10,7 @@ enum HookKind {
 }
 
 /// A request from a Claude Code or Codex session started outside Mikky (a
-/// terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks.rs`):
+/// terminal, VS Code), through Mikky's hooks (`daemon/mikkyd/src/hooks/mod.rs`):
 /// a permission, or one of Claude's questions. It waits on `mikkyd` until
 /// the user answers (105 s for a permission, 120 s for a question); then
 /// Claude asks in its own terminal.

@@ -1,5 +1,6 @@
 //! Ephemeral login output goes to its requesting screen only, never to disk.
-use crate::{job::Job, tools};
+use crate::system::job::Job;
+use crate::tools;
 use mikky_acp::RpcError;
 use serde_json::{Value, json};
 use std::{
@@ -36,7 +37,11 @@ impl Logins {
             vec!["login".into(), "--device-auth".into()]
         };
         let mut cmd = if cfg!(unix) {
-            let line = format!("{} {}", crate::target::shell_quote(&exe), args.join(" "));
+            let line = format!(
+                "{} {}",
+                crate::system::target::shell_quote(&exe),
+                args.join(" ")
+            );
             tools::command(
                 "script",
                 &[

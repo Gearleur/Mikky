@@ -220,7 +220,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Les agents',
           'Claude Code et Codex, via leurs adaptateurs ACP, sous Windows ou WSL. Ils utilisent leurs outils et les connexions de tes abonnements.',
-          'daemon/mikkyd/src/tools.rs',
+          'daemon/mikkyd/src/tools/mod.rs',
           width: 280,
         ),
       ],
@@ -241,7 +241,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Les sessions extérieures',
           'Rust surveille les fichiers Windows et Linux avec des événements natifs. Il lit les octets ajoutés et normalise les transcriptions Claude et Codex. Flutter reçoit des pages de 256 événements.',
-          'mikkyd · watch / session_reader',
+          'mikkyd · sessions/watch / sessions/reader',
         ),
         _Note(
           'La vie après l’app',
@@ -262,7 +262,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Lire seulement la suite',
           'Le watcher Rust conserve un offset par fichier. La reconnexion ACP reprend après le dernier numéro reçu, par pages, sans dupliquer le fil. Les rafales de changements de fichier sont regroupées côté client.',
-          'watch.rs · subscribe_page · DaemonSessionWatcher',
+          'sessions/watch.rs · subscribe_page · DaemonSessionWatcher',
         ),
         _Note(
           'Réveiller au bon moment',
@@ -300,7 +300,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         _Note(
           'Une porte locale',
           'Le WebSocket écoute sur 127.0.0.1. Son jeton est gardé dans le coffre Windows. Les connexions portant un en-tête Origin sont refusées.',
-          'daemon/mikkyd/src/endpoint.rs\ndaemon/mikkyd/src/api.rs',
+          'daemon/mikkyd/src/system/endpoint.rs\ndaemon/mikkyd/src/api/mod.rs',
         ),
         _Note(
           'Ce qui reste sur le PC',

@@ -12,7 +12,7 @@
     scripts\Check.ps1 -Fix             # format the code instead of only checking it
 #>
 param(
-    [ValidateSet('all', 'rust', 'engine', 'agents', 'app')]
+    # Sections: all, rust, engine, agents, app (several: rust,agents).
     [string[]]$Only = @('all'),
     [string]$FlutterRoot = '',
     [switch]$Fix
@@ -89,7 +89,12 @@ function Test-DartPackage([string]$dir, [string]$tool) {
     Invoke-Step "${name}: test" $dir $tool @('test')
 }
 
-$sections = if ($Only -contains 'all') { @('rust', 'engine', 'agents', 'app') } else { $Only }
+$all = @('rust', 'engine', 'agents', 'app')
+# `-File` passes « rust,agents » as one string: split it.
+$asked = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
+$unknown = @($asked | Where-Object { $_ -ne 'all' -and $all -notcontains $_ })
+if ($unknown.Count -gt 0) { throw "Unknown section: $($unknown -join ', ') (all, $($all -join ', '))" }
+$sections = if ($asked -contains 'all') { $all } else { $asked }
 $bin = $null
 if ($sections | Where-Object { $_ -ne 'rust' }) { $bin = Find-Flutter }
 $ext = if ($onWindows) { '.bat' } else { '' }
