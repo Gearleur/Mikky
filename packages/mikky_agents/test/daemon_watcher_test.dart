@@ -99,7 +99,9 @@ void main() {
           );
         }
         await file.writeAsString('$text\n');
-        for (var i = 0; i < 200; i++) {
+        // Up to 15 s: the engine sees the file by watching its folder.
+        final deadline = DateTime.now().add(const Duration(seconds: 15));
+        while (DateTime.now().isBefore(deadline)) {
           if (watcher.sessions.values.any(
             (s) => s.log.version == expected.version && s.log.sessionId == expected.sessionId,
           )) {

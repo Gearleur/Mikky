@@ -3,6 +3,7 @@
 library;
 
 export 'src/acp/agent_run.dart';
+export 'src/agent_entry.dart';
 export 'src/auth.dart';
 export 'src/daemon/daemon_client.dart';
 export 'src/daemon/daemon_run.dart';
