@@ -333,7 +333,8 @@ mod tests {
             {"question": "Quels tests ?", "header": "Tests", "multiSelect": true,
              "options": [{"label": "Unitaires", "description": ""}, {"label": "Bout en bout", "description": ""}]},
         ], "metadata": {"source": "x"}});
-        let answers = json!({"Quelle base ?": "SQLite", "Quels tests ?": ["Unitaires", "Bout en bout"]});
+        let answers =
+            json!({"Quelle base ?": "SQLite", "Quels tests ?": ["Unitaires", "Bout en bout"]});
         let out: Value = serde_json::from_str(&answers_json(&input, &answers).unwrap()).unwrap();
         let o = &out["hookSpecificOutput"];
         assert_eq!(o["hookEventName"], "PreToolUse");

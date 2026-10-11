@@ -12,20 +12,11 @@
 #![cfg_attr(all(windows, not(debug_assertions)), windows_subsystem = "windows")]
 
 mod api;
-mod autostart;
-mod claude_settings;
-mod endpoint;
 mod hooks;
-mod job;
-#[cfg(unix)]
-mod linux;
-mod login;
-mod session_reader;
+mod sessions;
 mod store;
-mod target;
+mod system;
 mod tools;
-mod watch;
-mod wsl;
 
 use std::sync::Arc;
 
@@ -34,48 +25,58 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
-    if std::env::args().any(|a| a == "--latest") {
-        if let Some(newest) = std::env::current_exe().ok().and_then(|exe| autostart::latest_exe(&exe)) {
-            // Waits for it, so the logon task keeps it as its own.
-            let mut command = std::process::Command::new(newest);
-            #[cfg(windows)]
-            {
-                use std::os::windows::process::CommandExt;
-                command.creation_flags(0x0800_0000);
-            }
-            if let Ok(status) = command.status() {
-                std::process::exit(status.code().unwrap_or(0));
-            }
+    if std::env::args().any(|a| a == "--latest")
+        && let Some(newest) = std::env::current_exe()
+            .ok()
+            .and_then(|exe| system::autostart::latest_exe(&exe))
+    {
+        // Waits for it, so the logon task keeps it as its own.
+        let mut command = std::process::Command::new(newest);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000);
+        }
+        if let Ok(status) = command.status() {
+            std::process::exit(status.code().unwrap_or(0));
         }
     }
     if let Some(mode) = std::env::args().skip_while(|a| a != "--autostart").nth(1) {
         let enabled = match mode.as_str() {
-            "enable" => Some(true), "disable" => Some(false), "status" => None,
-            _ => { eprintln!("Expected enable, disable or status"); std::process::exit(2); }
+            "enable" => Some(true),
+            "disable" => Some(false),
+            "status" => None,
+            _ => {
+                eprintln!("Expected enable, disable or status");
+                std::process::exit(2);
+            }
         };
-        match autostart::configure(enabled).await {
+        match system::autostart::configure(enabled).await {
             Ok(value) => println!("{value}"),
-            Err(e) => { eprintln!("{}",e.message); std::process::exit(1); }
+            Err(e) => {
+                eprintln!("{}", e.message);
+                std::process::exit(1);
+            }
         }
         return;
     }
     #[cfg(unix)]
     if std::env::args().any(|a| a == "--bridge") {
-        if let Err(e) = linux::bridge().await {
+        if let Err(e) = system::linux::bridge().await {
             eprintln!("{e}");
             std::process::exit(1);
         }
         return;
     }
     let stdout_endpoint = std::env::args().any(|a| a == "--stdout-endpoint");
-    if !stdout_endpoint && !endpoint::single_instance() {
+    if !stdout_endpoint && !system::endpoint::single_instance() {
         return;
     }
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .expect("cannot listen on 127.0.0.1");
     let port = listener.local_addr().expect("no local address").port();
-    let token = endpoint::new_token();
+    let token = system::endpoint::new_token();
     let data = if cfg!(windows) {
         std::env::var_os("APPDATA")
             .map(std::path::PathBuf::from)
@@ -105,8 +106,8 @@ async fn main() {
             }
         });
     let sessions = match watch_home {
-        Some(home) => watch::Sessions::start(home).expect("cannot watch sessions"),
-        None => watch::Sessions::empty(),
+        Some(home) => sessions::watch::Sessions::start(home).expect("cannot watch sessions"),
+        None => sessions::watch::Sessions::empty(),
     };
     let daemon = Arc::new(api::Daemon::new(
         store,
@@ -115,7 +116,7 @@ async fn main() {
     ));
     #[cfg(unix)]
     if !stdout_endpoint {
-        if let Err(e) = linux::serve(daemon).await {
+        if let Err(e) = system::linux::serve(daemon).await {
             eprintln!("{e}");
             std::process::exit(1);
         }
@@ -124,11 +125,11 @@ async fn main() {
     tokio::spawn(api::serve(listener, token.clone(), daemon.clone()));
 
     if stdout_endpoint {
-        println!("{}", endpoint::describe(port, &token));
+        println!("{}", system::endpoint::describe(port, &token));
         let mut rest = Vec::new();
         let _ = tokio::io::stdin().read_to_end(&mut rest).await;
     } else {
-        if let Err(e) = endpoint::publish(port, &token) {
+        if let Err(e) = system::endpoint::publish(port, &token) {
             eprintln!("mikkyd: cannot publish the endpoint: {e}");
             return;
         }

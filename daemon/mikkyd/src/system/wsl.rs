@@ -58,7 +58,7 @@ impl Proxy {
         let path = if bundled.exists() {
             let path = bundled.to_string_lossy().replace('\\', "/");
             if path.as_bytes().get(1) == Some(&b':') {
-                format!("/mnt/{}/{}", &path[..1].to_lowercase(), &path[3..])
+                format!("/mnt/{}/{}", path[..1].to_lowercase(), &path[3..])
             } else {
                 path
             }
@@ -125,18 +125,18 @@ impl Proxy {
                             .unwrap()
                             .retain(|sink| sink.send(text.clone()).is_ok());
                     }
-                } else if let Some(id) = message["id"].as_u64() {
-                    if let Some(reply) = reading.pending.lock().unwrap().remove(&id) {
-                        let result = if message["error"].is_object() {
-                            Err(RpcError::new(
-                                message["error"]["code"].as_i64().unwrap_or(-32000),
-                                message["error"]["message"].as_str().unwrap_or("WSL error"),
-                            ))
-                        } else {
-                            Ok(message["result"].take())
-                        };
-                        let _ = reply.send(result);
-                    }
+                } else if let Some(id) = message["id"].as_u64()
+                    && let Some(reply) = reading.pending.lock().unwrap().remove(&id)
+                {
+                    let result = if message["error"].is_object() {
+                        Err(RpcError::new(
+                            message["error"]["code"].as_i64().unwrap_or(-32000),
+                            message["error"]["message"].as_str().unwrap_or("WSL error"),
+                        ))
+                    } else {
+                        Ok(message["result"].take())
+                    };
+                    let _ = reply.send(result);
                 }
             }
             reading.closed.store(true, Ordering::SeqCst);

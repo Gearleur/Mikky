@@ -85,7 +85,9 @@ impl Reader {
             self.started = true;
             self.cwd |= line["cwd"].is_string();
             self.app |= app.is_some();
-            out.push(json!({"type":"session", "id":line["sessionId"], "cwd":line["cwd"], "app":app}));
+            out.push(
+                json!({"type":"session", "id":line["sessionId"], "cwd":line["cwd"], "app":app}),
+            );
         }
         match string(&line["type"]) {
             // The summary Claude writes after compacting is not a message
@@ -406,26 +408,34 @@ fn claude_tool(b: &Value) -> Value {
 mod tests {
     use super::*;
 
+    /// A Codex turn that starts, then [end]: what the reader says of [end].
+    fn codex_turn(end: Value) -> Vec<Value> {
+        let mut r = Reader::default();
+        r.read(
+            "codex",
+            &json!({"type":"event_msg","payload":{"type":"task_started"}}),
+        );
+        r.read("codex", &end)
+    }
+
     #[test]
     fn codex_limit_in_task_complete_is_rate_limited() {
-        let mut r = Reader::default();
-        r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_started"}}));
-        let out = r.read(
-            "codex",
-            &json!({"type":"event_msg","payload":{"type":"task_complete","error":{
+        let out = codex_turn(
+            json!({"type":"event_msg","payload":{"type":"task_complete","error":{
                 "message":"You've hit your usage limit. Try again at 2:10 PM.",
                 "codex_error_info":"usage_limit_exceeded"}}}),
         );
         assert_eq!(out[0]["type"], "end");
         assert_eq!(out[0]["reason"], "rateLimited");
-        assert_eq!(out[0]["message"], "You've hit your usage limit. Try again at 2:10 PM.");
+        assert_eq!(
+            out[0]["message"],
+            "You've hit your usage limit. Try again at 2:10 PM."
+        );
     }
 
     #[test]
     fn codex_task_complete_without_error_ends_the_turn() {
-        let mut r = Reader::default();
-        r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_started"}}));
-        let out = r.read("codex", &json!({"type":"event_msg","payload":{"type":"task_complete"}}));
+        let out = codex_turn(json!({"type":"event_msg","payload":{"type":"task_complete"}}));
         assert_eq!(out[0]["reason"], "endTurn");
     }
 
@@ -433,7 +443,10 @@ mod tests {
     fn claude_compact_summary_does_not_cut_the_turn() {
         let mut r = Reader::default();
         let user = |text: &str| json!({"type":"user","sessionId":"s","message":{"content":text}});
-        assert_eq!(r.read("claude", &user("Corrige le bug"))[1]["type"], "start");
+        assert_eq!(
+            r.read("claude", &user("Corrige le bug"))[1]["type"],
+            "start"
+        );
         let mut summary = user("This session is being continued from a previous conversation…");
         summary["isCompactSummary"] = json!(true);
         assert!(r.read("claude", &summary).is_empty());

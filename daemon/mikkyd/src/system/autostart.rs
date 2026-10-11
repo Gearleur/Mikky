@@ -75,7 +75,10 @@ mod tests {
         // No manifest: itself.
         assert_eq!(latest_exe(&old), None);
         std::fs::write(dist.join("current.txt"), "Mikky-2\r\n").unwrap();
-        assert_eq!(latest_exe(&old), Some(dist.join("Mikky-2").join("mikkyd.exe")));
+        assert_eq!(
+            latest_exe(&old),
+            Some(dist.join("Mikky-2").join("mikkyd.exe"))
+        );
         // Already the newest: itself.
         assert_eq!(latest_exe(&dist.join("Mikky-2").join("mikkyd.exe")), None);
         // A manifest that leaves the folder is not followed.

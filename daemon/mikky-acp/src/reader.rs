@@ -318,18 +318,25 @@ mod tests {
             "message":"You've hit your usage limit. Try again at 12:51 AM.",
             "codexErrorInfo":"usageLimitExceeded"}}));
         assert_eq!(out[0]["reason"], "rateLimited");
-        assert_eq!(out[0]["message"], "You've hit your usage limit. Try again at 12:51 AM.");
+        assert_eq!(
+            out[0]["message"],
+            "You've hit your usage limit. Try again at 12:51 AM."
+        );
     }
 
     #[test]
     fn limit_words_in_the_message_are_a_limit() {
-        let out = failed_prompt(json!({"code":-32603,"message":"Claude AI usage limit reached|1759248000"}));
+        let out = failed_prompt(
+            json!({"code":-32603,"message":"Claude AI usage limit reached|1759248000"}),
+        );
         assert_eq!(out[0]["reason"], "rateLimited");
     }
 
     #[test]
     fn another_failure_stays_an_error() {
-        let out = failed_prompt(json!({"code":-32603,"message":"Internal error","data":{"details":"boom"}}));
+        let out = failed_prompt(
+            json!({"code":-32603,"message":"Internal error","data":{"details":"boom"}}),
+        );
         assert_eq!(out[0]["reason"], "error");
         assert_eq!(out[0]["message"], "Internal error");
     }

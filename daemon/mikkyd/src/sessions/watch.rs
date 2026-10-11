@@ -14,7 +14,7 @@ use tokio::sync::broadcast;
 
 #[derive(Default)]
 struct Session {
-    reader: crate::session_reader::Reader,
+    reader: crate::sessions::reader::Reader,
     offset: u64,
     partial: Vec<u8>,
     lines: Vec<Value>,
@@ -257,8 +257,7 @@ fn read_new(
     s.provider = provider.into();
     let mut bytes = [0; 64 * 1024];
     let mut changed = false;
-    loop {
-        let Ok(n) = file.read(&mut bytes) else { break };
+    while let Ok(n) = file.read(&mut bytes) {
         if n == 0 {
             break;
         }
@@ -266,10 +265,10 @@ fn read_new(
         s.partial.extend_from_slice(&bytes[..n]);
         if let Some(end) = s.partial.iter().rposition(|&c| c == b'\n') {
             for line in s.partial[..=end].split(|&c| c == b'\n') {
-                if let Ok(value) = serde_json::from_slice::<Value>(line) {
-                    if value.is_object() {
-                        s.lines.extend(s.reader.read(provider, &value));
-                    }
+                if let Ok(value) = serde_json::from_slice::<Value>(line)
+                    && value.is_object()
+                {
+                    s.lines.extend(s.reader.read(provider, &value));
                 }
             }
             s.partial.drain(..=end);
@@ -291,8 +290,10 @@ mod tests {
     use super::*;
     #[test]
     fn scanning_a_large_file_does_not_retain_its_raw_buffer() {
-        let home =
-            std::env::temp_dir().join(format!("mikky-watch-{}", crate::endpoint::new_token()));
+        let home = std::env::temp_dir().join(format!(
+            "mikky-watch-{}",
+            crate::system::endpoint::new_token()
+        ));
         let roots = [home.join("claude"), home.join("codex")];
         let folder = roots[0].join("project");
         std::fs::create_dir_all(&folder).unwrap();
