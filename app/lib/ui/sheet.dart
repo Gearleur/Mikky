@@ -7,6 +7,7 @@ import 'package:flutter/widgets.dart';
 
 import 'buttons.dart';
 import 'motion.dart';
+import 'overlay_area.dart';
 import 'surface.dart';
 import 'tokens.dart';
 
@@ -19,12 +20,10 @@ import 'tokens.dart';
 /// home has one), so the sheet stays inside it and its rounded corners.
 /// Done when it is closed.
 Future<void> showSheet(BuildContext within, {required String title, String? caption, required WidgetBuilder builder}) {
-  final overlay = Overlay.maybeOf(within);
-  final area = within.findRenderObject() as RenderBox?;
-  final overlayBox = overlay?.context.findRenderObject() as RenderBox?;
-  if (overlay == null || area == null || overlayBox == null || !area.hasSize) return Future.value();
+  final found = overlayArea(within);
+  if (found == null) return Future.value();
+  final (:overlay, :bounds, overlayBox: _, area: _) = found;
   final ui = MikkyUi.of(within);
-  final bounds = MatrixUtils.transformRect(area.getTransformTo(overlayBox), Offset.zero & area.size);
   final done = Completer<void>();
   late OverlayEntry entry;
   entry = OverlayEntry(

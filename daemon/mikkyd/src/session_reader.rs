@@ -408,16 +408,20 @@ fn claude_tool(b: &Value) -> Value {
 mod tests {
     use super::*;
 
-    #[test]
-    fn codex_limit_in_task_complete_is_rate_limited() {
+    /// A Codex turn that starts, then [end]: what the reader says of [end].
+    fn codex_turn(end: Value) -> Vec<Value> {
         let mut r = Reader::default();
         r.read(
             "codex",
             &json!({"type":"event_msg","payload":{"type":"task_started"}}),
         );
-        let out = r.read(
-            "codex",
-            &json!({"type":"event_msg","payload":{"type":"task_complete","error":{
+        r.read("codex", &end)
+    }
+
+    #[test]
+    fn codex_limit_in_task_complete_is_rate_limited() {
+        let out = codex_turn(
+            json!({"type":"event_msg","payload":{"type":"task_complete","error":{
                 "message":"You've hit your usage limit. Try again at 2:10 PM.",
                 "codex_error_info":"usage_limit_exceeded"}}}),
         );
@@ -431,15 +435,7 @@ mod tests {
 
     #[test]
     fn codex_task_complete_without_error_ends_the_turn() {
-        let mut r = Reader::default();
-        r.read(
-            "codex",
-            &json!({"type":"event_msg","payload":{"type":"task_started"}}),
-        );
-        let out = r.read(
-            "codex",
-            &json!({"type":"event_msg","payload":{"type":"task_complete"}}),
-        );
+        let out = codex_turn(json!({"type":"event_msg","payload":{"type":"task_complete"}}));
         assert_eq!(out[0]["reason"], "endTurn");
     }
 

@@ -313,12 +313,7 @@ class AgentStore {
       throw StateError('Le stockage attend la connexion au moteur.');
     }
     if (client != null) {
-      final next = <String, dynamic>{
-        'agents': {for (final a in agents) a.id: a.toJson()},
-        'marks': {for (final e in marks.entries) e.key: e.value.toJson()},
-        'choices': {for (final e in choices.entries) e.key: e.value.toJson()},
-        'recentFolders': List<String>.of(recentFolders),
-      };
+      final next = _snapshot();
       final patch = <String, dynamic>{};
       for (final field in ['agents', 'marks', 'choices']) {
         final before = (_baseline[field] as Map?) ?? const {};

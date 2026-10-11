@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import '../overlay/overlay_channel.dart';
 import 'icons.dart';
 import 'motion.dart';
+import 'overlay_area.dart';
 import 'pixel_fx.dart';
 import 'sliding_hover.dart';
 import 'tokens.dart';
@@ -33,12 +34,10 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
     panel._continueWith(entries, done);
     return done.future;
   }
-  final overlay = Overlay.maybeOf(within);
-  final area = within.findRenderObject() as RenderBox?;
-  final overlayBox = overlay?.context.findRenderObject() as RenderBox?;
-  if (overlay == null || area == null || overlayBox == null || !area.hasSize) return Future.value();
+  final found = overlayArea(within);
+  if (found == null) return Future.value();
+  final (:overlay, :overlayBox, :area, :bounds) = found;
   final ui = MikkyUi.of(within);
-  final bounds = MatrixUtils.transformRect(area.getTransformTo(overlayBox), Offset.zero & area.size);
   final press = FloatingMenu.lastPress ?? area.localToGlobal(area.size.topRight(const Offset(-30, 30)));
   // Opened by a menu button (its star): the menu grows out of exactly
   // that button and stands in for its star until it is back.

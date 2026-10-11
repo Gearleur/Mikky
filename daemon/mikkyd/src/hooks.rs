@@ -435,6 +435,20 @@ mod tests {
     use super::*;
     use std::sync::Arc;
 
+    /// Hooks with a screen there, and what they say when their list changes.
+    fn with_screen() -> (Arc<Hooks>, broadcast::Receiver<()>) {
+        let hooks = Arc::new(Hooks::default());
+        hooks.screen_joined();
+        let changes = hooks.changes.subscribe();
+        (hooks, changes)
+    }
+
+    /// [event] sent to [hooks]: the call ends with what the hook prints.
+    fn waiting(hooks: &Arc<Hooks>, event: Value) -> tokio::task::JoinHandle<Value> {
+        let h = hooks.clone();
+        tokio::spawn(async move { h.event(&event, |_| false, std::future::pending()).await })
+    }
+
     fn ask(session: &str, command: &str) -> Value {
         json!({
             "hook_event_name": "PermissionRequest",
@@ -517,14 +531,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_screen_answers() {
-        let hooks = Arc::new(Hooks::default());
-        hooks.screen_joined();
-        let mut changes = hooks.changes.subscribe();
-        let h = hooks.clone();
-        let call = tokio::spawn(async move {
-            h.event(&ask("s", "cargo   test"), |_| false, std::future::pending())
-                .await
-        });
+        let (hooks, mut changes) = with_screen();
+        let call = waiting(&hooks, ask("s", "cargo   test"));
         changes.recv().await.unwrap();
         let list = hooks.list();
         assert_eq!(list[0]["kind"], "permission");
@@ -540,14 +548,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_screen_answers_a_question() {
-        let hooks = Arc::new(Hooks::default());
-        hooks.screen_joined();
-        let mut changes = hooks.changes.subscribe();
-        let h = hooks.clone();
-        let call = tokio::spawn(async move {
-            h.event(&question("s"), |_| false, std::future::pending())
-                .await
-        });
+        let (hooks, mut changes) = with_screen();
+        let call = waiting(&hooks, question("s"));
         changes.recv().await.unwrap();
         let list = hooks.list();
         assert_eq!(list[0]["kind"], "question");
@@ -579,14 +581,8 @@ mod tests {
 
     #[tokio::test]
     async fn a_question_left_to_the_terminal() {
-        let hooks = Arc::new(Hooks::default());
-        hooks.screen_joined();
-        let mut changes = hooks.changes.subscribe();
-        let h = hooks.clone();
-        let call = tokio::spawn(async move {
-            h.event(&question("s"), |_| false, std::future::pending())
-                .await
-        });
+        let (hooks, mut changes) = with_screen();
+        let call = waiting(&hooks, question("s"));
         changes.recv().await.unwrap();
         let id = hooks.list()[0]["id"].as_u64().unwrap();
         // « Répondre dans le terminal », or an answer meant for a permission.
@@ -596,14 +592,8 @@ mod tests {
 
     #[tokio::test]
     async fn answered_in_the_terminal_or_gone() {
-        let hooks = Arc::new(Hooks::default());
-        hooks.screen_joined();
-        let mut changes = hooks.changes.subscribe();
-        let h = hooks.clone();
-        let call = tokio::spawn(async move {
-            h.event(&ask("s", "ls"), |_| false, std::future::pending())
-                .await
-        });
+        let (hooks, mut changes) = with_screen();
+        let call = waiting(&hooks, ask("s", "ls"));
         changes.recv().await.unwrap();
         // The session goes on: answered in its terminal.
         let next = json!({"hook_event_name": "PostToolUse", "session_id": "s"});
@@ -612,11 +602,7 @@ mod tests {
         assert_eq!(hooks.list(), json!([]));
 
         // The same for a question.
-        let h = hooks.clone();
-        let call = tokio::spawn(async move {
-            h.event(&question("q"), |_| false, std::future::pending())
-                .await
-        });
+        let call = waiting(&hooks, question("q"));
         while hooks.list() == json!([]) {
             changes.recv().await.unwrap();
         }
