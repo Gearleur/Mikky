@@ -1,8 +1,7 @@
-import '../support/readers/acp_reader.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
+import '../support/readers/acp_reader.dart';
 import 'fixtures.dart';
 
 /// Usage and limits, from the sessions recorded in the A0 probe.

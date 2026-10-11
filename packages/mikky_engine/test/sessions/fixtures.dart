@@ -1,11 +1,11 @@
-import '../support/readers/codex_rollout_reader.dart';
-import '../support/readers/claude_transcript_reader.dart';
-import '../support/readers/acp_reader.dart';
-
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:mikky_engine/mikky_engine.dart';
+
+import '../support/readers/acp_reader.dart';
+import '../support/readers/claude_transcript_reader.dart';
+import '../support/readers/codex_rollout_reader.dart';
 
 /// Lines of a recorded fixture (A0 probe, 2026-09-29), JSON-decoded.
 List<Map<String, dynamic>> fixture(String name) =>

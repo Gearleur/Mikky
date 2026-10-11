@@ -25,7 +25,7 @@ class AcpReader {
   /// One JSON-RPC message. [outgoing]: sent by Mikky, else by the agent.
   List<SessionEvent> read(Map<String, dynamic> msg, {required bool outgoing, DateTime? at}) {
     final method = msg['method'] as String?;
-    final id = msg['id'];
+    final id = msg['id'] as Object?;
     final params = (msg['params'] as Map?)?.cast<String, dynamic>() ?? const {};
     if (outgoing) {
       if (method != null) return _request(id, method, params, at);

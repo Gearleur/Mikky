@@ -5,163 +5,8 @@ import '../anim/easing.dart';
 import '../anim/keyframes.dart';
 import '../anim/smoothing.dart';
 import '../anim/spring.dart';
+import 'mikky_types.dart';
 import 'reactions.dart';
-
-/// Animated properties of Mikky's pose.
-enum MikkyProp {
-  /// Head rotation, left/right (radians on the eye sphere).
-  yaw,
-
-  /// Head rotation, up/down.
-  pitch,
-
-  /// Eyelids: 1 open, ~0 closed.
-  open,
-
-  /// Body scale (squash and stretch, breathing).
-  scaleX,
-  scaleY,
-
-  /// Body offset, in units of Mikky's radius (hops, shakes).
-  offsetX,
-  offsetY,
-
-  /// Eye scale (surprise, approval, hover).
-  eyeScale,
-
-  /// Quick ear flicks, left and right: > 0 raised, < 0 lowered.
-  earLeft,
-  earRight,
-
-  /// Resting ear position of the current expression, same scale.
-  earBaseLeft,
-  earBaseRight,
-
-  /// Head tilt (radians).
-  tilt,
-
-  /// Rolls: whole turns, back to 0 when done.
-  spin,
-
-  /// His arms (a trial, 2026-10-06: « des bras plutôt » than paws; the
-  /// melted stumps kept): 0 melted into his body, out of sight; 1 out of
-  /// his sides.
-  arms,
-
-  /// How far each arm is raised, turned from its shoulder (radians, up
-  /// > 0; it stays where it grows out of him, never slides up).
-  armLeftLift,
-  armRightLift,
-
-  /// How much longer each arm gets (0: as at rest; 0.2: a fifth longer,
-  /// hardly thicker), when raised or reaching.
-  armLeftGrow,
-  armRightGrow,
-}
-
-/// Shape of one eye. No pupils, ever. [round]: big round eyes (surprise).
-enum EyeShape { oval, round, happy, flat, closed, tired, spiral, heart, star, slit }
-
-enum Ear { left, right }
-
-/// What Mikky expresses, from the agent he stands for (spec §5.2 table).
-enum MikkyState {
-  idle,
-  working,
-  thinking,
-  searching,
-  approval,
-  question,
-  error,
-  finished,
-  rateLimited,
-  sleeping,
-  dizzy,
-}
-
-/// Short expressions on top of the state.
-enum MikkyEmote { love, surprised, proud, wink, yawn, content, annoyed }
-
-/// What Mikky's body turns into. He is the sign himself, still black and
-/// furry, never a perfect shape (user request, 2026-09-29).
-enum MikkyForm {
-  /// His usual cat silhouette.
-  cat,
-
-  /// Himself, a little squeezed into a heart (love).
-  heart,
-
-  /// Himself without ears, his fur standing out a little more all around:
-  /// a ball of fur. Not used for now (thinking is himself again).
-  furball,
-
-  /// The bar of a "!", without eyes; a little fur ball below, well apart,
-  /// is the dot (approval).
-  bang,
-}
-
-/// Small sign next to Mikky's head.
-enum BadgeKind {
-  /// "•••", animated.
-  dots,
-
-  /// "!"
-  bang,
-
-  /// "?"
-  question,
-
-  /// Plain colored dot.
-  dot,
-}
-
-class MikkyBadge {
-  const MikkyBadge(this.kind, this.color);
-
-  final BadgeKind kind;
-
-  /// Status whose theme color the badge takes.
-  final AgentStatus color;
-}
-
-enum ParticleKind { sparkle, heart, star, sweat, sleep }
-
-/// One particle at one instant, in units of R from Mikky's center (y down).
-class MikkyParticle {
-  const MikkyParticle(this.kind, this.x, this.y, this.size, this.alpha, this.rotation);
-
-  final ParticleKind kind;
-  final double x, y, size, alpha, rotation;
-}
-
-/// Mikky's pose, one value per [MikkyProp].
-class MikkyPose {
-  final List<double> _values = [for (final prop in MikkyProp.values) _rest(prop)];
-
-  static double _rest(MikkyProp prop) => switch (prop) {
-    MikkyProp.open || MikkyProp.scaleX || MikkyProp.scaleY || MikkyProp.eyeScale => 1,
-    _ => 0,
-  };
-
-  double operator [](MikkyProp prop) => _values[prop.index];
-  void operator []=(MikkyProp prop, double value) => _values[prop.index] = value;
-
-  double get yaw => this[MikkyProp.yaw];
-  double get pitch => this[MikkyProp.pitch];
-  double get open => this[MikkyProp.open];
-  double get scaleX => this[MikkyProp.scaleX];
-  double get scaleY => this[MikkyProp.scaleY];
-  double get offsetX => this[MikkyProp.offsetX];
-  double get offsetY => this[MikkyProp.offsetY];
-  double get eyeScale => this[MikkyProp.eyeScale];
-
-  /// Ear heights actually drawn: resting position plus flicks.
-  double get earLeft => this[MikkyProp.earLeft] + this[MikkyProp.earBaseLeft];
-  double get earRight => this[MikkyProp.earRight] + this[MikkyProp.earBaseRight];
-
-  /// Body rotation actually drawn: tilt plus rolls.
-  double get tilt => this[MikkyProp.tilt] + this[MikkyProp.spin];
-}
 
 /// How an expression sets eyes and ears.
 class _Look {
@@ -300,26 +145,22 @@ class Mikky {
 
   void _after(double seconds, void Function() action) => _scheduled.add((_time + seconds, action));
 
-  void blink() => animate(MikkyProp.open, const [Keyframe(.06, 70, Easings.inOut), Keyframe(1, 130, Easings.out)]);
+  void blink() => animate(MikkyProp.open, const [Keyframe(.06, 70), Keyframe(1, 130, Easings.out)]);
 
   /// One ear flicks; both when [ear] is null (the right one slightly later).
   void twitch([Ear? ear]) {
-    const keys = [Keyframe(.35, 90, Easings.out), Keyframe(-.12, 120, Easings.inOut), Keyframe(0, 160, Easings.out)];
+    const keys = [Keyframe(.35, 90, Easings.out), Keyframe(-.12, 120), Keyframe(0, 160, Easings.out)];
     if (ear != Ear.right) animate(MikkyProp.earLeft, keys);
     if (ear == Ear.right) animate(MikkyProp.earRight, keys);
     if (ear == null) _after(.06, () => animate(MikkyProp.earRight, keys));
   }
 
   void squash() {
-    animate(MikkyProp.scaleY, const [
-      Keyframe(.8, 70, Easings.out),
-      Keyframe(1.1, 130, Easings.out),
-      Keyframe(1, 170, Easings.inOut),
-    ]);
+    animate(MikkyProp.scaleY, const [Keyframe(.8, 70, Easings.out), Keyframe(1.1, 130, Easings.out), Keyframe(1, 170)]);
     animate(MikkyProp.scaleX, const [
       Keyframe(1.14, 70, Easings.out),
       Keyframe(.95, 130, Easings.out),
-      Keyframe(1, 170, Easings.inOut),
+      Keyframe(1, 170),
     ]);
   }
 
@@ -355,9 +196,9 @@ class Mikky {
 
   /// Something needs attention: eyes widen, ears go up.
   void alert() {
-    animate(MikkyProp.eyeScale, const [Keyframe(1.2, 120, Easings.back), Keyframe(1, 500, Easings.inOut)]);
+    animate(MikkyProp.eyeScale, const [Keyframe(1.2, 120, Easings.back), Keyframe(1, 500)]);
     for (final prop in const [MikkyProp.earLeft, MikkyProp.earRight]) {
-      animate(prop, const [Keyframe(.45, 90, Easings.out), Keyframe(0, 400, Easings.inOut)]);
+      animate(prop, const [Keyframe(.45, 90, Easings.out), Keyframe(0, 400)]);
     }
   }
 
@@ -369,21 +210,21 @@ class Mikky {
     animate(MikkyProp.scaleY, [
       Keyframe(.88, ms(90), Easings.out),
       Keyframe(1.14, ms(120), Easings.out),
-      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(1, ms(180)),
       Keyframe(.86, ms(70), Easings.out),
       Keyframe(1, ms(200), Easings.back),
     ]);
     animate(MikkyProp.scaleX, [
       Keyframe(1.1, ms(90), Easings.out),
       Keyframe(.92, ms(120), Easings.out),
-      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(1, ms(180)),
       Keyframe(1.12, ms(70), Easings.out),
       Keyframe(1, ms(200), Easings.back),
     ]);
     animate(MikkyProp.offsetY, [
       Keyframe(.04, ms(90), Easings.out),
       Keyframe(-h, ms(200), Easings.out),
-      Keyframe(0, ms(200), Easings.inOut),
+      Keyframe(0, ms(200)),
     ]);
   }
 
@@ -391,16 +232,16 @@ class Mikky {
   void shake() {
     animate(MikkyProp.offsetX, const [
       Keyframe(.08, 60, Easings.out),
-      Keyframe(-.08, 90, Easings.inOut),
-      Keyframe(.06, 90, Easings.inOut),
-      Keyframe(-.03, 90, Easings.inOut),
+      Keyframe(-.08, 90),
+      Keyframe(.06, 90),
+      Keyframe(-.03, 90),
       Keyframe(0, 100, Easings.out),
     ]);
   }
 
   /// Whole-body roll, with a hop.
   void roll({int turns = 1, double ms = 650}) {
-    animate(MikkyProp.spin, [Keyframe(math.pi * 2 * turns, ms, Easings.inOut)]);
+    animate(MikkyProp.spin, [Keyframe(math.pi * 2 * turns, ms)]);
     hop(small: true);
   }
 
@@ -468,16 +309,8 @@ class Mikky {
       case MikkyEmote.wink:
         break;
       case MikkyEmote.yawn:
-        animate(MikkyProp.scaleY, const [
-          Keyframe(1.1, 500, Easings.inOut),
-          Keyframe(1.1, 500, Easings.linear),
-          Keyframe(1, 500, Easings.inOut),
-        ]);
-        animate(MikkyProp.scaleX, const [
-          Keyframe(.94, 500, Easings.inOut),
-          Keyframe(.94, 500, Easings.linear),
-          Keyframe(1, 500, Easings.inOut),
-        ]);
+        animate(MikkyProp.scaleY, const [Keyframe(1.1, 500), Keyframe(1.1, 500, Easings.linear), Keyframe(1, 500)]);
+        animate(MikkyProp.scaleX, const [Keyframe(.94, 500), Keyframe(.94, 500, Easings.linear), Keyframe(1, 500)]);
       case MikkyEmote.content:
         hop();
       case MikkyEmote.annoyed:

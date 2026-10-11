@@ -278,7 +278,7 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
       request = '${_verbOfDiff(diff)} ${_fileName(diff.path) ?? diff.path}';
       requestTitle = diff.path;
     } else if (title.isNotEmpty && title != request) {
-      requestTitle = _one(title, 120);
+      requestTitle = _one(title);
     }
   }
 

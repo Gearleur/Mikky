@@ -30,7 +30,7 @@ class Choreography {
     this.marks = const [],
   }) : tracks = {
          for (final e in tracks.entries)
-           e.key: List.unmodifiable(List.of(e.value)..sort((a, b) => a.at.compareTo(b.at))),
+           e.key: List<Beat>.unmodifiable(List<Beat>.of(e.value)..sort((a, b) => a.at.compareTo(b.at))),
        };
 
   final String name;
@@ -91,7 +91,6 @@ class Choreography {
         Beat(
           from + step * (i + 1),
           i == count * 2 - 1 ? rest : rest + (i.isEven ? amount : -amount) * (1 - i / (count * 2)),
-          Easings.inOut,
         ),
     ];
   }

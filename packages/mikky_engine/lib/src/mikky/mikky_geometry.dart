@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'mikky.dart';
 import 'mikky_tuning.dart';
+import 'mikky_types.dart';
 
 /// Mikky's fixed silhouette ("G" + tufts, spec §3), in units of the radius
 /// R. The adjustable part is in [MikkyTuning].
