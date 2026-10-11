@@ -1,6 +1,6 @@
 # Mikky — où on en est
 
-Mis à jour le 2026-10-08 · branche `main` (commits jusqu'à `203b530`, **pas encore poussés** depuis le 5 au soir) · https://github.com/Gearleur/Mikky
+Mis à jour le 2026-10-11 · branche `main`, poussée · CI : https://github.com/Gearleur/Mikky/actions
 
 À lire en premier, avec `CLAUDE.md`. Le design est dans `design.md`, les idées dans `idees.md`, les specs validées dans `specs/`.
 
@@ -33,6 +33,16 @@ Mis à jour le 2026-10-08 · branche `main` (commits jusqu'à `203b530`, **pas e
 - **Mikky salue au démarrage** (2026-10-06) : l'île s'ouvre et il fait son « pop » (il jaillit de son ombre, devient orange en 128 bits, une étoile éclate, il est content), puis l'île revient à son état ; seul le son de lancement.
 - **Le notch en haut** (2026-10-05) : Mikky regarde la dernière tâche (le logiciel où elle tourne, son titre, ses étapes), les autres applications en tuiles larges, des points gris qui vivent à peine derrière elles, des pages en fondu.
 - **Planches** (`--kit`, la référence visuelle) : Marque, Composants, **Mikky** (ex-Mouvement), Petite île, Notch Top, Notch Right, Accueil Right, Agent, Messages, Technique.
+
+## 11 octobre : le code nettoyé, la CI/CD
+
+Revue complète, sans changer ce que l'app fait ni montre (goldens identiques). Règles dans `CLAUDE.md`, « Code quality ».
+
+- **`scripts\Check.ps1`** : tout ce que vérifie la CI (format, analyse, pas de code répété, tests Rust, moteur, agents, app). À lancer avant de commiter ; `-Only app`, `-Fix`.
+- **CI** (`.github/workflows/ci.yml`) à chaque push et PR ; **release** (`release.yml`) sur un tag `v*` : le bundle Windows en zip sur GitHub (sans les sons). Dependabot chaque semaine.
+- `dart format` à 120 colonnes, lint plus strict, clippy sans avertissement, Rust figé (`daemon/rust-toolchain.toml`).
+- Rangé : `app/lib/ui/` par rôle, `island/` découpé (géométrie, menu, raccourcis, notifications, couches), `home/` (layout, app, frame), `mikkyd/src/` en `api/ hooks/ sessions/ tools/ system/`, le natif (`overlay_methods.cpp`, `folder_picker.cpp`).
+- Pas touchés : les planches (essais visuels) et `motion/gulp.dart`.
 
 ## 8 octobre, droite : le notch du haut, debout
 
@@ -163,8 +173,8 @@ Reportés : R4, la grande fenêtre (branche `feature/r4-workspace`) ; R7, le VPS
 ## Le code
 
 ```
-daemon/                  Rust : mikky-acp (JSON-RPC ACP), mikkyd (agents, sessions, SQLite, API,
-                         hooks.rs, claude_settings.rs), mikky-hook (relais des hooks)
+daemon/                  Rust : mikky-acp (JSON-RPC ACP), mikkyd (api/, hooks/, sessions/, tools/,
+                         system/, store.rs SQLite), mikky-hook (relais des hooks)
 packages/mikky_engine/   Dart pur : Mikky (reactions.dart), règles de l'île (IslandMachine),
                          SessionLog, brief.dart (ce que Mikky apporte), groupes
 packages/mikky_agents/   client de mikkyd (DaemonClient, RealAgentSource, AgentStore, HookAsk)
@@ -172,7 +182,8 @@ app/lib/island/          l'île (island_view, compact_view = petite île, conten
                          shader app/shaders/island.frag
 app/lib/side/            petite fenêtre : accueil (side_app), agent_page, brief_page, hooks_page, session_*
 app/lib/sound/           sound_board.dart : quel fichier pour quel signal
-app/lib/ui/              composants, pixels (pixel_fx), menu flottant
+app/lib/ui/              composants par rôle : foundation/, controls/, overlays/, content/,
+                         brand/, pixels/, trials/
 app/lib/motion/          le mouvement : lecteur de chorégraphies, la salutation (intro), sprites 128 bits,
                          pouvoirs en pixels, ondes de points ; planche Mikky (boards/board_mikky.dart)
 app/lib/boards/          planches --kit ; images de test dans app/test/goldens/
@@ -187,8 +198,8 @@ Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptat
 - **Construire** : `.\scripts\Build-Windows.ps1` crée `dist\Mikky-<date>` (le bundle entier, `mikkyd` compris).
 - **Lancer** : `.\Start-Mikky.ps1`, et `-Boards` pour les planches.
 - **Relancer** : `Stop-Process -Name mikky; .\Start-Mikky.ps1`. Ajouter `, mikkyd` après `mikky` si le Rust a changé, et seulement si aucun agent lancé par Mikky ne tourne.
-- **Tests** :
-  - `cargo test` dans `daemon/` ;
+- **Tests** : `.\scripts\Check.ps1` lance tout ; à la main :
+  - `cargo build` puis `cargo test` dans `daemon/` (les tests lancent le `mikkyd` construit) ;
   - `C:\dev\flutter\bin\dart.bat test` dans chaque paquet ;
   - `flutter.bat test` dans `app/` ;
   - pour les images : `flutter.bat test --update-goldens test/boards_test.dart`, **puis les regarder**.
@@ -213,6 +224,7 @@ Mikky écrit dans `%APPDATA%\Mikky\` (réglages, réglage de Mikky). Les adaptat
   - un flux `broadcast(sync: true)` repasse dans l'envoi en cours ;
   - `future.whenComplete(() => map.remove(k))` s'attend lui-même ;
   - écrire `\$HOME` dans une chaîne.
-- **Tests qui dépendent du temps** : ceux qui suivent des fichiers (`session_watcher_test`, `daemon_watcher_test`) échouent parfois quand toute la suite tourne ; les relancer seuls avant de chercher un bug.
+- **Tests qui dépendent du temps** : ceux de `mikky_agents` qui lancent `mikkyd` tournent un fichier à la fois depuis le 11 octobre (`dart_test.yaml`) ; ils n'échouaient que côte à côte. Un `mikkyd` périmé dans `daemon/target/debug` fait échouer `relay` et les tests Dart : `cargo build` d'abord.
+- **Goldens et fuseau horaire** : les heures enregistrées s'affichent en heure locale ; les goldens sont faits à l'heure de Paris (la CI s'y met).
 - **Ne jamais piloter la souris ou le clavier** pendant que l'utilisateur utilise le PC.
 - **Le moteur au démarrage de Windows** : la tâche planifiée « Mikky-mikkyd » lançait le `mikkyd` du dossier où elle avait été enregistrée (le 1er octobre) : à chaque démarrage, un vieux moteur, sans le logiciel des tâches (le logo et le nom de l'application n'apparaissaient pas dans le notch). Depuis le 6 octobre elle lance `mikkyd --latest`, qui passe la main au `mikkyd` du bundle nommé dans `dist\current.txt`. Vérifier le moteur en service : `Get-CimInstance Win32_Process -Filter "Name='mikkyd.exe'"` ; `dart run tool/state_check.dart` (dans `packages/mikky_agents`) montre aussi le logiciel des sessions récentes.
