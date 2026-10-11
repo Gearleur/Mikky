@@ -1,0 +1,21 @@
+{
+  "minLines": 8,
+  "minTokens": 70,
+  "threshold": 0,
+  "format": [
+    "dart",
+    "rust",
+    "cpp"
+  ],
+  "ignore": [
+    "**/build/**",
+    "**/target/**",
+    "**/.dart_tool/**",
+    "**/generated_*",
+    "**/test/fixtures/**"
+  ],
+  "reporters": [
+    "console"
+  ],
+  "exitCode": 1
+}

@@ -1,16 +1,14 @@
 //! `run.*` and `runs.*`: the agents `mikkyd` runs, each an ACP adapter in
 //! its own job.
 
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use mikky_acp::{RpcError, Run, RunEvent, Traffic};
-use serde_json::{Value, json};
+use mikky_acp::{Run, RunEvent, Traffic};
 use tokio::process::Child;
-use tokio::sync::mpsc;
 
-use super::{Daemon, not_found, notification, str_param};
+use super::notification;
+use super::prelude::*;
 use crate::system::job::Job;
 use crate::system::target::{self, Host};
 
@@ -41,8 +39,8 @@ pub(super) async fn dispatch(
     daemon: &Arc<Daemon>,
     method: &str,
     params: &Value,
-    out: &mpsc::UnboundedSender<String>,
-) -> Result<Value, RpcError> {
+    out: &Out,
+) -> RpcResult {
     match method {
         "runs.stopAll" => {
             daemon.stop_all().await;

@@ -25,11 +25,25 @@ use tokio_tungstenite::tungstenite::http::StatusCode;
 use crate::system::endpoint::same_token;
 use runs::{Agent, stop};
 
+/// What every file of the API uses.
+mod prelude {
+    pub(super) use std::sync::Arc;
+
+    pub(super) use mikky_acp::RpcError;
+    pub(super) use serde_json::{Value, json};
+
+    pub(super) use super::{Daemon, Out, RpcResult, not_found, str_param};
+}
+
 mod hooks;
 mod runs;
 mod sessions;
 mod tools;
 mod wsl;
+
+/// Where a screen's answers and notifications go.
+type Out = mpsc::UnboundedSender<String>;
+type RpcResult = Result<Value, RpcError>;
 
 pub struct Daemon {
     store: crate::store::Store,

@@ -20,6 +20,16 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  quality:
+    name: No repeated code
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pwsh scripts/Check.ps1 -Only quality
+
   rust:
     name: Rust (${{ matrix.os }})
     strategy:

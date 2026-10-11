@@ -33,6 +33,14 @@ Mikky is a small black cat mascot with big white eyes living in an "island" at t
 ## Environment
 - Repo lives on Windows at `C:\Users\alexa\projet\mikky` (moved out of WSL on 2026-09-28; from WSL: `/mnt/c/Users/alexa/projet/mikky`). Windows Flutter at `C:\dev\flutter` (3.47.5) with Visual Studio 2022 C++ workload and Android SDK. Always run `flutter`/`dart` with the Windows install (from WSL: `cmd.exe /c "C:\dev\flutter\bin\flutter.bat ..."`), never the WSL Flutter, on this repo.
 
+## Code quality (2026-10-11)
+- **`scriptsCheck.ps1` before every commit**: format, analysis, no repeated code, tests of Rust, the engine, the agents and the app (goldens). CI (`.github/workflows/ci.yml`) runs the same script, section by section (`-Only quality,rust,engine,agents,app`; `-Fix` formats). A tag `v*` builds the Windows bundle (`release.yml`).
+- Format: `dart format` at 120 columns (root `analysis_options.yaml`, shared by the three packages, infos fail), `cargo fmt`, clippy with `-D warnings`, Rust pinned in `daemon/rust-toolchain.toml`. Formatting-only commits go in `.git-blame-ignore-revs`.
+- No repeated code: 8 lines or more fail (`.jscpd.json`); put what is shared in one place (a widget, a function, a test helper).
+- One file, one job; past ~600 lines, split by responsibility: pure logic out of widgets (e.g. `island/`: `island_geometry`, `island_menu`, `island_layers`…), models out of services.
+- Folders: `app/lib/ui/` by role (`foundation/` tokens, motion, icons, surface; `controls/`; `overlays/` menu, sheet; `content/`; `brand/`; `pixels/`; `trials/`). `daemon/mikkyd/src/`: `api/` (one file per family of methods), `hooks/`, `sessions/`, `tools/`, `system/` (OS: target, job, endpoint, autostart, WSL bridge).
+- The Dart daemon tests start the `mikkyd` of `daemon/target/debug`: build it first (`Check.ps1` does); they run one file at a time (`packages/mikky_agents/dart_test.yaml`).
+
 ## Rules
 - Talk to the user in French.
 - No telemetry. Secrets in the OS credential store, never on disk or in git.

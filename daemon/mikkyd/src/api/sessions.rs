@@ -1,20 +1,14 @@
 //! `sessions.*` (Claude's and Codex's session files) and `state.*` (the
 //! app's metadata in SQLite).
 
-use std::sync::Arc;
-
-use mikky_acp::RpcError;
-use serde_json::{Value, json};
-use tokio::sync::mpsc;
-
-use super::{Daemon, not_found, str_param};
+use super::prelude::*;
 
 pub(super) async fn dispatch(
     daemon: &Arc<Daemon>,
     method: &str,
     params: &Value,
-    out: &mpsc::UnboundedSender<String>,
-) -> Result<Value, RpcError> {
+    out: &Out,
+) -> RpcResult {
     match method {
         "sessions.list" => {
             let mut list = daemon.sessions.list();

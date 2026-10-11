@@ -1,20 +1,14 @@
 //! `tools.*`: the adapters on this machine — installed, signed in, launched.
 
-use std::sync::Arc;
-
-use mikky_acp::RpcError;
-use serde_json::Value;
-use tokio::sync::mpsc;
-
+use super::prelude::*;
 use super::runs::start;
-use super::{Daemon, not_found, str_param};
 
 pub(super) async fn dispatch(
     daemon: &Arc<Daemon>,
     method: &str,
     params: &Value,
-    out: &mpsc::UnboundedSender<String>,
-) -> Result<Value, RpcError> {
+    out: &Out,
+) -> RpcResult {
     match method {
         "tools.login" => {
             daemon

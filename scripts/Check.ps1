@@ -12,7 +12,7 @@
     scripts\Check.ps1 -Fix             # format the code instead of only checking it
 #>
 param(
-    # Sections: all, rust, engine, agents, app (several: rust,agents).
+    # Sections: all, quality, rust, engine, agents, app (several: rust,agents).
     [string[]]$Only = @('all'),
     [string]$FlutterRoot = '',
     [switch]$Fix
@@ -74,6 +74,16 @@ function Test-Rust {
     Invoke-Step 'rust: test' 'daemon' $cargo @('test', '--workspace', '--locked')
 }
 
+# No code repeated (8 lines or more, see .jscpd.json): what is shared goes
+# in one place.
+function Test-Quality {
+    # npx.cmd on Windows: PowerShell may refuse to run npx.ps1.
+    $npx = Get-Command $(if ($onWindows) { 'npx.cmd' } else { 'npx' }) -ErrorAction SilentlyContinue
+    if (!$npx) { throw 'npx not found: install Node.js (https://nodejs.org).' }
+    Invoke-Step 'quality: no repeated code' '.' $npx.Source @('--yes', 'jscpd@4.0.5', '--config', '.jscpd.json',
+        'app/lib', 'app/windows/runner', 'packages/mikky_engine/lib', 'packages/mikky_agents/lib', 'daemon')
+}
+
 # A Dart package: format, analysis (infos fail too), tests.
 function Test-DartPackage([string]$dir, [string]$tool) {
     $dart = Join-Path $bin "dart$ext"
@@ -89,18 +99,19 @@ function Test-DartPackage([string]$dir, [string]$tool) {
     Invoke-Step "${name}: test" $dir $tool @('test')
 }
 
-$all = @('rust', 'engine', 'agents', 'app')
+$all = @('quality', 'rust', 'engine', 'agents', 'app')
 # `-File` passes « rust,agents » as one string: split it.
 $asked = @($Only | ForEach-Object { $_ -split ',' } | ForEach-Object { $_.Trim() } | Where-Object { $_ })
 $unknown = @($asked | Where-Object { $_ -ne 'all' -and $all -notcontains $_ })
 if ($unknown.Count -gt 0) { throw "Unknown section: $($unknown -join ', ') (all, $($all -join ', '))" }
 $sections = if ($asked -contains 'all') { $all } else { $asked }
 $bin = $null
-if ($sections | Where-Object { $_ -ne 'rust' }) { $bin = Find-Flutter }
+if ($sections | Where-Object { $_ -notin @('rust', 'quality') }) { $bin = Find-Flutter }
 $ext = if ($onWindows) { '.bat' } else { '' }
 
 foreach ($section in $sections) {
     switch ($section) {
+        'quality' { Test-Quality }
         'rust' { Test-Rust }
         'engine' { Test-DartPackage 'packages/mikky_engine' (Join-Path $bin "dart$ext") }
         'agents' {
