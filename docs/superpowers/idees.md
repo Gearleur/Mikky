@@ -253,3 +253,36 @@ Vision de l'utilisateur pour plus tard : aujourd'hui le notch, ensuite un **Disc
 ### Où regarder
 
 Linear (vitesse, tout au clavier, ouvert aux agents), Vibe Kanban et Conductor (plusieurs agents de code en parallèle), Superhuman (le tri), Figma (le multijoueur en temps réel), tldraw (le canvas), les intégrations Slack de Devin et de Cursor (un agent qui travaille dans un fil), Replicas (§9 : un dépôt, une tâche, un agent dans un espace isolé).
+
+## 11. La fabrique de logiciel : l'environnement d'un projet de code (2026-10-11)
+
+Vision de l'utilisateur, en plus du « Discord » (§10) : quand on pilote un projet de code dans Mikky, il vit dans un **environnement bien défini**, avec **toute la CI/CD visible** et tout ce qui fait un bon projet. L'idée de départ vient de deux témoignages : un développeur qui ne code plus et ne fait que des tickets (son outil AI Ops, puis Helmsman, open source), et potato (Cursor, bibliothèque de skills Pstack, 2 500 PR en un mois) : **ce qui fait monter la confiance dans les agents, c'est la vérification et l'environnement, pas le modèle**. L'utilisateur devient le chef d'une cuisine étoilée : il ne cuisine plus, il organise la cuisine. Rien n'est décidé ; c'est la suite de l'étape 6 de `plans/2026-10-08-feuille-de-route.md`. Mikky reste fidèle à ses règles : il n'est pas un harnais, il assemble les outils existants (GitHub, Docker ou devcontainers, Playwright, `gh`…) et c'est `mikkyd` qui lance les agents dedans.
+
+### Les trois briques
+
+1. **Le ticket = une issue GitHub** (pas des dossiers de `.md` comme Superpowers, BMAD ou Spec Kit, pénibles à commenter). L'utilisateur ne dit que **le quoi**, avec des **critères d'acceptation**, jamais le comment. Des skills créent, découpent, priorisent et ordonnent les tickets avec leurs dépendances, et recommandent lesquels lancer en premier (§10 : le ticket comme spec exécutable, la décomposition assistée).
+2. **Un agent par ticket dans un espace isolé** : un conteneur (ou un worktree, WSL, le VPS plus tard) avec toute la pile de l'application ; l'agent ne touche qu'au dépôt et git trace tout. C'est le cas où le **mode Auto des permissions** a du sens (toujours choisi par l'utilisateur pour ce lancement). Il ne s'arrête que quand les critères sont remplis. Chaque tâche a **sa propre URL de test** : plusieurs tâches en parallèle, chacune testable seule, même depuis le téléphone, avec la session qu'on peut reprendre à distance. Bloqué, l'agent pose sa question en commentaire de la PR (et dans la file de décisions de Mikky) ; une fois répondu, Mikky relance toutes les tâches en attente.
+3. **La PR comme point de contrôle** : l'agent ouvre une PR qui récapitule les critères validés, ce qu'il faut tester à la main et les points d'attention. L'utilisateur commente ligne par ligne, Mikky relance l'agent pour corriger.
+
+### Ce qui rend la cuisine fiable
+
+4. **La vérification, la skill la plus importante** : donner à l'agent des mains et des yeux (lancer l'app, cliquer comme un utilisateur, traces et captures, par Playwright et le Chrome DevTools Protocol ; pour Flutter : tests d'intégration et goldens, comme nos planches). Chaque projet a **sa skill de vérification**, tenue à jour. L'agent boucle seul, et peut « grimper » une métrique (performance, taille, temps de démarrage).
+5. **Le mécanique dans des scripts, le jugement dans la skill** : tout ce qui est déterministe part dans un script ou une petite CLI du projet ; la skill n'est qu'une fine couche d'instructions autour. Les migrations se font par codemods, pas à la main par l'agent.
+6. **Un environnement où le mauvais code est difficile** : lint strict, une seule façon de faire chaque chose, un dossier par fonctionnalité plutôt que des fichiers de 10 000 lignes. **Chaque erreur qui revient chez les agents devient une règle de lint ou de typage**, pour qu'ils tombent dessus au bon moment au lieu de devoir s'en souvenir. Quand un problème revient chez plusieurs agents, on corrige l'environnement, pas l'agent.
+7. **La CI/CD visible dans le salon du projet** : build, lint, tests, vérification, URL de prévisualisation, déploiement, en direct, en pastilles qui nourrissent le kanban (§10 : le tableau se met à jour tout seul).
+8. **La relecture ciblée** (l'idée de Helmsman) : relire chaque ligne n'a plus de sens ; Mikky signale sur la PR seulement ce qui compte : architecture, sécurité et authentification, accès aux routes, **bibliothèques ajoutées**, **données personnelles** (RGPD), **tests modifiés** (l'IA a tendance à les affaiblir pour les faire passer).
+
+### Passer à l'échelle
+
+9. **L'échelle de confiance, réglée par projet** : niveau 1, l'utilisateur valide chaque PR ; niveau 2, il ne relit que les points du n° 8 ; niveau 3, pilote automatique : des agents vérificateurs testent l'app de façon exploratoire, cherchent les régressions, corrigent, la PR se merge seule, et l'utilisateur goûte un échantillon le matin dans l'historique (§10, « Pendant ton absence »). Ce qui est irréversible ou difficile à tester reste au niveau 1.
+10. **Boucle externe et boucle interne** : des routines surveillent en continu (issues, bugs signalés, mails) et envoient le contexte au bon endroit ; des **coordinateurs** qui ne codent pas délèguent à des sous-agents, et regroupent les tickets liés pour éviter le travail en double et voir le vrai problème derrière plusieurs bugs (idée n° 30, chef et équipe). La question permanente : « où suis-je encore le goulot ? »
+11. **Le jardinage** : des routines cherchent les motifs interdits dans le code, mais les notent dans une liste au lieu de corriger tout de suite ; l'utilisateur la relit tous les quelques jours pour voir les tendances, puis lance les corrections.
+12. **Apprendre de ses propres sessions** (la skill « recall » de potato) : retrouver dans les anciennes conversations les moments où l'utilisateur a dû corriger ou intervenir, et en tirer des skills ou des règles de lint. **Mikky est bien placé** : `mikkyd` lit déjà toutes les sessions Claude et Codex. C'est aussi la rétro automatique du §10.
+
+### Le « bon projet » dès la création
+
+13. **Un modèle de projet** quand on crée un projet de code dans Mikky : dépôt GitHub, CLAUDE.md / AGENTS.md, CI (build, lint strict, tests), skill de vérification, environnement isolé décrit (devcontainer ou Docker Compose), prévisualisation par branche, branche principale protégée, secrets dans le coffre (jamais dans le dépôt), mises à jour des dépendances, modèles d'issue avec critères d'acceptation, modèle de PR (critères, tests à la main, points d'attention), licence, changelog et versions. Mikky montre ce qui manque à un projet existant et propose de l'ajouter (toujours avec le Oui de l'utilisateur).
+
+### Où regarder
+
+AI Ops et Helmsman (la relecture ciblée), Pstack (skills, pilote automatique, recall), les « projects » et agents en arrière-plan de Cursor, les devcontainers, GitHub Actions et les environnements de prévisualisation, Playwright et le Chrome DevTools Protocol, Replicas et Vibe Kanban (§10).
