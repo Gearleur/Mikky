@@ -1,0 +1,15 @@
+# Weekly update proposals, grouped so they come as one PR per ecosystem.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+    groups: { actions: { patterns: ['*'] } }
+  - package-ecosystem: cargo
+    directory: /daemon
+    schedule: { interval: weekly }
+    groups: { cargo: { patterns: ['*'] } }
+  - package-ecosystem: pub
+    directories: [/app, /packages/mikky_engine, /packages/mikky_agents]
+    schedule: { interval: weekly }
+    groups: { pub: { patterns: ['*'] } }

@@ -1,0 +1,75 @@
+# A tag v* (or a manual run) builds the Windows bundle, the same one as
+# scripts/Build-Windows.ps1 on the PC, and attaches it to a GitHub release.
+# The user's sounds are not in git: the bundle ships without them.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.5
+  CARGO_TERM_COLOR: always
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
+  linux-engine:
+    name: mikkyd for WSL
+    needs: checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        working-directory: daemon
+        run: rustup toolchain install
+      - run: bash daemon/build-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mikkyd-linux
+          path: daemon/target/linux-release/mikkyd-linux
+          if-no-files-found: error
+
+  windows-bundle:
+    name: Windows bundle
+    needs: linux-engine
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust toolchain
+        working-directory: daemon
+        run: rustup toolchain install
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - uses: actions/download-artifact@v4
+        with:
+          name: mikkyd-linux
+          path: daemon/target/linux-release
+      - name: Build
+        env:
+          MIKKY_LINUX_PREBUILT: '1'
+        run: pwsh scripts/Build-Windows.ps1 -FlutterRoot $env:FLUTTER_ROOT
+      - name: Zip
+        shell: pwsh
+        run: |
+          $version = Get-Content dist/current.txt
+          Compress-Archive -Path "dist/$version/*" -DestinationPath "dist/$version.zip"
+          "BUNDLE=dist/$version.zip" >> $env:GITHUB_ENV
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mikky-windows
+          path: ${{ env.BUNDLE }}
+      - name: GitHub release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" "${{ env.BUNDLE }}" --generate-notes

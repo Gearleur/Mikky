@@ -64,14 +64,18 @@ add_custom_target(mikkyd_build
   WORKING_DIRECTORY "${MIKKY_DAEMON_DIR}"
   VERBATIM)
 add_dependencies(${BINARY_NAME} mikkyd_build)
-string(SUBSTRING "${MIKKY_DAEMON_DIR}" 0 1 MIKKY_DRIVE)
-string(TOLOWER "${MIKKY_DRIVE}" MIKKY_DRIVE)
-string(SUBSTRING "${MIKKY_DAEMON_DIR}" 2 -1 MIKKY_LINUX_TAIL)
-set(MIKKY_LINUX_DIR "/mnt/${MIKKY_DRIVE}${MIKKY_LINUX_TAIL}")
-add_custom_target(mikkyd_linux_build
-  COMMAND wsl.exe -d Ubuntu -- bash "${MIKKY_LINUX_DIR}/build-linux.sh"
-  VERBATIM)
-add_dependencies(${BINARY_NAME} mikkyd_linux_build)
+# The Linux engine (for WSL) is built in WSL, unless MIKKY_LINUX_PREBUILT is
+# set: CI has no WSL and puts its own build in target/linux-release first.
+if(NOT DEFINED ENV{MIKKY_LINUX_PREBUILT})
+  string(SUBSTRING "${MIKKY_DAEMON_DIR}" 0 1 MIKKY_DRIVE)
+  string(TOLOWER "${MIKKY_DRIVE}" MIKKY_DRIVE)
+  string(SUBSTRING "${MIKKY_DAEMON_DIR}" 2 -1 MIKKY_LINUX_TAIL)
+  set(MIKKY_LINUX_DIR "/mnt/${MIKKY_DRIVE}${MIKKY_LINUX_TAIL}")
+  add_custom_target(mikkyd_linux_build
+    COMMAND wsl.exe -d Ubuntu -- bash "${MIKKY_LINUX_DIR}/build-linux.sh"
+    VERBATIM)
+  add_dependencies(${BINARY_NAME} mikkyd_linux_build)
+endif()
 
 
 # Generated plugin build rules, which manage building the plugins and adding

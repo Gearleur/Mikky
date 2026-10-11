@@ -1,0 +1,4 @@
+# Same Rust everywhere (here, WSL, CI): a new clippy never breaks a build by surprise.
+[toolchain]
+channel = "1.98.1"
+components = ["rustfmt", "clippy"]
