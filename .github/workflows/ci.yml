@@ -1,0 +1,98 @@
+# Every check runs through scripts/Check.ps1, the same script as on the PC.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FLUTTER_VERSION: 3.47.5
+  CARGO_TERM_COLOR: always
+
+jobs:
+  quality:
+    name: No repeated code
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+      - run: pwsh scripts/Check.ps1 -Only quality
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows: the engine of the PC. Linux: the one of WSL and the VPS.
+        os: [windows-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rust toolchain (daemon/rust-toolchain.toml)
+        working-directory: daemon
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: daemon
+      - run: pwsh scripts/Check.ps1 -Only rust
+
+  engine:
+    name: Dart engine
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: pwsh scripts/Check.ps1 -Only engine
+
+  agents:
+    name: Dart agents (Windows, against mikkyd)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Rust toolchain
+        working-directory: daemon
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: daemon
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      - run: pwsh scripts/Check.ps1 -Only agents
+
+  app:
+    name: Flutter app (Windows, goldens)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          cache: true
+      # The goldens show recorded times in local time: Paris, as on the PC.
+      - name: Time zone of the goldens
+        run: tzutil /s "Romance Standard Time"
+      - run: pwsh scripts/Check.ps1 -Only app
+      - name: Golden failures
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: golden-failures
+          path: app/test/**/failures/
+          if-no-files-found: ignore
