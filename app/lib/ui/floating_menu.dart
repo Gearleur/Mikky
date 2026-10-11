@@ -45,10 +45,16 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
   final pressed = FloatingMenu._button;
   FloatingMenu._button = null;
   final last = FloatingMenu.lastPress;
-  final star = pressed != null &&
-      (from == null ? last == null || pressed.rect.inflate(2).contains(last) : (from.center - pressed.rect.center).distance < 1);
+  final star =
+      pressed != null &&
+      (from == null
+          ? last == null || pressed.rect.inflate(2).contains(last)
+          : (from.center - pressed.rect.center).distance < 1);
   final button = from ?? (star ? pressed.rect : Rect.fromCircle(center: press, radius: 17));
-  final origin = Rect.fromPoints(overlayBox.globalToLocal(button.topLeft), overlayBox.globalToLocal(button.bottomRight));
+  final origin = Rect.fromPoints(
+    overlayBox.globalToLocal(button.topLeft),
+    overlayBox.globalToLocal(button.bottomRight),
+  );
   late OverlayEntry entry;
   entry = OverlayEntry(
     builder: (context) => MikkyUiTheme(
@@ -125,7 +131,15 @@ abstract final class FloatingMenu {
 }
 
 class _MorphMenu extends StatefulWidget {
-  const _MorphMenu({required this.bounds, required this.origin, required this.entries, required this.star, required this.width, required this.done, required this.onGone});
+  const _MorphMenu({
+    required this.bounds,
+    required this.origin,
+    required this.entries,
+    required this.star,
+    required this.width,
+    required this.done,
+    required this.onGone,
+  });
 
   final Rect bounds;
   final Rect origin;
@@ -257,7 +271,15 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
     await Future<void>.delayed(Duration.zero);
     if (run != _run || !mounted) return;
     if (!Motion.reduced(context)) {
-      await _t.animateWith(SpringSimulation(FloatingMenu.closeSpring, _t.value, 0, 0, tolerance: const Tolerance(distance: .002, velocity: .02)));
+      await _t.animateWith(
+        SpringSimulation(
+          FloatingMenu.closeSpring,
+          _t.value,
+          0,
+          0,
+          tolerance: const Tolerance(distance: .002, velocity: .02),
+        ),
+      );
       if (run != _run || !mounted) return;
     }
     if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
@@ -278,20 +300,30 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
         }
         return KeyEventResult.ignored;
       },
-      child: Stack(children: [
-        // A click outside: closes, nothing chosen.
-        Positioned.fromRect(
-          rect: widget.bounds,
-          child: GestureDetector(behavior: HitTestBehavior.opaque, onTapDown: (_) => _close(null)),
-        ),
-        if (target != null) _frame(ui, target, list),
-        if (_measuring)
-          Positioned(
-            left: 0,
-            top: 0,
-            child: Offstage(child: KeyedSubtree(key: _measure, child: _PanelBox(width: widget.width, child: _MenuList(entries: _entries)))),
+      child: Stack(
+        children: [
+          // A click outside: closes, nothing chosen.
+          Positioned.fromRect(
+            rect: widget.bounds,
+            child: GestureDetector(behavior: HitTestBehavior.opaque, onTapDown: (_) => _close(null)),
           ),
-      ]),
+          if (target != null) _frame(ui, target, list),
+          if (_measuring)
+            Positioned(
+              left: 0,
+              top: 0,
+              child: Offstage(
+                child: KeyedSubtree(
+                  key: _measure,
+                  child: _PanelBox(
+                    width: widget.width,
+                    child: _MenuList(entries: _entries),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 
@@ -307,10 +339,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
       return Positioned.fromRect(
         rect: r,
         child: Center(
-          child: Transform.scale(
-            scale: r.width / o.width,
-            child: const PixelStar(PixelFxPalette.grey, size: 14),
-          ),
+          child: Transform.scale(scale: r.width / o.width, child: const PixelStar(PixelFxPalette.grey, size: 14)),
         ),
       );
     }
@@ -322,12 +351,19 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
     final growsUp = target.top < o.top;
     // Taking a follow-up's size, from the panel it was.
     final shown = _from == null ? target : Rect.lerp(_from, target, _swap.value)!;
-    final rect = Rect.fromLTRB(lerp(o.left, shown.left, w), lerp(o.top, shown.top, h), lerp(o.right, shown.right, w), lerp(o.bottom, shown.bottom, h));
+    final rect = Rect.fromLTRB(
+      lerp(o.left, shown.left, w),
+      lerp(o.top, shown.top, h),
+      lerp(o.right, shown.right, w),
+      lerp(o.bottom, shown.bottom, h),
+    );
     final f = t.clamp(0.0, 1.0);
     final radius = lerp(o.shortestSide / 2, Radii.xl, f);
     final color = Color.lerp(ui.well.withValues(alpha: 0), ui.well, (f * 1.8).clamp(0.0, 1.0))!;
     // A follow-up's items come in as the panel takes its size.
-    final content = _measuring ? 0.0 : math.min(((t - .45) / .4).clamp(0.0, 1.0), ((_swap.value - .3) / .5).clamp(0.0, 1.0));
+    final content = _measuring
+        ? 0.0
+        : math.min(((t - .45) / .4).clamp(0.0, 1.0), ((_swap.value - .3) / .5).clamp(0.0, 1.0));
     final star = widget.star ? (1 - t / .25).clamp(0.0, 1.0) : 0.0;
     return Positioned.fromRect(
       rect: rect,
@@ -337,43 +373,46 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
           borderRadius: BorderRadius.circular(radius),
           border: Border.all(color: ui.line.withValues(alpha: ui.line.a * f)),
           // The shadow appears with the panel; the resting star has none.
-          boxShadow: [
-            for (final s in ui.shMenu)
-              s.box.copyWith(color: s.color.withValues(alpha: s.color.a * f)),
-          ],
+          boxShadow: [for (final s in ui.shMenu) s.box.copyWith(color: s.color.withValues(alpha: s.color.a * f))],
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(radius),
-          child: Stack(clipBehavior: Clip.none, children: [
-            // The grey star fades out and returns as the menu folds back.
-            if (star > 0)
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // The grey star fades out and returns as the menu folds back.
+              if (star > 0)
+                Positioned(
+                  right: 0,
+                  top: growsUp ? null : 0,
+                  bottom: growsUp ? 0 : null,
+                  width: o.width,
+                  height: o.height,
+                  child: Opacity(
+                    opacity: star,
+                    child: Center(child: const PixelStar(PixelFxPalette.grey, size: 14)),
+                  ),
+                ),
+              // The items, at their final size, uncovered as it opens.
               Positioned(
                 right: 0,
                 top: growsUp ? null : 0,
                 bottom: growsUp ? 0 : null,
-                width: o.width,
-                height: o.height,
-                child: Opacity(opacity: star, child: Center(child: const PixelStar(PixelFxPalette.grey, size: 14))),
-              ),
-            // The items, at their final size, uncovered as it opens.
-            Positioned(
-              right: 0,
-              top: growsUp ? null : 0,
-              bottom: growsUp ? 0 : null,
-              width: target.width,
-              height: target.height,
-              child: IgnorePointer(
-                ignoring: t < .8 || _swap.value < .8 || _closing,
-                child: Opacity(
-                  opacity: content,
-                  child: Transform.translate(
-                    offset: Offset(0, (1 - content) * -4),
-                    child: Padding(padding: const EdgeInsets.all(5), child: list),
+                width: target.width,
+                height: target.height,
+                child: IgnorePointer(
+                  ignoring: t < .8 || _swap.value < .8 || _closing,
+                  child: Opacity(
+                    opacity: content,
+                    child: Transform.translate(
+                      offset: Offset(0, (1 - content) * -4),
+                      child: Padding(padding: const EdgeInsets.all(5), child: list),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       ),
     );
@@ -413,7 +452,10 @@ class FloatingMenuPanel extends StatelessWidget {
   final double width;
 
   @override
-  Widget build(BuildContext context) => _PanelBox(width: width, child: _MenuList(entries: entries, onChoose: onChoose));
+  Widget build(BuildContext context) => _PanelBox(
+    width: width,
+    child: _MenuList(entries: entries, onChoose: onChoose),
+  );
 }
 
 /// The items, the white square sliding under the one under the mouse.
@@ -463,17 +505,24 @@ class _Item extends StatelessWidget {
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(11, 8, 10, 8),
-            child: Row(children: [
-              Expanded(
-                child: Text(
-                  entry.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(TextSize.label, weight: FontWeight.w500, color: danger ? ui.red : ui.text, height: 1.25),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    entry.label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(
+                      TextSize.label,
+                      weight: FontWeight.w500,
+                      color: danger ? ui.red : ui.text,
+                      height: 1.25,
+                    ),
+                  ),
                 ),
-              ),
-              if (entry.checked) ...[const SizedBox(width: 8), MikkyIcon('check', size: 15, color: ui.text)],
-            ]),
+                if (entry.checked) ...[const SizedBox(width: 8), MikkyIcon('check', size: 15, color: ui.text)],
+              ],
+            ),
           ),
         ),
       ),

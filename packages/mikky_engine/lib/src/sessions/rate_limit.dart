@@ -12,7 +12,9 @@ DateTime? limitResetOf(String message, DateTime seen) {
   if (epoch != null) return DateTime.fromMillisecondsSinceEpoch(int.parse(epoch[1]!) * 1000);
 
   final text = message.toLowerCase();
-  final dated = RegExp(r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?,?\s+(\d{1,2}):(\d{2})\s*(am|pm)?').firstMatch(text);
+  final dated = RegExp(
+    r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?,?\s+(\d{1,2}):(\d{2})\s*(am|pm)?',
+  ).firstMatch(text);
   if (dated != null) {
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     var hour = int.parse(dated[4]!);
@@ -22,7 +24,9 @@ DateTime? limitResetOf(String message, DateTime seen) {
     final year = int.tryParse(dated[3] ?? '') ?? seen.year;
     final when = DateTime(year, months.indexOf(dated[1]!) + 1, int.parse(dated[2]!), hour, int.parse(dated[5]!));
     // No year said and already past: next year's.
-    return dated[3] == null && !when.isAfter(seen) ? DateTime(year + 1, when.month, when.day, when.hour, when.minute) : when;
+    return dated[3] == null && !when.isAfter(seen)
+        ? DateTime(year + 1, when.month, when.day, when.hour, when.minute)
+        : when;
   }
   final inHours = RegExp(r'in\s+(?:(\d+)\s*h(?:ours?|rs?)?)?\s*(?:(\d+)\s*m(?:in(?:ute)?s?)?)?').allMatches(text);
   for (final m in inHours) {

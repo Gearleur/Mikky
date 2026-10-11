@@ -38,9 +38,15 @@ class AgentPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final e = _source.entry(id);
     if (e == null) {
-      return Stack(children: [
-        SideHead(title: 'Agent', small: true, leading: RoundButton('left', size: 34, onPressed: back, tooltip: 'Retour')),
-      ]);
+      return Stack(
+        children: [
+          SideHead(
+            title: 'Agent',
+            small: true,
+            leading: RoundButton('left', size: 34, onPressed: back, tooltip: 'Retour'),
+          ),
+        ],
+      );
     }
     final hook = _source.hookAskOf(e.id);
     return AgentPageView(
@@ -141,7 +147,14 @@ class AgentPageActions {
 /// started elsewhere are followed without touching them; once done they
 /// can go on in Mikky.
 class AgentPageView extends StatefulWidget {
-  const AgentPageView({super.key, required this.model, required this.actions, this.scrolledTo, this.mikky, this.drawMikky = true});
+  const AgentPageView({
+    super.key,
+    required this.model,
+    required this.actions,
+    this.scrolledTo,
+    this.mikky,
+    this.drawMikky = true,
+  });
 
   final AgentPageModel model;
   final AgentPageActions actions;
@@ -228,20 +241,28 @@ class _AgentPageViewState extends State<AgentPageView> {
       if (m.adapterPid != null)
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
-          child: Text('Adaptateur ACP · PID ${m.adapterPid} · ${m.host == AgentHost.wsl ? 'WSL' : 'Windows'}', style: uiText(11.5, color: ui.text3, tabular: true)),
+          child: Text(
+            'Adaptateur ACP · PID ${m.adapterPid} · ${m.host == AgentHost.wsl ? 'WSL' : 'Windows'}',
+            style: uiText(11.5, color: ui.text3, tabular: true),
+          ),
         ),
       if (usage.isNotEmpty)
         Padding(
           padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
           child: Text(usage, style: uiText(11.5, color: ui.text3, tabular: true)),
         ),
-      ...threadOf(context, log, cache: _thread, limit: LimitHooks(
-        m.id,
-        a.send ?? (_) async {},
-        finish: a.finishLimit,
-        finished: m.limitFinished,
-        unfinish: a.unfinishLimit,
-      )),
+      ...threadOf(
+        context,
+        log,
+        cache: _thread,
+        limit: LimitHooks(
+          m.id,
+          a.send ?? (_) async {},
+          finish: a.finishLimit,
+          finished: m.limitFinished,
+          unfinish: a.unfinishLimit,
+        ),
+      ),
       if (m.status == AgentStatus.paused)
         Padding(
           padding: const EdgeInsets.only(top: 12),
@@ -301,11 +322,18 @@ class _AgentPageViewState extends State<AgentPageView> {
       mikkyState: mikkyStateOf(m.status),
       empty: Text('Rien à montrer', style: uiText(13, color: ui.text3)),
       composer: composer,
-      note: Row(children: [
-        MikkyIcon('lock', size: 13, color: ui.text3),
-        const SizedBox(width: 6),
-        Expanded(child: Text('Session extérieure : activité observée, processus non vérifié.', style: uiText(11.5, color: ui.text3, height: 1.35))),
-      ]),
+      note: Row(
+        children: [
+          MikkyIcon('lock', size: 13, color: ui.text3),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Session extérieure : activité observée, processus non vérifié.',
+              style: uiText(11.5, color: ui.text3, height: 1.35),
+            ),
+          ),
+        ],
+      ),
       children: content,
     );
   }

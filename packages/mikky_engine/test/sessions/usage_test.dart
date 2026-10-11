@@ -1,4 +1,5 @@
 import '../support/readers/acp_reader.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -22,7 +23,9 @@ void main() {
 
   test('a counter with no window (Codex « premium ») keeps the last real one', () {
     final log = SessionLog()
-      ..apply(const LimitsSeen(short: LimitWindow(69, minutes: 300), long: LimitWindow(70, minutes: 10080), plan: 'plus'))
+      ..apply(
+        const LimitsSeen(short: LimitWindow(69, minutes: 300), long: LimitWindow(70, minutes: 10080), plan: 'plus'),
+      )
       ..apply(const LimitsSeen(plan: 'plus'));
     expect(log.limits!.short!.usedPercent, 69);
     expect(log.limits!.long!.usedPercent, 70);
@@ -37,20 +40,26 @@ void main() {
 
   test('the agent\'s « / » commands', () {
     final log = SessionLog()
-      ..applyAll(AcpReader().read({
-        'jsonrpc': '2.0',
-        'method': 'session/update',
-        'params': {
-          'sessionId': 's1',
-          'update': {
-            'sessionUpdate': 'available_commands_update',
-            'availableCommands': [
-              {'name': 'compact', 'description': 'Clear conversation history but keep a summary', 'input': null},
-              {'name': 'review', 'description': 'Review a pull request', 'input': {'hint': 'PR number'}},
-            ],
+      ..applyAll(
+        AcpReader().read({
+          'jsonrpc': '2.0',
+          'method': 'session/update',
+          'params': {
+            'sessionId': 's1',
+            'update': {
+              'sessionUpdate': 'available_commands_update',
+              'availableCommands': [
+                {'name': 'compact', 'description': 'Clear conversation history but keep a summary', 'input': null},
+                {
+                  'name': 'review',
+                  'description': 'Review a pull request',
+                  'input': {'hint': 'PR number'},
+                },
+              ],
+            },
           },
-        },
-      }, outgoing: false));
+        }, outgoing: false),
+      );
     expect(log.commands.map((c) => c.name), ['compact', 'review']);
     expect(log.commands[1].hint, 'PR number');
   });

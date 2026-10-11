@@ -83,8 +83,12 @@ void main() {
     s.log
       ..apply(SessionStarted('c', cwd: '/p', at: wall))
       ..apply(TurnStarted(at: wall))
-      ..apply(LimitsSeen(short: const LimitWindow(99, minutes: 300), long: const LimitWindow(74, minutes: 10080), at: wall))
-      ..apply(TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall));
+      ..apply(
+        LimitsSeen(short: const LimitWindow(99, minutes: 300), long: const LimitWindow(74, minutes: 10080), at: wall),
+      )
+      ..apply(
+        TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall),
+      );
     watcher.send(s);
     await flush();
     source.advance(clock);
@@ -112,7 +116,9 @@ void main() {
     s.log
       ..apply(SessionStarted('l', cwd: '/p', at: wall))
       ..apply(TurnStarted(at: wall))
-      ..apply(TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall));
+      ..apply(
+        TurnEnded(StopReason.rateLimited, message: 'You’ve hit your usage limit. Try again at 2:10 PM.', at: wall),
+      );
     watcher.send(s);
     await flush();
     source.advance(clock);

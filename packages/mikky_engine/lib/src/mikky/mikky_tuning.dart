@@ -41,15 +41,15 @@ class MikkyTuning {
   MikkyTuning copy() => MikkyTuning.fromJson(toJson());
 
   Map<String, double> toJson() => {
-        'eyeElevation': eyeElevation,
-        'eyeSize': eyeSize,
-        'eyeElongation': eyeElongation,
-        'eyeSpread': eyeSpread,
-        'bottomWiden': bottomWiden,
-        'earHeight': earHeight,
-        'earCenter': earCenter,
-        'earWidth': earWidth,
-      };
+    'eyeElevation': eyeElevation,
+    'eyeSize': eyeSize,
+    'eyeElongation': eyeElongation,
+    'eyeSpread': eyeSpread,
+    'bottomWiden': bottomWiden,
+    'earHeight': earHeight,
+    'earCenter': earCenter,
+    'earWidth': earWidth,
+  };
 
   /// Unknown or missing keys keep their default.
   factory MikkyTuning.fromJson(Map<String, Object?> json) {

@@ -49,7 +49,10 @@ class ReadingColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.topCenter,
-    child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: readingWidth),
+      child: child,
+    ),
   );
 }
 
@@ -83,17 +86,25 @@ class SideHead extends StatelessWidget {
             Expanded(
               child: title == null
                   ? const SizedBox.shrink()
-                  : Row(children: [
-                      Flexible(
-                        child: Text(
-                          title!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: uiText(small ? TextSize.heading : TextSize.title, weight: FontWeight.w600, tracking: -.02, color: ui.text, height: 1.2),
+                  : Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            title!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: uiText(
+                              small ? TextSize.heading : TextSize.title,
+                              weight: FontWeight.w600,
+                              tracking: -.02,
+                              color: ui.text,
+                              height: 1.2,
+                            ),
+                          ),
                         ),
-                      ),
-                      ?titleMark,
-                    ]),
+                        ?titleMark,
+                      ],
+                    ),
             ),
             for (final a in actions) ...[const SizedBox(width: 8), a],
           ],
@@ -115,7 +126,16 @@ class EdgeBlur extends StatelessWidget {
   // 5 layers of 1.94 blur the edge as much as 12 of 1.25 did (blurs add
   // up as the square root of the sum of their squares), for far less GPU
   // work at each frame (2026-10-05).
-  const EdgeBlur({super.key, required this.top, this.height = 76, this.layers = 5, this.sigma = 1.94, this.veil = .8, this.ramp = .5, this.corner = 22});
+  const EdgeBlur({
+    super.key,
+    required this.top,
+    this.height = 76,
+    this.layers = 5,
+    this.sigma = 1.94,
+    this.veil = .8,
+    this.ramp = .5,
+    this.corner = 22,
+  });
 
   /// The round corners of the window's edge it lies on, less its 8 px
   /// inset: the blur keeps inside them (2026-10-05: at the bottom it went
@@ -190,7 +210,8 @@ class TopBlur extends StatelessWidget {
   const TopBlur({super.key});
 
   @override
-  Widget build(BuildContext context) => const EdgeBlur(top: true, height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
+  Widget build(BuildContext context) =>
+      const EdgeBlur(top: true, height: 65, layers: 3, sigma: .9, veil: .38, ramp: 1.05);
 }
 
 /// The home's leading Mikky: 52 px drawn with the prototype's negative
@@ -215,7 +236,14 @@ class HeadMikky extends StatelessWidget {
 /// blinking and looking around; still when [animate] is false (goldens)
 /// or Windows asks for fewer animations.
 class MiniMikky extends StatefulWidget {
-  const MiniMikky({super.key, this.size = 52, this.animate = true, this.state = MikkyState.idle, this.badge = true, this.look});
+  const MiniMikky({
+    super.key,
+    this.size = 52,
+    this.animate = true,
+    this.state = MikkyState.idle,
+    this.badge = true,
+    this.look,
+  });
 
   final double size;
   final bool animate;

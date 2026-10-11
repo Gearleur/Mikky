@@ -57,7 +57,13 @@ const _openSpring = SpringDescription(mass: 1, stiffness: 260, damping: 25);
 const _closeSpring = SpringDescription(mass: 1, stiffness: 420, damping: 42);
 
 class _SheetLayer extends StatefulWidget {
-  const _SheetLayer({required this.bounds, required this.title, required this.caption, required this.builder, required this.onGone});
+  const _SheetLayer({
+    required this.bounds,
+    required this.title,
+    required this.caption,
+    required this.builder,
+    required this.onGone,
+  });
 
   final Rect bounds;
   final String title;
@@ -99,7 +105,9 @@ class _SheetLayerState extends State<_SheetLayer> with SingleTickerProviderState
     if (_closing) return;
     _closing = true;
     if (!Motion.reduced(context)) {
-      await _t.animateWith(SpringSimulation(_closeSpring, _t.value, 0, 0, tolerance: const Tolerance(distance: .003, velocity: .03)));
+      await _t.animateWith(
+        SpringSimulation(_closeSpring, _t.value, 0, 0, tolerance: const Tolerance(distance: .003, velocity: .03)),
+      );
     }
     if (mounted) widget.onGone();
   }
@@ -251,7 +259,13 @@ class SheetPanel extends StatelessWidget {
                     const SizedBox(width: 8),
                     Text(
                       caption!,
-                      style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true, height: 1.2),
+                      style: uiText(
+                        TextSize.small,
+                        weight: FontWeight.w500,
+                        color: ui.text3,
+                        tabular: true,
+                        height: 1.2,
+                      ),
                     ),
                   ],
                   const Spacer(),

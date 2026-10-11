@@ -147,7 +147,8 @@ class SignatureFx extends StatelessWidget {
       key: ValueKey(kind),
       period: Duration(milliseconds: (period * 1000).round()),
       frozenAt: _still(kind),
-      builder: (context, t) => CustomPaint(size: Size.square(size), painter: _SignaturePainter(kind, t * period, period)),
+      builder: (context, t) =>
+          CustomPaint(size: Size.square(size), painter: _SignaturePainter(kind, t * period, period)),
     );
   }
 }
@@ -220,7 +221,16 @@ class _SignaturePainter extends CustomPainter {
 
   /// Sparks out from the middle: [count] directions, the head at [r],
   /// a trail of [trail] pixels behind in the other tone.
-  void _burst(double r, int count, double i, {int head = 1, int trail = 3, double turn = 0, double cx = _c, double cy = _c}) {
+  void _burst(
+    double r,
+    int count,
+    double i, {
+    int head = 1,
+    int trail = 3,
+    double turn = 0,
+    double cx = _c,
+    double cy = _c,
+  }) {
     for (var k = 0; k < count; k++) {
       final a = turn + k * math.pi * 2 / count;
       final dx = math.cos(a), dy = math.sin(a);

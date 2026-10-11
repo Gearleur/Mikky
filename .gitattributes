@@ -1,0 +1,12 @@
+# Every text file is stored and checked out with LF (Windows tools read it fine).
+* text=auto eol=lf
+# Windows batch files need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.ttf binary
+*.mp3 binary
+*.wav binary

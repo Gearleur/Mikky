@@ -9,7 +9,15 @@ import 'paths.dart';
 /// the hook's parent processes (a terminal, VS Code) and the terminal's own
 /// words.
 class SessionOrigin {
-  const SessionOrigin({this.windowPid, this.windowHandle, this.windowExe, this.termProgram, this.vscodePid, this.wtSession, this.cwd});
+  const SessionOrigin({
+    this.windowPid,
+    this.windowHandle,
+    this.windowExe,
+    this.termProgram,
+    this.vscodePid,
+    this.wtSession,
+    this.cwd,
+  });
 
   /// What `mikkyd` answers; a field of an unexpected type is left out.
   factory SessionOrigin.fromJson(Map<String, Object?> j) {

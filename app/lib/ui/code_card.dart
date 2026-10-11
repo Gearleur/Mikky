@@ -62,8 +62,12 @@ class CodeCard extends StatelessWidget {
                 for (final l in lines)
                   Container(
                     decoration: BoxDecoration(
-                      color: l.removed ? ui.red.withValues(alpha: .1) : (l.added ? ui.green.withValues(alpha: .12) : null),
-                      border: l.removed || l.added ? Border(left: BorderSide(color: l.removed ? ui.red : ui.green, width: 2)) : null,
+                      color: l.removed
+                          ? ui.red.withValues(alpha: .1)
+                          : (l.added ? ui.green.withValues(alpha: .12) : null),
+                      border: l.removed || l.added
+                          ? Border(left: BorderSide(color: l.removed ? ui.red : ui.green, width: 2))
+                          : null,
                     ),
                     padding: EdgeInsets.only(right: 8, left: l.removed || l.added ? 0 : 2),
                     child: Row(
@@ -84,7 +88,9 @@ class CodeCard extends StatelessWidget {
                             maxLines: 1,
                             softWrap: false,
                             overflow: TextOverflow.clip,
-                            style: l.removed ? mono.copyWith(color: ui.text2, decoration: TextDecoration.lineThrough) : mono,
+                            style: l.removed
+                                ? mono.copyWith(color: ui.text2, decoration: TextDecoration.lineThrough)
+                                : mono,
                           ),
                         ),
                       ],

@@ -49,7 +49,11 @@ void main() {
 
     test('every agent reacts, not only the one in focus', () {
       final d = MikkyDirector()..agents([agent('a', AgentStatus.working), agent('b', AgentStatus.working)], null, 0);
-      final out = d.agents([agent('a', AgentStatus.working), agent('b', AgentStatus.error)], agent('a', AgentStatus.working), 1);
+      final out = d.agents(
+        [agent('a', AgentStatus.working), agent('b', AgentStatus.error)],
+        agent('a', AgentStatus.working),
+        1,
+      );
       expect(out.map((r) => r.agentId), ['b']);
     });
 

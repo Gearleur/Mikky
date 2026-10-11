@@ -47,10 +47,7 @@ class AcpReader {
         final text = _text(params['prompt']);
         final queued = _prompts.isNotEmpty;
         _prompts.add(id!);
-        return [
-          if (!queued) TurnStarted(at: at),
-          UserMessage(text, queued: queued, at: at),
-        ];
+        return [if (!queued) TurnStarted(at: at), UserMessage(text, queued: queued, at: at)];
       case 'session/set_mode':
         _requestedModes[id!] = params['modeId'] as String;
         _modeReported = false;
@@ -82,24 +79,39 @@ class AcpReader {
               .whereType<Map>()
               .where((o) => o['category'] == 'model' && o['type'] == 'select')
               .firstOrNull;
-          events.add(SessionStarted(
-            result['sessionId'] as String? ?? '',
-            modes: [
-              for (final m in (modes?['availableModes'] as List?) ?? const [])
-                SessionMode(m['id'] as String, m['name'] as String? ?? m['id'] as String, m['description'] as String? ?? ''),
-            ],
-            modeId: modes?['currentModeId'] as String?,
-            models: [
-              for (final m in ((result['models'] as Map?)?['availableModels'] as List?) ?? const [])
-                SessionModel(m['modelId'] as String, m['name'] as String? ?? m['modelId'] as String, m['description'] as String? ?? ''),
-              if (result['models'] == null)
-                for (final o in (modelConfig?['options'] as List?) ?? const [])
-                  SessionModel(o['value'] as String, o['name'] as String? ?? o['value'] as String, o['description'] as String? ?? ''),
-            ],
-            modelId: (result['models'] as Map?)?['currentModelId'] as String? ?? modelConfig?['currentValue'] as String?,
-            modelOption: result['models'] == null ? (modelConfig?['id'] as String?) : null,
-            at: at,
-          ));
+          events.add(
+            SessionStarted(
+              result['sessionId'] as String? ?? '',
+              modes: [
+                for (final m in (modes?['availableModes'] as List?) ?? const [])
+                  SessionMode(
+                    m['id'] as String,
+                    m['name'] as String? ?? m['id'] as String,
+                    m['description'] as String? ?? '',
+                  ),
+              ],
+              modeId: modes?['currentModeId'] as String?,
+              models: [
+                for (final m in ((result['models'] as Map?)?['availableModels'] as List?) ?? const [])
+                  SessionModel(
+                    m['modelId'] as String,
+                    m['name'] as String? ?? m['modelId'] as String,
+                    m['description'] as String? ?? '',
+                  ),
+                if (result['models'] == null)
+                  for (final o in (modelConfig?['options'] as List?) ?? const [])
+                    SessionModel(
+                      o['value'] as String,
+                      o['name'] as String? ?? o['value'] as String,
+                      o['description'] as String? ?? '',
+                    ),
+              ],
+              modelId:
+                  (result['models'] as Map?)?['currentModelId'] as String? ?? modelConfig?['currentValue'] as String?,
+              modelOption: result['models'] == null ? (modelConfig?['id'] as String?) : null,
+              at: at,
+            ),
+          );
         }
         return events;
       case 'session/set_model' || 'session/set_config_option':
@@ -125,7 +137,9 @@ class AcpReader {
             TokensUsed(
               input: (usage['inputTokens'] as num?)?.toInt() ?? 0,
               output: (usage['outputTokens'] as num?)?.toInt() ?? 0,
-              cached: ((usage['cachedReadTokens'] as num?) ?? 0).toInt() + ((usage['cachedWriteTokens'] as num?) ?? 0).toInt(),
+              cached:
+                  ((usage['cachedReadTokens'] as num?) ?? 0).toInt() +
+                  ((usage['cachedWriteTokens'] as num?) ?? 0).toInt(),
               at: at,
             ),
           TurnEnded(_stopReason(result?['stopReason'] as String?), at: at),
@@ -168,17 +182,19 @@ class AcpReader {
       final multiple = f['type'] == 'array';
       final raw = multiple ? ((f['items'] as Map?)?['anyOf'] as List?) : (f['oneOf'] as List?);
       final other = '${e.key}_custom';
-      questions.add(Question(
-        e.key,
-        text: f['description'] as String? ?? (props.length <= 2 ? message : ''),
-        title: f['title'] as String?,
-        multiple: multiple,
-        otherKey: props.containsKey(other) ? other : null,
-        choices: [
-          for (final o in raw ?? const [])
-            QuestionChoice('${(o as Map)['const'] ?? o['title']}', o['description'] as String? ?? ''),
-        ],
-      ));
+      questions.add(
+        Question(
+          e.key,
+          text: f['description'] as String? ?? (props.length <= 2 ? message : ''),
+          title: f['title'] as String?,
+          multiple: multiple,
+          otherKey: props.containsKey(other) ? other : null,
+          choices: [
+            for (final o in raw ?? const [])
+              QuestionChoice('${(o as Map)['const'] ?? o['title']}', o['description'] as String? ?? ''),
+          ],
+        ),
+      );
     }
     return QuestionAsked(id, message: message, questions: questions, at: at);
   }
@@ -212,7 +228,12 @@ class AcpReader {
         final text = _text([u['content']]);
         if (text.isEmpty) return const [];
         return [
-          AgentMessage(text, messageId: u['messageId'] as String?, thought: u['sessionUpdate'] == 'agent_thought_chunk', at: at),
+          AgentMessage(
+            text,
+            messageId: u['messageId'] as String?,
+            thought: u['sessionUpdate'] == 'agent_thought_chunk',
+            at: at,
+          ),
         ];
       case 'tool_call' || 'tool_call_update':
         return [_toolCall(u, at)];
@@ -265,7 +286,10 @@ class AcpReader {
     return ToolCallEvent(
       u['toolCallId'] as String,
       name: u['name'] as String? ?? ((u['_meta'] as Map?)?['claudeCode'] as Map?)?['toolName'] as String?,
-      kind: switch (u['kind']) { final String k => _kind(k), _ => null },
+      kind: switch (u['kind']) {
+        final String k => _kind(k),
+        _ => null,
+      },
       // "Preparing file…" and "Terminal" are placeholders until the real title.
       title: switch (raw['description']) {
         // Claude's few words about a command read better than the command.
@@ -282,10 +306,10 @@ class AcpReader {
   }
 
   static String? _command(Map<String, dynamic> raw) => switch (raw['command']) {
-        final String c => c,
-        final List c => c.join(' '),
-        _ => null,
-      };
+    final String c => c,
+    final List c => c.join(' '),
+    _ => null,
+  };
 
   static String _text(Object? blocks) {
     final out = StringBuffer();
@@ -296,37 +320,37 @@ class AcpReader {
   }
 
   static ToolKind _kind(String k) => switch (k) {
-        'read' => ToolKind.read,
-        'edit' => ToolKind.edit,
-        'delete' => ToolKind.delete,
-        'move' => ToolKind.move,
-        'search' => ToolKind.search,
-        'execute' => ToolKind.execute,
-        'think' => ToolKind.think,
-        'fetch' => ToolKind.fetch,
-        _ => ToolKind.other,
-      };
+    'read' => ToolKind.read,
+    'edit' => ToolKind.edit,
+    'delete' => ToolKind.delete,
+    'move' => ToolKind.move,
+    'search' => ToolKind.search,
+    'execute' => ToolKind.execute,
+    'think' => ToolKind.think,
+    'fetch' => ToolKind.fetch,
+    _ => ToolKind.other,
+  };
 
   static ToolStatus? _toolStatus(String? s) => switch (s) {
-        'pending' => ToolStatus.pending,
-        'in_progress' => ToolStatus.running,
-        'completed' => ToolStatus.completed,
-        'failed' => ToolStatus.failed,
-        _ => null,
-      };
+    'pending' => ToolStatus.pending,
+    'in_progress' => ToolStatus.running,
+    'completed' => ToolStatus.completed,
+    'failed' => ToolStatus.failed,
+    _ => null,
+  };
 
   static PlanStatus _planStatus(String? s) => switch (s) {
-        'in_progress' => PlanStatus.inProgress,
-        'completed' => PlanStatus.completed,
-        _ => PlanStatus.pending,
-      };
+    'in_progress' => PlanStatus.inProgress,
+    'completed' => PlanStatus.completed,
+    _ => PlanStatus.pending,
+  };
 
   static StopReason _stopReason(String? s) => switch (s) {
-        'cancelled' => StopReason.cancelled,
-        'refusal' => StopReason.refused,
-        'max_tokens' || 'max_turn_requests' => StopReason.maxTokens,
-        _ => StopReason.endTurn,
-      };
+    'cancelled' => StopReason.cancelled,
+    'refusal' => StopReason.refused,
+    'max_tokens' || 'max_turn_requests' => StopReason.maxTokens,
+    _ => StopReason.endTurn,
+  };
 
   static bool _isLimit(String text) {
     final t = text.toLowerCase();

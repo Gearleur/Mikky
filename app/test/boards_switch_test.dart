@@ -13,12 +13,15 @@ void main() {
     tester.view.physicalSize = const Size(1440, 920);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(const MediaQuery(
-      data: MediaQueryData(disableAnimations: true),
-      child: Directionality(textDirection: TextDirection.ltr, child: Boards()),
-    ));
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(disableAnimations: true),
+        child: Directionality(textDirection: TextDirection.ltr, child: Boards()),
+      ),
+    );
     // The band's title: the board shown.
-    Finder title(String name) => find.byWidgetPredicate((w) => w is Text && w.data == name && (w.style?.fontSize ?? 0) == 30);
+    Finder title(String name) =>
+        find.byWidgetPredicate((w) => w is Text && w.data == name && (w.style?.fontSize ?? 0) == 30);
     expect(title('Marque'), findsWidgets);
     await tester.tap(find.text('Notch Top').first);
     await tester.pump();

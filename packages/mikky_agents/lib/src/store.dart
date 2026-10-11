@@ -97,7 +97,14 @@ class LaunchChoice {
 /// elsewhere): its own name, pinned, archived, an error marked as settled,
 /// or forgotten.
 class SessionMark {
-  const SessionMark({this.name, this.pinned = false, this.archived = false, this.settledAt, this.pausedAt, this.forgotten = false});
+  const SessionMark({
+    this.name,
+    this.pinned = false,
+    this.archived = false,
+    this.settledAt,
+    this.pausedAt,
+    this.forgotten = false,
+  });
 
   factory SessionMark.fromJson(Map<String, dynamic> j) => SessionMark(
     name: j['name'] as String?,
@@ -234,10 +241,18 @@ class AgentStore {
       ..addAll((state['recentFolders'] as List).cast<String>());
     choices
       ..clear()
-      ..addAll((state['choices'] as Map).map((k, v) => MapEntry(k as String, LaunchChoice.fromJson((v as Map).cast<String, dynamic>()))));
+      ..addAll(
+        (state['choices'] as Map).map(
+          (k, v) => MapEntry(k as String, LaunchChoice.fromJson((v as Map).cast<String, dynamic>())),
+        ),
+      );
     marks
       ..clear()
-      ..addAll((state['marks'] as Map).map((k, v) => MapEntry(k as String, SessionMark.fromJson((v as Map).cast<String, dynamic>()))));
+      ..addAll(
+        (state['marks'] as Map).map(
+          (k, v) => MapEntry(k as String, SessionMark.fromJson((v as Map).cast<String, dynamic>())),
+        ),
+      );
     _remoteLoaded = true;
   }
 

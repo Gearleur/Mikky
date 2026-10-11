@@ -38,7 +38,9 @@ void main() {
 
   test('a permission request waits; AskUserQuestion is a question', () {
     final log = started()
-      ..apply(ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'rm -rf cache', status: ToolStatus.pending))
+      ..apply(
+        ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'rm -rf cache', status: ToolStatus.pending),
+      )
       ..apply(const PermissionAsked(7, toolCallId: 't1', title: 'Bash', command: 'rm -rf cache'));
     expect(log.statusAt(_at(1)), AgentStatus.approval);
     expect(log.detail, 'rm -rf cache');
@@ -56,7 +58,8 @@ void main() {
     expect(error.statusAt(_at(1)), AgentStatus.error);
     expect(error.detail, 'API Error: 500');
 
-    final limit = started()..apply(const TurnEnded(StopReason.rateLimited, message: 'Usage limit reached, resets at 5pm'));
+    final limit = started()
+      ..apply(const TurnEnded(StopReason.rateLimited, message: 'Usage limit reached, resets at 5pm'));
     expect(limit.statusAt(_at(1)), AgentStatus.rateLimited);
     // The limit, said in French, with when it lifts (the message stays in the thread).
     expect(limit.detail, 'Limite atteinte · reprend à 17 h');

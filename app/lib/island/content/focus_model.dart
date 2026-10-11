@@ -32,26 +32,23 @@ class AgentText {
       AgentStatus.thinking => ('réfléchit', const <FocusAction>[]),
       AgentStatus.searching => ('cherche', const <FocusAction>[]),
       AgentStatus.approval => (
-          'veut lancer',
-          const [
-            FocusAction('Refuser', AgentAnswer.deny, keyHint: 'N'),
-            FocusAction('Autoriser', AgentAnswer.allow, primary: true, keyHint: 'Y'),
-          ],
-        ),
+        'veut lancer',
+        const [
+          FocusAction('Refuser', AgentAnswer.deny, keyHint: 'N'),
+          FocusAction('Autoriser', AgentAnswer.allow, primary: true, keyHint: 'Y'),
+        ],
+      ),
       AgentStatus.question => (
-          'a une question',
-          const [
-            FocusAction('Plus tard', AgentAnswer.dismiss),
-            FocusAction('Ouvrir le terminal', AgentAnswer.dismiss, primary: true),
-          ],
-        ),
+        'a une question',
+        const [
+          FocusAction('Plus tard', AgentAnswer.dismiss),
+          FocusAction('Ouvrir le terminal', AgentAnswer.dismiss, primary: true),
+        ],
+      ),
       AgentStatus.error => (
-          'a échoué',
-          const [
-            FocusAction('Ignorer', AgentAnswer.dismiss),
-            FocusAction('Relancer', AgentAnswer.retry, primary: true),
-          ],
-        ),
+        'a échoué',
+        const [FocusAction('Ignorer', AgentAnswer.dismiss), FocusAction('Relancer', AgentAnswer.retry, primary: true)],
+      ),
       AgentStatus.finished => ('a terminé', const [FocusAction('OK', AgentAnswer.dismiss, primary: true)]),
       AgentStatus.rateLimited => ('est limité', const <FocusAction>[]),
       AgentStatus.paused => ('est en pause', const <FocusAction>[]),
@@ -87,7 +84,13 @@ class AgentText {
 
 /// Everything the open island shows, for one snapshot.
 class IslandText {
-  IslandText._({required this.content, required this.focus, required this.others, required this.all, required this.header});
+  IslandText._({
+    required this.content,
+    required this.focus,
+    required this.others,
+    required this.all,
+    required this.header,
+  });
 
   factory IslandText.of(IslandSnapshot s, double now) {
     final all = [for (final a in s.agents) AgentText.of(a, now)];

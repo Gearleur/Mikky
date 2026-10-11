@@ -75,13 +75,20 @@ class _DotFieldState extends State<DotField> {
     final ui = MikkyUi.of(context);
     // Grey, a little dark (« pas assez noir » paler): a texture, not a
     // pattern to read.
-    final color = ui.isLight ? const Color(0xFF6E6E73).withValues(alpha: .7) : const Color(0xFFFFFFFF).withValues(alpha: .34);
+    final color = ui.isLight
+        ? const Color(0xFF6E6E73).withValues(alpha: .7)
+        : const Color(0xFFFFFFFF).withValues(alpha: .34);
     return IgnorePointer(
       child: LayoutBuilder(
         builder: (context, box) {
           final size = box.biggest;
           final d = _dots;
-          final dots = d != null && d.size == size && d.solidFrom == widget.solidFrom && d.goneAt == widget.goneAt && d.seed == widget.seed
+          final dots =
+              d != null &&
+                  d.size == size &&
+                  d.solidFrom == widget.solidFrom &&
+                  d.goneAt == widget.goneAt &&
+                  d.seed == widget.seed
               ? d
               : _dots = _Dots(size, widget.solidFrom, widget.goneAt, widget.seed);
           return Stack(
@@ -119,8 +126,10 @@ class _Dots {
     // One strength per big square, at random, never nothing; a few small
     // squares bright.
     final big = <(int, int), double>{}, small = <(int, int), bool>{};
-    double square(int c, int r) =>
-        big.putIfAbsent((c ~/ 6, r ~/ 6), () => rng.nextDouble() < .33 ? .85 + .15 * rng.nextDouble() : .14 + .26 * rng.nextDouble());
+    double square(int c, int r) => big.putIfAbsent((
+      c ~/ 6,
+      r ~/ 6,
+    ), () => rng.nextDouble() < .33 ? .85 + .15 * rng.nextDouble() : .14 + .26 * rng.nextDouble());
     bool sparkle(int c, int r) => small.putIfAbsent((c ~/ 2, r ~/ 2), () => rng.nextDouble() < .1);
     for (var r = 0; r < rows; r++) {
       for (var c = 0; c < cols; c++) {
@@ -262,7 +271,13 @@ class _LivePainter extends CustomPainter {
         final cy = (top + _h(f * 5 + 3) * (bottom - top)).roundToDouble();
         final palette = palettes[(_h(f * 5 + 4) * palettes.length).floor().clamp(0, palettes.length - 1)];
         final frame = const [0, 1, 2, 2][(fu * 4).floor().clamp(0, 3)];
-        final fade = (fu < .15 ? fu / .15 : fu > .55 ? (1 - fu) / .45 : 1.0) * .55;
+        final fade =
+            (fu < .15
+                ? fu / .15
+                : fu > .55
+                ? (1 - fu) / .45
+                : 1.0) *
+            .55;
         for (var dy = -half; dy <= half; dy++) {
           for (var dx = -half; dx <= half; dx++) {
             final level = pixelLevel(CalmFirework.frame(frame, dx, dy));

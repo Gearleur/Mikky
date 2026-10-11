@@ -138,7 +138,9 @@ class Login {
   /// Gives up: the tool stops waiting.
   void cancel() {
     if (_client case final client?) {
-      unawaited(client.request('tools.cancelLogin', {'host': _host!.name, 'login': _id}).catchError((Object _) => null));
+      unawaited(
+        client.request('tools.cancelLogin', {'host': _host!.name, 'login': _id}).catchError((Object _) => null),
+      );
       _sub?.cancel();
       if (!_states.isClosed) _states.close();
     }

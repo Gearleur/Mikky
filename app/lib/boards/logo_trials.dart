@@ -29,16 +29,20 @@ class MarkTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
-          border: dark ? null : Border.all(color: const Color(0x1F000000)),
-        ),
-        child: CustomPaint(
-          painter: _MarkPainter(symbol, dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E), dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF)),
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
+      border: dark ? null : Border.all(color: const Color(0x1F000000)),
+    ),
+    child: CustomPaint(
+      painter: _MarkPainter(
+        symbol,
+        dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E),
+        dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
+      ),
+    ),
+  );
 }
 
 class _MarkPainter extends CustomPainter {
@@ -66,7 +70,10 @@ class _MarkPainter extends CustomPainter {
       final w = math.max(1.5, s * .1);
       for (final side in const [-1.0, 1.0]) {
         canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(s * cx + side * gap, cy), width: w, height: h), Radius.circular(w / 2)),
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(s * cx + side * gap, cy), width: w, height: h),
+            Radius.circular(w / 2),
+          ),
           cut ? (Paint()..color = paper) : fill,
         );
       }
@@ -131,25 +138,42 @@ class MarkName extends StatelessWidget {
   Widget build(BuildContext context) {
     final ink = dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E);
     final h = height;
-    TextStyle mono(double size) => TextStyle(fontFamily: 'Geist Mono', fontSize: size, fontWeight: FontWeight.w500, color: ink, height: 1, letterSpacing: -size * .02);
+    TextStyle mono(double size) => TextStyle(
+      fontFamily: 'Geist Mono',
+      fontSize: size,
+      fontWeight: FontWeight.w500,
+      color: ink,
+      height: 1,
+      letterSpacing: -size * .02,
+    );
     // One of his eyes, standing in for a letter: on the baseline, a little
     // taller than the small letters, like his own tall eyes.
     InlineSpan eye(double size) => WidgetSpan(
-          alignment: PlaceholderAlignment.baseline,
-          baseline: TextBaseline.alphabetic,
-          child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: size * .07),
-            child: Container(
-              width: size * .17,
-              height: size * .64,
-              decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(size)),
-            ),
-          ),
-        );
+      alignment: PlaceholderAlignment.baseline,
+      baseline: TextBaseline.alphabetic,
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: size * .07),
+        child: Container(
+          width: size * .17,
+          height: size * .64,
+          decoration: BoxDecoration(color: ink, borderRadius: BorderRadius.circular(size)),
+        ),
+      ),
+    );
     final f = h * .42;
     final child = switch (word) {
       MarkWord.bracketed => Text('[mikky]', style: mono(f)),
-      MarkWord.eyes => Text.rich(TextSpan(style: mono(f), children: [const TextSpan(text: '[m'), eye(f), eye(f), const TextSpan(text: ']')])),
+      MarkWord.eyes => Text.rich(
+        TextSpan(
+          style: mono(f),
+          children: [
+            const TextSpan(text: '[m'),
+            eye(f),
+            eye(f),
+            const TextSpan(text: ']'),
+          ],
+        ),
+      ),
     };
     return Container(
       height: h,
@@ -174,23 +198,39 @@ class MarkSymbolSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        MarkTile(symbol),
-        const SizedBox(width: 10),
-        MarkTile(symbol, dark: false),
-      ]),
-      const SizedBox(height: 10),
-      Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-        for (final (px, dark) in const [(48.0, true), (32.0, true), (24.0, false), (16.0, true), (16.0, false)]) ...[
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            MarkTile(symbol, size: px, dark: dark),
-            const SizedBox(height: 4),
-            Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
-          ]),
-          const SizedBox(width: 10),
-        ],
-      ]),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [MarkTile(symbol), const SizedBox(width: 10), MarkTile(symbol, dark: false)],
+        ),
+        const SizedBox(height: 10),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (px, dark) in const [
+              (48.0, true),
+              (32.0, true),
+              (24.0, false),
+              (16.0, true),
+              (16.0, false),
+            ]) ...[
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  MarkTile(symbol, size: px, dark: dark),
+                  const SizedBox(height: 4),
+                  Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
+                ],
+              ),
+              const SizedBox(width: 10),
+            ],
+          ],
+        ),
+      ],
+    );
   }
 }

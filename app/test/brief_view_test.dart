@@ -14,12 +14,44 @@ final _t0 = DateTime.utc(2026, 10, 4, 12);
 SessionLog _waiting() => SessionLog()
   ..apply(const SessionStarted('s1', cwd: r'C:\dev\mikky'))
   ..apply(TurnStarted(at: _t0))
-  ..apply(UserMessage('Corrige le build Windows et relance les tests du moteur, puis dis-moi ce qui casse encore', at: _t0))
-  ..apply(const PlanChanged([PlanEntry('Lire', PlanStatus.completed), PlanEntry('Lancer les tests', PlanStatus.inProgress)]))
-  ..apply(AgentMessage('J’ai corrigé le CMake.\n\nJe relance maintenant toute la suite de tests, ça prend une minute.', at: _t0))
-  ..apply(const ToolCallEvent('t0', kind: ToolKind.edit, diff: FileDiff('windows/CMakeLists.txt', 'a\nb', 'a\nc\nd'), status: ToolStatus.completed))
-  ..apply(const ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'cargo test', command: 'cargo test --workspace --all-features -- --nocapture', status: ToolStatus.pending))
-  ..apply(const PermissionAsked(1, toolCallId: 't1', title: 'Bash', options: [PermissionOption('a', 'Toujours', 'allow_always')]));
+  ..apply(
+    UserMessage('Corrige le build Windows et relance les tests du moteur, puis dis-moi ce qui casse encore', at: _t0),
+  )
+  ..apply(
+    const PlanChanged([PlanEntry('Lire', PlanStatus.completed), PlanEntry('Lancer les tests', PlanStatus.inProgress)]),
+  )
+  ..apply(
+    AgentMessage(
+      'J’ai corrigé le CMake.\n\nJe relance maintenant toute la suite de tests, ça prend une minute.',
+      at: _t0,
+    ),
+  )
+  ..apply(
+    const ToolCallEvent(
+      't0',
+      kind: ToolKind.edit,
+      diff: FileDiff('windows/CMakeLists.txt', 'a\nb', 'a\nc\nd'),
+      status: ToolStatus.completed,
+    ),
+  )
+  ..apply(
+    const ToolCallEvent(
+      't1',
+      name: 'Bash',
+      kind: ToolKind.execute,
+      title: 'cargo test',
+      command: 'cargo test --workspace --all-features -- --nocapture',
+      status: ToolStatus.pending,
+    ),
+  )
+  ..apply(
+    const PermissionAsked(
+      1,
+      toolCallId: 't1',
+      title: 'Bash',
+      options: [PermissionOption('a', 'Toujours', 'allow_always')],
+    ),
+  );
 
 Agent _agent(AgentStatus s) => Agent(
   id: 'a',
@@ -48,7 +80,13 @@ void main() {
       textDirection: TextDirection.ltr,
       child: MikkyUiTheme(
         ui: MikkyUi.dark,
-        child: Align(alignment: Alignment.topLeft, child: SizedBox(width: width, child: SingleChildScrollView(child: child))),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: width,
+            child: SingleChildScrollView(child: child),
+          ),
+        ),
       ),
     ),
   );
@@ -57,13 +95,17 @@ void main() {
     final answers = <AgentAnswer>[];
     var opened = false;
     final log = _waiting();
-    await tester.pumpWidget(host(BriefView(
-      agent: _agent(AgentStatus.approval),
-      brief: briefOf(log, log.statusAt(_t0)),
-      canAlways: true,
-      queue: 2,
-      actions: BriefActions(answer: answers.add, open: () => opened = true),
-    )));
+    await tester.pumpWidget(
+      host(
+        BriefView(
+          agent: _agent(AgentStatus.approval),
+          brief: briefOf(log, log.statusAt(_t0)),
+          canAlways: true,
+          queue: 2,
+          actions: BriefActions(answer: answers.add, open: () => opened = true),
+        ),
+      ),
+    );
     expect(tester.takeException(), isNull);
     expect(find.textContaining('attend ton feu vert'), findsOneWidget);
     expect(find.textContaining('Lancer les tests'), findsOneWidget);
@@ -80,11 +122,24 @@ void main() {
   testWidgets('every kind lays out at the top width and at the right width', (tester) async {
     final log = _waiting();
     for (final width in [328.0, 308.0]) {
-      for (final s in [AgentStatus.approval, AgentStatus.question, AgentStatus.error, AgentStatus.finished, AgentStatus.rateLimited]) {
-        await tester.pumpWidget(host(
-          BriefView(key: ValueKey('$s$width'), agent: _agent(s), brief: briefOf(log, s), actions: BriefActions(answer: (_) {})),
-          width: width,
-        ));
+      for (final s in [
+        AgentStatus.approval,
+        AgentStatus.question,
+        AgentStatus.error,
+        AgentStatus.finished,
+        AgentStatus.rateLimited,
+      ]) {
+        await tester.pumpWidget(
+          host(
+            BriefView(
+              key: ValueKey('$s$width'),
+              agent: _agent(s),
+              brief: briefOf(log, s),
+              actions: BriefActions(answer: (_) {}),
+            ),
+            width: width,
+          ),
+        );
         expect(tester.takeException(), isNull, reason: '$s at $width');
       }
     }
@@ -93,7 +148,15 @@ void main() {
   testWidgets('the demo: no session, its line only', (tester) async {
     final a = _agent(AgentStatus.error).copyWith(detail: 'API Error: 500');
     final answers = <AgentAnswer>[];
-    await tester.pumpWidget(host(BriefView(agent: a, brief: briefOfAgent(a), actions: BriefActions(answer: answers.add))));
+    await tester.pumpWidget(
+      host(
+        BriefView(
+          agent: a,
+          brief: briefOfAgent(a),
+          actions: BriefActions(answer: answers.add),
+        ),
+      ),
+    );
     expect(find.text('API Error: 500'), findsOneWidget);
     await tester.tap(find.text('Relancer'));
     expect(answers, [AgentAnswer.retry]);
@@ -102,7 +165,18 @@ void main() {
   group('SoundBoard', () {
     test('every cue has a known file or none', () {
       // The files of app/assets/sounds (README.md).
-      const files = {'back', 'discord_close', 'discord_open', 'folder_close', 'folder_open', 'launch', 'navigate', 'retroachievements', 'select', 'spell'};
+      const files = {
+        'back',
+        'discord_close',
+        'discord_open',
+        'folder_close',
+        'folder_open',
+        'launch',
+        'navigate',
+        'retroachievements',
+        'select',
+        'spell',
+      };
       for (final cue in MikkyCue.values) {
         expect(soundFiles.containsKey(cue), isTrue, reason: '$cue');
         final f = soundFiles[cue];

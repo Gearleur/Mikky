@@ -70,10 +70,7 @@ class BriefView extends StatelessWidget {
       if (b.task != null) _Labeled('Tâche', b.task!, style: small),
       if (b.step != null) _Labeled('Étape', b.step!, style: small),
       if (b.said != null) _Labeled('Dit', '« ${b.said!} »', style: small),
-      if (b.recent.isNotEmpty) ...[
-        const SizedBox(height: 2),
-        for (final a in b.recent) _ActivityRow(a),
-      ],
+      if (b.recent.isNotEmpty) ...[const SizedBox(height: 2), for (final a in b.recent) _ActivityRow(a)],
     ];
 
     return Column(
@@ -84,10 +81,18 @@ class BriefView extends StatelessWidget {
           children: [
             Expanded(
               child: Text.rich(
-                TextSpan(children: [
-                  TextSpan(text: agent.name, style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text)),
-                  TextSpan(text: '  $line', style: uiText(TextSize.small, color: ui.text2)),
-                ]),
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: agent.name,
+                      style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text),
+                    ),
+                    TextSpan(
+                      text: '  $line',
+                      style: uiText(TextSize.small, color: ui.text2),
+                    ),
+                  ],
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -98,7 +103,13 @@ class BriefView extends StatelessWidget {
             ],
           ],
         ),
-        if (where.isNotEmpty) Text(where, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, color: ui.text3)),
+        if (where.isNotEmpty)
+          Text(
+            where,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(TextSize.caption, color: ui.text3),
+          ),
         if (context_.isNotEmpty) ...[const SizedBox(height: 8), ...context_],
         const SizedBox(height: 10),
         ..._request(context, ui),
@@ -126,7 +137,12 @@ class BriefView extends StatelessWidget {
           if (b.requestTitle != null)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Text(b.requestTitle!, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, color: ui.text2)),
+              child: Text(
+                b.requestTitle!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.caption, color: ui.text2),
+              ),
             ),
           WaitActions(
             command: diff == null ? b.request : '${b.request}  ${diff.label}',
@@ -142,37 +158,69 @@ class BriefView extends StatelessWidget {
         return [
           CodePill(b.request, maxLines: 4),
           const SizedBox(height: 8),
-          Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Plus tard', () => answer(AgentAnswer.dismiss))])),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AnswerBar(answers: [('Plus tard', () => answer(AgentAnswer.dismiss))]),
+          ),
         ];
       case BriefKind.error:
         return [
-          Text(b.request, maxLines: 4, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.red)),
+          Text(
+            b.request,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(TextSize.small, color: ui.red),
+          ),
           const SizedBox(height: 8),
           Align(
             alignment: Alignment.centerRight,
-            child: AnswerBar(answers: [('Ignorer', () => answer(AgentAnswer.dismiss)), ('Relancer', () => answer(AgentAnswer.retry))]),
+            child: AnswerBar(
+              answers: [('Ignorer', () => answer(AgentAnswer.dismiss)), ('Relancer', () => answer(AgentAnswer.retry))],
+            ),
           ),
         ];
       case BriefKind.finished:
         return [
-          Text(b.request, maxLines: 4, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.text)),
+          Text(
+            b.request,
+            maxLines: 4,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(TextSize.small, color: ui.text),
+          ),
           if (b.files.isNotEmpty) ...[
             const SizedBox(height: 6),
             for (final f in b.files.take(4))
               Row(
                 children: [
-                  Expanded(child: Text(f.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, color: ui.text2, mono: true))),
+                  Expanded(
+                    child: Text(
+                      f.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: uiText(TextSize.caption, color: ui.text2, mono: true),
+                    ),
+                  ),
                   _DiffLabel(f.diff),
                 ],
               ),
-            if (b.files.length > 4) Text('+ ${b.files.length - 4} fichiers', style: uiText(TextSize.caption, color: ui.text3)),
+            if (b.files.length > 4)
+              Text('+ ${b.files.length - 4} fichiers', style: uiText(TextSize.caption, color: ui.text3)),
           ],
           const SizedBox(height: 8),
-          Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('OK', () => answer(AgentAnswer.dismiss))])),
+          Align(
+            alignment: Alignment.centerRight,
+            child: AnswerBar(answers: [('OK', () => answer(AgentAnswer.dismiss))]),
+          ),
         ];
       case BriefKind.rateLimited || BriefKind.working || BriefKind.idle:
         return [
-          if (b.request.isNotEmpty) Text(b.request, maxLines: 3, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.text)),
+          if (b.request.isNotEmpty)
+            Text(
+              b.request,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: uiText(TextSize.small, color: ui.text),
+            ),
         ];
     }
   }
@@ -199,10 +247,15 @@ class _Labeled extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Text.rich(
-        TextSpan(children: [
-          TextSpan(text: '$label  ', style: style.copyWith(color: ui.text3)),
-          TextSpan(text: text),
-        ]),
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '$label  ',
+              style: style.copyWith(color: ui.text3),
+            ),
+            TextSpan(text: text),
+          ],
+        ),
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: style,
@@ -223,10 +276,18 @@ class _ActivityRow extends StatelessWidget {
     final diff = a.diff;
     return Row(
       children: [
-        Text(a.running ? '›' : (a.failed ? '×' : '·'), style: uiText(TextSize.caption, color: a.failed ? ui.red : ui.text3, mono: true)),
+        Text(
+          a.running ? '›' : (a.failed ? '×' : '·'),
+          style: uiText(TextSize.caption, color: a.failed ? ui.red : ui.text3, mono: true),
+        ),
         const SizedBox(width: 6),
         Expanded(
-          child: Text(a.text, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, color: ui.text2, mono: true)),
+          child: Text(
+            a.text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: uiText(TextSize.caption, color: ui.text2, mono: true),
+          ),
         ),
         if (diff != null) _DiffLabel(diff),
       ],
@@ -243,11 +304,21 @@ class _DiffLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final style = uiText(TextSize.caption, mono: true, tabular: true);
-    return Text.rich(TextSpan(children: [
-      TextSpan(text: '+${diff.added}', style: style.copyWith(color: ui.green)),
-      const TextSpan(text: ' '),
-      TextSpan(text: '−${diff.removed}', style: style.copyWith(color: ui.red)),
-    ]));
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '+${diff.added}',
+            style: style.copyWith(color: ui.green),
+          ),
+          const TextSpan(text: ' '),
+          TextSpan(
+            text: '−${diff.removed}',
+            style: style.copyWith(color: ui.red),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -265,7 +336,10 @@ class _Link extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Text(label, style: uiText(TextSize.caption, color: ui.text2, weight: FontWeight.w500)),
+        child: Text(
+          label,
+          style: uiText(TextSize.caption, color: ui.text2, weight: FontWeight.w500),
+        ),
       ),
     );
   }

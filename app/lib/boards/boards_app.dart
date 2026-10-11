@@ -38,7 +38,18 @@ class BoardsApp extends StatelessWidget {
   );
 }
 
-final boards = [brandBoard, componentsBoard, mikkyBoard, islandBoard, notchTopBoard, notchRightBoard, homeRightBoard, agentBoard, messagesBoard, technicalBoard];
+final boards = [
+  brandBoard,
+  componentsBoard,
+  mikkyBoard,
+  islandBoard,
+  notchTopBoard,
+  notchRightBoard,
+  homeRightBoard,
+  agentBoard,
+  messagesBoard,
+  technicalBoard,
+];
 
 class Boards extends StatefulWidget {
   const Boards({super.key, this.initial = 0, this.themes = 0});
@@ -125,17 +136,23 @@ class _BoardsState extends State<Boards> {
             ),
             Container(width: 1, color: shell.line),
             Expanded(
-              child: Stack(children: [
-                Positioned.fill(
-                  child: BoardCanvas(
-                    key: _canvas,
-                    background: bands.first.board,
-                    onScale: (s) => setState(() => _scale = s),
-                    child: _contentOf(bands),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: BoardCanvas(
+                      key: _canvas,
+                      background: bands.first.board,
+                      onScale: (s) => setState(() => _scale = s),
+                      child: _contentOf(bands),
+                    ),
                   ),
-                ),
-                Positioned(right: 16, bottom: 16, child: ZoomPill(canvas: _canvas, scale: _scale)),
-              ]),
+                  Positioned(
+                    right: 16,
+                    bottom: 16,
+                    child: ZoomPill(canvas: _canvas, scale: _scale),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -163,11 +180,21 @@ class BoardBand extends StatelessWidget {
           builder: (context) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                Text(spec.name, style: uiText(30, weight: FontWeight.w700, color: ui.text, tracking: -.02)),
-                const SizedBox(width: 14),
-                Text(ui.isLight ? 'Clair · île blanc pur' : 'Sombre · île noir A', style: uiText(14, color: ui.text3)),
-              ]),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    spec.name,
+                    style: uiText(30, weight: FontWeight.w700, color: ui.text, tracking: -.02),
+                  ),
+                  const SizedBox(width: 14),
+                  Text(
+                    ui.isLight ? 'Clair · île blanc pur' : 'Sombre · île noir A',
+                    style: uiText(14, color: ui.text3),
+                  ),
+                ],
+              ),
               const SizedBox(height: 36),
               ...spec.sections(context),
             ],
@@ -208,10 +235,15 @@ class _Sidebar extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(children: [
-            const HeadMikky(),
-            Text('Planches', style: uiText(17, weight: FontWeight.w600, color: ui.text)),
-          ]),
+          Row(
+            children: [
+              const HeadMikky(),
+              Text(
+                'Planches',
+                style: uiText(17, weight: FontWeight.w600, color: ui.text),
+              ),
+            ],
+          ),
           const SizedBox(height: 18),
           // The hover and the choice: the sliding square of Oui / Non (user
           // request, 2026-09-30).
@@ -222,37 +254,53 @@ class _Sidebar extends StatelessWidget {
             radius: 12,
             followHover: false,
             hairline: false,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-              for (var i = 0; i < boards.length; i++)
-                HoverTarget(
-                  selected: i == selected,
-                  child: HoverBuilder(
-                    builder: (context, hover) => MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => onSelect(i),
-                        child: Padding(
-                          padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 140),
-                              // Light at rest, black under the mouse (user request, 2026-09-30).
-                              style: uiText(14, weight: i == selected ? FontWeight.w600 : FontWeight.w500, color: i == selected || hover ? ui.text : ui.text3),
-                              child: Text(boards[i].name),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                for (var i = 0; i < boards.length; i++)
+                  HoverTarget(
+                    selected: i == selected,
+                    child: HoverBuilder(
+                      builder: (context, hover) => MouseRegion(
+                        cursor: SystemMouseCursors.click,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => onSelect(i),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 140),
+                                  // Light at rest, black under the mouse (user request, 2026-09-30).
+                                  style: uiText(
+                                    14,
+                                    weight: i == selected ? FontWeight.w600 : FontWeight.w500,
+                                    color: i == selected || hover ? ui.text : ui.text3,
+                                  ),
+                                  child: Text(boards[i].name),
+                                ),
+                                AnimatedDefaultTextStyle(
+                                  duration: const Duration(milliseconds: 140),
+                                  style: uiText(
+                                    11.5,
+                                    color: i == selected || hover
+                                        ? ui.text2
+                                        : ui.text3.withValues(alpha: ui.text3.a * .7),
+                                    height: 1.35,
+                                  ),
+                                  child: Text(boards[i].note, maxLines: 2),
+                                ),
+                              ],
                             ),
-                            AnimatedDefaultTextStyle(
-                              duration: const Duration(milliseconds: 140),
-                              style: uiText(11.5, color: i == selected || hover ? ui.text2 : ui.text3.withValues(alpha: ui.text3.a * .7), height: 1.35),
-                              child: Text(boards[i].note, maxLines: 2),
-                            ),
-                          ]),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ]),
+              ],
+            ),
           ),
           const Spacer(),
           Text(
@@ -261,12 +309,21 @@ class _Sidebar extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           // Which frames: all, the app's, the trials, the places to play.
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            MChip('Tout', on: only == null, onTap: () => onOnly(null)),
-            for (final k in FrameKind.values) MChip(k.label, on: only == k, onTap: () => onOnly(k)),
-          ]),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              MChip('Tout', on: only == null, onTap: () => onOnly(null)),
+              for (final k in FrameKind.values) MChip(k.label, on: only == k, onTap: () => onOnly(k)),
+            ],
+          ),
           const SizedBox(height: 8),
-          Segmented(options: const ['Clair', 'Sombre', 'Les deux'], selected: themes, size: SegmentSize.xs, onChanged: onThemes),
+          Segmented(
+            options: const ['Clair', 'Sombre', 'Les deux'],
+            selected: themes,
+            size: SegmentSize.xs,
+            onChanged: onThemes,
+          ),
         ],
       ),
     );

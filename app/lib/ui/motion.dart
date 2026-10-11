@@ -51,7 +51,8 @@ abstract final class Motion {
 
   /// A spring as the prototypes write it: stiffness k, damping ratio z,
   /// unit mass (same as the island's springs).
-  static SpringDescription spring(double k, double z) => SpringDescription(mass: 1, stiffness: k, damping: 2 * math.sqrt(k) * z);
+  static SpringDescription spring(double k, double z) =>
+      SpringDescription(mass: 1, stiffness: k, damping: 2 * math.sqrt(k) * z);
 
   /// Windows asks for fewer animations: fades only, no bounce.
   static bool reduced(BuildContext context) => MediaQuery.maybeDisableAnimationsOf(context) ?? false;
@@ -76,7 +77,11 @@ class Pressable extends StatefulWidget {
 }
 
 class _PressableState extends State<Pressable> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController(vsync: this, duration: Motion.pressDown, reverseDuration: Motion.pressUp);
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: Motion.pressDown,
+    reverseDuration: Motion.pressUp,
+  );
   late final Animation<double> _scale = Tween(
     begin: 1.0,
     end: widget.pressedScale,
@@ -168,7 +173,8 @@ class SpringValue extends StatefulWidget {
 }
 
 class _SpringValueState extends State<SpringValue> with SingleTickerProviderStateMixin {
-  late final AnimationController _c = AnimationController.unbounded(vsync: this, value: widget.target)..addListener(() => setState(() {}));
+  late final AnimationController _c = AnimationController.unbounded(vsync: this, value: widget.target)
+    ..addListener(() => setState(() {}));
   SpringSimulation? _sim;
   double _t0 = 0;
 
@@ -306,7 +312,9 @@ class _LoopingState extends State<Looping> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) => RepaintBoundary(
-    child: widget.repeat ? widget.builder(context, _t) : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
+    child: widget.repeat
+        ? widget.builder(context, _t)
+        : AnimatedBuilder(animation: _c, builder: (context, _) => widget.builder(context, _c.value)),
   );
 }
 

@@ -27,10 +27,29 @@ abstract final class FakeSessions {
       PlanEntry('Corriger la fermeture auto', PlanStatus.inProgress),
       PlanEntry('Relancer les tests', PlanStatus.pending),
     ], at: _at(4)),
-    ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'Lancer les tests', command: 'dart test', status: ToolStatus.failed,
-        output: '00:02 +74 -2: island closes after 45 s [E]\n  Expected: 45\n    Actual: 60\n00:02 +74 -2: Some tests failed.', at: _at(6)),
-    AgentMessage('Deux tests échouent : ils attendent une fermeture à **45 s**, le code ferme à 60 s. Je regarde la constante.', at: _at(8)),
-    ToolCallEvent('t2', name: 'Read', kind: ToolKind.read, title: 'Lire island_machine.dart', path: _file, status: ToolStatus.completed, at: _at(20)),
+    ToolCallEvent(
+      't1',
+      name: 'Bash',
+      kind: ToolKind.execute,
+      title: 'Lancer les tests',
+      command: 'dart test',
+      status: ToolStatus.failed,
+      output: '00:02 +74 -2: island closes after 45 s [E]\n  Expected: 45\n    Actual: 60\n00:02 +74 -2: Some tests failed.',
+      at: _at(6),
+    ),
+    AgentMessage(
+      'Deux tests échouent : ils attendent une fermeture à **45 s**, le code ferme à 60 s. Je regarde la constante.',
+      at: _at(8),
+    ),
+    ToolCallEvent(
+      't2',
+      name: 'Read',
+      kind: ToolKind.read,
+      title: 'Lire island_machine.dart',
+      path: _file,
+      status: ToolStatus.completed,
+      at: _at(20),
+    ),
   ];
 
   /// At work, a file being written.
@@ -38,54 +57,133 @@ abstract final class FakeSessions {
     ..._fixing(),
     UserMessage('Vérifie aussi la spec §3', queued: true, at: _at(30)),
     AgentMessage('La spec dit bien 45 s. Je corrige `autoCloseSec`.', at: _at(35)),
-    ToolCallEvent('t3', name: 'Edit', kind: ToolKind.edit, title: 'Modifier island_machine.dart', path: _file,
-        diff: const FileDiff(_file, '  static const autoCloseSec = 60;', '  static const autoCloseSec = 45;'), status: ToolStatus.running, at: _at(40)),
+    ToolCallEvent(
+      't3',
+      name: 'Edit',
+      kind: ToolKind.edit,
+      title: 'Modifier island_machine.dart',
+      path: _file,
+      diff: const FileDiff(_file, '  static const autoCloseSec = 60;', '  static const autoCloseSec = 45;'),
+      status: ToolStatus.running,
+      at: _at(40),
+    ),
   ]);
 
   /// At work, without a plan: its tools make the steps.
   static SessionLog workingNoPlan() => _log([
     ..._start('Ajoute un test pour le lecteur de sessions Codex.'),
     for (final (i, f) in ['codex_reader.dart', 'session_log.dart', 'codex_reader_test.dart'].indexed)
-      ToolCallEvent('r$i', kind: ToolKind.read, title: 'Lire $f', path: 'packages/mikky_engine/lib/src/sessions/$f', status: ToolStatus.completed, at: _at(4 + i)),
+      ToolCallEvent(
+        'r$i',
+        kind: ToolKind.read,
+        title: 'Lire $f',
+        path: 'packages/mikky_engine/lib/src/sessions/$f',
+        status: ToolStatus.completed,
+        at: _at(4 + i),
+      ),
     AgentMessage('Le lecteur ignore `token_count` quand la fenêtre manque. Je cherche où il le lit.', at: _at(8)),
-    ToolCallEvent('s1', kind: ToolKind.search, title: 'Chercher « token_count »', command: 'rg token_count', status: ToolStatus.completed, at: _at(9)),
-    ToolCallEvent('e1', kind: ToolKind.edit, title: 'Écrire usage_test.dart', path: 'packages/mikky_engine/test/sessions/usage_test.dart',
-        diff: const FileDiff('packages/mikky_engine/test/sessions/usage_test.dart', null, "test('Codex writes its limits', () {\n  …\n});"),
-        status: ToolStatus.completed, at: _at(30)),
-    ToolCallEvent('x1', kind: ToolKind.execute, title: 'Lancer les tests', command: 'dart test test/sessions', status: ToolStatus.running, at: _at(50)),
+    ToolCallEvent(
+      's1',
+      kind: ToolKind.search,
+      title: 'Chercher « token_count »',
+      command: 'rg token_count',
+      status: ToolStatus.completed,
+      at: _at(9),
+    ),
+    ToolCallEvent(
+      'e1',
+      kind: ToolKind.edit,
+      title: 'Écrire usage_test.dart',
+      path: 'packages/mikky_engine/test/sessions/usage_test.dart',
+      diff: const FileDiff(
+        'packages/mikky_engine/test/sessions/usage_test.dart',
+        null,
+        "test('Codex writes its limits', () {\n  …\n});",
+      ),
+      status: ToolStatus.completed,
+      at: _at(30),
+    ),
+    ToolCallEvent(
+      'x1',
+      kind: ToolKind.execute,
+      title: 'Lancer les tests',
+      command: 'dart test test/sessions',
+      status: ToolStatus.running,
+      at: _at(50),
+    ),
   ]);
 
   /// Waits for a yes: a command to run.
   static SessionLog approval() => _log([
     ..._fixing(),
-    ToolCallEvent('t4', name: 'Bash', kind: ToolKind.execute, title: 'Lancer npm run build', command: 'npm run build', status: ToolStatus.pending, at: _at(60)),
-    PermissionAsked(1, toolCallId: 't4', title: 'Terminal', command: 'npm run build', options: const [
-      PermissionOption('allow', 'Oui', 'allow_once'),
-      PermissionOption('always', 'Toujours', 'allow_always'),
-      PermissionOption('reject', 'Non', 'reject_once'),
-    ], at: _at(60)),
+    ToolCallEvent(
+      't4',
+      name: 'Bash',
+      kind: ToolKind.execute,
+      title: 'Lancer npm run build',
+      command: 'npm run build',
+      status: ToolStatus.pending,
+      at: _at(60),
+    ),
+    PermissionAsked(
+      1,
+      toolCallId: 't4',
+      title: 'Terminal',
+      command: 'npm run build',
+      options: const [
+        PermissionOption('allow', 'Oui', 'allow_once'),
+        PermissionOption('always', 'Toujours', 'allow_always'),
+        PermissionOption('reject', 'Non', 'reject_once'),
+      ],
+      at: _at(60),
+    ),
   ]);
 
   /// Asks a question with choices.
   static SessionLog question() => _log([
     ..._start('Prépare le stockage des tâches planifiées.'),
     AgentMessage('Avant de commencer, il me faut un choix.', at: _at(3)),
-    QuestionAsked(2, message: 'Quelle base de données ?', questions: const [
-      Question('db', text: 'Quelle base de données ?', choices: [
-        QuestionChoice('SQLite', 'Un fichier, rien à installer'),
-        QuestionChoice('Postgres'),
-        QuestionChoice('Aucune pour l’instant'),
-      ]),
-    ], at: _at(4)),
+    QuestionAsked(
+      2,
+      message: 'Quelle base de données ?',
+      questions: const [
+        Question(
+          'db',
+          text: 'Quelle base de données ?',
+          choices: [
+            QuestionChoice('SQLite', 'Un fichier, rien à installer'),
+            QuestionChoice('Postgres'),
+            QuestionChoice('Aucune pour l’instant'),
+          ],
+        ),
+      ],
+      at: _at(4),
+    ),
   ]);
 
   /// Done: two tasks, then the conversation goes on.
   static SessionLog done() => _log([
     ..._fixing(),
-    ToolCallEvent('t3', name: 'Edit', kind: ToolKind.edit, title: 'Modifier island_machine.dart', path: _file,
-        diff: const FileDiff(_file, '  static const autoCloseSec = 60;', '  static const autoCloseSec = 45;'), status: ToolStatus.completed, at: _at(40)),
-    ToolCallEvent('t5', name: 'Bash', kind: ToolKind.execute, title: 'Relancer les tests', command: 'dart test', status: ToolStatus.completed,
-        output: '00:02 +76: All tests passed!', at: _at(70)),
+    ToolCallEvent(
+      't3',
+      name: 'Edit',
+      kind: ToolKind.edit,
+      title: 'Modifier island_machine.dart',
+      path: _file,
+      diff: const FileDiff(_file, '  static const autoCloseSec = 60;', '  static const autoCloseSec = 45;'),
+      status: ToolStatus.completed,
+      at: _at(40),
+    ),
+    ToolCallEvent(
+      't5',
+      name: 'Bash',
+      kind: ToolKind.execute,
+      title: 'Relancer les tests',
+      command: 'dart test',
+      status: ToolStatus.completed,
+      output: '00:02 +76: All tests passed!',
+      at: _at(70),
+    ),
     PlanChanged(const [
       PlanEntry('Lancer les tests', PlanStatus.completed),
       PlanEntry('Corriger la fermeture auto', PlanStatus.completed),
@@ -107,7 +205,10 @@ abstract final class FakeSessions {
     TurnEnded(StopReason.endTurn, at: _at(92)),
     TurnStarted(at: _at(200)),
     UserMessage('Merci ! Tu peux me donner la commande pour les lancer seul ?', at: _at(200)),
-    AgentMessage('Dans `packages/mikky_engine` :\n\n```powershell\nC:\\dev\\flutter\\bin\\dart.bat test\n```\n\nPlus de détails : https://dart.dev/tools/dart-test', at: _at(205)),
+    AgentMessage(
+      'Dans `packages/mikky_engine` :\n\n```powershell\nC:\\dev\\flutter\\bin\\dart.bat test\n```\n\nPlus de détails : https://dart.dev/tools/dart-test',
+      at: _at(205),
+    ),
     TurnEnded(StopReason.endTurn, at: _at(206)),
   ]);
 
@@ -124,8 +225,5 @@ abstract final class FakeSessions {
   ]);
 
   /// Stopped by the user.
-  static SessionLog cancelled() => _log([
-    ..._fixing(),
-    TurnEnded(StopReason.cancelled, at: _at(30)),
-  ]);
+  static SessionLog cancelled() => _log([..._fixing(), TurnEnded(StopReason.cancelled, at: _at(30))]);
 }

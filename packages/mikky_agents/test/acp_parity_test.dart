@@ -34,7 +34,9 @@ void main() {
       var i = 0;
       for (final line in lines.where((l) => l.trim().isNotEmpty)) {
         final record = jsonDecode(line) as Map;
-        expected.applyAll(reader.read((record['msg'] as Map).cast<String, dynamic>(), outgoing: record['dir'] == 'out', at: at));
+        expected.applyAll(
+          reader.read((record['msg'] as Map).cast<String, dynamic>(), outgoing: record['dir'] == 'out', at: at),
+        );
         for (final value in jsonDecode(rust[i++]) as List) {
           final event = sessionEventFromWire((value as Map).cast<String, dynamic>());
           if (event != null) actual.apply(event);

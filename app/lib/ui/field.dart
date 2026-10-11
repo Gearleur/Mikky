@@ -12,7 +12,13 @@ import 'tokens.dart';
 
 /// The text itself, for both fields: widgets-level, Geist, the ink caret.
 class _Input extends StatelessWidget {
-  const _Input({required this.controller, required this.focusNode, required this.style, required this.placeholder, this.maxLines = 1});
+  const _Input({
+    required this.controller,
+    required this.focusNode,
+    required this.style,
+    required this.placeholder,
+    this.maxLines = 1,
+  });
 
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -59,7 +65,14 @@ class _Input extends StatelessWidget {
 /// `.field`: a hollow capsule, 44 px, up to 380 px wide; white with an
 /// ink ring while focused.
 class SearchField extends StatefulWidget {
-  const SearchField({super.key, this.controller, this.placeholder = '', this.icon, this.onSubmitted, this.small = false});
+  const SearchField({
+    super.key,
+    this.controller,
+    this.placeholder = '',
+    this.icon,
+    this.onSubmitted,
+    this.small = false,
+  });
 
   /// 36 px instead of 44 (in a sheet, 2026-10-02).
   final bool small;
@@ -107,9 +120,17 @@ class _SearchFieldState extends State<SearchField> {
             padding: EdgeInsets.symmetric(horizontal: widget.small ? 13 : 16),
             child: Row(
               children: [
-                if (widget.icon != null) ...[MikkyIcon(widget.icon!, size: widget.small ? 16 : 18, color: ui.text2), SizedBox(width: widget.small ? 7 : 8)],
+                if (widget.icon != null) ...[
+                  MikkyIcon(widget.icon!, size: widget.small ? 16 : 18, color: ui.text2),
+                  SizedBox(width: widget.small ? 7 : 8),
+                ],
                 Expanded(
-                  child: _Input(controller: _controller, focusNode: _focus, style: uiText(widget.small ? TextSize.label : TextSize.body, height: 1.2), placeholder: widget.placeholder),
+                  child: _Input(
+                    controller: _controller,
+                    focusNode: _focus,
+                    style: uiText(widget.small ? TextSize.label : TextSize.body, height: 1.2),
+                    placeholder: widget.placeholder,
+                  ),
                 ),
               ],
             ),
@@ -198,8 +219,14 @@ class _ComposerState extends State<Composer> {
     final text = _controller.text;
     if (widget.commands.isEmpty || !text.startsWith('/') || text.contains(RegExp(r'\s'))) return const [];
     final q = text.substring(1).toLowerCase();
-    final starts = [for (final c in widget.commands) if (c.name.toLowerCase().startsWith(q)) c];
-    final inside = [for (final c in widget.commands) if (!c.name.toLowerCase().startsWith(q) && c.name.toLowerCase().contains(q)) c];
+    final starts = [
+      for (final c in widget.commands)
+        if (c.name.toLowerCase().startsWith(q)) c,
+    ];
+    final inside = [
+      for (final c in widget.commands)
+        if (!c.name.toLowerCase().startsWith(q) && c.name.toLowerCase().contains(q)) c,
+    ];
     final all = [...starts, ...inside];
     // Typed in full: Enter sends it.
     if (all.length == 1 && all.single.name.toLowerCase() == q) return const [];
@@ -208,7 +235,10 @@ class _ComposerState extends State<Composer> {
 
   void _take(AgentCommand c) {
     final text = '/${c.name} ';
-    _controller.value = TextEditingValue(text: text, selection: TextSelection.collapsed(offset: text.length));
+    _controller.value = TextEditingValue(
+      text: text,
+      selection: TextSelection.collapsed(offset: text.length),
+    );
     _focus.requestFocus();
   }
 
@@ -253,15 +283,17 @@ class _ComposerState extends State<Composer> {
   /// Glass: the blurred thread behind the field's own see-through color.
   Widget _frost(Widget surface) => !widget.glass
       ? surface
-      : Stack(children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(Radii.xxl),
-              child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
+      : Stack(
+          children: [
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(Radii.xxl),
+                child: BackdropFilter(filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14), child: const SizedBox.expand()),
+              ),
             ),
-          ),
-          surface,
-        ]);
+            surface,
+          ],
+        );
 
   @override
   Widget build(BuildContext context) {
@@ -274,36 +306,46 @@ class _ComposerState extends State<Composer> {
         // Slim, like the latest iPhone's (user request, 2026-09-30): 40
         // high, a full pill; 8 more at the bottom when options sit half
         // inside it, so they never cover the text.
-        child: _frost(Surface(
-          radius: Radii.xxl,
-          color: widget.glass ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62) : (focused ? ui.thumb : ui.track),
-          shadows: focused ? ui.focusRing : ui.inset,
-          padding: EdgeInsets.fromLTRB(15, 4, 5, widget.options == null ? 4 : 12),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 32),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: _Input(
-                      controller: _controller,
-                      focusNode: _focus,
-                      style: uiText(TextSize.body, height: 20 / TextSize.body),
-                      placeholder: widget.placeholder,
-                      maxLines: 5,
+        child: _frost(
+          Surface(
+            radius: Radii.xxl,
+            color: widget.glass
+                ? (focused ? ui.thumb : ui.track).withValues(alpha: focused ? .82 : .62)
+                : (focused ? ui.thumb : ui.track),
+            shadows: focused ? ui.focusRing : ui.inset,
+            padding: EdgeInsets.fromLTRB(15, 4, 5, widget.options == null ? 4 : 12),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 32),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: _Input(
+                        controller: _controller,
+                        focusNode: _focus,
+                        style: uiText(TextSize.body, height: 20 / TextSize.body),
+                        placeholder: widget.placeholder,
+                        maxLines: 5,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                RoundButton('mic', size: 30, ghost: true, onPressed: widget.onMic, tooltip: 'Parler (Ctrl + Win maintenus)'),
-                const SizedBox(width: 2),
-                RoundButton('up', size: 30, ink: true, onPressed: _send, tooltip: 'Envoyer'),
-              ],
+                  const SizedBox(width: 6),
+                  RoundButton(
+                    'mic',
+                    size: 30,
+                    ghost: true,
+                    onPressed: widget.onMic,
+                    tooltip: 'Parler (Ctrl + Win maintenus)',
+                  ),
+                  const SizedBox(width: 2),
+                  RoundButton('up', size: 30, ink: true, onPressed: _send, tooltip: 'Envoyer'),
+                ],
+              ),
             ),
           ),
-        )),
+        ),
       ),
     );
     final options = widget.options;
@@ -320,20 +362,24 @@ class _ComposerState extends State<Composer> {
             ),
           );
     if (widget.commands.isEmpty) return withOptions;
-    return Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      ListenableBuilder(
-        listenable: Listenable.merge([_controller, _pick]),
-        builder: (context, _) {
-          final matches = _matches;
-          if (matches.isEmpty) return const SizedBox.shrink();
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: _CommandList(commands: matches, picked: _pick.value.clamp(0, matches.length - 1), onTake: _take),
-          );
-        },
-      ),
-      withOptions,
-    ]);
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListenableBuilder(
+          listenable: Listenable.merge([_controller, _pick]),
+          builder: (context, _) {
+            final matches = _matches;
+            if (matches.isEmpty) return const SizedBox.shrink();
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _CommandList(commands: matches, picked: _pick.value.clamp(0, matches.length - 1), onTake: _take),
+            );
+          },
+        ),
+        withOptions,
+      ],
+    );
   }
 }
 
@@ -353,31 +399,45 @@ class _CommandList extends StatelessWidget {
       color: ui.thumb,
       shadows: ui.shThumb,
       padding: const EdgeInsets.all(5),
-      child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        for (var i = 0; i < commands.length; i++)
-          GestureDetector(
-            onTap: () => onTake(commands[i]),
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(color: i == picked ? ui.hover : null, borderRadius: BorderRadius.circular(Radii.lg)),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                  Text('/${commands[i].name}', style: uiText(TextSize.small, mono: true, weight: FontWeight.w500, color: ui.text, height: 1.3)),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      commands[i].hint ?? commands[i].description,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: uiText(TextSize.small, color: ui.text3, height: 1.3),
-                    ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < commands.length; i++)
+            GestureDetector(
+              onTap: () => onTake(commands[i]),
+              child: MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: i == picked ? ui.hover : null,
+                    borderRadius: BorderRadius.circular(Radii.lg),
                   ),
-                ]),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      Text(
+                        '/${commands[i].name}',
+                        style: uiText(TextSize.small, mono: true, weight: FontWeight.w500, color: ui.text, height: 1.3),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          commands[i].hint ?? commands[i].description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: uiText(TextSize.small, color: ui.text3, height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -410,7 +470,13 @@ class ComposerChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (leading != null) ...[leading!, const SizedBox(width: 4)] else if (icon != null) ...[MikkyIcon(icon!, size: 13, color: ui.text), const SizedBox(width: 4)],
+              if (leading != null) ...[
+                leading!,
+                const SizedBox(width: 4),
+              ] else if (icon != null) ...[
+                MikkyIcon(icon!, size: 13, color: ui.text),
+                const SizedBox(width: 4),
+              ],
               Text(
                 label,
                 style: uiText(TextSize.caption, weight: FontWeight.w600, color: ui.text, height: 1),

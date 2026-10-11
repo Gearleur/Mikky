@@ -48,9 +48,18 @@ class CodexRolloutReader {
         final limits = (p['rate_limits'] as Map?)?.cast<String, dynamic>();
         return [
           if (info?['model_context_window'] != null && last != null)
-            ContextUsed((last['total_tokens'] as num? ?? 0).toInt(), (info!['model_context_window'] as num).toInt(), at: at),
+            ContextUsed(
+              (last['total_tokens'] as num? ?? 0).toInt(),
+              (info!['model_context_window'] as num).toInt(),
+              at: at,
+            ),
           if (limits != null)
-            LimitsSeen(short: _window(limits['primary']), long: _window(limits['secondary']), plan: limits['plan_type'] as String?, at: at),
+            LimitsSeen(
+              short: _window(limits['primary']),
+              long: _window(limits['secondary']),
+              plan: limits['plan_type'] as String?,
+              at: at,
+            ),
         ];
       case 'plan_update':
         return [_planChanged(p['plan'], at)];
@@ -95,7 +104,9 @@ class CodexRolloutReader {
             },
             title: command,
             command: command,
-            status: item['status'] == 'completed' && (item['exit_code'] ?? 0) == 0 ? ToolStatus.completed : ToolStatus.failed,
+            status: item['status'] == 'completed' && (item['exit_code'] ?? 0) == 0
+                ? ToolStatus.completed
+                : ToolStatus.failed,
             output: item['aggregated_output'] as String?,
             at: at,
           ),
@@ -116,7 +127,14 @@ class CodexRolloutReader {
         ];
       case 'WebSearch':
         return [
-          ToolCallEvent(id, name: 'web_search', kind: ToolKind.fetch, title: item['query'] as String?, status: ToolStatus.completed, at: at),
+          ToolCallEvent(
+            id,
+            name: 'web_search',
+            kind: ToolKind.fetch,
+            title: item['query'] as String?,
+            status: ToolStatus.completed,
+            at: at,
+          ),
         ];
     }
     return const [];
@@ -135,19 +153,19 @@ class CodexRolloutReader {
   }
 
   static PlanChanged _planChanged(Object? plan, DateTime? at) => PlanChanged([
-        for (final s in (plan as List?) ?? const [])
-          PlanEntry(s['step'] as String? ?? '', switch (s['status']) {
-            'in_progress' => PlanStatus.inProgress,
-            'completed' => PlanStatus.completed,
-            _ => PlanStatus.pending,
-          }),
-      ], at: at);
+    for (final s in (plan as List?) ?? const [])
+      PlanEntry(s['step'] as String? ?? '', switch (s['status']) {
+        'in_progress' => PlanStatus.inProgress,
+        'completed' => PlanStatus.completed,
+        _ => PlanStatus.pending,
+      }),
+  ], at: at);
 
   static String? _command(Object? command) => switch (command) {
-        final String c => c,
-        final List c => c.last as String,
-        _ => null,
-      };
+    final String c => c,
+    final List c => c.last as String,
+    _ => null,
+  };
 
   static String _text(Object? content) {
     final out = StringBuffer();

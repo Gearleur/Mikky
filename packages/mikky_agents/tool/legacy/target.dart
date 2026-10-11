@@ -17,7 +17,13 @@ abstract class Target {
   /// leniently (`wsl.exe` prints its own errors in UTF-16). [input] goes to
   /// stdin: the way to pass a multi-line script (newlines do not survive
   /// the Windows command line).
-  Future<ProcessResult> run(String executable, List<String> args, {String? cwd, Map<String, String> env = const {}, String? input}) async {
+  Future<ProcessResult> run(
+    String executable,
+    List<String> args, {
+    String? cwd,
+    Map<String, String> env = const {},
+    String? input,
+  }) async {
     final p = await start(executable, args, cwd: cwd, env: env);
     final out = p.stdout.transform(const Utf8Decoder(allowMalformed: true)).join();
     final err = p.stderr.transform(const Utf8Decoder(allowMalformed: true)).join();

@@ -8,7 +8,8 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 Future<void> main(List<String> args) async {
-  if (args.any((arg) => arg != '--wsl')) throw ArgumentError('Usage: dart run tool/codex_permission_smoke.dart [--wsl]');
+  if (args.any((arg) => arg != '--wsl'))
+    throw ArgumentError('Usage: dart run tool/codex_permission_smoke.dart [--wsl]');
   final wsl = args.contains('--wsl');
   final scratch = wsl ? null : await Directory.systemTemp.createTemp('mikky-codex-permission-');
   final cwd = scratch?.path ?? '/tmp';
@@ -17,17 +18,29 @@ Future<void> main(List<String> args) async {
   Future<bool> markerExists() async => wsl
       ? (await Process.run('wsl.exe', ['-d', 'Ubuntu', '--', 'test', '-e', markerPath])).exitCode == 0
       : File(markerPath).existsSync();
-  final process = await Process.start('../../daemon/target/debug/mikkyd.exe', ['--stdout-endpoint', if (wsl) '--with-wsl']);
-  final endpoint = DaemonEndpoint.parse(await process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first)!;
+  final process = await Process.start('../../daemon/target/debug/mikkyd.exe', [
+    '--stdout-endpoint',
+    if (wsl) '--with-wsl',
+  ]);
+  final endpoint = DaemonEndpoint.parse(
+    await process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first,
+  )!;
   var client = await DaemonClient.connect(endpoint);
   String? runId;
   try {
-    final run = await DaemonAgentRun.launch(client, provider: AgentProvider.codex, host: wsl ? AgentHost.wsl : AgentHost.windows, cwd: cwd);
+    final run = await DaemonAgentRun.launch(
+      client,
+      provider: AgentProvider.codex,
+      host: wsl ? AgentHost.wsl : AgentHost.windows,
+      cwd: cwd,
+    );
     runId = run.runId;
     await run.open(cwd: run.workingDirectory ?? cwd, mode: modeFor(AgentProvider.codex, PermissionMode.ask));
     unawaited(
       run
-          .prompt('Dans ce dossier temporaire, crée seulement un fichier $markerName contenant ok, puis réponds terminé. Ne lis aucun autre dossier.')
+          .prompt(
+            'Dans ce dossier temporaire, crée seulement un fichier $markerName contenant ok, puis réponds terminé. Ne lis aucun autre dossier.',
+          )
           .catchError((Object error) => stdout.writeln('Le premier écran s’est déconnecté : $error')),
     );
 
@@ -38,7 +51,9 @@ Future<void> main(List<String> args) async {
       await Future<void>.delayed(const Duration(milliseconds: 100));
     }
     if (run.log.pending.isEmpty) {
-      throw StateError('Aucune permission demandée ; état=${run.log.statusAt(DateTime.now())}, détail=${run.log.detail}');
+      throw StateError(
+        'Aucune permission demandée ; état=${run.log.statusAt(DateTime.now())}, détail=${run.log.detail}',
+      );
     }
     final request = run.log.pending.single;
     stdout.writeln('Permission demandée : ${request.title} ; commande=${request.command}');

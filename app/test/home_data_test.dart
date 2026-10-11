@@ -15,7 +15,10 @@ void main() {
     )?.$1;
 
     test('the latest at work or waiting, before any finished one', () {
-      expect(watched([('a', AgentStatus.finished, 0), ('b', AgentStatus.working, 30), ('c', AgentStatus.approval, 5)]), 'c');
+      expect(
+        watched([('a', AgentStatus.finished, 0), ('b', AgentStatus.working, 30), ('c', AgentStatus.approval, 5)]),
+        'c',
+      );
     });
 
     test('else the latest that ended in the last 10 minutes', () {
@@ -36,7 +39,10 @@ void main() {
         const ToolCallEvent('1', kind: ToolKind.read, title: 'Lire api.md', status: ToolStatus.running),
       ]);
     expect(appLine(AgentStatus.working, log, now, now), 'Lire api.md');
-    expect(appLine(AgentStatus.finished, log, now.subtract(const Duration(minutes: 5)), now), 'Terminée · il y a 5 min');
+    expect(
+      appLine(AgentStatus.finished, log, now.subtract(const Duration(minutes: 5)), now),
+      'Terminée · il y a 5 min',
+    );
     expect(appLine(AgentStatus.question, log, now, now), 'Te pose une question');
   });
 }

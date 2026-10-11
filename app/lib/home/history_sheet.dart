@@ -15,8 +15,17 @@ typedef HistoryRow = ({String id, String title, Brand brand, String when});
 /// centered, « Historique » and the count, a search field, then the rows.
 /// A row closes it and opens its agent ([onOpen]); it comes back among the
 /// apps.
-Future<void> showHistory(BuildContext within, {required List<HistoryRow> rows, ValueChanged<String>? onOpen, ValueChanged<String>? onMenu}) =>
-    showSheet(within, title: 'Historique', caption: '${rows.length}', builder: (_) => HistoryBody(rows: rows, onOpen: onOpen, onMenu: onMenu));
+Future<void> showHistory(
+  BuildContext within, {
+  required List<HistoryRow> rows,
+  ValueChanged<String>? onOpen,
+  ValueChanged<String>? onMenu,
+}) => showSheet(
+  within,
+  title: 'Historique',
+  caption: '${rows.length}',
+  builder: (_) => HistoryBody(rows: rows, onOpen: onOpen, onMenu: onMenu),
+);
 
 /// What the history sheet holds: a small search field, then the list. The
 /// search only looks in the titles shown for now (2026-10-02: « pas
@@ -52,17 +61,29 @@ class _HistoryBodyState extends State<HistoryBody> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final q = _search.text.trim().toLowerCase();
-    final rows = q.isEmpty ? widget.rows : [for (final r in widget.rows) if (r.title.toLowerCase().contains(q)) r];
+    final rows = q.isEmpty
+        ? widget.rows
+        : [
+            for (final r in widget.rows)
+              if (r.title.toLowerCase().contains(q)) r,
+          ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-          child: SearchField(small: true, icon: 'search', placeholder: 'Chercher dans l’historique', controller: _search),
+          child: SearchField(
+            small: true,
+            icon: 'search',
+            placeholder: 'Chercher dans l’historique',
+            controller: _search,
+          ),
         ),
         Expanded(
           child: rows.isEmpty
-              ? Center(child: Text('Rien trouvé', style: uiText(TextSize.small, color: ui.text3)))
+              ? Center(
+                  child: Text('Rien trouvé', style: uiText(TextSize.small, color: ui.text3)),
+                )
               : HistoryList(rows: rows, onOpen: widget.onOpen, onMenu: widget.onMenu),
         ),
       ],

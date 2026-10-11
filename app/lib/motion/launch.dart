@@ -1,4 +1,3 @@
-
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
@@ -12,16 +11,32 @@ import '../ui/tokens.dart';
 /// turns from where it grows, a little bigger; it never slides up.
 abstract final class ArmPoses {
   static Choreography _pose(String name, Map<String, double> values) => Choreography(
-        name: name,
-        duration: 1,
-        tracks: {for (final e in values.entries) e.key: [Beat(0, e.value)]},
-      );
+    name: name,
+    duration: 1,
+    tracks: {
+      for (final e in values.entries) e.key: [Beat(0, e.value)],
+    },
+  );
 
   static final all = [
     _pose('Au repos', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': -.15}),
-    _pose('Coucou', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .95, 'armRightGrow': .5, 'happy': 1, 'tilt': -.08}),
+    _pose('Coucou', {
+      'arms': 1,
+      'armLeftLift': -.15,
+      'armRightLift': .95,
+      'armRightGrow': .5,
+      'happy': 1,
+      'tilt': -.08,
+    }),
     _pose('Montre', {'arms': 1, 'armLeftLift': -.15, 'armRightLift': .12, 'armRightGrow': .85, 'yaw': .5}),
-    _pose('Youpi', {'arms': 1, 'armLeftLift': .85, 'armRightLift': .85, 'armLeftGrow': .4, 'armRightGrow': .4, 'happy': 1}),
+    _pose('Youpi', {
+      'arms': 1,
+      'armLeftLift': .85,
+      'armRightLift': .85,
+      'armLeftGrow': .4,
+      'armRightGrow': .4,
+      'happy': 1,
+    }),
   ];
 }
 
@@ -40,8 +55,8 @@ MikkyGeometry geometryAt(Choreography c, double t, double r) {
   final eyes = c.value('happy', t) > .5
       ? EyeShape.happy
       : c.value('closed', t) > .5
-          ? EyeShape.closed
-          : EyeShape.oval;
+      ? EyeShape.closed
+      : EyeShape.oval;
   return MikkyGeometry.posed(
     poseAt(c, t),
     r,

@@ -216,7 +216,8 @@ class RealAgentSource implements AgentSource {
     ];
   }
 
-  static String _key(List<Agent> agents) => agents.map((a) => '${a.id}:${a.status.name}:${a.statusSince}:${a.detail}').join('|');
+  static String _key(List<Agent> agents) =>
+      agents.map((a) => '${a.id}:${a.status.name}:${a.statusSince}:${a.detail}').join('|');
 
   /// What the island last read, to tell it when that changed.
   String _islandKey = '';
@@ -321,7 +322,10 @@ class RealAgentSource implements AgentSource {
       ..changedLive = true;
     _entries.add(e);
     _remember(e);
-    store?.usedFolder(r.cwd, LaunchChoice(provider: r.provider, host: r.host, permissions: r.permissions, model: r.model));
+    store?.usedFolder(
+      r.cwd,
+      LaunchChoice(provider: r.provider, host: r.host, permissions: r.permissions, model: r.model),
+    );
     _changed();
     await _start(e, r.cwd, mode: modeFor(r.provider, r.permissions), prompt: r.prompt, model: r.model);
     return id;
@@ -338,10 +342,23 @@ class RealAgentSource implements AgentSource {
       ..origin = AgentOrigin.mikky
       ..permissions = e.permissions ?? permissions
       ..dismissed = false;
-    await _start(e, e.cwd ?? e.log.cwd ?? '', mode: modeFor(e.provider, e.permissions!), prompt: prompt, resume: sessionId);
+    await _start(
+      e,
+      e.cwd ?? e.log.cwd ?? '',
+      mode: modeFor(e.provider, e.permissions!),
+      prompt: prompt,
+      resume: sessionId,
+    );
   }
 
-  Future<void> _start(AgentEntry e, String cwd, {required String mode, required String prompt, String? resume, String? model}) async {
+  Future<void> _start(
+    AgentEntry e,
+    String cwd, {
+    required String mode,
+    required String prompt,
+    String? resume,
+    String? model,
+  }) async {
     try {
       final run = await spawn(e.provider, e.host, cwd);
       e.run = run;
@@ -382,7 +399,14 @@ class RealAgentSource implements AgentSource {
               )
               .firstOrNull;
     if (e == null) {
-      e = AgentEntry._('m${DateTime.now().microsecondsSinceEpoch}-${_ids++}', provider, host, AgentOrigin.mikky, cwd, _now());
+      e = AgentEntry._(
+        'm${DateTime.now().microsecondsSinceEpoch}-${_ids++}',
+        provider,
+        host,
+        AgentOrigin.mikky,
+        cwd,
+        _now(),
+      );
       _entries.add(e);
     }
     final entry = e
@@ -474,7 +498,9 @@ class RealAgentSource implements AgentSource {
     if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
     AgentEntry? e;
     for (final x in _entries) {
-      if (x.watched == s || (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId)) e = x;
+      if (x.watched == s ||
+          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId))
+        e = x;
     }
     if (e != null && e.run != null) return;
     if (e == null) {

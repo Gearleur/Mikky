@@ -29,7 +29,8 @@ typedef AcpRequestHandler = Future<Object?> Function(Object id, String method, M
 /// JSON-RPC 2.0 over newline-delimited JSON, as ACP uses on an agent
 /// adapter's stdin / stdout. Knows nothing of ACP methods.
 class AcpConnection {
-  AcpConnection(Stream<List<int>> input, this._output, {this.onRequest, DateTime Function()? now}) : _now = now ?? DateTime.now {
+  AcpConnection(Stream<List<int>> input, this._output, {this.onRequest, DateTime Function()? now})
+    : _now = now ?? DateTime.now {
     _input = input
         .transform(const Utf8Decoder(allowMalformed: true))
         .transform(const LineSplitter())

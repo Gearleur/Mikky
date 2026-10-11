@@ -63,7 +63,8 @@ class HookAsk {
           multiple: q['multiSelect'] == true,
           otherKey: 'q${i + 1}_custom',
           choices: [
-            for (final o in (q['options'] is List ? q['options']! as List : const []).whereType<Map<Object?, Object?>>())
+            for (final o
+                in (q['options'] is List ? q['options']! as List : const []).whereType<Map<Object?, Object?>>())
               if (o['label'] is String)
                 QuestionChoice(o['label']! as String, o['description'] is String ? o['description']! as String : ''),
           ],
@@ -111,7 +112,12 @@ class HookAsk {
   /// The question as the same card shows an ACP one ([SessionLog.question]);
   /// null for a permission.
   QuestionAsked? get question => isQuestion && questions.isNotEmpty
-      ? QuestionAsked('hook:$id', message: questions.length == 1 ? questions.first.text : title, questions: questions, at: at)
+      ? QuestionAsked(
+          'hook:$id',
+          message: questions.length == 1 ? questions.first.text : title,
+          questions: questions,
+          at: at,
+        )
       : null;
 
   /// The card's answers (by [Question.key], free text by

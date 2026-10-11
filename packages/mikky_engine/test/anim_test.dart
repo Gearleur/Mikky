@@ -58,10 +58,11 @@ void main() {
 
   group('KeyframeTrack', () {
     test('chains keyframes and keeps the leftover time', () {
-      final track = KeyframeTrack(const [
-        Keyframe(10, 100, Easings.linear),
-        Keyframe(0, 100, Easings.linear),
-      ], from: 0, start: 0);
+      final track = KeyframeTrack(
+        const [Keyframe(10, 100, Easings.linear), Keyframe(0, 100, Easings.linear)],
+        from: 0,
+        start: 0,
+      );
       expect(track.sample(.05), closeTo(5, 1e-9));
       expect(track.sample(.15), closeTo(5, 1e-9));
       expect(track.isDone, isFalse);
@@ -131,7 +132,18 @@ void main() {
   });
 
   group('Burst', () {
-    Burst make() => Burst(seed: 3, count: 20, speedMin: 50, speedMax: 100, sizeMin: 1, sizeMax: 2, lifeMin: .5, lifeMax: .8, drag: 2, gravity: 40);
+    Burst make() => Burst(
+      seed: 3,
+      count: 20,
+      speedMin: 50,
+      speedMax: 100,
+      sizeMin: 1,
+      sizeMax: 2,
+      lifeMin: .5,
+      lifeMax: .8,
+      drag: 2,
+      gravity: 40,
+    );
 
     test('is the same every time', () {
       final a = make().at(.3).map((s) => s.x).toList(), b = make().at(.3).map((s) => s.x).toList();

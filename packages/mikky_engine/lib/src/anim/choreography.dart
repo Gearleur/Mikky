@@ -23,10 +23,15 @@ class Mark {
 /// line, and [Mark]s. Nothing runs by itself: anyone can show any instant,
 /// play it slowly, or go back.
 class Choreography {
-  Choreography({required this.name, required this.duration, required Map<String, List<Beat>> tracks, this.marks = const []})
-      : tracks = {
-          for (final e in tracks.entries) e.key: List.unmodifiable(List.of(e.value)..sort((a, b) => a.at.compareTo(b.at))),
-        };
+  Choreography({
+    required this.name,
+    required this.duration,
+    required Map<String, List<Beat>> tracks,
+    this.marks = const [],
+  }) : tracks = {
+         for (final e in tracks.entries)
+           e.key: List.unmodifiable(List.of(e.value)..sort((a, b) => a.at.compareTo(b.at))),
+       };
 
   final String name;
 
@@ -61,13 +66,13 @@ class Choreography {
   /// The same, played at [speed] (0.8: slower, every moment a quarter
   /// later): its beats, marks and length stretched in time.
   Choreography atSpeed(double speed) => Choreography(
-        name: name,
-        duration: duration / speed,
-        tracks: {
-          for (final e in tracks.entries) e.key: [for (final b in e.value) Beat(b.at / speed, b.value, b.ease)],
-        },
-        marks: [for (final m in marks) Mark(m.at / speed, m.name)],
-      );
+    name: name,
+    duration: duration / speed,
+    tracks: {
+      for (final e in tracks.entries) e.key: [for (final b in e.value) Beat(b.at / speed, b.value, b.ease)],
+    },
+    marks: [for (final m in marks) Mark(m.at / speed, m.name)],
+  );
 
   /// When the mark [name] is, or null.
   double? at(String name) {

@@ -73,7 +73,13 @@ class ThreadPage extends StatelessWidget {
     final beside = mikky;
     Widget column(Widget child) => beside == null
         ? ReadingColumn(child: child)
-        : Align(alignment: Alignment.topLeft, child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: readingWidth), child: child));
+        : Align(
+            alignment: Alignment.topLeft,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: readingWidth),
+              child: child,
+            ),
+          );
     final left = beside == null ? 16.0 : gutter, right = beside == null ? 16.0 : rightMargin;
     final bottom = composer == null ? 62.0 : 88.0;
     return Stack(
@@ -99,7 +105,14 @@ class ThreadPage extends StatelessWidget {
             },
           ),
         ),
-        if (children.isEmpty && empty != null) Positioned.fill(left: left, right: right, top: 62, bottom: bottom, child: Center(child: empty)),
+        if (children.isEmpty && empty != null)
+          Positioned.fill(
+            left: left,
+            right: right,
+            top: 62,
+            bottom: bottom,
+            child: Center(child: empty),
+          ),
         // Softer on top (user request, 2026-09-30: « trop puissant »).
         const Positioned(top: 0, left: 0, right: 0, child: TopBlur()),
         // Only behind the field, not above it (user request, 2026-09-30).
@@ -110,7 +123,13 @@ class ThreadPage extends StatelessWidget {
           actions: [if (menu != null) RoundButton.menu(size: 34, tooltip: 'Menu', onPressed: menu)],
         ),
         // Off the window's foot (2026-10-05: « trop petit » at 12).
-        if (composer != null) Positioned(left: beside == null ? 20 : gutter, right: beside == null ? 20 : rightMargin, bottom: 20, child: column(composer!)),
+        if (composer != null)
+          Positioned(
+            left: beside == null ? 20 : gutter,
+            right: beside == null ? 20 : rightMargin,
+            bottom: 20,
+            child: column(composer!),
+          ),
         if (composer == null && note != null) Positioned(left: left, right: right, bottom: 20, child: column(note!)),
         if (beside != null && drawMikky)
           Positioned(

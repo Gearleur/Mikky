@@ -59,16 +59,15 @@ Future<void> main(List<String> args) async {
       builder: (context, _) => Overlay(
         initialEntries: [
           OverlayEntry(
-            builder: (context) =>
-                IslandView(
-                  overlay: overlay,
-                  settings: settings,
-                  program: program,
-                  tuning: tuning,
-                  clock: clock,
-                  agents: agents,
-                  bench: args.contains('--bench') ? (args.contains('--fast') ? IslandBench.fast : IslandBench.calm) : null,
-                ),
+            builder: (context) => IslandView(
+              overlay: overlay,
+              settings: settings,
+              program: program,
+              tuning: tuning,
+              clock: clock,
+              agents: agents,
+              bench: args.contains('--bench') ? (args.contains('--fast') ? IslandBench.fast : IslandBench.calm) : null,
+            ),
           ),
         ],
       ),

@@ -26,7 +26,11 @@ class AppGlyph extends StatelessWidget {
       AgentApp.codex => BrandLogo(Brand.codex, size: size),
       AgentApp.mikky => SizedBox.square(
         dimension: size,
-        child: OverflowBox(maxWidth: size * 1.4, maxHeight: size * 1.4, child: MiniMikky(size: size * 1.4, animate: false, badge: false)),
+        child: OverflowBox(
+          maxWidth: size * 1.4,
+          maxHeight: size * 1.4,
+          child: MiniMikky(size: size * 1.4, animate: false, badge: false),
+        ),
       ),
     };
   }
@@ -41,10 +45,16 @@ class AppLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      AppGlyph(app),
-      const SizedBox(width: 6),
-      Text(app.label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2)),
-    ]);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        AppGlyph(app),
+        const SizedBox(width: 6),
+        Text(
+          app.label,
+          style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2),
+        ),
+      ],
+    );
   }
 }

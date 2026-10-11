@@ -104,37 +104,37 @@ class MikkyGeometry {
   /// The same Mikky with his outline and eyes bent from outside (a squash,
   /// a lean, jelly), the rest unchanged.
   MikkyGeometry reshaped({Float64List? contour, List<EyeGeometry>? eyes}) => MikkyGeometry._(
-        radius: radius,
-        time: time,
-        contour: contour ?? this.contour,
-        satellites: satellites,
-        eyes: eyes ?? this.eyes,
-        translateX: translateX,
-        translateY: translateY,
-        tilt: tilt,
-        scaleX: scaleX,
-        scaleY: scaleY,
-        badge: badge,
-        badgeX: badgeX,
-        badgeY: badgeY,
-        particles: particles,
-      );
+    radius: radius,
+    time: time,
+    contour: contour ?? this.contour,
+    satellites: satellites,
+    eyes: eyes ?? this.eyes,
+    translateX: translateX,
+    translateY: translateY,
+    tilt: tilt,
+    scaleX: scaleX,
+    scaleY: scaleY,
+    badge: badge,
+    badgeX: badgeX,
+    badgeY: badgeY,
+    particles: particles,
+  );
 
   /// Geometry of [mikky] drawn with radius [radius] pixels, with [points]
   /// points on the outline.
   factory MikkyGeometry.of(Mikky mikky, double radius, {int points = 360, MikkyTuning? tuning}) => _build(
-        pose: mikky.pose,
-        time: mikky.time,
-        form: mikky.form,
-        morph: mikky.morph,
-        eyeLeft: mikky.eyeLeft,
-        eyeRight: mikky.eyeRight,
-        badge: mikky.badge,
-        particles: mikky.particles,
-        radius: radius,
-        points: points,
-        tuning: tuning,
-      );
+    pose: mikky.pose,
+    time: mikky.time,
+    form: mikky.form,
+    morph: mikky.morph,
+    eyeLeft: mikky.eyeLeft,
+    eyeRight: mikky.eyeRight,
+    badge: mikky.badge,
+    particles: mikky.particles,
+    radius: radius,
+    points: points,
+    tuning: tuning,
+  );
 
   /// Mikky in a [pose] chosen from outside (a choreography), at [time] for
   /// what moves by itself (his fur), without his own life (no blinks,
@@ -149,20 +149,19 @@ class MikkyGeometry {
     double morph = 0,
     int points = 360,
     MikkyTuning? tuning,
-  }) =>
-      _build(
-        pose: pose,
-        time: time,
-        form: form,
-        morph: morph,
-        eyeLeft: eyeLeft,
-        eyeRight: eyeRight,
-        badge: null,
-        particles: const [],
-        radius: radius,
-        points: points,
-        tuning: tuning,
-      );
+  }) => _build(
+    pose: pose,
+    time: time,
+    form: form,
+    morph: morph,
+    eyeLeft: eyeLeft,
+    eyeRight: eyeRight,
+    badge: null,
+    particles: const [],
+    radius: radius,
+    points: points,
+    tuning: tuning,
+  );
 
   static MikkyGeometry _build({
     required MikkyPose pose,
@@ -209,13 +208,15 @@ class MikkyGeometry {
         final down = math.max(0.0, -twitch);
         // In the heart, the ears are its two round lobes: a bit lower,
         // wider, further apart.
-        final center = side * rx * tu.earCenter +
+        final center =
+            side * rx * tu.earCenter +
             p.yaw * rx * .28 +
             side * twitch * rx * .06 +
             side * down * rx * .3 +
             side * hw * rx * .04;
         final d = x - center;
-        final halfWidth = (d * side > 0 ? MikkyShape.earOuterHalfWidth : MikkyShape.earInnerHalfWidth) *
+        final halfWidth =
+            (d * side > 0 ? MikkyShape.earOuterHalfWidth : MikkyShape.earInnerHalfWidth) *
             rx *
             tu.earWidth *
             (1 + down * .35) *
@@ -318,18 +319,20 @@ class MikkyGeometry {
       // Eyelids close the eyes that have lids; the other shapes keep their
       // look.
       final lid = shape == EyeShape.oval || shape == EyeShape.round || shape == EyeShape.tired ? p.open : 1.0;
-      eyes.add(EyeGeometry(
-        x: math.sin(yaw) * cp * rx * (1 - k * math.sin(pitch)),
-        y: -math.sin(pitch) * ry,
-        rotation: -.04 - p.yaw * .25,
-        scaleX: math.max(.2, math.cos(yaw)) * p.eyeScale * grow,
-        scaleY: math.max(.2, cp) * p.eyeScale * grow,
-        width: width,
-        height: math.max(width * .25, fullHeight * lid),
-        fullHeight: fullHeight,
-        shape: shape,
-        side: side,
-      ));
+      eyes.add(
+        EyeGeometry(
+          x: math.sin(yaw) * cp * rx * (1 - k * math.sin(pitch)),
+          y: -math.sin(pitch) * ry,
+          rotation: -.04 - p.yaw * .25,
+          scaleX: math.max(.2, math.cos(yaw)) * p.eyeScale * grow,
+          scaleY: math.max(.2, cp) * p.eyeScale * grow,
+          width: width,
+          height: math.max(width * .25, fullHeight * lid),
+          fullHeight: fullHeight,
+          shape: shape,
+          side: side,
+        ),
+      );
     }
 
     // The little fur ball that comes out of him: the dot of "!".
@@ -352,9 +355,7 @@ class MikkyGeometry {
       badge: badge,
       badgeX: r * 1.12 + p.offsetX * r,
       badgeY: -r * .95 + p.offsetY * r,
-      particles: [
-        for (final q in particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation),
-      ],
+      particles: [for (final q in particles) MikkyParticle(q.kind, q.x * r, q.y * r, q.size * r, q.alpha, q.rotation)],
     );
   }
 }
@@ -411,7 +412,15 @@ double _lumpy(double th, double t, double seed) =>
 /// direction [direction]: straight out at rest, up when the arm is raised,
 /// so it turns from its shoulder instead of sliding along him.
 class _Lobe {
-  const _Lobe(this.anchor, this.direction, this.length, this.halfWidth, this.profile, [this.stretch = 0, this.radius = 0]);
+  const _Lobe(
+    this.anchor,
+    this.direction,
+    this.length,
+    this.halfWidth,
+    this.profile, [
+    this.stretch = 0,
+    this.radius = 0,
+  ]);
 
   /// The arm on [side], [show] out of him, [lift] raised (up > 0),
   /// [grow] longer: plump, a round, wide end on a narrower base (« dodus »,

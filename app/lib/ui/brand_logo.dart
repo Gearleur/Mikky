@@ -29,9 +29,9 @@ enum Brand {
   final double scale;
 
   static Brand of(AgentProvider provider) => switch (provider) {
-        AgentProvider.claude => claude,
-        AgentProvider.codex => codex,
-      };
+    AgentProvider.claude => claude,
+    AgentProvider.codex => codex,
+  };
 }
 
 /// A tool's logo, [size] px square, for the current theme.
@@ -48,7 +48,9 @@ class BrandLogo extends StatelessWidget {
     final mark = size * brand.scale;
     return SizedBox.square(
       dimension: size,
-      child: Center(child: SvgPicture.asset('assets/brands/$file', width: mark, height: mark, semanticsLabel: brand.label)),
+      child: Center(
+        child: SvgPicture.asset('assets/brands/$file', width: mark, height: mark, semanticsLabel: brand.label),
+      ),
     );
   }
 }

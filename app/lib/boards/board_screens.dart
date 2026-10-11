@@ -120,65 +120,87 @@ class _AgentMockState extends State<AgentMock> {
   }
 }
 
-final agentBoard = BoardSpec('Agent', 'La page d’un agent : le fil, attentes, fins', (context) => [
-  BoardSection(
-    title: 'Au travail',
-    note: 'Un seul fil (2026-10-05) : tes messages, et pour chaque tâche tout ce qui s’y passe dans l’ordre — ce que l’agent dit en route, ses actions en grandes lignes (un clic montre les outils), le code en direct sous l’action en cours, le plan en haut s’il en a un ; sa réponse sous la tâche. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
-    frames: [
-      BoardFrame(label: 'Avec un plan', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), adapterPid: 12345)),
-      BoardFrame(
-        label: 'Sans plan',
-        note: 'Les outils regroupés en grandes lignes, colorées par action, entre ce que l’agent dit.',
-        child: AgentMock(title: 'Ajoute un test Codex', log: FakeSessions.workingNoPlan()),
-      ),
-      BoardFrame(
-        label: 'Session hors de Mikky',
-        note: 'Lancée dans VS Code ou un terminal : le même fil, ses messages et ses actions en direct ; Mikky lit son activité, sans confirmer que son processus tourne et sans pouvoir lui répondre.',
-        child: AgentMock(title: 'Refactor du lecteur', log: FakeSessions.working(), external: true),
-      ),
-    ],
-  ),
-  BoardSection(
-    title: 'Attend',
-    frames: [
-      BoardFrame(label: 'Feu vert pour une commande', child: AgentMock(title: 'Met à jour le site', log: FakeSessions.approval())),
-      BoardFrame(label: 'Question à choix', child: AgentMock(title: 'Stockage des tâches', log: FakeSessions.question())),
-    ],
-  ),
-  BoardSection(
-    title: 'Fini',
-    frames: [
-      BoardFrame(label: 'Terminé, la conversation continue', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done())),
-      BoardFrame(
-        label: 'Défilé',
-        note: 'Le fil passe sous les boutons et sous le champ, flouté.',
-        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), scrolled: true),
-      ),
-      BoardFrame(
-        label: 'Limite atteinte',
-        note: 'L’abonnement est au bout : étoile jaune en haut ; une ligne, sans encadré, « Limite atteinte · reprend à 17 h 10 » (l’heure lue dans le message de l’agent), puis la barre à plat : « Terminer » (on n’attend plus) ou « Relance auto ».',
-        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
-      ),
-      BoardFrame(
-        label: 'Limite atteinte, terminée',
-        note: 'Après « Terminer » : il ne reste que « Relance auto » (qui la remet en attente de la reprise, ensorcelée).',
-        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), finished: true),
-      ),
-      BoardFrame(
-        label: 'Ensorcelée',
-        note: 'La même ligne : « Ensorcelé · se relance à 17 h 11 », l’étoile violette, et « Terminer » pour refuser la relance ; l’étoile violette en haut au milieu.',
-        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
-      ),
-      BoardFrame(label: 'Erreur', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error())),
-      BoardFrame(label: 'Arrêté', child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled())),
-      BoardFrame(
-        label: 'En pause',
-        note: '« Mettre en pause » dans le menu ··· ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le même menu.',
-        child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled(), paused: true),
-      ),
-    ],
-  ),
-]);
+final agentBoard = BoardSpec(
+  'Agent',
+  'La page d’un agent : le fil, attentes, fins',
+  (context) => [
+    BoardSection(
+      title: 'Au travail',
+      note: 'Un seul fil (2026-10-05) : tes messages, et pour chaque tâche tout ce qui s’y passe dans l’ordre — ce que l’agent dit en route, ses actions en grandes lignes (un clic montre les outils), le code en direct sous l’action en cours, le plan en haut s’il en a un ; sa réponse sous la tâche. Pas de titre ni de bandeau : le fil va jusqu’en haut, les boutons flottent dessus (retour ; « ··· », le menu : mettre en pause ou reprendre, arrêter l’agent, VS Code, dossier, renommer, épingler, archiver, supprimer).',
+      frames: [
+        BoardFrame(
+          label: 'Avec un plan',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), adapterPid: 12345),
+        ),
+        BoardFrame(
+          label: 'Sans plan',
+          note: 'Les outils regroupés en grandes lignes, colorées par action, entre ce que l’agent dit.',
+          child: AgentMock(title: 'Ajoute un test Codex', log: FakeSessions.workingNoPlan()),
+        ),
+        BoardFrame(
+          label: 'Session hors de Mikky',
+          note: 'Lancée dans VS Code ou un terminal : le même fil, ses messages et ses actions en direct ; Mikky lit son activité, sans confirmer que son processus tourne et sans pouvoir lui répondre.',
+          child: AgentMock(title: 'Refactor du lecteur', log: FakeSessions.working(), external: true),
+        ),
+      ],
+    ),
+    BoardSection(
+      title: 'Attend',
+      frames: [
+        BoardFrame(
+          label: 'Feu vert pour une commande',
+          child: AgentMock(title: 'Met à jour le site', log: FakeSessions.approval()),
+        ),
+        BoardFrame(
+          label: 'Question à choix',
+          child: AgentMock(title: 'Stockage des tâches', log: FakeSessions.question()),
+        ),
+      ],
+    ),
+    BoardSection(
+      title: 'Fini',
+      frames: [
+        BoardFrame(
+          label: 'Terminé, la conversation continue',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done()),
+        ),
+        BoardFrame(
+          label: 'Défilé',
+          note: 'Le fil passe sous les boutons et sous le champ, flouté.',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.done(), scrolled: true),
+        ),
+        BoardFrame(
+          label: 'Limite atteinte',
+          note: 'L’abonnement est au bout : étoile jaune en haut ; une ligne, sans encadré, « Limite atteinte · reprend à 17 h 10 » (l’heure lue dans le message de l’agent), puis la barre à plat : « Terminer » (on n’attend plus) ou « Relance auto ».',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited()),
+        ),
+        BoardFrame(
+          label: 'Limite atteinte, terminée',
+          note: 'Après « Terminer » : il ne reste que « Relance auto » (qui la remet en attente de la reprise, ensorcelée).',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), finished: true),
+        ),
+        BoardFrame(
+          label: 'Ensorcelée',
+          note: 'La même ligne : « Ensorcelé · se relance à 17 h 11 », l’étoile violette, et « Terminer » pour refuser la relance ; l’étoile violette en haut au milieu.',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.limited(), enchanted: true),
+        ),
+        BoardFrame(
+          label: 'Erreur',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.error()),
+        ),
+        BoardFrame(
+          label: 'Arrêté',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled()),
+        ),
+        BoardFrame(
+          label: 'En pause',
+          note: '« Mettre en pause » dans le menu ··· ; Reprendre lui dit de continuer. « Arrêter l’agent » (fin du processus) est dans le même menu.',
+          child: AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.cancelled(), paused: true),
+        ),
+      ],
+    ),
+  ],
+);
 
 // -------------------------------------------------------------- messages
 
@@ -194,10 +216,21 @@ class _Pane extends StatelessWidget {
     return Container(
       width: 320,
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(22), border: Border.all(color: ui.line)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        for (var i = 0; i < children.length; i++) Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : 10), child: children[i]),
-      ]),
+      decoration: BoxDecoration(
+        color: ui.island,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: ui.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          for (var i = 0; i < children.length; i++)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : 10),
+              child: children[i],
+            ),
+        ],
+      ),
     );
   }
 }
@@ -218,14 +251,20 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
         ),
         BoardFrame(
           label: 'Réponse simple',
-          child: _Pane([ChatMessage(me: false, text: 'Deux tests échouent sur la fermeture auto : le délai attendu est **45 s**, le code dit 60 s.')]),
+          child: _Pane([
+            ChatMessage(
+              me: false,
+              text: 'Deux tests échouent sur la fermeture auto : le délai attendu est **45 s**, le code dit 60 s.',
+            ),
+          ]),
         ),
         BoardFrame(
           label: 'Réponse avec listes',
           child: _Pane([
             ChatMessage(
               me: false,
-              text: 'Voilà ce que j’ai fait :\n\n'
+              text:
+                  'Voilà ce que j’ai fait :\n\n'
                   '1. Lu la spec de l’étape 1 et relevé les décisions qui touchent la petite fenêtre\n'
                   '2. Écrit le résumé\n'
                   '   en français, court\n\n'
@@ -241,7 +280,8 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
           child: _Pane([
             ChatMessage(
               me: false,
-              text: '# Le notch\n\n'
+              text:
+                  '# Le notch\n\n'
                   'Mikky regarde la **dernière tâche** au travail ; les autres applications sont à droite.\n\n'
                   '## Ce qui change\n\n'
                   '- Les tuiles sont larges\n'
@@ -275,7 +315,14 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
       frames: [
         const BoardFrame(
           label: 'Repliée',
-          child: _Pane([TaskSection(status: UiStatus.finished, title: 'Tâche terminée', meta: '3 étapes · 1 fichier · 2 min', children: [TaskStep(label: 'Lit la spec')])]),
+          child: _Pane([
+            TaskSection(
+              status: UiStatus.finished,
+              title: 'Tâche terminée',
+              meta: '3 étapes · 1 fichier · 2 min',
+              children: [TaskStep(label: 'Lit la spec')],
+            ),
+          ]),
         ),
         BoardFrame(
           label: 'Le déroulement',
@@ -291,7 +338,9 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
                 const SizedBox(height: 8),
                 const TaskStep(label: 'Lit 3 fichiers'),
                 const SizedBox(height: 8),
-                const NoteLine('Le lecteur ignore `token_count` quand la fenêtre manque. J’ajoute un test pour ce cas.'),
+                const NoteLine(
+                  'Le lecteur ignore `token_count` quand la fenêtre manque. J’ajoute un test pour ce cas.',
+                ),
                 const SizedBox(height: 8),
                 TaskStep(label: 'Crée usage_test.dart', tone: PixelFxPalette.green(ui)),
                 TaskStep(label: 'Modifie codex_reader.dart', tone: PixelFxPalette.blue),
@@ -335,8 +384,18 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
         const BoardFrame(
           label: 'Arrêtée, en erreur',
           child: _Pane([
-            TaskSection(status: UiStatus.paused, title: 'Tâche arrêtée', meta: '2 étapes', children: [TaskStep(label: 'Lit 2 fichiers')]),
-            TaskSection(status: UiStatus.error, title: 'Tâche en erreur', meta: '1 étape', children: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')]),
+            TaskSection(
+              status: UiStatus.paused,
+              title: 'Tâche arrêtée',
+              meta: '2 étapes',
+              children: [TaskStep(label: 'Lit 2 fichiers')],
+            ),
+            TaskSection(
+              status: UiStatus.error,
+              title: 'Tâche en erreur',
+              meta: '1 étape',
+              children: [TaskStep(label: 'Lance une commande', state: TaskStepState.failed, note: 'échec')],
+            ),
           ]),
         ),
       ],
@@ -344,7 +403,10 @@ final messagesBoard = BoardSpec('Messages', 'Le fil : bulles, réponses, tâches
     const BoardSection(
       title: 'Attentes dans le fil',
       frames: [
-        BoardFrame(label: 'Feu vert', child: SizedBox(width: 320, child: _AskSample())),
+        BoardFrame(
+          label: 'Feu vert',
+          child: SizedBox(width: 320, child: _AskSample()),
+        ),
       ],
     ),
   ];

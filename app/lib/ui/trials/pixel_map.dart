@@ -24,7 +24,8 @@ class PixelMap extends StatelessWidget {
   final double gap;
 
   @override
-  Widget build(BuildContext context) => CustomPaint(size: Size.square(size), painter: PixelMapPainter(rows, colors, outline, gap));
+  Widget build(BuildContext context) =>
+      CustomPaint(size: Size.square(size), painter: PixelMapPainter(rows, colors, outline, gap));
 }
 
 /// Mikky in pixels (user request, 2026-09-30, to try as the logo): his
@@ -67,9 +68,13 @@ class PixelMapPainter extends CustomPainter {
     final gap = side * gapRatio;
     final cell = (side - gap * (n - 1)) / n;
     // Centered: the rows used, in the middle of the square.
-    final used = [for (var y = 0; y < rows.length; y++) if (rows[y].split('').any(colors.containsKey)) y];
+    final used = [
+      for (var y = 0; y < rows.length; y++)
+        if (rows[y].split('').any(colors.containsKey)) y,
+    ];
     final dy = used.isEmpty ? 0.0 : ((n - 1 - used.last) - used.first) / 2 * (cell + gap);
-    bool filled(int x, int y) => y >= 0 && y < rows.length && x >= 0 && x < rows[y].length && colors.containsKey(rows[y][x]);
+    bool filled(int x, int y) =>
+        y >= 0 && y < rows.length && x >= 0 && x < rows[y].length && colors.containsKey(rows[y][x]);
     // Solid pictures: no smoothing, or thin seams show between pixels.
     final paint = Paint()..isAntiAlias = gap > 0;
     for (var y = -1; y <= rows.length; y++) {

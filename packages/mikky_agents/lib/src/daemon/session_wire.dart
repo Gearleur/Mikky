@@ -8,10 +8,14 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
     'session' => SessionStarted(
       e['id'] as String,
       cwd: e['cwd'] as String?,
-      modes: [for (final m in e['modes'] as List? ?? []) SessionMode(m['id'] as String, m['name'] as String, m['description'] as String)],
+      modes: [
+        for (final m in e['modes'] as List? ?? [])
+          SessionMode(m['id'] as String, m['name'] as String, m['description'] as String),
+      ],
       modeId: e['modeId'] as String?,
       models: [
-        for (final m in e['models'] as List? ?? []) SessionModel(m['id'] as String, m['name'] as String, m['description'] as String),
+        for (final m in e['models'] as List? ?? [])
+          SessionModel(m['id'] as String, m['name'] as String, m['description'] as String),
       ],
       modelId: e['modelId'] as String?,
       modelOption: e['modelOption'] as String?,
@@ -53,7 +57,9 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
             title: q['title'] as String?,
             multiple: q['multiple'] == true,
             otherKey: q['otherKey'] as String?,
-            choices: [for (final c in q['choices'] as List) QuestionChoice('${c['value']}', c['description'] as String)],
+            choices: [
+              for (final c in q['choices'] as List) QuestionChoice('${c['value']}', c['description'] as String),
+            ],
           ),
       ],
       at: at,
@@ -63,9 +69,15 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
     'end' => TurnEnded(StopReason.values.byName(e['reason'] as String), message: e['message'] as String?, at: at),
     'title' => TitleChanged(e['title'] as String, at: at),
     'user' => UserMessage(e['text'] as String, messageId: e['id'] as String?, queued: e['queued'] == true, at: at),
-    'message' => AgentMessage(e['text'] as String, messageId: e['id'] as String?, thought: e['thought'] == true, at: at),
+    'message' => AgentMessage(
+      e['text'] as String,
+      messageId: e['id'] as String?,
+      thought: e['thought'] == true,
+      at: at,
+    ),
     'plan' => PlanChanged([
-      for (final p in e['entries'] as List) PlanEntry(p['content'] as String, PlanStatus.values.byName(p['status'] as String)),
+      for (final p in e['entries'] as List)
+        PlanEntry(p['content'] as String, PlanStatus.values.byName(p['status'] as String)),
     ], at: at),
     'context' => ContextUsed((e['used'] as num).toInt(), (e['size'] as num).toInt(), at: at),
     'limits' => LimitsSeen(
@@ -95,6 +107,8 @@ LimitWindow? _window(dynamic value) {
   return LimitWindow(
     (value['used_percent'] as num).toDouble(),
     minutes: (value['window_minutes'] as num?)?.toInt() ?? 0,
-    resetsAt: value['resets_at'] == null ? null : DateTime.fromMillisecondsSinceEpoch((value['resets_at'] as num).toInt() * 1000),
+    resetsAt: value['resets_at'] == null
+        ? null
+        : DateTime.fromMillisecondsSinceEpoch((value['resets_at'] as num).toInt() * 1000),
   );
 }

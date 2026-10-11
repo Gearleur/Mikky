@@ -75,7 +75,11 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   /// The pages come and go on the island's own spring (its stiffness,
   /// barely damped more so they do not overshoot), so they arrive with
   /// the island as it grows or shrinks (2026-10-05: one motion, smooth).
-  static final _spring = SpringDescription.withDampingRatio(mass: 1, stiffness: SpringSpec.island.stiffness, ratio: .95);
+  static final _spring = SpringDescription.withDampingRatio(
+    mass: 1,
+    stiffness: SpringSpec.island.stiffness,
+    ratio: .95,
+  );
 
   /// Opening: the page below goes out early; the new one comes in a little
   /// later. Back (t from 1 to 0): the page leaves in the first half, the
@@ -124,19 +128,21 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       back: back,
       mikky: _beside,
       launched: (id) => _replaceTop(_agentPage(id)),
-      login: (target, provider, done) => _pushPage(_Page(
-        'login',
-        () => LoginPage(
-          host: host,
-          target: target,
-          provider: provider,
-          back: back,
-          done: () {
-            back();
-            done();
-          },
+      login: (target, provider, done) => _pushPage(
+        _Page(
+          'login',
+          () => LoginPage(
+            host: host,
+            target: target,
+            provider: provider,
+            back: back,
+            done: () {
+              back();
+              done();
+            },
+          ),
         ),
-      )),
+      ),
     ),
   );
 
@@ -145,6 +151,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     final e = host.service.source.entry(id);
     if (e != null) showSessionMenu(host, e, rename: () => _open('rename:$id'));
   }
+
   late final AnimationController _t = AnimationController(vsync: this, value: 1);
 
   // Agents send many small changes while they work (a message comes in
@@ -183,6 +190,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       widget.host.service.addListener(_onService);
     }
   }
+
   _Page? _leaving;
 
   SideHost get host => widget.host;
@@ -202,26 +210,34 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   Future<void> _move(double to) {
     setState(() => _moving = true);
     final reduced = Motion.reduced(context);
-    final run = reduced ? _t.animateTo(to, duration: Duration.zero) : _t.animateWith(SpringSimulation(_spring, _t.value, to, 0));
+    final run = reduced
+        ? _t.animateTo(to, duration: Duration.zero)
+        : _t.animateWith(SpringSimulation(_spring, _t.value, to, 0));
     return run.whenComplete(() {
       if (mounted) setState(() => _moving = false);
     });
   }
 
   void _open(String what) => switch (what) {
-    final w when w.startsWith('alert:') => _pushPage(_Page(
-      w,
-      () => BriefPage(
-        host: host,
-        id: w.substring(6),
-        back: back,
-        openAgent: () => _replaceTop(_agentPage(w.substring(6))),
+    final w when w.startsWith('alert:') => _pushPage(
+      _Page(
+        w,
+        () => BriefPage(
+          host: host,
+          id: w.substring(6),
+          back: back,
+          openAgent: () => _replaceTop(_agentPage(w.substring(6))),
+        ),
       ),
-    )),
+    ),
     'hooks' => _pushPage(_Page('hooks', () => HooksPage(host: host, back: back))),
-    'hooks:codex' => _pushPage(_Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex))),
+    'hooks:codex' => _pushPage(
+      _Page('hooks:codex', () => HooksPage(host: host, back: back, tool: AgentProvider.codex)),
+    ),
     'new' => _pushPage(_newChat()),
-    final w when w.startsWith('rename:') => _pushPage(_Page(w, () => RenamePage(host: host, id: w.substring(7), back: back))),
+    final w when w.startsWith('rename:') => _pushPage(
+      _Page(w, () => RenamePage(host: host, id: w.substring(7), back: back)),
+    ),
     _ => _pushPage(_agentPage(what)),
   };
 
@@ -304,7 +320,9 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     // Built here, once per change — never at each frame of a move.
     Widget page(_Page p) => KeyedSubtree(
       key: ValueKey(p.key),
-      child: RepaintBoundary(child: ColoredBox(color: ui.island, child: p.build())),
+      child: RepaintBoundary(
+        child: ColoredBox(color: ui.island, child: p.build()),
+      ),
     );
     final notice = switch (host.service.backend) {
       BackendState.online => null,
@@ -344,14 +362,22 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
                     enabled: _moving,
                     child: FadeTransition(
                       opacity: belowOpacity,
-                      child: ScaleTransition(scale: _t.drive(Tween(begin: 1.0, end: 1.015)), alignment: Alignment.topCenter, child: page(below)),
+                      child: ScaleTransition(
+                        scale: _t.drive(Tween(begin: 1.0, end: 1.015)),
+                        alignment: Alignment.topCenter,
+                        child: page(below),
+                      ),
                     ),
                   ),
                 ),
               // The same widgets at rest (1, 1): the page keeps its state.
               FadeTransition(
                 opacity: aboveOpacity,
-                child: ScaleTransition(scale: _t.drive(Tween(begin: .97, end: 1.0)), alignment: Alignment.topCenter, child: page(top)),
+                child: ScaleTransition(
+                  scale: _t.drive(Tween(begin: .97, end: 1.0)),
+                  alignment: Alignment.topCenter,
+                  child: page(top),
+                ),
               ),
             ],
           ),

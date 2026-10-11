@@ -1,7 +1,8 @@
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
-Agent _a(String id, AgentStatus s, double since) => Agent(id: id, name: id, status: s, startedAt: 0, statusSince: since);
+Agent _a(String id, AgentStatus s, double since) =>
+    Agent(id: id, name: id, status: s, startedAt: 0, statusSince: since);
 
 void main() {
   test('questions and permissions first, then errors, then limits; the oldest first', () {
@@ -22,7 +23,11 @@ void main() {
   });
 
   test('without limits, or some agents left out', () {
-    final agents = [_a('l', AgentStatus.rateLimited, 0), _a('q', AgentStatus.question, 1), _a('e', AgentStatus.error, 2)];
+    final agents = [
+      _a('l', AgentStatus.rateLimited, 0),
+      _a('q', AgentStatus.question, 1),
+      _a('e', AgentStatus.error, 2),
+    ];
     expect(requestQueue(agents, limits: false).map((a) => a.id), ['q', 'e']);
     expect(requestQueue(agents, skip: {'q'}).map((a) => a.id), ['e', 'l']);
   });

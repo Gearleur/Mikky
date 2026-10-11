@@ -12,7 +12,14 @@ enum RailEdge { left, right }
 /// what floats (`raise`, `floating`), as the tab bar next to it. The
 /// content keeps [edgePad] from the edge and [innerPad] on the round side.
 class EdgeRail extends StatelessWidget {
-  const EdgeRail({super.key, required this.edge, required this.child, this.height = 44, this.innerPad = 6, this.edgePad = 14});
+  const EdgeRail({
+    super.key,
+    required this.edge,
+    required this.child,
+    this.height = 44,
+    this.innerPad = 6,
+    this.edgePad = 14,
+  });
 
   final RailEdge edge;
   final Widget child;
@@ -35,7 +42,9 @@ class EdgeRail extends StatelessWidget {
               right: right ? -height : 0,
               top: 0,
               bottom: 0,
-              child: RepaintBoundary(child: Surface(color: ui.raise, shadows: ui.floating)),
+              child: RepaintBoundary(
+                child: Surface(color: ui.raise, shadows: ui.floating),
+              ),
             ),
             Padding(
               padding: EdgeInsets.only(left: right ? innerPad : edgePad, right: right ? edgePad : innerPad),

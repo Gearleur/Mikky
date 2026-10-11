@@ -57,8 +57,14 @@ void main() {
     home = await Directory.systemTemp.createTemp('mikky_watch_rust_');
     await Directory('${home.path}/.claude/projects/p').create(recursive: true);
     await Directory('${home.path}/.codex/sessions').create(recursive: true);
-    daemon = await Process.start('../../daemon/target/debug/mikkyd.exe', ['--stdout-endpoint', '--watch-home', home.path]);
-    final endpoint = DaemonEndpoint.parse(await daemon.stdout.transform(utf8.decoder).transform(const LineSplitter()).first)!;
+    daemon = await Process.start('../../daemon/target/debug/mikkyd.exe', [
+      '--stdout-endpoint',
+      '--watch-home',
+      home.path,
+    ]);
+    final endpoint = DaemonEndpoint.parse(
+      await daemon.stdout.transform(utf8.decoder).transform(const LineSplitter()).first,
+    )!;
     client = await DaemonClient.connect(endpoint);
     watcher = DaemonSessionWatcher(client);
     await watcher.start();
@@ -89,16 +95,22 @@ void main() {
         final text = await fixture.readAsString();
         for (final line in const LineSplitter().convert(text).where((s) => s.trim().isNotEmpty)) {
           final value = (jsonDecode(line) as Map).cast<String, dynamic>();
-          expected.applyAll(reader is ClaudeTranscriptReader ? reader.read(value) : (reader as CodexRolloutReader).read(value));
+          expected.applyAll(
+            reader is ClaudeTranscriptReader ? reader.read(value) : (reader as CodexRolloutReader).read(value),
+          );
         }
         await file.writeAsString('$text\n');
         for (var i = 0; i < 200; i++) {
-          if (watcher.sessions.values.any((s) => s.log.version == expected.version && s.log.sessionId == expected.sessionId)) {
+          if (watcher.sessions.values.any(
+            (s) => s.log.version == expected.version && s.log.sessionId == expected.sessionId,
+          )) {
             break;
           }
           await Future<void>.delayed(const Duration(milliseconds: 20));
         }
-        final actual = watcher.sessions.values.where((s) => s.path == file.path.replaceAll('/', Platform.pathSeparator)).firstOrNull;
+        final actual = watcher.sessions.values
+            .where((s) => s.path == file.path.replaceAll('/', Platform.pathSeparator))
+            .firstOrNull;
         expect(actual, isNotNull, reason: fixture.path);
         expect(snapshot(actual!.log), snapshot(expected), reason: fixture.path);
       }

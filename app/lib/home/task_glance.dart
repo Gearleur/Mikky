@@ -47,7 +47,8 @@ String _finished(SessionLog log) {
 }
 
 /// The latest turn with work in it.
-TurnSpan? _worked(SessionLog log) => log.turns.where((t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem)).lastOrNull;
+TurnSpan? _worked(SessionLog log) =>
+    log.turns.where((t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem)).lastOrNull;
 
 /// How far the task is in its plan: (steps done, steps); null without one.
 (int, int)? progressOf(SessionLog log) {
@@ -80,26 +81,46 @@ class TaskGlance extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (app != null) ...[AppLine(app), const SizedBox(height: 3)],
-        Text(task.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
+        Text(
+          task.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text),
+        ),
         const SizedBox(height: 3),
-        Row(children: [
-          Flexible(
-            child: Text(state, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, weight: FontWeight.w500, color: stateColor, tabular: true)),
-          ),
-          if (p != null) ...[
-            const SizedBox(width: 8),
-            TaskProgress(done: p.$1, total: p.$2, color: switch (task.status) {
-              AgentStatus.finished => ui.green,
-              AgentStatus.approval || AgentStatus.question => ui.amber,
-              AgentStatus.rateLimited => ui.yellow,
-              AgentStatus.error => ui.red,
-              _ => ui.blue,
-            }),
+        Row(
+          children: [
+            Flexible(
+              child: Text(
+                state,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.caption, weight: FontWeight.w500, color: stateColor, tabular: true),
+              ),
+            ),
+            if (p != null) ...[
+              const SizedBox(width: 8),
+              TaskProgress(
+                done: p.$1,
+                total: p.$2,
+                color: switch (task.status) {
+                  AgentStatus.finished => ui.green,
+                  AgentStatus.approval || AgentStatus.question => ui.amber,
+                  AgentStatus.rateLimited => ui.yellow,
+                  AgentStatus.error => ui.red,
+                  _ => ui.blue,
+                },
+              ),
+            ],
           ],
-        ]),
+        ),
         if (steps > 0) ...[
           const SizedBox(height: 5),
-          TaskSteps(log: task.log, max: steps, waiting: task.status == AgentStatus.approval || task.status == AgentStatus.question),
+          TaskSteps(
+            log: task.log,
+            max: steps,
+            waiting: task.status == AgentStatus.approval || task.status == AgentStatus.question,
+          ),
         ],
       ],
     );
@@ -119,18 +140,21 @@ class TaskProgress extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Semantics(
       label: '$done sur $total',
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        for (var i = 0; i < total; i++)
-          Container(
-            width: 10,
-            height: 3,
-            margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
-            decoration: BoxDecoration(
-              color: i < done ? color : (i == done ? color.withValues(alpha: .4) : ui.track),
-              borderRadius: BorderRadius.circular(1.5),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var i = 0; i < total; i++)
+            Container(
+              width: 10,
+              height: 3,
+              margin: EdgeInsets.only(left: i == 0 ? 0 : 2),
+              decoration: BoxDecoration(
+                color: i < done ? color : (i == done ? color.withValues(alpha: .4) : ui.track),
+                borderRadius: BorderRadius.circular(1.5),
+              ),
             ),
-          ),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -149,33 +173,39 @@ class TaskSteps extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return Padding(
       padding: const EdgeInsets.only(left: 10),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-        for (final s in glanceSteps(log, max: max))
-          Padding(
-            padding: const EdgeInsets.only(bottom: 2),
-            child: Row(children: [
-              SizedBox(width: 10, child: Center(child: _star(s, ui))),
-              const SizedBox(width: 7),
-              Expanded(
-                child: Text(
-                  s.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(
-                    TextSize.small,
-                    weight: s.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400,
-                    color: switch (s.state) {
-                      TaskStepState.now => ui.text,
-                      TaskStepState.todo => ui.text3,
-                      _ => ui.text2,
-                    },
-                    height: 1.25,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final s in glanceSteps(log, max: max))
+            Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Row(
+                children: [
+                  SizedBox(width: 10, child: Center(child: _star(s, ui))),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      s.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: uiText(
+                        TextSize.small,
+                        weight: s.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400,
+                        color: switch (s.state) {
+                          TaskStepState.now => ui.text,
+                          TaskStepState.todo => ui.text3,
+                          _ => ui.text2,
+                        },
+                        height: 1.25,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
-            ]),
-          ),
-      ]),
+            ),
+        ],
+      ),
     );
   }
 

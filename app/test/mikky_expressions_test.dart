@@ -41,34 +41,37 @@ class _Cell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 170,
-        height: 190,
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: theme.isLight ? const Color(0xFFEEE9E1) : const Color(0xFF070708),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: MikkyPainter(
-                  geometry: MikkyGeometry.of(mikky, 48),
-                  center: const Offset(85, 100),
-                  rim: theme.mikkyRim,
-                  statusColor: theme.status,
-                  foreground: theme.foreground,
-                ),
-              ),
+    width: 170,
+    height: 190,
+    margin: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: theme.isLight ? const Color(0xFFEEE9E1) : const Color(0xFF070708),
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Stack(
+      children: [
+        Positioned.fill(
+          child: CustomPaint(
+            painter: MikkyPainter(
+              geometry: MikkyGeometry.of(mikky, 48),
+              center: const Offset(85, 100),
+              rim: theme.mikkyRim,
+              statusColor: theme.status,
+              foreground: theme.foreground,
             ),
-            Positioned(
-              left: 10,
-              top: 8,
-              child: Text(label, style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: theme.foreground)),
-            ),
-          ],
+          ),
         ),
-      );
+        Positioned(
+          left: 10,
+          top: 8,
+          child: Text(
+            label,
+            style: TextStyle(fontFamily: 'Geist', fontSize: 13, color: theme.foreground),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 void main() {
@@ -121,9 +124,18 @@ void main() {
             color: theme.isLight ? Colors.white : const Color(0xFF1C1C1E),
             child: Wrap(
               children: [
-                for (final s in MikkyState.values) _Cell(label: s.name, mikky: _mikkyAt(state: s), theme: theme),
+                for (final s in MikkyState.values)
+                  _Cell(
+                    label: s.name,
+                    mikky: _mikkyAt(state: s),
+                    theme: theme,
+                  ),
                 for (final e in MikkyEmote.values)
-                  _Cell(label: 'émote ${e.name}', mikky: _mikkyAt(emote: e, seconds: .5), theme: theme),
+                  _Cell(
+                    label: 'émote ${e.name}',
+                    mikky: _mikkyAt(emote: e, seconds: .5),
+                    theme: theme,
+                  ),
               ],
             ),
           ),

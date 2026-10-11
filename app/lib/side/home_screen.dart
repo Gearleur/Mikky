@@ -40,7 +40,9 @@ List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> reca
 String appLine(AgentStatus status, SessionLog log, DateTime last, DateTime now) => switch (status) {
   AgentStatus.approval => log.detail.isEmpty ? 'Attend ton feu vert' : 'Attend : ${log.detail}',
   AgentStatus.question => 'Te pose une question',
-  AgentStatus.working || AgentStatus.thinking || AgentStatus.searching => log.detail.isEmpty ? 'Au travail' : log.detail,
+  AgentStatus.working ||
+  AgentStatus.thinking ||
+  AgentStatus.searching => log.detail.isEmpty ? 'Au travail' : log.detail,
   AgentStatus.rateLimited => log.detail,
   AgentStatus.error => 'En erreur',
   AgentStatus.paused => 'En pause',
@@ -54,7 +56,12 @@ const watchedAfterEnd = Duration(minutes: 10);
 /// tâche qui est en train d'être faite »): the latest at work or waiting
 /// for the user; else the latest that ended in the last
 /// [watchedAfterEnd]; else none.
-T? watchedOf<T>(Iterable<T> items, {required AgentStatus Function(T) status, required DateTime Function(T) lastActivity, required DateTime now}) {
+T? watchedOf<T>(
+  Iterable<T> items, {
+  required AgentStatus Function(T) status,
+  required DateTime Function(T) lastActivity,
+  required DateTime now,
+}) {
   T? latest(bool Function(AgentStatus) keep) {
     T? best;
     for (final i in items) {
@@ -63,10 +70,16 @@ T? watchedOf<T>(Iterable<T> items, {required AgentStatus Function(T) status, req
     return best;
   }
 
-  final active = latest((s) => switch (s) {
-    AgentStatus.working || AgentStatus.thinking || AgentStatus.searching || AgentStatus.approval || AgentStatus.question => true,
-    _ => false,
-  });
+  final active = latest(
+    (s) => switch (s) {
+      AgentStatus.working ||
+      AgentStatus.thinking ||
+      AgentStatus.searching ||
+      AgentStatus.approval ||
+      AgentStatus.question => true,
+      _ => false,
+    },
+  );
   if (active != null) return active;
   final ended = latest((s) => s == AgentStatus.finished || s == AgentStatus.rateLimited || s == AgentStatus.error);
   return ended != null && now.difference(lastActivity(ended)) <= watchedAfterEnd ? ended : null;
@@ -168,7 +181,6 @@ class HomeScreen extends StatelessWidget {
   /// Null: [open].
   final ValueChanged<String>? recall;
 
-
   /// An agent's ··· menu (a row of the history).
   final ValueChanged<String>? onMenu;
 
@@ -186,7 +198,12 @@ class HomeScreen extends StatelessWidget {
       onOpen: (app) => open(app.id),
       // « + », the tools and the Chat mode: the new chat's page.
       onNew: canLaunch ? () => open('new') : null,
-      onHistory: (within) => showHistory(within, rows: historyRows(entries, DateTime.now(), recalled: recalled), onOpen: recall ?? open, onMenu: onMenu),
+      onHistory: (within) => showHistory(
+        within,
+        rows: historyRows(entries, DateTime.now(), recalled: recalled),
+        onOpen: recall ?? open,
+        onMenu: onMenu,
+      ),
     );
   }
 }

@@ -12,7 +12,13 @@ const _emptyHint = 'Clic droit ▸ Démo pour lancer de faux agents.';
 /// Open island at the top: the "Focus" view of the prototype, to the right
 /// of the big Mikky. Laid out at its final size, [width] wide.
 class FocusWideView extends StatelessWidget {
-  const FocusWideView({super.key, required this.text, required this.theme, required this.onAnswer, required this.width});
+  const FocusWideView({
+    super.key,
+    required this.text,
+    required this.theme,
+    required this.onAnswer,
+    required this.width,
+  });
 
   final IslandText text;
   final MikkyTheme theme;
@@ -94,14 +100,16 @@ class FocusWideView extends StatelessWidget {
                     ],
                   )
                 : f.progress != null
-                    ? Row(
-                        children: [
-                          Expanded(child: ProgressLine(value: f.progress!, color: color, theme: t, thickness: 3)),
-                          const SizedBox(width: 10),
-                          Text('${(f.progress! * 100).round()}%', style: monoStyle(t, size: 11.5)),
-                        ],
-                      )
-                    : const SizedBox.shrink(),
+                ? Row(
+                    children: [
+                      Expanded(
+                        child: ProgressLine(value: f.progress!, color: color, theme: t, thickness: 3),
+                      ),
+                      const SizedBox(width: 10),
+                      Text('${(f.progress! * 100).round()}%', style: monoStyle(t, size: 11.5)),
+                    ],
+                  )
+                : const SizedBox.shrink(),
           ),
           const SizedBox(height: 10),
           Row(
@@ -113,7 +121,9 @@ class FocusWideView extends StatelessWidget {
                     color: t.status(o.agent.status),
                     theme: t,
                     // As in the prototype, only an agent at work shows its progress.
-                    value: o.agent.status == AgentStatus.working && o.progress != null ? '${(o.progress! * 100).round()}%' : null,
+                    value: o.agent.status == AgentStatus.working && o.progress != null
+                        ? '${(o.progress! * 100).round()}%'
+                        : null,
                   ),
                 ),
                 const SizedBox(width: 6),

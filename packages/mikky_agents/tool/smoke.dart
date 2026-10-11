@@ -74,7 +74,12 @@ Future<void> main(List<String> all) async {
       ),
     ),
     await source.launch(
-      LaunchRequest(provider: AgentProvider.codex, host: AgentHost.windows, cwd: args[0], prompt: 'Essai de Mikky : réponds juste « ok ».'),
+      LaunchRequest(
+        provider: AgentProvider.codex,
+        host: AgentHost.windows,
+        cwd: args[0],
+        prompt: 'Essai de Mikky : réponds juste « ok ».',
+      ),
     ),
   ];
   for (final id in ids) {

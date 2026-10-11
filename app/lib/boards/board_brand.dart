@@ -13,7 +13,8 @@ import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';
 import 'logo_trials.dart';
 
-String _hex(Color c) => '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
+String _hex(Color c) =>
+    '#${(c.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0').toUpperCase()}${c.a < 1 ? ' · ${(c.a * 100).round()} %' : ''}';
 
 /// A color: its square, its name, its value.
 class _Swatch extends StatelessWidget {
@@ -28,43 +29,87 @@ class _Swatch extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return SizedBox(
       width: 150,
-      child: Row(children: [
-        Container(
-          width: 36,
-          height: 36,
-          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(9), border: Border.all(color: ui.line)),
-        ),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(name, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text)),
-            Text(_hex(color), style: uiText(TextSize.code, mono: true, color: ui.text3)),
-            if (use != null) Text(use!, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.code, color: ui.text3)),
-          ]),
-        ),
-      ]),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(color: ui.line),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text),
+                ),
+                Text(_hex(color), style: uiText(TextSize.code, mono: true, color: ui.text3)),
+                if (use != null)
+                  Text(
+                    use!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(TextSize.code, color: ui.text3),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
-Widget _grid(List<Widget> children, {double width = 640}) =>
-    SizedBox(width: width, child: Wrap(spacing: 14, runSpacing: 14, children: children));
+Widget _grid(List<Widget> children, {double width = 640}) => SizedBox(
+  width: width,
+  child: Wrap(spacing: 14, runSpacing: 14, children: children),
+);
 
 /// What the brand still misses, to decide together.
 class _Missing extends StatelessWidget {
   const _Missing();
 
   static const _items = [
-    ('Logo', 'C, Mikky qui dépasse, est retenue ; C2, C3, C4 à côté. Un petit quelque chose de magique à ajouter. Puis l’icône de l’app et de la zone de notification.'),
-    ('Couleurs signature', 'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).'),
-    ('Palette pixel officielle', 'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.'),
-    ('Typographie', 'Geist pour le texte (choisie). Pour le nom : Jacquard 24 (choisie, sur la petite île), Jersey 10 en second. Échelle des tailles faite (section Lettres et formes).'),
+    (
+      'Logo',
+      'C, Mikky qui dépasse, est retenue ; C2, C3, C4 à côté. Un petit quelque chose de magique à ajouter. Puis l’icône de l’app et de la zone de notification.',
+    ),
+    (
+      'Couleurs signature',
+      'L’orange de ta capture et le même en bleu : gardées pour plus tard, en essai sur les feux d’artifice (section Pixels).',
+    ),
+    (
+      'Palette pixel officielle',
+      'Violet, bleu, orange, rouge, jaune, gris, vert : à figer (4 niveaux chacune) et à nommer. À voir.',
+    ),
+    (
+      'Typographie',
+      'Geist pour le texte (choisie). Pour le nom : Jacquard 24 (choisie, sur la petite île), Jersey 10 en second. Échelle des tailles faite (section Lettres et formes).',
+    ),
     ('Mikky en pixels', 'Une première tête en pixels (le feu d’artifice « Mikky »). À voir.'),
-    ('Menus à nos couleurs', 'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.'),
-    ('Infobulles', 'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».'),
+    (
+      'Menus à nos couleurs',
+      'Le choix de l’agent, du modèle et du dossier passe par le menu natif de Windows : pas de survol à nous, pas nos couleurs. À refaire en composant.',
+    ),
+    (
+      'Infobulles',
+      'Les infobulles sont celles de Windows. Une bulle blanche à ombre douce, comme la capture « Bold : Ctrl + B ».',
+    ),
     ('Sons', 'Aucun son. Un petit « bip » pixel quand un agent attend ou finit ?'),
-    ('Mouvement', 'Une règle écrite : ressorts (gelée 95 / 0,38, sélecteurs 380 / 0,70), vitesses par état, 30 i/s pour les boucles.'),
-    ('Écran de connexion, réglages', 'Pas encore sur les planches : la connexion à Claude / Codex (lien, code) et un écran de réglages.'),
+    (
+      'Mouvement',
+      'Une règle écrite : ressorts (gelée 95 / 0,38, sélecteurs 380 / 0,70), vitesses par état, 30 i/s pour les boucles.',
+    ),
+    (
+      'Écran de connexion, réglages',
+      'Pas encore sur les planches : la connexion à Claude / Codex (lien, code) et un écran de réglages.',
+    ),
   ];
 
   @override
@@ -72,25 +117,46 @@ class _Missing extends StatelessWidget {
     final ui = MikkyUi.of(context);
     return SizedBox(
       width: 700,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        for (final (i, (t, d)) in _items.indexed)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              SizedBox(width: 26, child: Text('${i + 1}.', style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text3, tabular: true))),
-              Expanded(
-                child: Text.rich(TextSpan(children: [
-                  TextSpan(text: '$t  ', style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-                  TextSpan(text: d, style: uiText(TextSize.label, color: ui.text2, height: 1.45)),
-                ])),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final (i, (t, d)) in _items.indexed)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(
+                    width: 26,
+                    child: Text(
+                      '${i + 1}.',
+                      style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text3, tabular: true),
+                    ),
+                  ),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$t  ',
+                            style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text),
+                          ),
+                          TextSpan(
+                            text: d,
+                            style: uiText(TextSize.label, color: ui.text2, height: 1.45),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ]),
-          ),
-      ]),
+            ),
+        ],
+      ),
     );
   }
 }
-
 
 /// A square tile of a given color, the mark in the middle: how the icon
 /// looks on a dark or a light desktop.
@@ -192,24 +258,38 @@ class _LogoProposal extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-      Row(mainAxisSize: MainAxisSize.min, children: [
-        _Logo(kind, size: 120, dark: false),
-        const SizedBox(width: 12),
-        _Logo(kind, size: 120, dark: true),
-      ]),
-      const SizedBox(height: 12),
-      Row(crossAxisAlignment: CrossAxisAlignment.end, mainAxisSize: MainAxisSize.min, children: [
-        for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
-          Column(mainAxisSize: MainAxisSize.min, children: [
-            _Logo(kind, size: px, dark: dark),
-            const SizedBox(height: 4),
-            Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
-          ]),
-          const SizedBox(width: 10),
-        ],
-      ]),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _Logo(kind, size: 120, dark: false),
+            const SizedBox(width: 12),
+            _Logo(kind, size: 120, dark: true),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _Logo(kind, size: px, dark: dark),
+                  const SizedBox(height: 4),
+                  Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
+                ],
+              ),
+              const SizedBox(width: 10),
+            ],
+          ],
+        ),
+      ],
+    );
   }
 }
 
@@ -227,26 +307,44 @@ class _NameSample extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    TextStyle t(double size, {Color? color}) => uiText(size, color: color ?? ui.text, height: 1.05).copyWith(fontFamily: family);
+    TextStyle t(double size, {Color? color}) =>
+        uiText(size, color: color ?? ui.text, height: 1.05).copyWith(fontFamily: family);
     return SizedBox(
       width: 340,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(children: [
-          _Logo(_LogoKind.peek, size: 58, dark: !ui.isLight),
-          const SizedBox(width: 14),
-          Expanded(
-            child: FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text('Mikky', maxLines: 1, style: t(56))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _Logo(_LogoKind.peek, size: 58, dark: !ui.isLight),
+              const SizedBox(width: 14),
+              Expanded(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text('Mikky', maxLines: 1, style: t(56)),
+                ),
+              ),
+            ],
           ),
-        ]),
-        const SizedBox(height: 14),
-        Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-          Text('MIKKY', style: t(26)),
-          const SizedBox(width: 18),
-          Text('mikky', style: t(26)),
-        ]),
-        const SizedBox(height: 10),
-        FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: Text('Mikky · 3 agents au travail', maxLines: 1, style: t(18, color: ui.text2))),
-      ]),
+          const SizedBox(height: 14),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text('MIKKY', style: t(26)),
+              const SizedBox(width: 18),
+              Text('mikky', style: t(26)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text('Mikky · 3 agents au travail', maxLines: 1, style: t(18, color: ui.text2)),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -281,17 +379,40 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
       title: 'Logo',
       note: 'Le logo, c’est Mikky lui-même. C, qui dépasse, est retenue ; C2, C3, C4 restent à côté. Un petit quelque chose de magique à ajouter plus tard. Sur blanc et sur gris anthracite, puis aux tailles de Windows (barre des tâches, zone de notification).',
       frames: [
-        BoardFrame(label: 'C · Qui dépasse (retenue)', note: 'Il passe la tête par le bas du carré.', width: 252, child: _LogoProposal(_LogoKind.peek)),
-        BoardFrame(label: 'C2 · Plus près', note: 'Juste ses oreilles et ses yeux.', width: 252, child: _LogoProposal(_LogoKind.close)),
-        BoardFrame(label: 'C3 · Penché', note: 'Par le coin, la tête inclinée.', width: 252, child: _LogoProposal(_LogoKind.tilt)),
-        BoardFrame(label: 'C4 · Par le côté', note: 'Il entre par le bord droit.', width: 252, child: _LogoProposal(_LogoKind.side)),
+        BoardFrame(
+          label: 'C · Qui dépasse (retenue)',
+          note: 'Il passe la tête par le bas du carré.',
+          width: 252,
+          child: _LogoProposal(_LogoKind.peek),
+        ),
+        BoardFrame(
+          label: 'C2 · Plus près',
+          note: 'Juste ses oreilles et ses yeux.',
+          width: 252,
+          child: _LogoProposal(_LogoKind.close),
+        ),
+        BoardFrame(
+          label: 'C3 · Penché',
+          note: 'Par le coin, la tête inclinée.',
+          width: 252,
+          child: _LogoProposal(_LogoKind.tilt),
+        ),
+        BoardFrame(
+          label: 'C4 · Par le côté',
+          note: 'Il entre par le bord droit.',
+          width: 252,
+          child: _LogoProposal(_LogoKind.side),
+        ),
       ],
     ),
     BoardSection(
       title: 'Logo simple · le symbole',
       note: 'Un symbole simple pour l’entreprise, à côté de Mikky la mascotte. Gardés des premiers essais : les crochets-oreilles et le M-oreilles. En blanc sur noir, en noir sur blanc, puis aux petites tailles.',
       kind: FrameKind.trial,
-      frames: [for (final m in MarkSymbol.values) BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m))],
+      frames: [
+        for (final m in MarkSymbol.values)
+          BoardFrame(label: m.label, note: m.note, width: 250, child: MarkSymbolSheet(m)),
+      ],
     ),
     BoardSection(
       title: 'Logo simple · le nom',
@@ -303,11 +424,11 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
             label: w.label,
             note: w.note,
             width: 300,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              MarkName(w),
-              const SizedBox(height: 8),
-              MarkName(w, dark: false),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [MarkName(w), const SizedBox(height: 8), MarkName(w, dark: false)],
+            ),
           ),
       ],
     ),
@@ -339,38 +460,65 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
           label: 'Palettes',
           note: 'Quatre niveaux, du cœur au bord. En clair, le cœur blanc prend une teinte de la couleur.',
           width: 520,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final st in UiStatus.values.where((s) => s != UiStatus.paused))
-              Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  SizedBox(width: 30, child: StatusFx(st, size: 22)),
-                  const SizedBox(width: 10),
-                  for (final c in PixelFxPalette.of(st, ui).levels)
-                    Container(width: 26, height: 26, margin: const EdgeInsets.only(right: 3), color: c),
-                  const SizedBox(width: 10),
-                  Text(PixelFxPalette.of(st, ui).name, style: uiText(TextSize.small, color: ui.text2)),
-                ]),
-              ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final st in UiStatus.values.where((s) => s != UiStatus.paused))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(width: 30, child: StatusFx(st, size: 22)),
+                      const SizedBox(width: 10),
+                      for (final c in PixelFxPalette.of(st, ui).levels)
+                        Container(width: 26, height: 26, margin: const EdgeInsets.only(right: 3), color: c),
+                      const SizedBox(width: 10),
+                      Text(PixelFxPalette.of(st, ui).name, style: uiText(TextSize.small, color: ui.text2)),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
         BoardFrame(
           label: 'États en grand',
           width: 520,
-          child: Wrap(spacing: 18, runSpacing: 18, children: [for (final st in UiStatus.values) if (st != UiStatus.paused) StatusFx(st, size: 56), const SpellFx(size: 56)]),
+          child: Wrap(
+            spacing: 18,
+            runSpacing: 18,
+            children: [
+              for (final st in UiStatus.values)
+                if (st != UiStatus.paused) StatusFx(st, size: 56),
+              const SpellFx(size: 56),
+            ],
+          ),
         ),
         BoardFrame(
           label: 'Effets à l’essai',
           kind: FrameKind.trial,
           note: 'Étincelle, feu d’artifice complet, galaxie.',
           width: 520,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final k in const <PixelEffect>[Sparkle(), Firework(), Galaxy()])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [for (final st in UiStatus.values) if (st != UiStatus.paused) Padding(padding: const EdgeInsets.only(right: 10), child: StatusFx(st, effect: k, size: 40))]),
-              ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final k in const <PixelEffect>[Sparkle(), Firework(), Galaxy()])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final st in UiStatus.values)
+                        if (st != UiStatus.paused)
+                          Padding(
+                            padding: const EdgeInsets.only(right: 10),
+                            child: StatusFx(st, effect: k, size: 40),
+                          ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     ),
@@ -379,15 +527,30 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
       note: 'Bleu et orange seulement, des formes différentes. Sur noir, comme sur l’île.',
       frames: [
         for (final k in SignatureFxKind.values.take(5))
-          BoardFrame(label: SignatureFx.nameOf(k), note: _fxNote(k), width: 140, child: _FxTile(SignatureFx(k, size: 104))),
+          BoardFrame(
+            label: SignatureFx.nameOf(k),
+            note: _fxNote(k),
+            width: 140,
+            child: _FxTile(SignatureFx(k, size: 104)),
+          ),
       ],
     ),
     BoardSection(
       title: 'Feux d’artifice signature (suite)',
       frames: [
         for (final k in SignatureFxKind.values.skip(5))
-          BoardFrame(label: SignatureFx.nameOf(k), note: _fxNote(k), width: 140, child: _FxTile(SignatureFx(k, size: 104))),
-        const BoardFrame(label: 'Calme', note: 'Celui des états, bleu au cœur, orange au bout.', width: 140, child: _FxTile(SignatureFirework(size: 84))),
+          BoardFrame(
+            label: SignatureFx.nameOf(k),
+            note: _fxNote(k),
+            width: 140,
+            child: _FxTile(SignatureFx(k, size: 104)),
+          ),
+        const BoardFrame(
+          label: 'Calme',
+          note: 'Celui des états, bleu au cœur, orange au bout.',
+          width: 140,
+          child: _FxTile(SignatureFirework(size: 84)),
+        ),
       ],
     ),
     BoardSection(
@@ -397,23 +560,32 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
         BoardFrame(
           label: 'Orange et bleu',
           width: 330,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  for (final c in pal.levels)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Container(width: 78, height: 56, color: c),
-                        const SizedBox(height: 4),
-                        Text(_hex(c), style: uiText(TextSize.code, mono: true, color: ui.text3)),
-                      ]),
-                    ),
-                ]),
-              ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final pal in [PixelFxPalette.signatureOrange, PixelFxPalette.signatureBlue])
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final c in pal.levels)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(width: 78, height: 56, color: c),
+                              const SizedBox(height: 4),
+                              Text(_hex(c), style: uiText(TextSize.code, mono: true, color: ui.text3)),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     ),
@@ -427,53 +599,82 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
           width: 560,
           child: SizedBox(
             width: 560,
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              for (final (size, weight, name, use, mono) in [
-                (TextSize.display, FontWeight.w600, 'display', 'un code à taper', true),
-                (TextSize.title, FontWeight.w600, 'title', 'titre de page', false),
-                (TextSize.heading, FontWeight.w600, 'heading', 'petit titre, « Ensorcelé »', false),
-                (TextSize.lead, FontWeight.w600, 'lead', 'grand bouton', false),
-                (TextSize.body, FontWeight.w400, 'body', 'messages, titre d’une ligne, champ', false),
-                (TextSize.label, FontWeight.w500, 'label', 'boutons, menus, étapes, réponses', false),
-                (TextSize.small, FontWeight.w400, 'small', 'sous-titres, descriptions, chiffres', false),
-                (TextSize.caption, FontWeight.w400, 'caption', 'heures, légendes, onglets', false),
-                (TextSize.code, FontWeight.w400, 'code', 'code dans un bloc', true),
-                (TextSize.badge, FontWeight.w600, 'badge', 'nombre sur un badge', false),
-              ])
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Row(crossAxisAlignment: CrossAxisAlignment.baseline, textBaseline: TextBaseline.alphabetic, children: [
-                    SizedBox(width: 110, child: Text('$name · ${_px(size)}', style: uiText(TextSize.caption, mono: true, color: ui.text3))),
-                    Expanded(child: Text(use, style: uiText(size, weight: weight, mono: mono, color: ui.text))),
-                  ]),
-                ),
-            ]),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final (size, weight, name, use, mono) in [
+                  (TextSize.display, FontWeight.w600, 'display', 'un code à taper', true),
+                  (TextSize.title, FontWeight.w600, 'title', 'titre de page', false),
+                  (TextSize.heading, FontWeight.w600, 'heading', 'petit titre, « Ensorcelé »', false),
+                  (TextSize.lead, FontWeight.w600, 'lead', 'grand bouton', false),
+                  (TextSize.body, FontWeight.w400, 'body', 'messages, titre d’une ligne, champ', false),
+                  (TextSize.label, FontWeight.w500, 'label', 'boutons, menus, étapes, réponses', false),
+                  (TextSize.small, FontWeight.w400, 'small', 'sous-titres, descriptions, chiffres', false),
+                  (TextSize.caption, FontWeight.w400, 'caption', 'heures, légendes, onglets', false),
+                  (TextSize.code, FontWeight.w400, 'code', 'code dans un bloc', true),
+                  (TextSize.badge, FontWeight.w600, 'badge', 'nombre sur un badge', false),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        SizedBox(
+                          width: 110,
+                          child: Text(
+                            '$name · ${_px(size)}',
+                            style: uiText(TextSize.caption, mono: true, color: ui.text3),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            use,
+                            style: uiText(size, weight: weight, mono: mono, color: ui.text),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
         BoardFrame(
           label: 'Rayons',
           note: 'Sans rayon, une forme est une pilule.',
           width: 560,
-          child: Wrap(spacing: 14, runSpacing: 14, children: [
-            for (final (r, name) in [
-              (Radii.xs, 'xs'),
-              (Radii.sm, 'sm'),
-              (Radii.md, 'md'),
-              (Radii.lg, 'lg'),
-              (Radii.xl, 'xl'),
-              (Radii.xxl, 'xxl'),
-              (Radii.window, 'window'),
-            ])
-              Column(mainAxisSize: MainAxisSize.min, children: [
-                Container(
-                  width: 64,
-                  height: 64,
-                  decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(r), border: Border.all(color: ui.line)),
+          child: Wrap(
+            spacing: 14,
+            runSpacing: 14,
+            children: [
+              for (final (r, name) in [
+                (Radii.xs, 'xs'),
+                (Radii.sm, 'sm'),
+                (Radii.md, 'md'),
+                (Radii.lg, 'lg'),
+                (Radii.xl, 'xl'),
+                (Radii.xxl, 'xxl'),
+                (Radii.window, 'window'),
+              ])
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: ui.well,
+                        borderRadius: BorderRadius.circular(r),
+                        border: Border.all(color: ui.line),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text('$name · ${_px(r)}', style: uiText(TextSize.caption, mono: true, color: ui.text3)),
+                  ],
                 ),
-                const SizedBox(height: 4),
-                Text('$name · ${_px(r)}', style: uiText(TextSize.caption, mono: true, color: ui.text3)),
-              ]),
-          ]),
+            ],
+          ),
         ),
       ],
     ),
@@ -483,28 +684,45 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
         BoardFrame(
           label: 'Outils',
           width: 520,
-          child: Wrap(spacing: 18, runSpacing: 12, children: [
-            for (final b in Brand.values)
-              Row(mainAxisSize: MainAxisSize.min, children: [
-                BrandLogo(b, size: 24),
-                const SizedBox(width: 8),
-                Text(b.label, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-              ]),
-          ]),
+          child: Wrap(
+            spacing: 18,
+            runSpacing: 12,
+            children: [
+              for (final b in Brand.values)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    BrandLogo(b, size: 24),
+                    const SizedBox(width: 8),
+                    Text(
+                      b.label,
+                      style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text),
+                    ),
+                  ],
+                ),
+            ],
+          ),
         ),
         BoardFrame(
           label: 'Icônes',
           width: 520,
           child: SizedBox(
             width: 520,
-            child: Wrap(spacing: 14, runSpacing: 14, children: [
-              for (final n in iconNames)
-                Column(mainAxisSize: MainAxisSize.min, children: [
-                  MikkyIcon(n, size: 22, color: ui.text),
-                  const SizedBox(height: 3),
-                  Text(n, style: uiText(TextSize.badge, color: ui.text3)),
-                ]),
-            ]),
+            child: Wrap(
+              spacing: 14,
+              runSpacing: 14,
+              children: [
+                for (final n in iconNames)
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      MikkyIcon(n, size: 22, color: ui.text),
+                      const SizedBox(height: 3),
+                      Text(n, style: uiText(TextSize.badge, color: ui.text3)),
+                    ],
+                  ),
+              ],
+            ),
           ),
         ),
       ],
@@ -522,45 +740,45 @@ String _px(double v) => (v == v.roundToDouble() ? v.toStringAsFixed(0) : '$v').r
 
 /// The window's colors, by role (shown on the Composants board, « Couleurs »).
 BoardSection interfaceColorsSection(MikkyUi ui) => BoardSection(
-      title: 'Couleurs de l’interface',
-      note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
-      frames: [
-        BoardFrame(
-          label: 'Fonds',
-          width: 640,
-          child: _grid([
-            _Swatch('board', ui.board, use: 'fond du bureau'),
-            _Swatch('island', ui.island, use: 'la fenêtre'),
-            _Swatch('well', ui.well, use: 'creux, bulles'),
-            _Swatch('track', ui.track, use: 'pistes, code'),
-            _Swatch('thumb', ui.thumb, use: 'curseur, Oui'),
-            _Swatch('hover', ui.hover, use: 'survol'),
-            _Swatch('line', ui.line, use: 'traits'),
-            _Swatch('ctlA → ctlB', ui.ctlA, use: 'boutons en relief'),
-          ]),
-        ),
-        BoardFrame(
-          label: 'Encre et texte',
-          width: 480,
-          child: _grid([
-            _Swatch('ink', ui.ink, use: 'bouton principal'),
-            _Swatch('text', ui.text, use: 'titres, texte'),
-            _Swatch('text2', ui.text2, use: 'second plan'),
-            _Swatch('text3', ui.text3, use: 'légendes'),
-          ], width: 480),
-        ),
-        BoardFrame(
-          label: 'États',
-          width: 640,
-          child: _grid([
-            _Swatch('blue', ui.blue, use: 'travaille'),
-            _Swatch('purple', ui.purple, use: 'Ensorcelé (la magie)'),
-            _Swatch('amber', ui.amber, use: 'attend, commande'),
-            _Swatch('green', ui.green, use: 'terminé, crée'),
-            _Swatch('red', ui.red, use: 'erreur, supprime'),
-            _Swatch('yellow', ui.yellow, use: 'limité, déplace'),
-            _Swatch('grey', ui.grey, use: 'en pause, historique'),
-          ]),
-        ),
-      ],
-    );
+  title: 'Couleurs de l’interface',
+  note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
+  frames: [
+    BoardFrame(
+      label: 'Fonds',
+      width: 640,
+      child: _grid([
+        _Swatch('board', ui.board, use: 'fond du bureau'),
+        _Swatch('island', ui.island, use: 'la fenêtre'),
+        _Swatch('well', ui.well, use: 'creux, bulles'),
+        _Swatch('track', ui.track, use: 'pistes, code'),
+        _Swatch('thumb', ui.thumb, use: 'curseur, Oui'),
+        _Swatch('hover', ui.hover, use: 'survol'),
+        _Swatch('line', ui.line, use: 'traits'),
+        _Swatch('ctlA → ctlB', ui.ctlA, use: 'boutons en relief'),
+      ]),
+    ),
+    BoardFrame(
+      label: 'Encre et texte',
+      width: 480,
+      child: _grid([
+        _Swatch('ink', ui.ink, use: 'bouton principal'),
+        _Swatch('text', ui.text, use: 'titres, texte'),
+        _Swatch('text2', ui.text2, use: 'second plan'),
+        _Swatch('text3', ui.text3, use: 'légendes'),
+      ], width: 480),
+    ),
+    BoardFrame(
+      label: 'États',
+      width: 640,
+      child: _grid([
+        _Swatch('blue', ui.blue, use: 'travaille'),
+        _Swatch('purple', ui.purple, use: 'Ensorcelé (la magie)'),
+        _Swatch('amber', ui.amber, use: 'attend, commande'),
+        _Swatch('green', ui.green, use: 'terminé, crée'),
+        _Swatch('red', ui.red, use: 'erreur, supprime'),
+        _Swatch('yellow', ui.yellow, use: 'limité, déplace'),
+        _Swatch('grey', ui.grey, use: 'en pause, historique'),
+      ]),
+    ),
+  ],
+);

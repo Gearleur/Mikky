@@ -6,23 +6,23 @@ import '../../theme.dart';
 /// (`btn`, `kbd`, `chip` in `ile-noir-et-blanc.html`).
 
 TextStyle sansStyle(MikkyTheme t, {double size = 13, FontWeight weight = FontWeight.w400, Color? color}) => TextStyle(
-      fontFamily: 'Geist',
-      fontSize: size,
-      fontWeight: weight,
-      height: 1.35,
-      letterSpacing: -.01 * size,
-      color: color ?? t.foreground,
-      decoration: TextDecoration.none,
-    );
+  fontFamily: 'Geist',
+  fontSize: size,
+  fontWeight: weight,
+  height: 1.35,
+  letterSpacing: -.01 * size,
+  color: color ?? t.foreground,
+  decoration: TextDecoration.none,
+);
 
 TextStyle monoStyle(MikkyTheme t, {double size = 11, FontWeight weight = FontWeight.w500, Color? color}) => TextStyle(
-      fontFamily: 'Geist Mono',
-      fontSize: size,
-      fontWeight: weight,
-      height: 1.4,
-      color: color ?? t.secondary,
-      decoration: TextDecoration.none,
-    );
+  fontFamily: 'Geist Mono',
+  fontSize: size,
+  fontWeight: weight,
+  height: 1.4,
+  color: color ?? t.secondary,
+  decoration: TextDecoration.none,
+);
 
 /// Colored status dot; glows on the dark theme only.
 class IslandDot extends StatelessWidget {
@@ -35,14 +35,14 @@ class IslandDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: theme.glow ? [BoxShadow(color: color, blurRadius: glowRadius)] : null,
-        ),
-      );
+    width: size,
+    height: size,
+    decoration: BoxDecoration(
+      color: color,
+      shape: BoxShape.circle,
+      boxShadow: theme.glow ? [BoxShadow(color: color, blurRadius: glowRadius)] : null,
+    ),
+  );
 }
 
 /// Rounded "pill" button, with an optional keyboard hint (dark only).
@@ -76,15 +76,15 @@ class PillButton extends StatelessWidget {
       child: Container(
         height: height,
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 6),
-        decoration: BoxDecoration(
-          color: primary ? t.primary : t.button,
-          borderRadius: BorderRadius.circular(99),
-        ),
+        decoration: BoxDecoration(color: primary ? t.primary : t.button, borderRadius: BorderRadius.circular(99)),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(label, style: sansStyle(t, size: 12.5, weight: primary ? FontWeight.w600 : FontWeight.w500, color: fg)),
+            Text(
+              label,
+              style: sansStyle(t, size: 12.5, weight: primary ? FontWeight.w600 : FontWeight.w500, color: fg),
+            ),
             if (keyHint != null && hint != null)
               Padding(
                 padding: const EdgeInsets.only(left: 6),
@@ -130,7 +130,10 @@ class AgentChip extends StatelessWidget {
           Text(name, style: sansStyle(t, size: 11.5, color: t.secondary)),
           if (value != null) ...[
             const SizedBox(width: 6),
-            Opacity(opacity: .7, child: Text(value!, style: monoStyle(t, size: 11.5, color: t.foreground))),
+            Opacity(
+              opacity: .7,
+              child: Text(value!, style: monoStyle(t, size: 11.5, color: t.foreground)),
+            ),
           ],
         ],
       ),
@@ -140,7 +143,14 @@ class AgentChip extends StatelessWidget {
 
 /// Command or result in mono, in a soft block.
 class CodeBlock extends StatelessWidget {
-  const CodeBlock({super.key, required this.text, required this.theme, this.isError = false, this.maxLines = 1, this.size = 12});
+  const CodeBlock({
+    super.key,
+    required this.text,
+    required this.theme,
+    this.isError = false,
+    this.maxLines = 1,
+    this.size = 12,
+  });
 
   final String text;
   final MikkyTheme theme;
@@ -182,20 +192,20 @@ class ProgressLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(thickness),
-        child: SizedBox(
-          height: thickness,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              ColoredBox(color: theme.faint),
-              FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: value.clamp(0.0, 1.0),
-                child: ColoredBox(color: color),
-              ),
-            ],
+    borderRadius: BorderRadius.circular(thickness),
+    child: SizedBox(
+      height: thickness,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ColoredBox(color: theme.faint),
+          FractionallySizedBox(
+            alignment: Alignment.centerLeft,
+            widthFactor: value.clamp(0.0, 1.0),
+            child: ColoredBox(color: color),
           ),
-        ),
-      );
+        ],
+      ),
+    ),
+  );
 }

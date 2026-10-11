@@ -20,7 +20,8 @@ class LocalAgentRun implements AgentRun {
   }
 
   /// Talks to an agent already connected on [input] / [output] (tests).
-  factory LocalAgentRun.connect(Stream<List<int>> input, StreamSink<List<int>> output) => LocalAgentRun._(AcpConnection(input, output));
+  factory LocalAgentRun.connect(Stream<List<int>> input, StreamSink<List<int>> output) =>
+      LocalAgentRun._(AcpConnection(input, output));
 
   /// Starts the adapter [executable] on [target] and connects to it.
   static Future<LocalAgentRun> spawn(
@@ -91,7 +92,11 @@ class LocalAgentRun implements AgentRun {
   Future<void> setModel(String model) async {
     final option = log.modelOption;
     if (option != null) {
-      await _connection.request('session/set_config_option', {'sessionId': log.sessionId, 'configId': option, 'value': model});
+      await _connection.request('session/set_config_option', {
+        'sessionId': log.sessionId,
+        'configId': option,
+        'value': model,
+      });
     } else {
       await _connection.request('session/set_model', {'sessionId': log.sessionId, 'modelId': model});
     }
@@ -117,7 +122,9 @@ class LocalAgentRun implements AgentRun {
     final asked = id == null ? null : _asked.remove(id);
     if (asked == null) return false;
     final (options, done) = asked;
-    final wanted = allow ? (always ? ['allow_always', 'allow_once'] : ['allow_once', 'allow_always']) : ['reject_once', 'reject_always'];
+    final wanted = allow
+        ? (always ? ['allow_always', 'allow_once'] : ['allow_once', 'allow_always'])
+        : ['reject_once', 'reject_always'];
     PermissionOption? pick;
     for (final kind in wanted) {
       for (final o in options) {

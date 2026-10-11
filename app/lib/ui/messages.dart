@@ -59,7 +59,10 @@ class ChatMessage extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(0, 2, 2, 2),
-            child: DefaultTextStyle(style: uiText(TextSize.reading, color: ui.text, height: 1.65), child: AgentText(text)),
+            child: DefaultTextStyle(
+              style: uiText(TextSize.reading, color: ui.text, height: 1.65),
+              child: AgentText(text),
+            ),
           ),
           ?metaLine,
         ],
@@ -71,7 +74,10 @@ class ChatMessage extends StatelessWidget {
         FractionallySizedBox(
           widthFactor: .84,
           alignment: Alignment.centerRight,
-          child: Align(alignment: Alignment.centerRight, child: Bubble(me: true, child: Text(text))),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Bubble(me: true, child: Text(text)),
+          ),
         ),
         ?metaLine,
       ],

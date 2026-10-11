@@ -41,8 +41,11 @@ class SetupStatus {
 class AgentSetup {
   AgentSetup._(this.target, this.home, this.dir);
 
-  static Future<AgentSetup> windows({String? dir}) async =>
-      AgentSetup._(WindowsTarget(), Platform.environment['USERPROFILE'] ?? '', dir ?? '${Platform.environment['LOCALAPPDATA']}\\Mikky');
+  static Future<AgentSetup> windows({String? dir}) async => AgentSetup._(
+    WindowsTarget(),
+    Platform.environment['USERPROFILE'] ?? '',
+    dir ?? '${Platform.environment['LOCALAPPDATA']}\\Mikky',
+  );
 
   static Future<AgentSetup> wsl({String distro = 'Ubuntu'}) async {
     final target = WslTarget(distro: distro);
@@ -105,9 +108,18 @@ class AgentSetup {
       r = await target.run('bash', ['-s'], input: _wslInstallScript(dir));
     } else {
       await Directory(acpDir).create(recursive: true);
-      r = await target.run('npm.cmd', ['install', '--prefix', acpDir, '--no-fund', '--no-audit', claudeAcpPackage, codexAcpPackage]);
+      r = await target.run('npm.cmd', [
+        'install',
+        '--prefix',
+        acpDir,
+        '--no-fund',
+        '--no-audit',
+        claudeAcpPackage,
+        codexAcpPackage,
+      ]);
     }
-    if (r.exitCode != 0) throw ProcessException(_wsl ? 'bash' : 'npm', const [], '${r.stdout}\n${r.stderr}'.trim(), r.exitCode);
+    if (r.exitCode != 0)
+      throw ProcessException(_wsl ? 'bash' : 'npm', const [], '${r.stdout}\n${r.stderr}'.trim(), r.exitCode);
   }
 
   /// Path of the user's own `claude` on the target, if installed: the

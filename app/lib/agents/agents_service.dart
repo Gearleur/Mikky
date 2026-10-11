@@ -105,7 +105,9 @@ class AgentsService extends ChangeNotifier {
   late final RealAgentSource source;
   late final StreamSubscription<void> _sub;
 
-  final Map<AgentHost, TargetInfo> _targets = {for (final h in AgentHost.values) h: const TargetInfo(TargetState.checking)};
+  final Map<AgentHost, TargetInfo> _targets = {
+    for (final h in AgentHost.values) h: const TargetInfo(TargetState.checking),
+  };
   DaemonSessionWatcher? _remoteWatcher;
 
   /// Who is signed in, per target and tool; missing: not asked yet.
@@ -258,7 +260,12 @@ class AgentsService extends ChangeNotifier {
         if (!run.connected) await run.reconnect(client);
         continue;
       }
-      final run = await DaemonAgentRun.attach(client, id, cwd: r['cwd'] as String?, adapterPid: r['adapterPid'] as int?);
+      final run = await DaemonAgentRun.attach(
+        client,
+        id,
+        cwd: r['cwd'] as String?,
+        adapterPid: r['adapterPid'] as int?,
+      );
       source.adopt(run, provider: provider, host: host, cwd: r['cwd'] as String?);
     }
   }
@@ -287,8 +294,11 @@ class AgentsService extends ChangeNotifier {
   /// Writes it, only if the file is still the one of [fingerprint].
   /// Returns where the old one was saved.
   Future<String?> hooksWrite(AgentProvider tool, {required bool install, required String fingerprint}) async {
-    final r =
-        (await _client.request('hooks.write', {'tool': tool.name, 'install': install, 'fingerprint': fingerprint})) as Map;
+    final r = (await _client.request('hooks.write', {
+      'tool': tool.name,
+      'install': install,
+      'fingerprint': fingerprint,
+    })) as Map;
     return r['backup'] as String?;
   }
 

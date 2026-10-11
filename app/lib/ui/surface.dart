@@ -11,7 +11,17 @@ import 'tokens.dart';
 /// gradient, then inset shadows (the top light edge, the hollow of a
 /// well, a ring). Every control of the kit is one of these.
 class Surface extends StatelessWidget {
-  const Surface({super.key, this.color, this.gradient, this.shadows = const [], this.radius, this.width, this.height, this.padding, this.child});
+  const Surface({
+    super.key,
+    this.color,
+    this.gradient,
+    this.shadows = const [],
+    this.radius,
+    this.width,
+    this.height,
+    this.padding,
+    this.child,
+  });
 
   final Color? color;
   final Gradient? gradient;
@@ -108,7 +118,11 @@ class SurfacePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(SurfacePainter old) =>
-      old.color != color || old.gradient != gradient || !listEquals(old.shadows, shadows) || old.radius != radius || old.pixelRatio != pixelRatio;
+      old.color != color ||
+      old.gradient != gradient ||
+      !listEquals(old.shadows, shadows) ||
+      old.radius != radius ||
+      old.pixelRatio != pixelRatio;
 }
 
 /// Inset shadows drawn once per size and reused (a small LRU).

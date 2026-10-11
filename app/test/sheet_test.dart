@@ -14,13 +14,18 @@ void main() {
 
   testWidgets('the history button opens the sheet over the home; the dark, × or Échap close it', (tester) async {
     await tester.binding.setSurfaceSize(const Size(420, 600));
-    await tester.pumpWidget(const MediaQuery(
-      data: MediaQueryData(disableAnimations: true),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: MikkyUiTheme(ui: MikkyUi.light, child: Align(alignment: Alignment.topLeft, child: HistoryTry())),
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(disableAnimations: true),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: MikkyUiTheme(
+            ui: MikkyUi.light,
+            child: Align(alignment: Alignment.topLeft, child: HistoryTry()),
+          ),
+        ),
       ),
-    ));
+    );
     expect(find.byType(HistoryList), findsNothing);
     Future<void> open() async {
       await tester.tap(find.bySemanticsLabel('Historique'));
@@ -67,13 +72,21 @@ void main() {
 
   testWidgets('in the notch too: centered in the low island', (tester) async {
     await tester.binding.setSurfaceSize(const Size(840, 320));
-    await tester.pumpWidget(const MediaQuery(
-      data: MediaQueryData(disableAnimations: true),
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: MikkyUiTheme(ui: MikkyUi.light, child: Align(alignment: Alignment.topLeft, child: HistoryTry(layout: HomeLayout.top))),
+    await tester.pumpWidget(
+      const MediaQuery(
+        data: MediaQueryData(disableAnimations: true),
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: MikkyUiTheme(
+            ui: MikkyUi.light,
+            child: Align(
+              alignment: Alignment.topLeft,
+              child: HistoryTry(layout: HomeLayout.top),
+            ),
+          ),
+        ),
       ),
-    ));
+    );
     await tester.tap(find.bySemanticsLabel('Historique'));
     await tester.pumpAndSettle();
     final panel = tester.getRect(find.byType(SheetPanel));

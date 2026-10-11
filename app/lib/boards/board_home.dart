@@ -40,7 +40,13 @@ class BoardPane extends StatelessWidget {
       decoration: BoxDecoration(
         color: ui.island,
         borderRadius: edge ? const BorderRadius.horizontal(left: r) : const BorderRadius.all(r),
-        border: edge ? Border(left: BorderSide(color: ui.line), top: BorderSide(color: ui.line), bottom: BorderSide(color: ui.line)) : Border.all(color: ui.line),
+        border: edge
+            ? Border(
+                left: BorderSide(color: ui.line),
+                top: BorderSide(color: ui.line),
+                bottom: BorderSide(color: ui.line),
+              )
+            : Border.all(color: ui.line),
       ),
       child: child,
     );
@@ -60,15 +66,25 @@ class PagerTry extends StatelessWidget {
       final shown = next ? page < count - 1 : page > 0;
       return Opacity(
         opacity: shown ? 1 : 0,
-        child: RoundButton(next ? 'right' : 'left', size: 28, onPressed: shown ? () => set(page + (next ? 1 : -1)) : null),
+        child: RoundButton(
+          next ? 'right' : 'left',
+          size: 28,
+          onPressed: shown ? () => set(page + (next ? 1 : -1)) : null,
+        ),
       );
     }
 
-    return Row(children: [
-      arrow(false),
-      Expanded(child: Center(child: PageDots(count: count, page: page, onSelect: set))),
-      arrow(true),
-    ]);
+    return Row(
+      children: [
+        arrow(false),
+        Expanded(
+          child: Center(
+            child: PageDots(count: count, page: page, onSelect: set),
+          ),
+        ),
+        arrow(true),
+      ],
+    );
   }
 }
 
@@ -84,20 +100,22 @@ class SelectorTry extends StatefulWidget {
 class _SelectorTryState extends State<SelectorTry> {
   MikkyEnvironment _environment = MikkyEnvironment.local;
   late final OverlayEntry _layer = OverlayEntry(
-    builder: (inner) => Stack(children: [
-      Positioned(
-        top: 18,
-        right: 18,
-        child: EnvironmentSelector(
-          selected: _environment,
-          menuWithin: inner,
-          onChanged: (e) {
-            _environment = e;
-            _layer.markNeedsBuild();
-          },
+    builder: (inner) => Stack(
+      children: [
+        Positioned(
+          top: 18,
+          right: 18,
+          child: EnvironmentSelector(
+            selected: _environment,
+            menuWithin: inner,
+            onChanged: (e) {
+              _environment = e;
+              _layer.markNeedsBuild();
+            },
+          ),
         ),
-      ),
-    ]),
+      ],
+    ),
   );
 
   @override
@@ -114,7 +132,11 @@ class _SelectorTryState extends State<SelectorTry> {
       width: 300,
       height: 250,
       clipBehavior: Clip.antiAlias,
-      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(Radii.xl), border: Border.all(color: ui.line)),
+      decoration: BoxDecoration(
+        color: ui.island,
+        borderRadius: BorderRadius.circular(Radii.xl),
+        border: Border.all(color: ui.line),
+      ),
       child: Overlay(initialEntries: [_layer]),
     );
   }
@@ -136,18 +158,38 @@ const sampleApps = [
 ];
 
 /// A home in its window, on a board.
-Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(layout: layout, child: HomeView(layout: layout, apps: apps, onNew: () {}));
+Widget _home(HomeLayout layout, List<HomeApp> apps) => HomeFrame(
+  layout: layout,
+  child: HomeView(layout: layout, apps: apps, onNew: () {}),
+);
 
 /// An agent's page in the island, taller than the home.
 Widget _page(HomeLayout layout, Widget page) => HomeFrame(layout: layout, size: layout.pageSize, child: page);
 
-const _appRule = ('Application', 'Un ou plusieurs agents qui font une tâche. Dans l’app aujourd’hui : un agent, le logo de son outil et son état ; le dessin des applications viendra.');
-const _pagesRule = ('Pages', 'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, l’étoile des pages (clic sur un point), ← → au clavier.');
-const _whichRule = ('Lesquelles', 'Ceux qui attendent, ceux qui travaillent, puis les 5 derniers terminés du jour (épinglés d’abord). Pas l’historique ni les archives : ils auront leur place ailleurs.');
-const _modesRule = ('Modes', 'En haut au milieu. Applications, en noir : le seul noir de l’écran, sa profondeur (2 octobre). Chat ouvre la page d’un nouveau chat (5 octobre).');
-const _chatRule = ('Chat', 'Une page comme celle d’un agent, son fil vide (5 octobre) : « Qu’est-ce qu’on lance ? » au milieu, le champ en bas avec le dossier et le modèle (où, permissions) à moitié dedans. « + », les outils et le mode Chat y mènent, en fondu avec un léger zoom. Envoyer lance l’agent : la page devient la sienne, sur place.');
-const _mikkyRule = ('Mikky', 'Dans l’app, le Mikky de l’île vient s’y poser en ouvrant (72 px) et garde l’état de l’agent qu’il suit ; sur les planches, le même Mikky en petit.');
-
+const _appRule = (
+  'Application',
+  'Un ou plusieurs agents qui font une tâche. Dans l’app aujourd’hui : un agent, le logo de son outil et son état ; le dessin des applications viendra.',
+);
+const _pagesRule = (
+  'Pages',
+  'Elles glissent de côté sur toute la largeur (380 ms) : glisser à la souris ou au pavé, molette (une page par cran), flèches grises de 28 px effacées au bout, l’étoile des pages (clic sur un point), ← → au clavier.',
+);
+const _whichRule = (
+  'Lesquelles',
+  'Ceux qui attendent, ceux qui travaillent, puis les 5 derniers terminés du jour (épinglés d’abord). Pas l’historique ni les archives : ils auront leur place ailleurs.',
+);
+const _modesRule = (
+  'Modes',
+  'En haut au milieu. Applications, en noir : le seul noir de l’écran, sa profondeur (2 octobre). Chat ouvre la page d’un nouveau chat (5 octobre).',
+);
+const _chatRule = (
+  'Chat',
+  'Une page comme celle d’un agent, son fil vide (5 octobre) : « Qu’est-ce qu’on lance ? » au milieu, le champ en bas avec le dossier et le modèle (où, permissions) à moitié dedans. « + », les outils et le mode Chat y mènent, en fondu avec un léger zoom. Envoyer lance l’agent : la page devient la sienne, sur place.',
+);
+const _mikkyRule = (
+  'Mikky',
+  'Dans l’app, le Mikky de l’île vient s’y poser en ouvrant (72 px) et garde l’état de l’agent qu’il suit ; sur les planches, le même Mikky en petit.',
+);
 
 final homeRightBoard = BoardSpec(
   'Accueil Right',
@@ -158,8 +200,18 @@ final homeRightBoard = BoardSpec(
       kind: FrameKind.trial,
       note: 'L’ancien accueil du haut, debout (2 octobre : « une version verticale de la version haut ») : tuiles de 64 px, huit applications par page en 2 × 4, dans l’île ouverte à droite, 290 × 408, plate du côté de l’écran. Depuis le 8 octobre, dans l’app, la droite est le notch du haut debout (planche Notch Right, à valider) ; pour revenir à cet accueil : `IslandMetrics.rightNotch = false`. Sur la page d’un agent, l’île grandit toujours en forme de téléphone, 344 × 520.',
       frames: [
-        BoardFrame(label: 'Avant le 8 octobre', note: 'Un clic : la page de l’agent ; « + » et les outils : le Chat.', width: 290, child: _home(HomeLayout.rightTiles, sampleApps)),
-        BoardFrame(label: 'Trois pages · tuiles neutres', note: 'Vingt applications, 8 par page.', width: 290, child: _home(HomeLayout.rightTiles, HomeApp.placeholders(20))),
+        BoardFrame(
+          label: 'Avant le 8 octobre',
+          note: 'Un clic : la page de l’agent ; « + » et les outils : le Chat.',
+          width: 290,
+          child: _home(HomeLayout.rightTiles, sampleApps),
+        ),
+        BoardFrame(
+          label: 'Trois pages · tuiles neutres',
+          note: 'Vingt applications, 8 par page.',
+          width: 290,
+          child: _home(HomeLayout.rightTiles, HomeApp.placeholders(20)),
+        ),
         BoardFrame(label: 'Aucun agent', width: 290, child: _home(HomeLayout.rightTiles, const [])),
       ],
     ),
@@ -167,16 +219,38 @@ final homeRightBoard = BoardSpec(
       title: 'Chat',
       note: 'Le même que dans le notch : une page comme celle d’un agent, le fil vide, l’île en forme de téléphone (344 × 520).',
       frames: [
-        BoardFrame(label: 'Au départ', width: 344, child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample()))),
-        BoardFrame(label: 'Démarrage', width: 344, child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample(status: 'Démarrage…')))),
+        BoardFrame(
+          label: 'Au départ',
+          width: 344,
+          child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample())),
+        ),
+        BoardFrame(
+          label: 'Démarrage',
+          width: 344,
+          child: _page(HomeLayout.right, const OwnOverlay(child: NewChatSample(status: 'Démarrage…'))),
+        ),
       ],
     ),
     BoardSection(
       title: 'La page d’un agent',
       note: 'Une tuile ouvre la page de l’agent, et l’île grandit en forme de téléphone pour la conversation, 344 × 520, sur le même ressort ; le retour (bouton, Échap) la ramène à l’accueil (320 × 416 depuis le notch de droite, 290 × 408 avant).',
       frames: [
-        BoardFrame(label: 'Au travail', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false))),
-        BoardFrame(label: 'Feu vert', width: 344, child: _page(HomeLayout.right, AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false))),
+        BoardFrame(
+          label: 'Au travail',
+          width: 344,
+          child: _page(
+            HomeLayout.right,
+            AgentMock(title: 'Corrige les tests du moteur', log: FakeSessions.working(), framed: false),
+          ),
+        ),
+        BoardFrame(
+          label: 'Feu vert',
+          width: 344,
+          child: _page(
+            HomeLayout.right,
+            AgentMock(title: 'Met à jour le site', log: FakeSessions.approval(), framed: false),
+          ),
+        ),
       ],
     ),
     const BoardSection(
@@ -186,12 +260,21 @@ final homeRightBoard = BoardSpec(
         BoardFrame(
           label: 'Règles de l’accueil Right (avant le 8 octobre)',
           child: BoardRules([
-            ('Taille', 'Île ouverte 290 × 408, coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 420 × 700). Barre à 12 px du haut, 44 px de haut, puis 10 px entre la barre, les tuiles, le pied et le bord. Sur la page d’un agent : 344 × 520, sur le même ressort.'),
+            (
+              'Taille',
+              'Île ouverte 290 × 408, coins gauches 30 ; le côté droit dépasse de l’écran (fenêtre de l’île 420 × 700). Barre à 12 px du haut, 44 px de haut, puis 10 px entre la barre, les tuiles, le pied et le bord. Sur la page d’un agent : 344 × 520, sur le même ressort.',
+            ),
             _appRule,
             _whichRule,
-            ('Tuiles', '64 px, 2 colonnes (16 d’écart) × 4 rangées (10 d’écart), 8 par page, la dernière page remplie depuis la gauche ; flèches à 18 px des bords.'),
+            (
+              'Tuiles',
+              '64 px, 2 colonnes (16 d’écart) × 4 rangées (10 d’écart), 8 par page, la dernière page remplie depuis la gauche ; flèches à 18 px des bords.',
+            ),
             _pagesRule,
-            ('Actions', 'Une tuile : la page de l’agent (le fil, Oui / Non, limite…). « + » et les outils : le Chat. L’historique, en bas à gauche : la liste par-dessus ; un agent rouvert revient parmi les applications. Clic droit : le menu de Mikky (thème, position, notifications…).'),
+            (
+              'Actions',
+              'Une tuile : la page de l’agent (le fil, Oui / Non, limite…). « + » et les outils : le Chat. L’historique, en bas à gauche : la liste par-dessus ; un agent rouvert revient parmi les applications. Clic droit : le menu de Mikky (thème, position, notifications…).',
+            ),
             _modesRule,
             _chatRule,
             _mikkyRule,
@@ -248,19 +331,27 @@ class HistoryOpen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => HomeFrame(
     layout: layout,
-    child: Stack(children: [
-      HomeView(layout: layout, apps: layout.notch ? sampleNotchApps : sampleApps, animate: false, onNew: () {}, onHistory: (_) {}),
-      Positioned.fill(
-        child: SheetScene(
-          t: 1,
-          panel: SheetPanel(
-            title: 'Historique',
-            caption: '${sampleHistory.length}',
-            onClose: () {},
-            child: const HistoryBody(rows: sampleHistory, onMenu: _noId),
+    child: Stack(
+      children: [
+        HomeView(
+          layout: layout,
+          apps: layout.notch ? sampleNotchApps : sampleApps,
+          animate: false,
+          onNew: () {},
+          onHistory: (_) {},
+        ),
+        Positioned.fill(
+          child: SheetScene(
+            t: 1,
+            panel: SheetPanel(
+              title: 'Historique',
+              caption: '${sampleHistory.length}',
+              onClose: () {},
+              child: const HistoryBody(rows: sampleHistory, onMenu: _noId),
+            ),
           ),
         ),
-      ),
-    ]),
+      ],
+    ),
   );
 }

@@ -65,7 +65,12 @@ void main() {
               ],
             },
           ],
-          'hooks.origin' => {'windowPid': 4242, 'windowHandle': 99, 'windowExe': 'WindowsTerminal.exe', 'cwd': r'C:\projet'},
+          'hooks.origin' => {
+            'windowPid': 4242,
+            'windowHandle': 99,
+            'windowExe': 'WindowsTerminal.exe',
+            'cwd': r'C:\projet',
+          },
           'hooks.answer' => true,
           _ => <String, Object>{},
         };

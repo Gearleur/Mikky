@@ -1,5 +1,6 @@
 import '../support/readers/codex_rollout_reader.dart';
 import '../support/readers/claude_transcript_reader.dart';
+
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
@@ -13,7 +14,12 @@ void main() {
       expect(log.cwd, '/tmp/essai-wsl');
       expect(log.title, 'Tâches avec outils de gestion');
       expect(log.statusAt(log.lastEventAt!), AgentStatus.finished);
-      expect(log.plan.map((e) => e.content), ['Créer a.txt avec « un »', 'Créer b.txt avec « deux »', 'Supprimer hello.txt', 'Créer c.txt avec « trois »']);
+      expect(log.plan.map((e) => e.content), [
+        'Créer a.txt avec « un »',
+        'Créer b.txt avec « deux »',
+        'Supprimer hello.txt',
+        'Créer c.txt avec « trois »',
+      ]);
       expect(log.items.whereType<UserItem>().map((u) => u.queued), [false, true]);
       final write = log.items.whereType<ToolItem>().firstWhere((t) => t.title == 'Write b.txt');
       expect(write.status, ToolStatus.failed);
@@ -42,16 +48,18 @@ void main() {
       for (final line in fixture('claude/wsl_plan.jsonl').take(8)) {
         log.applyAll(reader.read(line));
       }
-      log.applyAll(reader.read({
-        'type': 'user',
-        'timestamp': '2026-09-29T13:30:00.000Z',
-        'message': {
-          'role': 'user',
-          'content': [
-            {'type': 'text', 'text': '[Request interrupted by user]'},
-          ],
-        },
-      }));
+      log.applyAll(
+        reader.read({
+          'type': 'user',
+          'timestamp': '2026-09-29T13:30:00.000Z',
+          'message': {
+            'role': 'user',
+            'content': [
+              {'type': 'text', 'text': '[Request interrupted by user]'},
+            ],
+          },
+        }),
+      );
       expect(log.turns.last.reason, StopReason.cancelled);
       expect(log.statusAt(DateTime.utc(2026, 9, 29, 14)), AgentStatus.idle);
     });
