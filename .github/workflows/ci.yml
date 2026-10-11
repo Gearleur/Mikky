@@ -85,6 +85,9 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
+      # The goldens show recorded times in local time: Paris, as on the PC.
+      - name: Time zone of the goldens
+        run: tzutil /s "Romance Standard Time"
       - run: pwsh scripts/Check.ps1 -Only app
       - name: Golden failures
         if: failure()

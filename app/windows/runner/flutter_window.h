@@ -37,10 +37,20 @@
 //                                            shortcuts (RegisterHotKey),
 //                                            the old ones dropped. Returns
 //                                            the ids Windows refused.
+//                   pickFolder title         Windows' folder picker;
+//                                            the folder, null if cancelled
+//                   notify [title, body]     a notification from the
+//                                            icon in the notification area
+//                   revealWindow [pid, handle]  brings an agent's window
+//                                            to the front (reveal.cpp)
 //                   quit
 //   native -> Dart  cursor [x, y]            logical px, window-relative;
 //                                            may be outside the window.
 //                   hotkey id                a global shortcut was pressed
+//                   outsideClick             a click outside the island
+//                   trayClick, trayMenu      the icon in the notification
+//                                            area, left or right click
+//                   notificationClick        a click on a notification
 class FlutterWindow : public Win32Window {
  public:
   // Creates a new FlutterWindow hosting a Flutter view running |project|.
@@ -82,9 +92,29 @@ class FlutterWindow : public Win32Window {
   // Adds or removes WS_EX_TRANSPARENT depending on |screen_point|.
   void UpdateClickThrough(POINT screen_point);
 
+  using MethodResult = flutter::MethodResult<flutter::EncodableValue>;
+  using MethodHandler = void (FlutterWindow::*)(
+      const flutter::EncodableValue* arguments, MethodResult& result);
+
+  // The calls of the channel, one method each (overlay_methods.cpp).
   void HandleMethodCall(
       const flutter::MethodCall<flutter::EncodableValue>& call,
-      std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result);
+      std::unique_ptr<MethodResult> result);
+  void OnSetHitRect(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnSetPlacement(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnShowMenu(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnActivate(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnPickFolder(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnNotify(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnPlaySound(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnPreloadSounds(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnSetHotkeys(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnRevealWindow(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnQuit(const flutter::EncodableValue* arguments, MethodResult& result);
+
+  // When the sounds playing should be over: their voices are freed, and
+  // the audio engine stops once none is left.
+  static constexpr UINT_PTR kSoundTimerId = 3;
 
   // The project to run.
   flutter::DartProject project_;
