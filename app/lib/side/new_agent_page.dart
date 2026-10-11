@@ -14,8 +14,8 @@ import '../ui/cards.dart';
 import '../ui/feedback.dart';
 import '../ui/field.dart';
 import '../ui/side.dart';
-import '../ui/tokens.dart';
 import '../ui/thread_page.dart';
+import '../ui/tokens.dart';
 import 'session_text.dart';
 import 'side_app.dart';
 

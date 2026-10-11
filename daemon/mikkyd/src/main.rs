@@ -34,28 +34,38 @@ use tokio::net::TcpListener;
 
 #[tokio::main]
 async fn main() {
-    if std::env::args().any(|a| a == "--latest") {
-        if let Some(newest) = std::env::current_exe().ok().and_then(|exe| autostart::latest_exe(&exe)) {
-            // Waits for it, so the logon task keeps it as its own.
-            let mut command = std::process::Command::new(newest);
-            #[cfg(windows)]
-            {
-                use std::os::windows::process::CommandExt;
-                command.creation_flags(0x0800_0000);
-            }
-            if let Ok(status) = command.status() {
-                std::process::exit(status.code().unwrap_or(0));
-            }
+    if std::env::args().any(|a| a == "--latest")
+        && let Some(newest) = std::env::current_exe()
+            .ok()
+            .and_then(|exe| autostart::latest_exe(&exe))
+    {
+        // Waits for it, so the logon task keeps it as its own.
+        let mut command = std::process::Command::new(newest);
+        #[cfg(windows)]
+        {
+            use std::os::windows::process::CommandExt;
+            command.creation_flags(0x0800_0000);
+        }
+        if let Ok(status) = command.status() {
+            std::process::exit(status.code().unwrap_or(0));
         }
     }
     if let Some(mode) = std::env::args().skip_while(|a| a != "--autostart").nth(1) {
         let enabled = match mode.as_str() {
-            "enable" => Some(true), "disable" => Some(false), "status" => None,
-            _ => { eprintln!("Expected enable, disable or status"); std::process::exit(2); }
+            "enable" => Some(true),
+            "disable" => Some(false),
+            "status" => None,
+            _ => {
+                eprintln!("Expected enable, disable or status");
+                std::process::exit(2);
+            }
         };
         match autostart::configure(enabled).await {
             Ok(value) => println!("{value}"),
-            Err(e) => { eprintln!("{}",e.message); std::process::exit(1); }
+            Err(e) => {
+                eprintln!("{}", e.message);
+                std::process::exit(1);
+            }
         }
         return;
     }

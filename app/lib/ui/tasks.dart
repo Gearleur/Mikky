@@ -81,7 +81,6 @@ class _TaskSectionState extends State<TaskSection> {
     // The sliding square of the Oui / Non answers as hover (user request,
     // 2026-09-30).
     return SlidingHover(
-      radius: Radii.md,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -335,7 +334,7 @@ class NoteLine extends StatelessWidget {
     final ui = MikkyUi.of(context);
     if (!thought) {
       return DefaultTextStyle(
-        style: uiText(TextSize.label, color: ui.text, height: 1.45),
+        style: uiText(TextSize.label, color: ui.text),
         child: AgentText(text),
       );
     }
@@ -366,7 +365,7 @@ class OutputBox extends StatelessWidget {
       decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(Radii.md)),
       child: Text(
         [if (all.length > lines) '…', ...shown].join('\n'),
-        style: uiText(TextSize.code, mono: true, color: ui.text2, height: 1.45),
+        style: uiText(TextSize.code, mono: true, color: ui.text2),
       ),
     );
   }

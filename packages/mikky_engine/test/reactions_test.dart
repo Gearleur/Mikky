@@ -71,7 +71,7 @@ void main() {
     });
 
     test('falls asleep after a while with nothing to do, wakes up on news', () {
-      final d = MikkyDirector(sleepAfter: 600);
+      final d = MikkyDirector();
       d.agents([agent('a', AgentStatus.finished)], null, 0);
       expect(d.nextDeadline, 600);
       expect(d.advance(599).isEmpty, isTrue);

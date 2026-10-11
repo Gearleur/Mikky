@@ -1,7 +1,7 @@
-import '../support/readers/acp_reader.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
+
+import '../support/readers/acp_reader.dart';
 
 /// Claude's question tool through ACP: the adapter sends a form
 /// (`elicitation/create`, as `askUserQuestionsToCreateRequest` builds it in
@@ -43,7 +43,7 @@ void main() {
             'jsonrpc': '2.0',
             'id': 0,
             'method': 'session/prompt',
-            'params': {'sessionId': 's1', 'prompt': []},
+            'params': {'sessionId': 's1', 'prompt': <Object>[]},
           },
           outgoing: true,
           at: at,

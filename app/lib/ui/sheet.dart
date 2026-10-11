@@ -249,7 +249,6 @@ class SheetPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(18, 12, 10, 2),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
                     title,

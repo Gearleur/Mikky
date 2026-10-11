@@ -39,7 +39,13 @@ void main() {
   test('a permission request waits; AskUserQuestion is a question', () {
     final log = started()
       ..apply(
-        ToolCallEvent('t1', name: 'Bash', kind: ToolKind.execute, title: 'rm -rf cache', status: ToolStatus.pending),
+        const ToolCallEvent(
+          't1',
+          name: 'Bash',
+          kind: ToolKind.execute,
+          title: 'rm -rf cache',
+          status: ToolStatus.pending,
+        ),
       )
       ..apply(const PermissionAsked(7, toolCallId: 't1', title: 'Bash', command: 'rm -rf cache'));
     expect(log.statusAt(_at(1)), AgentStatus.approval);

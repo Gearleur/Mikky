@@ -285,8 +285,9 @@ class SessionLog {
   /// yes, what the agent does now, its answer, or the error.
   String get detail {
     final q = _question;
-    if (q != null)
+    if (q != null) {
       return _line(q.questions.length == 1 && q.questions.first.text.isNotEmpty ? q.questions.first.text : q.message);
+    }
     final asked = _pending.isEmpty ? null : _pending.values.first;
     if (asked != null) {
       // The tool's title is the clean command; the request's may be wrapped

@@ -10,11 +10,11 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
+import '../home/home_view.dart';
 import '../mikky/mikky_painter.dart';
 import '../motion/intro.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
-import '../home/home_view.dart';
 import '../side/home_screen.dart' show watchedTask;
 import '../side/session_steps.dart';
 import '../side/side_app.dart';
@@ -23,10 +23,10 @@ import '../theme.dart';
 import '../ui/floating_menu.dart';
 import '../ui/motion.dart';
 import '../ui/tokens.dart';
+import 'compact_view.dart';
 import 'content/brief_view.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
-import 'compact_view.dart';
 import 'content/parts.dart';
 import 'island_painter.dart';
 
@@ -702,7 +702,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       if (widget.agents.canLaunch) MenuEntry(_menuAutostart, 'Moteur au démarrage de Windows', checked: autostart),
       const MenuEntry.separator(),
       if (widget.agents.canLaunch) const MenuEntry(_menuStopAll, 'Arrêter tous les agents de Mikky…'),
-      MenuEntry(_menuQuit, 'Fermer Mikky · les agents continuent'),
+      const MenuEntry(_menuQuit, 'Fermer Mikky · les agents continuent'),
     ]);
     final now = _clock.now;
     switch (chosen) {

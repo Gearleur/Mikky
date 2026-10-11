@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:io';
 
-import '../tool/legacy/legacy.dart';
-
 import 'package:test/test.dart';
+
+import '../tool/legacy/legacy.dart';
 
 /// PING.EXE processes aimed at [address] (a marker unique to the test).
 Future<int> pings(String address) async {
@@ -27,8 +28,8 @@ void main() {
         'Start-Sleep -Milliseconds 800; ping -n 60 $address',
       ]);
       target.contain(p);
-      p.stdout.drain<void>();
-      p.stderr.drain<void>();
+      unawaited(p.stdout.drain<void>());
+      unawaited(p.stderr.drain<void>());
       for (var i = 0; i < 50 && await pings(address) == 0; i++) {
         await Future<void>.delayed(const Duration(milliseconds: 200));
       }

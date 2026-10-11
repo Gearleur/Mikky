@@ -2,9 +2,9 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'daemon/daemon_client.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
+
+import 'daemon/daemon_client.dart';
 
 /// An agent Mikky launched, as kept on disk to find it again after a
 /// restart. Never a conversation (it stays in Claude's / Codex's files),

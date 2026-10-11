@@ -257,8 +257,7 @@ fn read_new(
     s.provider = provider.into();
     let mut bytes = [0; 64 * 1024];
     let mut changed = false;
-    loop {
-        let Ok(n) = file.read(&mut bytes) else { break };
+    while let Ok(n) = file.read(&mut bytes) {
         if n == 0 {
             break;
         }
@@ -266,10 +265,10 @@ fn read_new(
         s.partial.extend_from_slice(&bytes[..n]);
         if let Some(end) = s.partial.iter().rposition(|&c| c == b'\n') {
             for line in s.partial[..=end].split(|&c| c == b'\n') {
-                if let Ok(value) = serde_json::from_slice::<Value>(line) {
-                    if value.is_object() {
-                        s.lines.extend(s.reader.read(provider, &value));
-                    }
+                if let Ok(value) = serde_json::from_slice::<Value>(line)
+                    && value.is_object()
+                {
+                    s.lines.extend(s.reader.read(provider, &value));
                 }
             }
             s.partial.drain(..=end);

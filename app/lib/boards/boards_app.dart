@@ -2,8 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/selectors.dart';
 import '../ui/motion.dart';
+import '../ui/selectors.dart';
 import '../ui/side.dart';
 import '../ui/sliding_hover.dart';
 import '../ui/tokens.dart';

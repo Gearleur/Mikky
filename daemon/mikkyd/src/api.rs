@@ -118,6 +118,8 @@ pub async fn serve(listener: TcpListener, token: String, daemon: Arc<Daemon>) {
 }
 
 async fn client(stream: TcpStream, token: String, daemon: Arc<Daemon>) {
+    // The handshake callback type is set by tungstenite.
+    #[allow(clippy::result_large_err)]
     let check = |req: &Request, resp: Response| -> Result<Response, ErrorResponse> {
         let auth = req
             .headers()
@@ -302,7 +304,10 @@ async fn dispatch(
                     .any(|a| a.run.session_id().as_deref() == Some(session))
             };
             let out = out.clone();
-            Ok(daemon.hooks.event(&payload, own, async move { out.closed().await }).await)
+            Ok(daemon
+                .hooks
+                .event(&payload, own, async move { out.closed().await })
+                .await)
         }
         "hooks.list" => Ok(daemon.hooks.list()),
         "hooks.answer" => {
@@ -350,15 +355,14 @@ async fn dispatch(
         }
         "sessions.list" => {
             let mut list = daemon.sessions.list();
-            if daemon.allow_wsl {
-                if let Ok(proxy) = daemon.wsl(out).await {
-                    if let Ok(Value::Array(mut remote)) = proxy.request(method, json!({})).await {
-                        for item in &mut remote {
-                            crate::wsl::prefix(item);
-                        }
-                        list.as_array_mut().unwrap().extend(remote);
-                    }
+            if daemon.allow_wsl
+                && let Ok(proxy) = daemon.wsl(out).await
+                && let Ok(Value::Array(mut remote)) = proxy.request(method, json!({})).await
+            {
+                for item in &mut remote {
+                    crate::wsl::prefix(item);
                 }
+                list.as_array_mut().unwrap().extend(remote);
             }
             Ok(list)
         }

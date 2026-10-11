@@ -233,7 +233,7 @@ abstract final class DecorClock {
     _now.addListener(f);
     if (_listeners++ == 0) {
       _watch.start();
-      _timer = Timer.periodic(Duration(microseconds: 1000000 ~/ fps), (_) => _now.value = _watch.elapsed);
+      _timer = Timer.periodic(const Duration(microseconds: 1000000 ~/ fps), (_) => _now.value = _watch.elapsed);
     }
   }
 

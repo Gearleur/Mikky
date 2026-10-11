@@ -299,7 +299,13 @@ pub fn write(tool: Tool, install: bool, seen: &str) -> Result<Value, String> {
     write_at(&tool.file(), &hook, tool, install, seen)
 }
 
-fn write_at(path: &Path, hook: &Path, tool: Tool, install: bool, seen: &str) -> Result<Value, String> {
+fn write_at(
+    path: &Path,
+    hook: &Path,
+    tool: Tool,
+    install: bool,
+    seen: &str,
+) -> Result<Value, String> {
     if install && !hook.exists() {
         return Err(format!("{} manque : réinstalle Mikky.", hook.display()));
     }
@@ -444,7 +450,10 @@ mod tests {
             2
         );
         assert_eq!(without_ours(&with), mine);
-        assert_eq!(without_ours(&merged(&json!({}), hook, Tool::Claude)), json!({}));
+        assert_eq!(
+            without_ours(&merged(&json!({}), hook, Tool::Claude)),
+            json!({})
+        );
     }
 
     #[test]
@@ -466,7 +475,10 @@ mod tests {
         assert_eq!(without_ours(&with), mine);
         // An install from before the questions is not up to date.
         let mut old = with.clone();
-        old["hooks"].as_object_mut().unwrap().insert("PreToolUse".into(), json!([theirs]));
+        old["hooks"]
+            .as_object_mut()
+            .unwrap()
+            .insert("PreToolUse".into(), json!([theirs]));
         assert!(installed(&old));
         assert_ne!(merged(&old, hook, Tool::Claude), old);
         // Codex has no question hook.
@@ -518,14 +530,30 @@ mod tests {
         assert!(p["diff"].as_str().unwrap().contains("+ "));
         assert_eq!(p["changes"], true);
         std::fs::write(&path, b"{\"model\": \"sonnet\"}").unwrap();
-        assert!(write_at(&path, &hook, Tool::Claude, true, p["fingerprint"].as_str().unwrap()).is_err());
+        assert!(
+            write_at(
+                &path,
+                &hook,
+                Tool::Claude,
+                true,
+                p["fingerprint"].as_str().unwrap()
+            )
+            .is_err()
+        );
         assert_eq!(
             std::fs::read_to_string(&path).unwrap(),
             "{\"model\": \"sonnet\"}"
         );
 
         let p = preview_at(&path, &hook, Tool::Claude, true).unwrap();
-        let done = write_at(&path, &hook, Tool::Claude, true, p["fingerprint"].as_str().unwrap()).unwrap();
+        let done = write_at(
+            &path,
+            &hook,
+            Tool::Claude,
+            true,
+            p["fingerprint"].as_str().unwrap(),
+        )
+        .unwrap();
         let backup = done["backup"].as_str().unwrap();
         assert_eq!(
             std::fs::read_to_string(backup).unwrap(),
@@ -536,7 +564,14 @@ mod tests {
         assert!(installed(&now));
 
         let p = preview_at(&path, &hook, Tool::Claude, false).unwrap();
-        write_at(&path, &hook, Tool::Claude, false, p["fingerprint"].as_str().unwrap()).unwrap();
+        write_at(
+            &path,
+            &hook,
+            Tool::Claude,
+            false,
+            p["fingerprint"].as_str().unwrap(),
+        )
+        .unwrap();
         let now: Value = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
         assert_eq!(now, json!({"model": "sonnet"}));
         let _ = std::fs::remove_dir_all(&dir);

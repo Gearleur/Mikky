@@ -1,8 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../overlay/overlay_channel.dart';
+import '../home/home_view.dart' show HomeLayout;
 import '../home/tools_rail.dart';
+import '../overlay/overlay_channel.dart';
 import '../ui/app_tile.dart';
 import '../ui/backend_status.dart';
 import '../ui/brand_logo.dart';
@@ -20,7 +21,6 @@ import '../ui/tabs.dart';
 import '../ui/tokens.dart';
 import '../ui/trials/claude_spinner.dart';
 import 'board_brand.dart';
-import '../home/home_view.dart' show HomeLayout;
 import 'board_home.dart';
 import 'canvas.dart';
 
@@ -268,7 +268,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
                         leading: RoundButton('left', size: 34, onPressed: () {}),
                         actions: [
                           RoundButton('stop', size: 34, onPressed: () {}),
-                          RoundButton.menu(size: 34, onPressed: () {}),
+                          RoundButton.menu(onPressed: () {}),
                         ],
                       ),
                     ],
@@ -403,16 +403,15 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
           title: 'Applications',
           note: 'Une application : un ou plusieurs agents qui font une tâche. Des tuiles, un seul arrondi pour toutes les tailles (27 % du côté), le bord clair et le trait fin de nos contrôles en relief ; au survol elles montent de 2 px, à la pression elles rétrécissent. Leur dessin viendra.',
           frames: [
-            BoardFrame(
+            const BoardFrame(
               label: 'Tuiles',
               note: 'Carrées, 64 px, 8 par page : l’accueil de droite. Larges, 160 × 42 : le notch (le signe du logiciel, le titre, une ligne qui change ; planche Notch Top). Neutres tant qu’elles n’ont pas leur dessin.',
               child: BoardPane(
-                width: 300,
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    AppTile(size: 64, label: 'Application', onTap: _nothing),
-                    const SizedBox(width: 24),
+                    AppTile(label: 'Application', onTap: _nothing),
+                    SizedBox(width: 24),
                     AppTile(size: 42, width: 160, label: 'Application', onTap: _nothing),
                   ],
                 ),
@@ -445,13 +444,13 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
                 width: 360,
                 child: Row(
                   children: [
-                    AddTile(size: 64, onTap: _nothing),
+                    AddTile(onTap: _nothing),
                     SizedBox(width: 16),
-                    AppSlot(size: 64),
+                    AppSlot(),
                     SizedBox(width: 16),
-                    AppSlot(size: 64),
+                    AppSlot(),
                     SizedBox(width: 16),
-                    AppSlot(size: 64),
+                    AppSlot(),
                   ],
                 ),
               ),
@@ -793,7 +792,6 @@ class _MenuTryState extends State<_MenuTry> {
           top: 14,
           right: 14,
           child: RoundButton.menu(
-            size: 34,
             onPressed: () async {
               var entries = widget.entries;
               var id = await showFloatingMenu(inner, entries);

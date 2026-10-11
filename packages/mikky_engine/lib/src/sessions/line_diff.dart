@@ -192,7 +192,7 @@ List<DiffLine>? _myers(List<String> b, int b0, int b1, List<String> a, int a0, i
   final limit = max < lineDiffMaxEdits ? max : lineDiffMaxEdits;
   // v[k + offset]: the furthest x on diagonal k; one copy per step d.
   final offset = limit + 1;
-  var v = Int32List(2 * limit + 3);
+  final v = Int32List(2 * limit + 3);
   final trace = <Int32List>[];
   int? found;
   for (var d = 0; d <= limit; d++) {

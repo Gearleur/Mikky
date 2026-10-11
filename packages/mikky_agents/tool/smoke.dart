@@ -7,10 +7,9 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:mikky_agents/mikky_agents.dart' hide SessionWatcher, WatchedSession;
+import 'package:mikky_engine/mikky_engine.dart';
 
 import 'legacy/legacy.dart';
-
-import 'package:mikky_engine/mikky_engine.dart';
 
 Future<void> main(List<String> all) async {
   final watch = Stopwatch()..start();

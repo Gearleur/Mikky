@@ -124,7 +124,6 @@ class AgentCard extends StatelessWidget {
                       TextSize.body,
                       weight: plain ? FontWeight.w500 : FontWeight.w600,
                       color: old ? ui.text2 : ui.text,
-                      height: 1.45,
                     ),
                   ),
                 ),
@@ -508,7 +507,7 @@ class MenuStar extends StatelessWidget {
             child: AnimatedOpacity(
               duration: Motion.hover,
               opacity: hover ? 1 : 0,
-              child: const PixelStar(PixelFxPalette.grey, size: 10),
+              child: const PixelStar(PixelFxPalette.grey),
             ),
           ),
         ),

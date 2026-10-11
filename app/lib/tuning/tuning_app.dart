@@ -282,7 +282,7 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
             runSpacing: 6,
             children: [
               ActionChip(label: const Text('Cligner'), onPressed: _mikky.blink),
-              ActionChip(label: const Text('Oreilles'), onPressed: () => _mikky.twitch()),
+              ActionChip(label: const Text('Oreilles'), onPressed: _mikky.twitch),
               ActionChip(label: const Text('Boop'), onPressed: _mikky.boop),
               ActionChip(label: const Text('Saut'), onPressed: _mikky.hop),
               ActionChip(label: const Text('Secousse'), onPressed: _mikky.shake),

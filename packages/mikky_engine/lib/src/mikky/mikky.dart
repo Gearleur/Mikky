@@ -300,26 +300,22 @@ class Mikky {
 
   void _after(double seconds, void Function() action) => _scheduled.add((_time + seconds, action));
 
-  void blink() => animate(MikkyProp.open, const [Keyframe(.06, 70, Easings.inOut), Keyframe(1, 130, Easings.out)]);
+  void blink() => animate(MikkyProp.open, const [Keyframe(.06, 70), Keyframe(1, 130, Easings.out)]);
 
   /// One ear flicks; both when [ear] is null (the right one slightly later).
   void twitch([Ear? ear]) {
-    const keys = [Keyframe(.35, 90, Easings.out), Keyframe(-.12, 120, Easings.inOut), Keyframe(0, 160, Easings.out)];
+    const keys = [Keyframe(.35, 90, Easings.out), Keyframe(-.12, 120), Keyframe(0, 160, Easings.out)];
     if (ear != Ear.right) animate(MikkyProp.earLeft, keys);
     if (ear == Ear.right) animate(MikkyProp.earRight, keys);
     if (ear == null) _after(.06, () => animate(MikkyProp.earRight, keys));
   }
 
   void squash() {
-    animate(MikkyProp.scaleY, const [
-      Keyframe(.8, 70, Easings.out),
-      Keyframe(1.1, 130, Easings.out),
-      Keyframe(1, 170, Easings.inOut),
-    ]);
+    animate(MikkyProp.scaleY, const [Keyframe(.8, 70, Easings.out), Keyframe(1.1, 130, Easings.out), Keyframe(1, 170)]);
     animate(MikkyProp.scaleX, const [
       Keyframe(1.14, 70, Easings.out),
       Keyframe(.95, 130, Easings.out),
-      Keyframe(1, 170, Easings.inOut),
+      Keyframe(1, 170),
     ]);
   }
 
@@ -355,9 +351,9 @@ class Mikky {
 
   /// Something needs attention: eyes widen, ears go up.
   void alert() {
-    animate(MikkyProp.eyeScale, const [Keyframe(1.2, 120, Easings.back), Keyframe(1, 500, Easings.inOut)]);
+    animate(MikkyProp.eyeScale, const [Keyframe(1.2, 120, Easings.back), Keyframe(1, 500)]);
     for (final prop in const [MikkyProp.earLeft, MikkyProp.earRight]) {
-      animate(prop, const [Keyframe(.45, 90, Easings.out), Keyframe(0, 400, Easings.inOut)]);
+      animate(prop, const [Keyframe(.45, 90, Easings.out), Keyframe(0, 400)]);
     }
   }
 
@@ -369,21 +365,21 @@ class Mikky {
     animate(MikkyProp.scaleY, [
       Keyframe(.88, ms(90), Easings.out),
       Keyframe(1.14, ms(120), Easings.out),
-      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(1, ms(180)),
       Keyframe(.86, ms(70), Easings.out),
       Keyframe(1, ms(200), Easings.back),
     ]);
     animate(MikkyProp.scaleX, [
       Keyframe(1.1, ms(90), Easings.out),
       Keyframe(.92, ms(120), Easings.out),
-      Keyframe(1, ms(180), Easings.inOut),
+      Keyframe(1, ms(180)),
       Keyframe(1.12, ms(70), Easings.out),
       Keyframe(1, ms(200), Easings.back),
     ]);
     animate(MikkyProp.offsetY, [
       Keyframe(.04, ms(90), Easings.out),
       Keyframe(-h, ms(200), Easings.out),
-      Keyframe(0, ms(200), Easings.inOut),
+      Keyframe(0, ms(200)),
     ]);
   }
 
@@ -391,16 +387,16 @@ class Mikky {
   void shake() {
     animate(MikkyProp.offsetX, const [
       Keyframe(.08, 60, Easings.out),
-      Keyframe(-.08, 90, Easings.inOut),
-      Keyframe(.06, 90, Easings.inOut),
-      Keyframe(-.03, 90, Easings.inOut),
+      Keyframe(-.08, 90),
+      Keyframe(.06, 90),
+      Keyframe(-.03, 90),
       Keyframe(0, 100, Easings.out),
     ]);
   }
 
   /// Whole-body roll, with a hop.
   void roll({int turns = 1, double ms = 650}) {
-    animate(MikkyProp.spin, [Keyframe(math.pi * 2 * turns, ms, Easings.inOut)]);
+    animate(MikkyProp.spin, [Keyframe(math.pi * 2 * turns, ms)]);
     hop(small: true);
   }
 
@@ -468,16 +464,8 @@ class Mikky {
       case MikkyEmote.wink:
         break;
       case MikkyEmote.yawn:
-        animate(MikkyProp.scaleY, const [
-          Keyframe(1.1, 500, Easings.inOut),
-          Keyframe(1.1, 500, Easings.linear),
-          Keyframe(1, 500, Easings.inOut),
-        ]);
-        animate(MikkyProp.scaleX, const [
-          Keyframe(.94, 500, Easings.inOut),
-          Keyframe(.94, 500, Easings.linear),
-          Keyframe(1, 500, Easings.inOut),
-        ]);
+        animate(MikkyProp.scaleY, const [Keyframe(1.1, 500), Keyframe(1.1, 500, Easings.linear), Keyframe(1, 500)]);
+        animate(MikkyProp.scaleX, const [Keyframe(.94, 500), Keyframe(.94, 500, Easings.linear), Keyframe(1, 500)]);
       case MikkyEmote.content:
         hop();
       case MikkyEmote.annoyed:

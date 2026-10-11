@@ -153,7 +153,6 @@ class _AgentTextState extends State<AgentText> {
               border: Border.all(color: ui.line),
             ),
             child: Table(
-              defaultVerticalAlignment: TableCellVerticalAlignment.top,
               border: TableBorder(horizontalInside: BorderSide(color: ui.line)),
               children: [
                 for (var r = 0; r < table.length; r++)

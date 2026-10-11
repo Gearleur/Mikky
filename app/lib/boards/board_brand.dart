@@ -143,7 +143,7 @@ class _Missing extends StatelessWidget {
                           ),
                           TextSpan(
                             text: d,
-                            style: uiText(TextSize.label, color: ui.text2, height: 1.45),
+                            style: uiText(TextSize.label, color: ui.text2),
                           ),
                         ],
                       ),

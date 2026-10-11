@@ -6,7 +6,7 @@ Agent agent(String id, AgentStatus status, {double at = 0}) =>
 
 /// Drives an [IslandMachine] with a fake clock.
 class Harness {
-  Harness() : m = IslandMachine(now: 0);
+  Harness() : m = IslandMachine();
 
   final IslandMachine m;
   double now = 0;

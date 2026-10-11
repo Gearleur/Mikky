@@ -185,7 +185,7 @@ class SpellStar extends StatelessWidget {
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: Enchantments.instance,
     builder: (context, _) => force || Enchantments.instance.isOn(id)
-        ? const IgnorePointer(child: SpellFx(size: 20))
+        ? const IgnorePointer(child: SpellFx())
         : limited
         ? const IgnorePointer(child: StatusFx(UiStatus.limited, size: 20))
         : const SizedBox.shrink(),
@@ -248,7 +248,7 @@ class LimitCard extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
       child: Row(
         children: [
-          spell ? const SpellFx(size: 20) : const StatusFx(UiStatus.limited, size: 20),
+          spell ? const SpellFx() : const StatusFx(UiStatus.limited, size: 20),
           const SizedBox(width: 10),
           Expanded(
             child: Text.rich(

@@ -73,7 +73,7 @@ void main() {
 
   group('Easings.spring', () {
     test('ends on 1 and overshoots when soft', () {
-      final e = Easings.spring(const SpringSpec(120, .42), .8);
+      final e = Easings.spring(SpringSpec.drop, .8);
       expect(e(0), closeTo(0, 1e-9));
       expect(e(1), closeTo(1, 1e-9));
       expect(List.generate(100, (i) => e(i / 100)).any((v) => v > 1), isTrue);

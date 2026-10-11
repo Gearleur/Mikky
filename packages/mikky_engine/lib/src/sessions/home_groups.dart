@@ -32,8 +32,9 @@ HomeGroup homeGroupOf(
   if (status == AgentStatus.approval || status == AgentStatus.question) return HomeGroup.waiting;
   // An error waits for the user a while; left alone, it is just a session
   // that ended badly (still shown red in « Terminés »).
-  if (status == AgentStatus.error)
+  if (status == AgentStatus.error) {
     return old ? HomeGroup.history : (idle > errorWaitsFor ? HomeGroup.done : HomeGroup.waiting);
+  }
   if (status.isBusy || status == AgentStatus.rateLimited || status == AgentStatus.paused) return HomeGroup.working;
   return old ? HomeGroup.history : HomeGroup.done;
 }

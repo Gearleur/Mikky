@@ -59,6 +59,7 @@ class DaemonClient {
   }
 
   static Future<DaemonClient> connect(DaemonEndpoint e) async {
+    // ignore: close_sinks, the client owns it and closes it in [close].
     final socket = await WebSocket.connect(
       'ws://127.0.0.1:${e.port}',
       headers: {'Authorization': 'Bearer ${e.token}'},

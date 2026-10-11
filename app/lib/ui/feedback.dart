@@ -188,7 +188,7 @@ class StatusDot extends StatelessWidget {
 
   /// `@keyframes hop`: up 5 px at 10 % and 30 %, down at 20 % and 42 %.
   static double hop(double t) {
-    double up(double a, double b) => Cubic(.3, 0, .5, 1).transform(((t - a) / (b - a)).clamp(0, 1));
+    double up(double a, double b) => const Cubic(.3, 0, .5, 1).transform(((t - a) / (b - a)).clamp(0, 1));
     double down(double a, double b) => 1 - const Cubic(.5, 0, .7, 1).transform(((t - a) / (b - a)).clamp(0, 1));
     if (t < .1) return up(0, .1);
     if (t < .2) return down(.1, .2);

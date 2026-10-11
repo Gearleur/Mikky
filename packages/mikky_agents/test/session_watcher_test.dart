@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import '../tool/legacy/legacy.dart';
-
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
+
+import '../tool/legacy/legacy.dart';
 
 List<String> fixtureLines(String name) =>
     File('../mikky_engine/test/fixtures/$name').readAsLinesSync().where((l) => l.trim().isNotEmpty).toList();

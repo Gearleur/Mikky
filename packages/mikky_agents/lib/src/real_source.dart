@@ -499,8 +499,9 @@ class RealAgentSource implements AgentSource {
     AgentEntry? e;
     for (final x in _entries) {
       if (x.watched == s ||
-          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId))
+          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId)) {
         e = x;
+      }
     }
     if (e != null && e.run != null) return;
     if (e == null) {

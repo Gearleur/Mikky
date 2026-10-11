@@ -2,15 +2,13 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:mikky_engine/mikky_engine.dart';
-
-import 'setup.dart';
-import 'target.dart';
-
 import 'package:mikky_agents/src/watch/session_watcher.dart' as core;
+import 'package:mikky_engine/mikky_engine.dart';
 
 import '../../../mikky_engine/test/support/readers/claude_transcript_reader.dart';
 import '../../../mikky_engine/test/support/readers/codex_rollout_reader.dart';
+import 'setup.dart';
+import 'target.dart';
 
 /// A session found in Claude's or Codex's files, kept up to date.
 class WatchedSession extends core.WatchedSession {
@@ -118,7 +116,7 @@ class SessionWatcher implements core.SessionWatcher {
     if (node == null || script == null) return;
     final probe = await target.start(node, [script, claudeProjects, codexSessions]);
     _probe = probe;
-    probe.stderr.drain<void>();
+    unawaited(probe.stderr.drain<void>());
     _subs.add(
       probe.stdout.transform(const Utf8Decoder(allowMalformed: true)).transform(const LineSplitter()).listen((line) {
         try {
@@ -194,8 +192,9 @@ class SessionWatcher implements core.SessionWatcher {
       } on FormatException {
         continue;
       }
-      if (s.firstMessage == null && json['type'] == 'user' && json['uuid'] is String)
+      if (s.firstMessage == null && json['type'] == 'user' && json['uuid'] is String) {
         s.firstMessage = json['uuid'] as String;
+      }
       s.log.applyAll(_read(s, json));
     }
     _updates.add(s);

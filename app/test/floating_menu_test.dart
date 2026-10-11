@@ -153,8 +153,9 @@ void main() {
       final stars = shown();
       expect(stars.length, lessThanOrEqualTo(1));
       // When it shows, the menu's star is where the button's is.
-      if (stars.isNotEmpty && find.text('Renommer…').evaluate().isEmpty)
+      if (stars.isNotEmpty && find.text('Renommer…').evaluate().isEmpty) {
         expect((stars.single - resting).distance, lessThan(1));
+      }
     }
     await tester.pumpAndSettle();
     expect(shown(), [resting]);

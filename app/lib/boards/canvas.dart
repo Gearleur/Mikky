@@ -88,7 +88,7 @@ class BoardSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 6),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
-                child: Text(note!, style: uiText(TextSize.label, color: ui.text2, height: 1.45)),
+                child: Text(note!, style: uiText(TextSize.label, color: ui.text2)),
               ),
             ),
           const SizedBox(height: 22),
@@ -300,11 +300,11 @@ class BoardRules extends StatelessWidget {
                   children: [
                     TextSpan(
                       text: '$title  ',
-                      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45),
+                      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text),
                     ),
                     TextSpan(
                       text: text,
-                      style: uiText(TextSize.small, color: ui.text2, height: 1.45),
+                      style: uiText(TextSize.small, color: ui.text2),
                     ),
                   ],
                 ),

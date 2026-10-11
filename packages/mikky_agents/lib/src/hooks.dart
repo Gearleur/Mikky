@@ -64,7 +64,8 @@ class HookAsk {
           otherKey: 'q${i + 1}_custom',
           choices: [
             for (final o
-                in (q['options'] is List ? q['options']! as List : const []).whereType<Map<Object?, Object?>>())
+                in (q['options'] is List ? q['options']! as List : const <Object?>[])
+                    .whereType<Map<Object?, Object?>>())
               if (o['label'] is String)
                 QuestionChoice(o['label']! as String, o['description'] is String ? o['description']! as String : ''),
           ],

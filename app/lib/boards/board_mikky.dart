@@ -69,7 +69,6 @@ final mikkyBoard = BoardSpec(
       BoardSection(
         title: 'Le lancement',
         note: 'Sa salutation au démarrage de l’app (dans l’île, qui en est le fond) : une petite apparition, simple et souple, à la Disney / Pixar : sur un fond blanc, son ombre douce au sol ; l’anticipation, l’écrasement et l’étirement, des arcs, des oreilles qui suivent en retard. Lecture, ×0,25 pour le ralenti, la barre de temps pour aller à un instant ; dessous, ses moments et quelques courbes.',
-        kind: FrameKind.app,
         frames: [
           for (final (c, note, curves, poster) in [
             (
@@ -122,7 +121,7 @@ final mikkyBoard = BoardSpec(
             ),
         ],
       ),
-      BoardSection(
+      const BoardSection(
         title: 'Ses pouvoirs · en pixels',
         note: 'Notre direction pixel (les 16 et 32 bits étaient trop pixelisés) : Mikky en sprite fin quand il lance un sort, avec ses bras dodus, seize teintes tramées, une lumière le long de son bord, un halo en marches ; et en magicien, des étoiles et des étincelles en pixels. Nos deux couleurs signature, puis d’autres ; avec ses bras dodus, puis sans.',
         kind: FrameKind.trial,

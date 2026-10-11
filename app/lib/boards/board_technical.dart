@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/selectors.dart';
 import '../ui/backend_status.dart';
+import '../ui/selectors.dart';
 import '../ui/tokens.dart';
 import 'canvas.dart';
 
@@ -237,19 +237,16 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
           'Un backend explicite',
           'Seul Rust prépare et lance les outils. En cas de déconnexion, les actions attendent la reconnexion. L’ancien réglage daemon et le mode --no-daemon ont été retirés de l’application.',
           'app/lib/agents/agents_service.dart',
-          stage: _Stage.ready,
         ),
         _Note(
           'Les sessions extérieures',
           'Rust surveille les fichiers Windows et Linux avec des événements natifs. Il lit les octets ajoutés et normalise les transcriptions Claude et Codex. Flutter reçoit des pages de 256 événements.',
           'mikkyd · watch / session_reader',
-          stage: _Stage.ready,
         ),
         _Note(
           'La vie après l’app',
           'Fermer l’interface laisse les agents et leurs permissions en attente dans le démon. La reconnexion reprend les messages manqués. Un arrêt global est une action séparée ; le démarrage Windows est réglable.',
           'AgentsService.shutdown\nmikkyd · autostart / linux',
-          stage: _Stage.ready,
         ),
       ],
     ),
@@ -309,7 +306,6 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
           'Ce qui reste sur le PC',
           'SQLite garde les métadonnées dans le backend ; les écritures passent par un thread dédié. agents.json est importé une seule fois et conservé. Les réglages visuels restent côté Flutter. Les outils gardent leurs transcriptions.',
           'mikky.db · settings.json · tuning.json',
-          stage: _Stage.ready,
         ),
         _Note(
           'Le futur réseau',
@@ -327,7 +323,6 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
           'R2 → R3 / Le socle Rust',
           'Lancements, lecteurs et stockage appartiennent à Rust. L’ancien backend Dart est isolé dans les outils de test. Le protocole 3 diffuse les événements normalisés et synchronise les métadonnées des écrans.',
           'Parité vérifiée · app cliente uniquement',
-          stage: _Stage.ready,
         ),
         _Note(
           'Données et continuité',

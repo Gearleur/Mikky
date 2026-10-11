@@ -11,7 +11,6 @@ import '../ui/app_tile.dart';
 import '../ui/brand_logo.dart';
 import '../ui/buttons.dart';
 import '../ui/dot_field.dart';
-import '../ui/edge_rail.dart';
 import '../ui/environment_selector.dart';
 import '../ui/motion.dart';
 import '../ui/page_dots.dart';
@@ -471,12 +470,12 @@ class _HomeViewState extends State<HomeView> {
                   bottom: 0,
                   child: DotField(solidFrom: _taskLeft + 24, goneAt: l.mikkyAt.dx + l.mikky / 2),
                 )
-              : Positioned(
+              : const Positioned(
                   left: 0,
                   right: 0,
                   top: HomeLayout.taskTop + HomeLayout.taskHeight - _dotsUnderTask,
                   bottom: 0,
-                  child: const DotField(solidFrom: 0, goneAt: -1),
+                  child: DotField(solidFrom: 0, goneAt: -1),
                 ),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
@@ -573,8 +572,7 @@ class _HomeViewState extends State<HomeView> {
     ],
   );
 
-  Widget _tools() =>
-      ToolsRail(tools: widget.tools, edge: RailEdge.right, height: _l.bar, onPressed: _canStart ? _start : null);
+  Widget _tools() => ToolsRail(tools: widget.tools, height: _l.bar, onPressed: _canStart ? _start : null);
 
   Widget _history(BuildContext inner) => _l.notch
       ? RoundButton(
@@ -660,8 +658,9 @@ class _HomeViewState extends State<HomeView> {
     final wide = l.notch ? l.tileWidth : null;
     Widget cell(int i) {
       if (i < apps.length) return l.notch ? _card(apps[i]) : _tile(apps[i]);
-      if (i == apps.length && _canStart)
+      if (i == apps.length && _canStart) {
         return AddTile(key: const ValueKey('add'), size: l.tile, width: wide, onTap: _start);
+      }
       return AppSlot(size: l.tile, width: wide);
     }
 

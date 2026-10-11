@@ -120,7 +120,7 @@ class ThreadPage extends StatelessWidget {
         if (overlay != null) Positioned(top: 20, left: 0, right: 0, child: Center(child: overlay)),
         SideHead(
           leading: RoundButton('left', size: 34, onPressed: back, tooltip: 'Retour'),
-          actions: [if (menu != null) RoundButton.menu(size: 34, tooltip: 'Menu', onPressed: menu)],
+          actions: [if (menu != null) RoundButton.menu(onPressed: menu)],
         ),
         // Off the window's foot (2026-10-05: « trop petit » at 12).
         if (composer != null)

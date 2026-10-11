@@ -90,6 +90,10 @@ fn a_screen_answers_the_terminal_session() {
             .unwrap(),
     );
     let (mut screen, _) = tungstenite::connect(request).unwrap();
+    // A stale mikkyd (built before a change) must fail here, not hang.
+    if let tungstenite::stream::MaybeTlsStream::Plain(tcp) = screen.get_ref() {
+        tcp.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    }
     screen
         .send(Message::text(
             json!({"jsonrpc": "2.0", "id": 1, "method": "hello"}).to_string(),
@@ -101,12 +105,12 @@ fn a_screen_answers_the_terminal_session() {
             continue;
         };
         let msg: Value = serde_json::from_str(&text).unwrap();
-        if msg["method"] == "hooks.changed" {
-            if let Some(first) = msg["params"]["requests"].as_array().and_then(|r| r.first()) {
-                assert_eq!(first["command"], "cargo test");
-                assert_eq!(first["sessionId"], "s-1");
-                break first["id"].as_u64().unwrap();
-            }
+        if msg["method"] == "hooks.changed"
+            && let Some(first) = msg["params"]["requests"].as_array().and_then(|r| r.first())
+        {
+            assert_eq!(first["command"], "cargo test");
+            assert_eq!(first["sessionId"], "s-1");
+            break first["id"].as_u64().unwrap();
         }
     };
     screen
@@ -146,12 +150,12 @@ fn a_screen_answers_the_terminal_session() {
                 continue;
             };
             let msg: Value = serde_json::from_str(&text).unwrap();
-            if msg["method"] == "hooks.changed" {
-                if let Some(first) = msg["params"]["requests"].as_array().and_then(|r| r.first()) {
-                    assert_eq!(first["kind"], "question");
-                    assert_eq!(first["questions"][0]["options"][1]["label"], "Bout en bout");
-                    break first["id"].as_u64().unwrap();
-                }
+            if msg["method"] == "hooks.changed"
+                && let Some(first) = msg["params"]["requests"].as_array().and_then(|r| r.first())
+            {
+                assert_eq!(first["kind"], "question");
+                assert_eq!(first["questions"][0]["options"][1]["label"], "Bout en bout");
+                break first["id"].as_u64().unwrap();
             }
         };
         screen
@@ -167,8 +171,14 @@ fn a_screen_answers_the_terminal_session() {
     let o = &printed["hookSpecificOutput"];
     assert_eq!(o["hookEventName"], "PreToolUse");
     assert_eq!(o["permissionDecision"], "allow");
-    assert_eq!(o["updatedInput"]["questions"], question["tool_input"]["questions"]);
-    assert_eq!(o["updatedInput"]["answers"], json!({"Quels tests ?": ["Unitaires"]}));
+    assert_eq!(
+        o["updatedInput"]["questions"],
+        question["tool_input"]["questions"]
+    );
+    assert_eq!(
+        o["updatedInput"]["answers"],
+        json!({"Quels tests ?": ["Unitaires"]})
+    );
     // « Répondre dans le terminal »: nothing printed.
     assert!(ask(&mut screen, Value::Null).is_empty());
     // Any other tool on the question hook: nothing asked, nothing printed.

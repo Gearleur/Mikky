@@ -44,7 +44,7 @@ void main() {
               textDirection: TextDirection.ltr,
               child: MikkyUiTheme(
                 ui: ui,
-                child: Center(child: AppTile(size: 64, status: s)),
+                child: Center(child: AppTile(status: s)),
               ),
             ),
           ),

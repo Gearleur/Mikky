@@ -28,7 +28,7 @@ class CodeCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: ui.well,
         borderRadius: BorderRadius.circular(Radii.lg),
-        border: Border.all(color: ui.line, strokeAlign: BorderSide.strokeAlignInside),
+        border: Border.all(color: ui.line),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(

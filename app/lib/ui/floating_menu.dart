@@ -36,7 +36,7 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
   final overlay = Overlay.maybeOf(within);
   final area = within.findRenderObject() as RenderBox?;
   final overlayBox = overlay?.context.findRenderObject() as RenderBox?;
-  if (overlay == null || area == null || overlayBox == null || !area.hasSize) return Future.value(null);
+  if (overlay == null || area == null || overlayBox == null || !area.hasSize) return Future.value();
   final ui = MikkyUi.of(within);
   final bounds = MatrixUtils.transformRect(area.getTransformTo(overlayBox), Offset.zero & area.size);
   final press = FloatingMenu.lastPress ?? area.localToGlobal(area.size.topRight(const Offset(-30, 30)));
@@ -390,7 +390,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
                   height: o.height,
                   child: Opacity(
                     opacity: star,
-                    child: Center(child: const PixelStar(PixelFxPalette.grey, size: 14)),
+                    child: const Center(child: PixelStar(PixelFxPalette.grey, size: 14)),
                   ),
                 ),
               // The items, at their final size, uncovered as it opens.
@@ -469,7 +469,6 @@ class _MenuList extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return SlidingHover(
-      radius: Radii.md,
       hairline: false,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

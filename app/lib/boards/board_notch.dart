@@ -8,14 +8,13 @@ import '../home/tools_rail.dart';
 import '../ui/app_glyph.dart';
 import '../ui/app_tile.dart';
 import '../ui/buttons.dart';
-import '../ui/edge_rail.dart';
 import '../ui/environment_selector.dart';
 import '../ui/page_dots.dart';
 import '../ui/side.dart';
 import '../ui/status.dart';
 import '../ui/tabs.dart';
-import '../ui/tokens.dart';
 import '../ui/thread_page.dart';
+import '../ui/tokens.dart';
 import 'board_home.dart' show sampleApps;
 import 'board_screens.dart';
 import 'canvas.dart';
@@ -90,7 +89,6 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
   layout: HomeLayout.top,
   child: HomeView(
-    layout: HomeLayout.top,
     apps: [
       for (final a in apps)
         if (a.name != watched?.name) a,
@@ -178,17 +176,17 @@ final notchTopBoard = BoardSpec(
         ),
       ],
     ),
-    BoardSection(
+    const BoardSection(
       title: 'Chat',
       note: 'Le mode Chat, « + » et les outils ouvrent un nouveau chat comme la page d’un agent (2026-10-05) : l’île passe à 700 × 380, la page arrive en fondu avec un léger zoom, Mikky glisse à gauche au milieu ; le fil est vide, « Qu’est-ce qu’on lance ? » en son milieu, le champ en bas avec le dossier et le modèle. Envoyer lance l’agent : la page devient la sienne, sur place.',
       frames: [
-        const BoardFrame(label: 'Au départ', width: 700, child: _NewChat()),
-        const BoardFrame(
+        BoardFrame(label: 'Au départ', width: 700, child: _NewChat()),
+        BoardFrame(
           label: 'Démarrage',
           width: 700,
           child: _NewChat(status: 'Démarrage…'),
         ),
-        const BoardFrame(
+        BoardFrame(
           label: 'Erreur',
           width: 700,
           child: _NewChat(error: 'Codex n’est pas installé dans WSL.'),
@@ -429,7 +427,7 @@ class NotchRight extends StatelessWidget {
           Positioned(
             top: 10,
             right: 0,
-            child: ToolsRail(edge: RailEdge.right, height: _bar, onPressed: () {}),
+            child: ToolsRail(height: _bar, onPressed: () {}),
           ),
           Positioned(
             left: 12,
@@ -650,7 +648,7 @@ List<BoardFrame> _situations(HomeLayout layout) {
     BoardFrame(
       label: 'En erreur',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.error(), app: AgentApp.vscode)),
+      child: _right(layout, watched: _watched(FakeSessions.error())),
     ),
     BoardFrame(
       label: 'Limite atteinte',
