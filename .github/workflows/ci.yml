@@ -24,8 +24,8 @@ jobs:
     name: No repeated code
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - run: pwsh scripts/Check.ps1 -Only quality
@@ -39,7 +39,7 @@ jobs:
         os: [windows-latest, ubuntu-24.04]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain (daemon/rust-toolchain.toml)
         working-directory: daemon
         run: rustup toolchain install
@@ -52,7 +52,7 @@ jobs:
     name: Dart engine
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -63,7 +63,7 @@ jobs:
     name: Dart agents (Windows, against mikkyd)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain
         working-directory: daemon
         run: rustup toolchain install
@@ -80,7 +80,7 @@ jobs:
     name: Flutter app (Windows, goldens)
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
@@ -91,7 +91,7 @@ jobs:
       - run: pwsh scripts/Check.ps1 -Only app
       - name: Golden failures
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: golden-failures
           path: app/test/**/failures/

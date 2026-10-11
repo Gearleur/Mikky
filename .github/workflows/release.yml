@@ -24,12 +24,12 @@ jobs:
     needs: checks
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain
         working-directory: daemon
         run: rustup toolchain install
       - run: bash daemon/build-linux.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mikkyd-linux
           path: daemon/target/linux-release/mikkyd-linux
@@ -42,7 +42,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Rust toolchain
         working-directory: daemon
         run: rustup toolchain install
@@ -50,7 +50,7 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: mikkyd-linux
           path: daemon/target/linux-release
@@ -64,7 +64,7 @@ jobs:
           $version = Get-Content dist/current.txt
           Compress-Archive -Path "dist/$version/*" -DestinationPath "dist/$version.zip"
           "BUNDLE=dist/$version.zip" >> $env:GITHUB_ENV
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: mikky-windows
           path: ${{ env.BUNDLE }}
