@@ -196,11 +196,18 @@ class MikkyUi {
     hlEdge: Color(0x12FFFFFF),
     knob: Color(0xFFF7F7F7),
     shCtl: [CssShadow(0, 1, 2, Color(0x99000000)), CssShadow(0, 3, 8, Color(0x4D000000))],
-    shThumb: [CssShadow(0, 1, 2, Color(0x80000000)), CssShadow(0, 3, 10, Color(0x66000000)), CssShadow(0, 1, 0, Color(0x0DFFFFFF), inset: true)],
+    shThumb: [
+      CssShadow(0, 1, 2, Color(0x80000000)),
+      CssShadow(0, 3, 10, Color(0x66000000)),
+      CssShadow(0, 1, 0, Color(0x0DFFFFFF), inset: true),
+    ],
     shBar: [CssShadow(0, 10, 30, Color(0x80000000)), CssShadow(0, 2, 6, Color(0x66000000))],
     shInk: [CssShadow(0, 6, 18, Color(0x80000000)), CssShadow(0, 1, 2, Color(0x80000000))],
     inset: [CssShadow(0, 1, 2, Color(0x80000000), inset: true)],
-    islandShadow: [CssShadow(0, 0, 0, Color(0x14FFFFFF), spread: 1.3, inset: true), CssShadow(0, 24, 60, Color(0x99000000))],
+    islandShadow: [
+      CssShadow(0, 0, 0, Color(0x14FFFFFF), spread: 1.3, inset: true),
+      CssShadow(0, 24, 60, Color(0x99000000)),
+    ],
     // The same as in light for now: it hardly shows on black.
     shMenu: [CssShadow(0, 6, 18, Color(0x14000000)), CssShadow(0, 1, 3, Color(0x0D000000))],
     blue: Color(0xFF3B9EFF),
@@ -237,7 +244,10 @@ class MikkyUi {
   /// fine rim.
   List<CssShadow> get tileEdges => isLight
       ? [highlight, CssShadow(0, 0, 0, line, spread: .8, inset: true)]
-      : const [CssShadow(0, 1, 0, Color(0x24FFFFFF), inset: true), CssShadow(0, 0, 0, Color(0x0DFFFFFF), spread: .8, inset: true)];
+      : const [
+          CssShadow(0, 1, 0, Color(0x24FFFFFF), inset: true),
+          CssShadow(0, 0, 0, Color(0x0DFFFFFF), spread: .8, inset: true),
+        ];
 
   /// `inset 0 1px 0 var(--hl)`: the light edge on top of raised controls.
   CssShadow get highlight => CssShadow(0, 1, 0, hl, inset: true);

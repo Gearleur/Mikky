@@ -19,7 +19,10 @@ void main() {
     data: const MediaQueryData(disableAnimations: true),
     child: Directionality(
       textDirection: TextDirection.ltr,
-      child: MikkyUiTheme(ui: MikkyUi.light, child: Align(alignment: Alignment.topLeft, child: child)),
+      child: MikkyUiTheme(
+        ui: MikkyUi.light,
+        child: Align(alignment: Alignment.topLeft, child: child),
+      ),
     ),
   );
 
@@ -49,7 +52,9 @@ void main() {
     // The last page: its two apps, then a token where the next ones come.
     expect(find.byType(AppTile), findsNWidgets(2));
     expect(find.byType(AppSlot), findsNWidgets(4));
-    final next = tester.widget<AnimatedOpacity>(find.ancestor(of: find.bySemanticsLabel('Page suivante'), matching: find.byType(AnimatedOpacity)).first);
+    final next = tester.widget<AnimatedOpacity>(
+      find.ancestor(of: find.bySemanticsLabel('Page suivante'), matching: find.byType(AnimatedOpacity)).first,
+    );
     expect(next.opacity, 0);
   });
 
@@ -69,7 +74,17 @@ void main() {
 
   testWidgets('the Chat mode, « + » and the tools open a new chat; the home stays', (tester) async {
     var chats = 0;
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.top, apps: HomeApp.placeholders(3), animate: false, onHistory: (_) {}, onNew: () => chats++)));
+    await tester.pumpWidget(
+      host(
+        HomeView(
+          layout: HomeLayout.top,
+          apps: HomeApp.placeholders(3),
+          animate: false,
+          onHistory: (_) {},
+          onNew: () => chats++,
+        ),
+      ),
+    );
     await tester.tap(find.bySemanticsLabel('Chat'));
     await tester.pump();
     await tester.tap(find.byType(AddTile));
@@ -89,13 +104,23 @@ void main() {
         UserMessage('Corrige', at: DateTime(2026, 10, 5, 14)),
         const ToolCallEvent('1', kind: ToolKind.read, title: 'Lire a.dart', path: 'a.dart', status: ToolStatus.running),
       ]);
-    await tester.pumpWidget(host(HomeView(
-      layout: HomeLayout.top,
-      apps: HomeApp.placeholders(9),
-      watched: WatchedTask(id: 'w', name: 'Corrige les tests', log: log, status: AgentStatus.working, app: AgentApp.vscode),
-      animate: false,
-      onOpen: (a) => opened = a,
-    )));
+    await tester.pumpWidget(
+      host(
+        HomeView(
+          layout: HomeLayout.top,
+          apps: HomeApp.placeholders(9),
+          watched: WatchedTask(
+            id: 'w',
+            name: 'Corrige les tests',
+            log: log,
+            status: AgentStatus.working,
+            app: AgentApp.vscode,
+          ),
+          animate: false,
+          onOpen: (a) => opened = a,
+        ),
+      ),
+    );
     expect(find.byType(TaskGlance), findsOneWidget);
     expect(find.text('VS Code'), findsOneWidget);
     expect(find.text('Lit a.dart'), findsOneWidget);
@@ -103,13 +128,18 @@ void main() {
     expect(find.byType(AppTile), findsNWidgets(4));
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     // The task clear of the apps and of their left arrow.
-    expect(tester.getRect(find.byType(TaskGlance)).right, lessThan(tester.getRect(find.byType(AppTile).first).left - 22));
+    expect(
+      tester.getRect(find.byType(TaskGlance)).right,
+      lessThan(tester.getRect(find.byType(AppTile).first).left - 22),
+    );
     await tester.tap(find.text('Corrige les tests'));
     await tester.pump();
     expect(opened?.id, 'w');
   });
 
-  testWidgets('right: the notch upright — the task beside Mikky over a column of wide tiles, four a page', (tester) async {
+  testWidgets('right: the notch upright — the task beside Mikky over a column of wide tiles, four a page', (
+    tester,
+  ) async {
     const l = HomeLayout.rightNotch;
     HomeApp? opened;
     final log = SessionLog()
@@ -118,17 +148,27 @@ void main() {
         UserMessage('Corrige', at: DateTime(2026, 10, 8, 14)),
         const ToolCallEvent('1', kind: ToolKind.read, title: 'Lire a.dart', path: 'a.dart', status: ToolStatus.running),
       ]);
-    await tester.pumpWidget(host(SizedBox.fromSize(
-      size: l.size,
-      child: HomeView(
-        layout: l,
-        apps: HomeApp.placeholders(9),
-        watched: WatchedTask(id: 'w', name: 'Corrige les tests', log: log, status: AgentStatus.working, app: AgentApp.vscode),
-        animate: false,
-        onOpen: (a) => opened = a,
-        onNew: () {},
+    await tester.pumpWidget(
+      host(
+        SizedBox.fromSize(
+          size: l.size,
+          child: HomeView(
+            layout: l,
+            apps: HomeApp.placeholders(9),
+            watched: WatchedTask(
+              id: 'w',
+              name: 'Corrige les tests',
+              log: log,
+              status: AgentStatus.working,
+              app: AgentApp.vscode,
+            ),
+            animate: false,
+            onOpen: (a) => opened = a,
+            onNew: () {},
+          ),
+        ),
       ),
-    )));
+    );
     expect(tester.takeException(), isNull);
     expect(find.byType(TaskGlance), findsOneWidget);
     expect(find.text('Lit a.dart'), findsOneWidget);
@@ -150,7 +190,14 @@ void main() {
     expect(opened?.id, 'w');
 
     // Nothing at work: the same column, Mikky keeps his place.
-    await tester.pumpWidget(host(SizedBox.fromSize(size: l.size, child: HomeView(layout: l, apps: HomeApp.placeholders(3), animate: false, onNew: () {}))));
+    await tester.pumpWidget(
+      host(
+        SizedBox.fromSize(
+          size: l.size,
+          child: HomeView(layout: l, apps: HomeApp.placeholders(3), animate: false, onNew: () {}),
+        ),
+      ),
+    );
     expect(find.byType(TaskGlance), findsNothing);
     expect(find.byType(AppTile), findsNWidgets(4));
     expect(l.mikkyIdle, l.mikky);
@@ -170,11 +217,17 @@ void main() {
     expect(Size(m.page.width, m.page.height), l.pageSize);
   });
 
-  testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(20), animate: false)));
+  testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(20), animate: false)),
+    );
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 3);
     expect(find.byType(AppTile), findsNWidgets(8));
-    final a = tester.getRect(find.byType(AppTile).at(0)), b = tester.getRect(find.byType(AppTile).at(1)), c = tester.getRect(find.byType(AppTile).at(2));
+    final a = tester.getRect(find.byType(AppTile).at(0)),
+        b = tester.getRect(find.byType(AppTile).at(1)),
+        c = tester.getRect(find.byType(AppTile).at(2));
     expect(a.size, const Size(64, 64));
     expect(a.top, b.top);
     expect(c.left, a.left);
@@ -183,7 +236,10 @@ void main() {
     // The whole page inside the island, above the dots; the arrows clear
     // of the tiles.
     expect(tester.getRect(find.byType(AppTile).at(7)).bottom, lessThan(tester.getRect(find.byType(PageDots)).top));
-    expect(tester.getRect(find.bySemanticsLabel('Page suivante')).left, greaterThan(tester.getRect(find.byType(AppTile).at(1)).right));
+    expect(
+      tester.getRect(find.bySemanticsLabel('Page suivante')).left,
+      greaterThan(tester.getRect(find.byType(AppTile).at(1)).right),
+    );
 
     // Dragged to the left with the mouse: the next page.
     await tester.dragFrom(a.center, const Offset(-260, 0), kind: PointerDeviceKind.mouse);
@@ -206,13 +262,17 @@ void main() {
   testWidgets('a tile opens its app, the tools and « + » a new task; empty places keep a token', (tester) async {
     HomeApp? opened;
     var tools = 0;
-    await tester.pumpWidget(host(HomeView(
-      layout: HomeLayout.rightTiles,
-      apps: HomeApp.placeholders(3),
-      animate: false,
-      onOpen: (a) => opened = a,
-      onNew: () => tools++,
-    )));
+    await tester.pumpWidget(
+      host(
+        HomeView(
+          layout: HomeLayout.rightTiles,
+          apps: HomeApp.placeholders(3),
+          animate: false,
+          onOpen: (a) => opened = a,
+          onNew: () => tools++,
+        ),
+      ),
+    );
     await tester.tap(find.byType(AppTile).at(1));
     await tester.pump();
     expect(opened?.id, 'app-1');
@@ -238,7 +298,9 @@ void main() {
   });
 
   testWidgets('« + » takes a place: eight apps and « + » make two pages at the right', (tester) async {
-    await tester.pumpWidget(host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(8), animate: false, onNew: () {})));
+    await tester.pumpWidget(
+      host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(8), animate: false, onNew: () {})),
+    );
     expect(tester.widget<PageDots>(find.byType(PageDots)).count, 2);
     expect(find.byKey(const ValueKey('add')), findsNothing);
     await tester.tap(find.bySemanticsLabel('Page suivante'));

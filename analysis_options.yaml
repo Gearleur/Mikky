@@ -1,0 +1,40 @@
+# Shared by every Dart package of the repo (each one includes it next to its
+# base rule set). CI runs `dart format` and `dart analyze --fatal-infos`.
+formatter:
+  page_width: 120
+
+analyzer:
+  language:
+    strict-casts: true
+    strict-inference: true
+  exclude:
+    - "**/build/**"
+    - "**/*.g.dart"
+
+linter:
+  rules:
+    - always_declare_return_types
+    - avoid_redundant_argument_values
+    - avoid_unused_constructor_parameters
+    - avoid_void_async
+    - cancel_subscriptions
+    - close_sinks
+    - directives_ordering
+    - no_adjacent_strings_in_list
+    - only_throw_errors
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_final_fields
+    - prefer_final_in_for_each
+    - prefer_final_locals
+    - prefer_relative_imports
+    - prefer_single_quotes
+    - sort_child_properties_last
+    - type_annotate_public_apis
+    - unawaited_futures
+    - unnecessary_await_in_return
+    - unnecessary_lambdas
+    - unnecessary_parenthesis
+    - unnecessary_statements
+    - use_named_constants
+    - use_super_parameters

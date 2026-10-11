@@ -13,9 +13,7 @@ void main() {
           data: const MediaQueryData(),
           child: MikkyUiTheme(
             ui: MikkyUi.light,
-            child: Center(
-              child: AnswerBar(answers: [('Non', () => said.add('Non')), ('Oui', () => said.add('Oui'))]),
-            ),
+            child: Center(child: AnswerBar(answers: [('Non', () => said.add('Non')), ('Oui', () => said.add('Oui'))])),
           ),
         ),
       ),

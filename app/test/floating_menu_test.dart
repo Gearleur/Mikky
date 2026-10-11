@@ -20,31 +20,43 @@ void main() {
   Future<Future<int?> Function()> pumpWindow(WidgetTester tester, {bool button = false}) async {
     FloatingMenu.track();
     late BuildContext window;
-    await tester.pumpWidget(MikkyUiTheme(
-      ui: MikkyUi.light,
-      child: Directionality(
-        textDirection: TextDirection.ltr,
-        child: Overlay(initialEntries: [
-          OverlayEntry(
-            builder: (context) => Align(
-              alignment: Alignment.topLeft,
-              child: SizedBox(
-                width: 360,
-                height: 600,
-                child: Builder(builder: (context) {
-                  window = context;
-                  return Stack(children: [
-                    const SizedBox.expand(key: Key('window')),
-                    if (button)
-                      Positioned(top: 14, right: 14, child: RoundButton.menu(onPressed: () => showFloatingMenu(context, entries))),
-                  ]);
-                }),
+    await tester.pumpWidget(
+      MikkyUiTheme(
+        ui: MikkyUi.light,
+        child: Directionality(
+          textDirection: TextDirection.ltr,
+          child: Overlay(
+            initialEntries: [
+              OverlayEntry(
+                builder: (context) => Align(
+                  alignment: Alignment.topLeft,
+                  child: SizedBox(
+                    width: 360,
+                    height: 600,
+                    child: Builder(
+                      builder: (context) {
+                        window = context;
+                        return Stack(
+                          children: [
+                            const SizedBox.expand(key: Key('window')),
+                            if (button)
+                              Positioned(
+                                top: 14,
+                                right: 14,
+                                child: RoundButton.menu(onPressed: () => showFloatingMenu(context, entries)),
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
-        ]),
+        ),
       ),
-    ));
+    );
     return () => showFloatingMenu(window, entries);
   }
 
@@ -101,7 +113,10 @@ void main() {
     await tester.tap(find.text('Supprimer…'));
     expect(await first, 2);
     // « Supprimer… » asks again, right away.
-    final second = showFloatingMenu(tester.element(find.byKey(const Key('window'))), const [MenuEntry(10, 'Oui, supprimer'), MenuEntry(12, 'Annuler')]);
+    final second = showFloatingMenu(tester.element(find.byKey(const Key('window'))), const [
+      MenuEntry(10, 'Oui, supprimer'),
+      MenuEntry(12, 'Annuler'),
+    ]);
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 250));
     expect(find.text('Renommer…'), findsNothing);
@@ -138,7 +153,8 @@ void main() {
       final stars = shown();
       expect(stars.length, lessThanOrEqualTo(1));
       // When it shows, the menu's star is where the button's is.
-      if (stars.isNotEmpty && find.text('Renommer…').evaluate().isEmpty) expect((stars.single - resting).distance, lessThan(1));
+      if (stars.isNotEmpty && find.text('Renommer…').evaluate().isEmpty)
+        expect((stars.single - resting).distance, lessThan(1));
     }
     await tester.pumpAndSettle();
     expect(shown(), [resting]);

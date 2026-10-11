@@ -21,7 +21,11 @@ void main() {
       const address = '127.0.0.93';
       final target = WindowsTarget();
       // Like an adapter: it starts its child a moment later, once contained.
-      final p = await target.start('powershell', ['-NoProfile', '-Command', 'Start-Sleep -Milliseconds 800; ping -n 60 $address']);
+      final p = await target.start('powershell', [
+        '-NoProfile',
+        '-Command',
+        'Start-Sleep -Milliseconds 800; ping -n 60 $address',
+      ]);
       target.contain(p);
       p.stdout.drain<void>();
       p.stderr.drain<void>();

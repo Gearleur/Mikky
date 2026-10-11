@@ -19,20 +19,60 @@ class PixelFxPalette {
       ? PixelFxPalette(name, [Color.lerp(levels[1], const Color(0xFFFFFFFF), .45)!, ...levels.skip(1)])
       : this;
 
-  static const violet = PixelFxPalette('Violet', [Color(0xFFFFFFFF), Color(0xFFFF6BF5), Color(0xFFB026D6), Color(0xFF3A1AB8)]);
-  static const blue = PixelFxPalette('Bleu', [Color(0xFFFFFFFF), Color(0xFF3FD8FF), Color(0xFF1E78FF), Color(0xFF0A22A8)]);
-  static const fire = PixelFxPalette('Orange', [Color(0xFFFFF4B8), Color(0xFFFFB020), Color(0xFFFF5A1F), Color(0xFFA3140F)]);
-  static const red = PixelFxPalette('Rouge', [Color(0xFFFFD6D2), Color(0xFFFF3B30), Color(0xFFC20A1E), Color(0xFF5E0610)]);
+  static const violet = PixelFxPalette('Violet', [
+    Color(0xFFFFFFFF),
+    Color(0xFFFF6BF5),
+    Color(0xFFB026D6),
+    Color(0xFF3A1AB8),
+  ]);
+  static const blue = PixelFxPalette('Bleu', [
+    Color(0xFFFFFFFF),
+    Color(0xFF3FD8FF),
+    Color(0xFF1E78FF),
+    Color(0xFF0A22A8),
+  ]);
+  static const fire = PixelFxPalette('Orange', [
+    Color(0xFFFFF4B8),
+    Color(0xFFFFB020),
+    Color(0xFFFF5A1F),
+    Color(0xFFA3140F),
+  ]);
+  static const red = PixelFxPalette('Rouge', [
+    Color(0xFFFFD6D2),
+    Color(0xFFFF3B30),
+    Color(0xFFC20A1E),
+    Color(0xFF5E0610),
+  ]);
 
-  static const yellow = PixelFxPalette('Jaune', [Color(0xFFFFF8D2), Color(0xFFFFD60A), Color(0xFFF2A900), Color(0xFF8A5A00)]);
-  static const grey = PixelFxPalette('Gris', [Color(0xFFFFFFFF), Color(0xFFC7C7CC), Color(0xFF8E8E93), Color(0xFF48484A)]);
+  static const yellow = PixelFxPalette('Jaune', [
+    Color(0xFFFFF8D2),
+    Color(0xFFFFD60A),
+    Color(0xFFF2A900),
+    Color(0xFF8A5A00),
+  ]);
+  static const grey = PixelFxPalette('Gris', [
+    Color(0xFFFFFFFF),
+    Color(0xFFC7C7CC),
+    Color(0xFF8E8E93),
+    Color(0xFF48484A),
+  ]);
 
   static const all = [violet, blue, fire, red];
 
   /// The signature colors (user request, 2026-09-30): the orange of their
   /// picture, and the same tints and steps in blue.
-  static const signatureOrange = PixelFxPalette('Orange signature', [Color(0xFFFF8204), Color(0xFFFA500F), Color(0xFFE51300), Color(0xFFC4001D)]);
-  static const signatureBlue = PixelFxPalette('Bleu signature', [Color(0xFF04BCFF), Color(0xFF0F84FA), Color(0xFF0045E5), Color(0xFF000DC4)]);
+  static const signatureOrange = PixelFxPalette('Orange signature', [
+    Color(0xFFFF8204),
+    Color(0xFFFA500F),
+    Color(0xFFE51300),
+    Color(0xFFC4001D),
+  ]);
+  static const signatureBlue = PixelFxPalette('Bleu signature', [
+    Color(0xFF04BCFF),
+    Color(0xFF0F84FA),
+    Color(0xFF0045E5),
+    Color(0xFF000DC4),
+  ]);
 
   /// The theme's green (the one of a done task's bubble).
   static PixelFxPalette green(MikkyUi ui) => PixelFxPalette('Vert', [
@@ -248,7 +288,14 @@ class StatusFx extends StatelessWidget {
 
 /// A [PixelEffect] in a [palette], looping or still.
 class PixelFx extends StatelessWidget {
-  const PixelFx({super.key, this.effect = PixelEffect.calmFirework, required this.palette, this.size = 36, this.at, this.slow = 1});
+  const PixelFx({
+    super.key,
+    this.effect = PixelEffect.calmFirework,
+    required this.palette,
+    this.size = 36,
+    this.at,
+    this.slow = 1,
+  });
 
   final PixelEffect effect;
   final PixelFxPalette palette;
@@ -271,7 +318,8 @@ class PixelFx extends StatelessWidget {
             key: ValueKey((effect, palette.name)),
             period: const Duration(seconds: 24),
             frozenAt: .03,
-            builder: (context, t) => CustomPaint(size: Size.square(size), painter: _FxPainter(effect, palette, t * 24 / slow)),
+            builder: (context, t) =>
+                CustomPaint(size: Size.square(size), painter: _FxPainter(effect, palette, t * 24 / slow)),
           );
   }
 }

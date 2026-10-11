@@ -19,8 +19,7 @@ abstract final class Easings {
   static double outQuint(double t) => 1 - math.pow(1 - t, 5).toDouble();
 
   /// Cubic ease-in-out.
-  static double inOut(double t) =>
-      t < .5 ? 4 * t * t * t : 1 - math.pow(-2 * t + 2, 3) / 2;
+  static double inOut(double t) => t < .5 ? 4 * t * t * t : 1 - math.pow(-2 * t + 2, 3) / 2;
 
   /// Ease-out with a small overshoot.
   static double back(double t) {

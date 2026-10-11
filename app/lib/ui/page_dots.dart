@@ -68,7 +68,9 @@ class _PageDotsState extends State<PageDots> with SingleTickerProviderStateMixin
     // Our signature blues; on black, one step lighter (the darkest would
     // vanish).
     final sig = PixelFxPalette.signatureBlue.levels;
-    final blues = ui.isLight ? PixelFxPalette.signatureBlue : PixelFxPalette('Bleus', [Color.lerp(sig[0], const Color(0xFFFFFFFF), .4)!, sig[0], sig[1], sig[2]]);
+    final blues = ui.isLight
+        ? PixelFxPalette.signatureBlue
+        : PixelFxPalette('Bleus', [Color.lerp(sig[0], const Color(0xFFFFFFFF), .4)!, sig[0], sig[1], sig[2]]);
     return Semantics(
       label: 'Page ${widget.page + 1} sur ${widget.count}',
       child: MouseRegion(
@@ -176,5 +178,11 @@ class _DotsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DotsPainter old) =>
-      old.starX != starX || old.trail != trail || old.hover != hover || old.page != page || old.count != count || old.dot != dot || old.star != star;
+      old.starX != starX ||
+      old.trail != trail ||
+      old.hover != hover ||
+      old.page != page ||
+      old.count != count ||
+      old.dot != dot ||
+      old.star != star;
 }

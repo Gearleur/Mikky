@@ -29,7 +29,9 @@ void main(List<String> argv) async {
   _log = File(a['log']!.single).openWrite();
 
   final pkg = agent == 'claude' ? 'claude-agent-acp' : 'codex-acp';
-  final env = <String, String>{for (final kv in a['env'] ?? const <String>[]) kv.split('=').first: kv.substring(kv.indexOf('=') + 1)};
+  final env = <String, String>{
+    for (final kv in a['env'] ?? const <String>[]) kv.split('=').first: kv.substring(kv.indexOf('=') + 1),
+  };
   if (target == 'windows') {
     final script = '$adapters\\node_modules\\@agentclientprotocol\\$pkg\\dist\\index.js';
     _proc = await Process.start('node', [script], workingDirectory: cwd, environment: env);
@@ -50,7 +52,10 @@ void main(List<String> argv) async {
   _note('spawned pid ${_proc.pid}');
 
   _proc.stdout.transform(const Utf8Decoder(allowMalformed: true)).transform(const LineSplitter()).listen(_onLine);
-  _proc.stderr.transform(const Utf8Decoder(allowMalformed: true)).transform(const LineSplitter()).listen((l) => _write('stderr', l));
+  _proc.stderr
+      .transform(const Utf8Decoder(allowMalformed: true))
+      .transform(const LineSplitter())
+      .listen((l) => _write('stderr', l));
   unawaited(_proc.exitCode.then((c) => _note('exit $c')));
 
   Timer(Duration(seconds: int.parse(a['timeout']?.single ?? '240')), () async {
@@ -216,7 +221,8 @@ Future<void> _onPermission(Map<String, dynamic> msg) async {
   });
 }
 
-void _write(String dir, Object msg) => _log.writeln(jsonEncode({'t': _watch.elapsedMilliseconds, 'dir': dir, 'msg': msg}));
+void _write(String dir, Object msg) =>
+    _log.writeln(jsonEncode({'t': _watch.elapsedMilliseconds, 'dir': dir, 'msg': msg}));
 
 void _note(String s) {
   final line = '[${(_watch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s] $s';

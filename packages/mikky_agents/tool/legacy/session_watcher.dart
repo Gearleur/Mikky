@@ -194,7 +194,8 @@ class SessionWatcher implements core.SessionWatcher {
       } on FormatException {
         continue;
       }
-      if (s.firstMessage == null && json['type'] == 'user' && json['uuid'] is String) s.firstMessage = json['uuid'] as String;
+      if (s.firstMessage == null && json['type'] == 'user' && json['uuid'] is String)
+        s.firstMessage = json['uuid'] as String;
       s.log.applyAll(_read(s, json));
     }
     _updates.add(s);

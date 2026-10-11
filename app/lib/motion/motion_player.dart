@@ -129,31 +129,50 @@ class _MotionPlayerState extends State<MotionPlayer> with SingleTickerProviderSt
             ),
           ),
           const SizedBox(height: 10),
-          Row(children: [
-            RoundButton(_playing ? 'pause' : 'play', size: 30, onPressed: () => setState(() => _playing ? _stop() : _play()), tooltip: _playing ? 'Pause' : 'Lire'),
-            const SizedBox(width: 6),
-            RoundButton('refresh', size: 30, ghost: true, onPressed: () => setState(() {
-              _time.value = 0;
-              _play();
-            }), tooltip: 'Rejouer'),
-            const SizedBox(width: 10),
-            for (final (label, s) in narrow ? const [('×0,25', .25), ('×1', 1.0)] : const [('×0,25', .25), ('×0,5', .5), ('×1', 1.0)]) ...[
-              MChip(label, on: _speed == s, soft: _speed != s, onTap: () => setState(() => _speed = s)),
-              const SizedBox(width: 4),
-            ],
-            if (!narrow) ...[
+          Row(
+            children: [
+              RoundButton(
+                _playing ? 'pause' : 'play',
+                size: 30,
+                onPressed: () => setState(() => _playing ? _stop() : _play()),
+                tooltip: _playing ? 'Pause' : 'Lire',
+              ),
               const SizedBox(width: 6),
-              MChip('Boucle', on: _loop, soft: !_loop, onTap: () => setState(() => _loop = !_loop)),
+              RoundButton(
+                'refresh',
+                size: 30,
+                ghost: true,
+                onPressed: () => setState(() {
+                  _time.value = 0;
+                  _play();
+                }),
+                tooltip: 'Rejouer',
+              ),
+              const SizedBox(width: 10),
+              for (final (label, s)
+                  in narrow
+                      ? const [('×0,25', .25), ('×1', 1.0)]
+                      : const [('×0,25', .25), ('×0,5', .5), ('×1', 1.0)]) ...[
+                MChip(label, on: _speed == s, soft: _speed != s, onTap: () => setState(() => _speed = s)),
+                const SizedBox(width: 4),
+              ],
+              if (!narrow) ...[
+                const SizedBox(width: 6),
+                MChip('Boucle', on: _loop, soft: !_loop, onTap: () => setState(() => _loop = !_loop)),
+              ],
+              const Spacer(),
+              ValueListenableBuilder<double>(
+                valueListenable: _time,
+                builder: (context, t, _) {
+                  final at = _secs(math.min(t, _c.duration));
+                  return Text(
+                    narrow ? at : '$at / ${_secs(_c.duration)}',
+                    style: uiText(TextSize.label, color: ui.text2, tabular: true),
+                  );
+                },
+              ),
             ],
-            const Spacer(),
-            ValueListenableBuilder<double>(
-              valueListenable: _time,
-              builder: (context, t, _) {
-                final at = _secs(math.min(t, _c.duration));
-                return Text(narrow ? at : '$at / ${_secs(_c.duration)}', style: uiText(TextSize.label, color: ui.text2, tabular: true));
-              },
-            ),
-          ]),
+          ),
           const SizedBox(height: 8),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
@@ -185,19 +204,34 @@ class _TimelinePainter extends CustomPainter {
   final List<String> curves;
   final MikkyUi ui;
 
-  static const _colors = [Color(0xFF0A84FF), Color(0xFFFF9F0A), Color(0xFF30D158), Color(0xFFBF5AF2), Color(0xFFFF375F)];
+  static const _colors = [
+    Color(0xFF0A84FF),
+    Color(0xFFFF9F0A),
+    Color(0xFF30D158),
+    Color(0xFFBF5AF2),
+    Color(0xFFFF375F),
+  ];
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     double x(double s) => s / c.duration * w;
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 18, w, 4), const Radius.circular(2)), Paint()..color = ui.track);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(0, 18, w, 4), const Radius.circular(2)),
+      Paint()..color = ui.track,
+    );
     // The marks, their names above when there is room.
     var free = -1e9;
     for (final m in c.marks) {
       final mx = x(m.at);
       canvas.drawRect(Rect.fromLTWH(mx - .5, 15, 1, 10), Paint()..color = ui.text3);
-      final p = TextPainter(text: TextSpan(text: m.name, style: uiText(10.5, color: ui.text3)), textDirection: TextDirection.ltr)..layout();
+      final p = TextPainter(
+        text: TextSpan(
+          text: m.name,
+          style: uiText(10.5, color: ui.text3),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
       final lx = (mx - p.width / 2).clamp(0.0, w - p.width);
       if (lx > free) {
         p.paint(canvas, Offset(lx, 0));
@@ -219,11 +253,20 @@ class _TimelinePainter extends CustomPainter {
         k == 0 ? path.moveTo(px, py) : path.lineTo(px, py);
       }
       final color = _colors[i % _colors.length];
-      canvas.drawPath(path, Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.2
-        ..color = color.withValues(alpha: .85));
-      final p = TextPainter(text: TextSpan(text: name, style: uiText(9.5, color: color)), textDirection: TextDirection.ltr)..layout();
+      canvas.drawPath(
+        path,
+        Paint()
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.2
+          ..color = color.withValues(alpha: .85),
+      );
+      final p = TextPainter(
+        text: TextSpan(
+          text: name,
+          style: uiText(9.5, color: color),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout();
       p.paint(canvas, Offset(w - p.width, top - 1));
       p.dispose();
     }
@@ -244,7 +287,10 @@ class _PlayheadPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final x = math.min(time.value, c.duration) / c.duration * size.width;
-    canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromLTWH(0, 18, x, 4), const Radius.circular(2)), Paint()..color = ui.text2);
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(Rect.fromLTWH(0, 18, x, 4), const Radius.circular(2)),
+      Paint()..color = ui.text2,
+    );
     canvas.drawRect(Rect.fromLTWH(x - .75, 12, 1.5, size.height - 12), Paint()..color = ui.text);
     canvas.drawCircle(Offset(x, 20), 5, Paint()..color = ui.text);
   }

@@ -17,10 +17,13 @@ Widget? _code(FileDiff? diff) {
   if (diff == null) return null;
   final (:removed, :added) = diffPreview(diff);
   var n = 1;
-  return CodeCard(file: folderName(diff.path), lines: [
-    for (final l in removed) CodeLine(n++, [TextSpan(text: l)], removed: true),
-    for (final l in added) CodeLine(n++, [TextSpan(text: l)], added: true),
-  ]);
+  return CodeCard(
+    file: folderName(diff.path),
+    lines: [
+      for (final l in removed) CodeLine(n++, [TextSpan(text: l)], removed: true),
+      for (final l in added) CodeLine(n++, [TextSpan(text: l)], added: true),
+    ],
+  );
 }
 
 /// The agent thinks: its dots, where its words will come.
@@ -29,9 +32,9 @@ class _Waiting extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => const Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: TypingDots()),
-      );
+    alignment: Alignment.centerLeft,
+    child: Padding(padding: EdgeInsets.symmetric(vertical: 4), child: TypingDots()),
+  );
 }
 
 /// The icon of what a tool does.
@@ -56,14 +59,26 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
   if (t.active) {
     trailing = const StatusFx(UiStatus.working, size: 12);
   } else if (note != null) {
-    trailing = Text(note, style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.red));
+    trailing = Text(
+      note,
+      style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.red),
+    );
   } else if (diff != null) {
     final (:added, :removed) = diffCounts(diff);
     trailing = Text.rich(
-      TextSpan(children: [
-        TextSpan(text: '+$added', style: TextStyle(color: ui.green)),
-        if (removed > 0) TextSpan(text: ' −$removed', style: TextStyle(color: ui.red)),
-      ]),
+      TextSpan(
+        children: [
+          TextSpan(
+            text: '+$added',
+            style: TextStyle(color: ui.green),
+          ),
+          if (removed > 0)
+            TextSpan(
+              text: ' −$removed',
+              style: TextStyle(color: ui.red),
+            ),
+        ],
+      ),
       style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true),
     );
   }
@@ -91,14 +106,21 @@ PixelFxPalette? stepPalette(StepTone? tone, MikkyUi ui) => switch (tone) {
 /// A main step of a task: its dot and words; a tap shows its tools. The
 /// one at work shows the code it writes right under it.
 List<Widget> _step(MainStep s, MikkyUi ui) {
-  final code = s.state == TaskStepState.now ? _code(s.tools.where((t) => t.active && t.diff != null).lastOrNull?.diff) : null;
+  final code = s.state == TaskStepState.now
+      ? _code(s.tools.where((t) => t.active && t.diff != null).lastOrNull?.diff)
+      : null;
   return [
     TaskStep(
       label: s.label,
       tone: stepPalette(s.tone, ui),
       state: s.state,
       note: s.note,
-      detail: s.tools.isEmpty ? null : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [for (final t in s.tools) _toolLine(t, ui)]),
+      detail: s.tools.isEmpty
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [for (final t in s.tools) _toolLine(t, ui)],
+            ),
     ),
     if (code != null) Padding(padding: const EdgeInsets.fromLTRB(19, 2, 0, 6), child: code),
   ];
@@ -110,7 +132,10 @@ List<Widget> _plan(TurnSpan turn, MikkyUi ui) {
   return [
     Padding(
       padding: const EdgeInsets.only(top: 2, bottom: 2),
-      child: Text('Plan · ${planCount(plan)}', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true)),
+      child: Text(
+        'Plan · ${planCount(plan)}',
+        style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3, tabular: true),
+      ),
     ),
     for (final s in plan) ..._step(s, ui),
   ];
@@ -173,15 +198,17 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
     final answer = turnAnswer(turn, items);
     final tools = items.whereType<ToolItem>().toList();
     if (tools.isNotEmpty || turn.plan.isNotEmpty) {
-      out.add(TaskSection(
-        // Folds once a newer task comes.
-        key: ValueKey('task-${turn.start}-$last'),
-        status: taskStatus(turn),
-        title: taskTitle(turn),
-        meta: taskMeta(turn, items, toolSteps(tools).length),
-        initiallyOpen: last,
-        children: _flow(turn, items, answer.toSet(), ui),
-      ));
+      out.add(
+        TaskSection(
+          // Folds once a newer task comes.
+          key: ValueKey('task-${turn.start}-$last'),
+          status: taskStatus(turn),
+          title: taskTitle(turn),
+          meta: taskMeta(turn, items, toolSteps(tools).length),
+          initiallyOpen: last,
+          children: _flow(turn, items, answer.toSet(), ui),
+        ),
+      );
       gap(6);
     } else if (turn.running) {
       // A plain exchange: the words as they come, then the dots.

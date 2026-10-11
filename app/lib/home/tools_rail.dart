@@ -9,7 +9,13 @@ import '../ui/motion.dart';
 /// discs. Under the mouse the discs move apart a little, on the
 /// selectors' spring; pressed, they shrink like a button.
 class ToolsRail extends StatefulWidget {
-  const ToolsRail({super.key, this.tools = const [Brand.claude, Brand.codex], this.edge = RailEdge.right, this.height = 44, this.onPressed});
+  const ToolsRail({
+    super.key,
+    this.tools = const [Brand.claude, Brand.codex],
+    this.edge = RailEdge.right,
+    this.height = 44,
+    this.onPressed,
+  });
 
   final List<Brand> tools;
   final RailEdge edge;

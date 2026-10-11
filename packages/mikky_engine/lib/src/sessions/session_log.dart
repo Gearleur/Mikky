@@ -53,17 +53,17 @@ class ToolItem extends ThreadItem {
   bool get active => status == ToolStatus.pending || status == ToolStatus.running;
 
   ToolItem merge(ToolCallEvent e) => ToolItem(
-        id,
-        name: e.name ?? name,
-        kind: e.kind ?? kind,
-        title: e.title ?? (title.isEmpty ? (e.command ?? '') : title),
-        status: e.status ?? status,
-        command: e.command ?? command,
-        path: e.path ?? path,
-        diff: e.diff ?? diff,
-        output: e.output ?? output,
-        at: at,
-      );
+    id,
+    name: e.name ?? name,
+    kind: e.kind ?? kind,
+    title: e.title ?? (title.isEmpty ? (e.command ?? '') : title),
+    status: e.status ?? status,
+    command: e.command ?? command,
+    path: e.path ?? path,
+    diff: e.diff ?? diff,
+    output: e.output ?? output,
+    at: at,
+  );
 }
 
 /// A turn: from the user's message to the agent's answer. Once ended, the
@@ -84,12 +84,12 @@ class TurnSpan {
   bool get running => end == null;
 
   TurnSpan copyWith({int? end, StopReason? reason, String? message, List<PlanEntry>? plan}) => TurnSpan(
-        start,
-        end: end ?? this.end,
-        reason: reason ?? this.reason,
-        message: message ?? this.message,
-        plan: plan ?? this.plan,
-      );
+    start,
+    end: end ?? this.end,
+    reason: reason ?? this.reason,
+    message: message ?? this.message,
+    plan: plan ?? this.plan,
+  );
 }
 
 /// Everything known about one session, folded from its [SessionEvent]s:
@@ -193,7 +193,8 @@ class SessionLog {
           i--;
         }
         final last = i < 0 ? null : _items[i];
-        final continues = last is AgentItem && last.thought == e.thought && (e.messageId == null || last.messageId == e.messageId);
+        final continues =
+            last is AgentItem && last.thought == e.thought && (e.messageId == null || last.messageId == e.messageId);
         if (continues && (i == _items.length - 1 || e.messageId != null)) {
           _items[i] = AgentItem(last.text + e.text, messageId: last.messageId, thought: last.thought, at: last.at);
         } else {
@@ -284,7 +285,8 @@ class SessionLog {
   /// yes, what the agent does now, its answer, or the error.
   String get detail {
     final q = _question;
-    if (q != null) return _line(q.questions.length == 1 && q.questions.first.text.isNotEmpty ? q.questions.first.text : q.message);
+    if (q != null)
+      return _line(q.questions.length == 1 && q.questions.first.text.isNotEmpty ? q.questions.first.text : q.message);
     final asked = _pending.isEmpty ? null : _pending.values.first;
     if (asked != null) {
       // The tool's title is the clean command; the request's may be wrapped

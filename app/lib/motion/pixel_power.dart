@@ -16,10 +16,16 @@ import 'launch.dart';
 enum PixelPowerStyle {
   /// Pixels of 1, sixteen shades in a fine dither, a light rim inside, a
   /// halo in steps of 2.
-  bits128('128 bits', 'Pixels fins, seize teintes mêlées par une trame fine, une lumière le long de son bord, un halo en marches.'),
+  bits128(
+    '128 bits',
+    'Pixels fins, seize teintes mêlées par une trame fine, une lumière le long de son bord, un halo en marches.',
+  ),
 
   /// The 128 bits, with a magician's pixel stars and sparks around him.
-  mage128('Magicien 128 bits', 'Le 128 bits, avec des étoiles et des étincelles en pixels autour de lui : il lance un sort.');
+  mage128(
+    'Magicien 128 bits',
+    'Le 128 bits, avec des étoiles et des étincelles en pixels autour de lui : il lance un sort.',
+  );
 
   const PixelPowerStyle(this.label, this.note);
 
@@ -34,7 +40,10 @@ abstract final class PixelPowerColors {
   static const all = <(String, PixelFxPalette)>[
     ('Orange', PixelFxPalette.signatureOrange),
     ('Bleu', PixelFxPalette.signatureBlue),
-    ('Rouge fluo', PixelFxPalette('Rouge fluo', [Color(0xFFFF6B81), Color(0xFFFF2D55), Color(0xFFD90F3C), Color(0xFF8A0624)])),
+    (
+      'Rouge fluo',
+      PixelFxPalette('Rouge fluo', [Color(0xFFFF6B81), Color(0xFFFF2D55), Color(0xFFD90F3C), Color(0xFF8A0624)]),
+    ),
     ('Rose', PixelFxPalette('Rose', [Color(0xFFFF9BE0), Color(0xFFFF5FC8), Color(0xFFD6339E), Color(0xFF7A1460)])),
     ('Violet', PixelFxPalette('Violet', [Color(0xFFE3A8FF), Color(0xFFBF5AF2), Color(0xFF8E2DC8), Color(0xFF4A1478)])),
     ('Vert', PixelFxPalette('Vert', [Color(0xFF8DFFB8), Color(0xFF34E07A), Color(0xFF14A855), Color(0xFF0A5C2E)])),
@@ -45,7 +54,14 @@ abstract final class PixelPowerColors {
 
 /// Mikky lit by his powers, in pixels, in one [palette].
 class PixelPowerScene extends StatelessWidget {
-  const PixelPowerScene(this.style, this.palette, {super.key, this.size = const Size(170, 150), this.radius = 36, this.arms = true});
+  const PixelPowerScene(
+    this.style,
+    this.palette, {
+    super.key,
+    this.size = const Size(170, 150),
+    this.radius = 36,
+    this.arms = true,
+  });
 
   final PixelPowerStyle style;
   final PixelFxPalette palette;
@@ -106,8 +122,10 @@ class _PixelPowerPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height * .58);
     final r = radius;
     final g = geometryAt(arms ? ArmPoses.all.first : _plain, 0, r);
-    final body = Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])], true);
-    Offset local(double x, double y) => Offset((x - center.dx - g.translateX) / g.scaleX, (y - center.dy - g.translateY) / g.scaleY);
+    final body = Path()
+      ..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])], true);
+    Offset local(double x, double y) =>
+        Offset((x - center.dx - g.translateX) / g.scaleX, (y - center.dy - g.translateY) / g.scaleY);
 
     // Inside him, pixel by pixel; only around him.
     final inside = Uint8List(cols * rows);

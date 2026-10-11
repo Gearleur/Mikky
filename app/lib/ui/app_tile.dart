@@ -90,7 +90,10 @@ class _AppTileState extends State<AppTile> {
             // The bigger shadow of a lifted tile, faded in under it.
             if (t > 0)
               Positioned.fill(
-                child: Opacity(opacity: t, child: Surface(radius: r, shadows: ui.shBar)),
+                child: Opacity(
+                  opacity: t,
+                  child: Surface(radius: r, shadows: ui.shBar),
+                ),
               ),
             tile!,
           ],
@@ -107,7 +110,9 @@ class _AppTileState extends State<AppTile> {
           if (keyboard != _keyboard) setState(() => _keyboard = keyboard);
         },
         onKeyEvent: (_, e) {
-          if (on && e is KeyDownEvent && (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.space)) {
+          if (on &&
+              e is KeyDownEvent &&
+              (e.logicalKey == LogicalKeyboardKey.enter || e.logicalKey == LogicalKeyboardKey.space)) {
             widget.onTap!();
             return KeyEventResult.handled;
           }
@@ -147,14 +152,24 @@ class AddTile extends StatelessWidget {
       label: 'Nouvelle tâche',
       onTap: onTap,
       child: w == null
-          ? Center(child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2))
+          ? Center(
+              child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2),
+            )
           : Padding(
               padding: const EdgeInsets.only(left: 11, right: 12),
-              child: Row(children: [
-                SizedBox(width: 16, child: Center(child: MikkyIcon('plus', size: 15, color: ui.text2, stroke: 2))),
-                const SizedBox(width: 9),
-                Text('Nouvelle tâche', style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2)),
-              ]),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    child: Center(child: MikkyIcon('plus', size: 15, color: ui.text2, stroke: 2)),
+                  ),
+                  const SizedBox(width: 9),
+                  Text(
+                    'Nouvelle tâche',
+                    style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2),
+                  ),
+                ],
+              ),
             ),
     );
   }
@@ -181,7 +196,9 @@ class AppSlot extends StatelessWidget {
       child: SizedBox(
         width: width ?? size,
         height: size,
-        child: Center(child: Surface(width: t, height: t, color: ui.track, shadows: ui.inset)),
+        child: Center(
+          child: Surface(width: t, height: t, color: ui.track, shadows: ui.inset),
+        ),
       ),
     );
   }

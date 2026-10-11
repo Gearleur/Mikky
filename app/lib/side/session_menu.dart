@@ -74,7 +74,11 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
     case _delete:
       final how = await host.showMenu([
         const MenuEntry(_forget, 'Supprimer de Mikky (le fichier de session reste)'),
-        if (e.watched != null) MenuEntry(_forgetAndFile, 'Supprimer aussi le fichier de ${e.provider == AgentProvider.claude ? 'Claude' : 'Codex'} (définitif)'),
+        if (e.watched != null)
+          MenuEntry(
+            _forgetAndFile,
+            'Supprimer aussi le fichier de ${e.provider == AgentProvider.claude ? 'Claude' : 'Codex'} (définitif)',
+          ),
         const MenuEntry.separator(),
         const MenuEntry(_cancel, 'Annuler'),
       ]);
@@ -131,20 +135,35 @@ class _RenamePageState extends State<RenamePage> {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    return Stack(children: [
-      SideHead(title: 'Renommer', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
-      Positioned(
-        left: 20,
-        right: 20,
-        top: 96,
-        child: Text('Un nom à toi pour cette session. Vide : le titre donné par l’agent.', style: uiText(13, color: ui.text2)),
-      ),
-      Positioned(
-        left: 12,
-        right: 12,
-        bottom: 14,
-        child: Composer(controller: _name, placeholder: 'Nom de la session', autofocus: true, onSend: _save, onEmptySend: () => _save('')),
-      ),
-    ]);
+    return Stack(
+      children: [
+        SideHead(
+          title: 'Renommer',
+          small: true,
+          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+        ),
+        Positioned(
+          left: 20,
+          right: 20,
+          top: 96,
+          child: Text(
+            'Un nom à toi pour cette session. Vide : le titre donné par l’agent.',
+            style: uiText(13, color: ui.text2),
+          ),
+        ),
+        Positioned(
+          left: 12,
+          right: 12,
+          bottom: 14,
+          child: Composer(
+            controller: _name,
+            placeholder: 'Nom de la session',
+            autofocus: true,
+            onSend: _save,
+            onEmptySend: () => _save(''),
+          ),
+        ),
+      ],
+    );
   }
 }

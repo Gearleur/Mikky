@@ -81,9 +81,9 @@ class IslandSnapshot {
 class IslandMachine {
   /// [now]: clock time at start; counts as the last user activity.
   IslandMachine({double now = 0, this.layout = IslandLayout.focus})
-      : _now = now,
-        _lastActivity = now,
-        _lastInteraction = now;
+    : _now = now,
+      _lastActivity = now,
+      _lastInteraction = now;
 
   IslandLayout layout;
 
@@ -226,7 +226,10 @@ class IslandMachine {
       _lastInteraction = now;
     }
     final outSince = _pointerOutSince;
-    if (_userOpen == OpenReason.hover && !_pointerIn && outSince != null && now - outSince >= IslandTimings.hoverLeaveToClose) {
+    if (_userOpen == OpenReason.hover &&
+        !_pointerIn &&
+        outSince != null &&
+        now - outSince >= IslandTimings.hoverLeaveToClose) {
       _userOpen = null;
     }
     if (_userOpen == OpenReason.click && now - _lastInteraction >= IslandTimings.inactivityClose) {
@@ -267,15 +270,18 @@ class IslandMachine {
   // --------------------------------------------------------------- derived
 
   List<Agent> get _visible => [
-        for (final a in _agents)
-          if (!_retired.contains(a.id)) a,
-      ];
+    for (final a in _agents)
+      if (!_retired.contains(a.id)) a,
+  ];
 
   /// The alert shown, unless closed: the most pressing ([requestQueue]:
   /// questions and permissions, then errors), the oldest first (rule 9,
   /// 2026-10-08).
   String? get _alertHead {
-    final open = {for (final id in _alerts) if (!_escaped.contains(id)) id};
+    final open = {
+      for (final id in _alerts)
+        if (!_escaped.contains(id)) id,
+    };
     if (open.isEmpty) return null;
     final queue = requestQueue(_agents.where((a) => open.contains(a.id)), limits: false);
     return queue.isEmpty ? null : queue.first.id;
@@ -396,7 +402,8 @@ Agent? _priorityFocus(List<Agent> agents) {
   };
   Agent? best;
   for (final agent in agents) {
-    if (best == null || rank(agent.status) > rank(best.status) ||
+    if (best == null ||
+        rank(agent.status) > rank(best.status) ||
         (rank(agent.status) == rank(best.status) && agent.statusSince > best.statusSince)) {
       best = agent;
     }

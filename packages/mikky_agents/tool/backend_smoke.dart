@@ -22,7 +22,9 @@ Future<void> main(List<String> args) async {
           (AgentProvider.claude, AgentHost.wsl, '/tmp'),
         ];
   final process = await Process.start('../../daemon/target/debug/mikkyd.exe', ['--stdout-endpoint', '--with-wsl']);
-  final endpoint = DaemonEndpoint.parse(await process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first)!;
+  final endpoint = DaemonEndpoint.parse(
+    await process.stdout.transform(utf8.decoder).transform(const LineSplitter()).first,
+  )!;
   var client = await DaemonClient.connect(endpoint);
   final runs = <DaemonAgentRun>[];
   try {
@@ -38,7 +40,9 @@ Future<void> main(List<String> args) async {
       await run
           .prompt('Essai technique de Mikky : réponds uniquement « ok », sans utiliser d’outil ni modifier de fichier.')
           .timeout(const Duration(seconds: 90));
-      stdout.writeln('${provider.name}/${host.name}: ${run.log.statusAt(DateTime.now()).name}, answer=${run.log.detail}');
+      stdout.writeln(
+        '${provider.name}/${host.name}: ${run.log.statusAt(DateTime.now()).name}, answer=${run.log.detail}',
+      );
       if (run.log.statusAt(DateTime.now()) != AgentStatus.finished) throw StateError('Agent did not finish normally');
       final sessionId = run.log.sessionId;
       final answer = run.log.detail;
@@ -52,7 +56,9 @@ Future<void> main(List<String> args) async {
         throw StateError('Run was not restored after closing its screen');
       }
       if (again.adapterPid != run.adapterPid) throw StateError('Adapter PID changed after reconnect');
-      stdout.writeln('${provider.name}/${host.name}: reconnecté, session=$sessionId, adapterPid=${listed['adapterPid']}');
+      stdout.writeln(
+        '${provider.name}/${host.name}: reconnecté, session=$sessionId, adapterPid=${listed['adapterPid']}',
+      );
       await again.stop();
       runs.remove(run);
       for (var attempt = 0; attempt < 20; attempt++) {

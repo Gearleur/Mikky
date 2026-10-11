@@ -31,7 +31,13 @@ class CodePill extends StatelessWidget {
         code,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
-        style: uiText(TextSize.small, weight: FontWeight.w500, mono: true, height: maxLines > 1 ? 1.35 : 1, color: ui.text),
+        style: uiText(
+          TextSize.small,
+          weight: FontWeight.w500,
+          mono: true,
+          height: maxLines > 1 ? 1.35 : 1,
+          color: ui.text,
+        ),
       ),
     );
   }
@@ -107,17 +113,24 @@ class AgentCard extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Row(children: [
-              Flexible(
-                child: Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(TextSize.body, weight: plain ? FontWeight.w500 : FontWeight.w600, color: old ? ui.text2 : ui.text, height: 1.45),
+            child: Row(
+              children: [
+                Flexible(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(
+                      TextSize.body,
+                      weight: plain ? FontWeight.w500 : FontWeight.w600,
+                      color: old ? ui.text2 : ui.text,
+                      height: 1.45,
+                    ),
+                  ),
                 ),
-              ),
-              if (mark != null) ...[const SizedBox(width: 6), mark!],
-            ]),
+                if (mark != null) ...[const SizedBox(width: 6), mark!],
+              ],
+            ),
           ),
           const SizedBox(width: 8),
           if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 3)],
@@ -166,10 +179,7 @@ class AgentCard extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [titleRow, ?subtitleText],
-            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [titleRow, ?subtitleText]),
           ),
           ?_menuStar(),
         ],
@@ -178,7 +188,10 @@ class AgentCard extends StatelessWidget {
           ? head
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [head, Padding(padding: const EdgeInsets.only(left: 38, top: 8), child: actions!)],
+              children: [
+                head,
+                Padding(padding: const EdgeInsets.only(left: 38, top: 8), child: actions!),
+              ],
             );
     } else {
       body = Row(
@@ -206,9 +219,7 @@ class AgentCard extends StatelessWidget {
     final card = Surface(
       radius: old ? Radii.lg : Radii.xl,
       color: plain || live ? null : ui.well,
-      shadows: [
-        if (waiting && !live) ui.waitRing,
-      ],
+      shadows: [if (waiting && !live) ui.waitRing],
       padding: old
           ? const EdgeInsets.fromLTRB(8, 8, 14, 8)
           : live
@@ -231,7 +242,10 @@ class AgentCard extends StatelessWidget {
                 final ui = MikkyUi.of(context);
                 return AnimatedContainer(
                   duration: Motion.hover,
-                  decoration: BoxDecoration(color: hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(Radii.lg)),
+                  decoration: BoxDecoration(
+                    color: hover ? ui.hover : ui.hover.withValues(alpha: 0),
+                    borderRadius: BorderRadius.circular(Radii.lg),
+                  ),
                   child: card,
                 );
               },
@@ -246,38 +260,45 @@ class AgentCard extends StatelessWidget {
   Widget _doneRow(BuildContext context) {
     final ui = MikkyUi.of(context);
     final side = [if (subtitle != null && subtitle!.isNotEmpty) subtitle!, if (who.isNotEmpty) who].join(' · ');
-    return _pressable(Surface(
-      radius: Radii.lg,
-      padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 26,
-            height: 26,
-            child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 18)),
-          ),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Text(
-              title,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text, height: 1.3),
+    return _pressable(
+      Surface(
+        radius: Radii.lg,
+        padding: const EdgeInsets.fromLTRB(5, 5, 12, 5),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: Center(child: brand == null ? StatusDot(status) : BrandLogo(brand!, size: 18)),
             ),
-          ),
-          const SizedBox(width: 8),
-          if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
-          Text(side, style: uiText(TextSize.caption, color: ui.text3, height: 1.2, tabular: true)),
-          ?_menuStar(),
-        ],
+            const SizedBox(width: 9),
+            Expanded(
+              child: Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text, height: 1.3),
+              ),
+            ),
+            const SizedBox(width: 8),
+            if (pinned) ...[MikkyIcon('pin', size: 12, color: ui.text3), const SizedBox(width: 4)],
+            Text(side, style: uiText(TextSize.caption, color: ui.text3, height: 1.2, tabular: true)),
+            ?_menuStar(),
+          ],
+        ),
       ),
-    ));
+    );
   }
 
   /// A small grey star on the right: the same menu as a right click
   /// (pause, reprendre, arrêter, ranger…) without opening the agent (user
   /// request, 2026-09-30).
-  Widget? _menuStar() => onMenu == null ? null : Padding(padding: const EdgeInsets.only(left: 6), child: MenuStar(onTap: onMenu!));
+  Widget? _menuStar() => onMenu == null
+      ? null
+      : Padding(
+          padding: const EdgeInsets.only(left: 6),
+          child: MenuStar(onTap: onMenu!),
+        );
 }
 
 /// The Oui / Non of a waiting agent: the command, then the answers in a
@@ -295,15 +316,13 @@ class WaitActions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bar = AnswerBar(answers: [
-      if (onAlways != null) ('Toujours', onAlways),
-      ('Non', onNo),
-      ('Oui', onYes),
-    ]);
+    final bar = AnswerBar(answers: [if (onAlways != null) ('Toujours', onAlways), ('Non', onNo), ('Oui', onYes)]);
     if (command.length <= shortCommand && onAlways == null) {
       return Row(
         children: [
-          Expanded(child: Align(alignment: Alignment.centerLeft, child: CodePill(command))),
+          Expanded(
+            child: Align(alignment: Alignment.centerLeft, child: CodePill(command)),
+          ),
           const SizedBox(width: 8),
           bar,
         ],
@@ -458,7 +477,11 @@ class _AnswerBarState extends State<AnswerBar> {
 final Map<(String, double), double> _answerWidths = {};
 
 double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWidths[(text, scaler.scale(1))] ??= () {
-  final tp = TextPainter(text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr, textScaler: scaler)..layout();
+  final tp = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+  )..layout();
   final w = tp.width.ceilToDouble();
   tp.dispose();
   return w;
@@ -474,22 +497,22 @@ class MenuStar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: HoverBuilder(
-            builder: (context, hover) => SizedBox.square(
-              dimension: 24,
-              child: Center(
-                child: AnimatedOpacity(
-                  duration: Motion.hover,
-                  opacity: hover ? 1 : 0,
-                  child: const PixelStar(PixelFxPalette.grey, size: 10),
-                ),
-              ),
+    cursor: SystemMouseCursors.click,
+    child: GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: HoverBuilder(
+        builder: (context, hover) => SizedBox.square(
+          dimension: 24,
+          child: Center(
+            child: AnimatedOpacity(
+              duration: Motion.hover,
+              opacity: hover ? 1 : 0,
+              child: const PixelStar(PixelFxPalette.grey, size: 10),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 }

@@ -78,7 +78,10 @@ void drawSprite128(
         final k = 1 - (d - 1) / halo;
         if (_dither(x, y) > k * 1.15 || _dither(x + 1, y + 2) > fade) continue;
         paint.color = Color.lerp(palette.levels[1], palette.levels.first, k * .5)!.withValues(alpha: .25 + .4 * k);
-        canvas.drawRect(Rect.fromLTWH((left + x * big).toDouble(), (top + y * big).toDouble(), big.toDouble(), big.toDouble()), paint);
+        canvas.drawRect(
+          Rect.fromLTWH((left + x * big).toDouble(), (top + y * big).toDouble(), big.toDouble(), big.toDouble()),
+          paint,
+        );
       }
     }
   }

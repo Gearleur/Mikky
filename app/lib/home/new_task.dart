@@ -13,7 +13,15 @@ import '../ui/tokens.dart';
 /// the Chat mode) as an agent's page is; once sent, it becomes that
 /// agent's page. Shared by the app and the boards.
 class NewChatView extends StatelessWidget {
-  const NewChatView({super.key, required this.composer, required this.back, this.status, this.error, this.mikky, this.drawMikky = true});
+  const NewChatView({
+    super.key,
+    required this.composer,
+    required this.back,
+    this.status,
+    this.error,
+    this.mikky,
+    this.drawMikky = true,
+  });
 
   /// The field (a [Composer] with its options).
   final Widget composer;
@@ -37,22 +45,37 @@ class NewChatView extends StatelessWidget {
       mikky: mikky,
       drawMikky: drawMikky,
       composer: composer,
-      empty: Column(mainAxisSize: MainAxisSize.min, children: [
-        Text('Qu’est-ce qu’on lance ?', style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2)),
-        if (status != null) ...[
-          const SizedBox(height: 10),
-          Row(mainAxisSize: MainAxisSize.min, children: [
-            const Spinner(size: 14),
-            const SizedBox(width: 8),
-            Text(status!, style: uiText(TextSize.small, color: ui.text2)),
-          ]),
-        ],
-        if (error != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
-            child: Text(error!, textAlign: TextAlign.center, maxLines: 3, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.red)),
+      empty: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Qu’est-ce qu’on lance ?',
+            style: uiText(TextSize.body, weight: FontWeight.w500, color: ui.text2),
           ),
-      ]),
+          if (status != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Spinner(size: 14),
+                const SizedBox(width: 8),
+                Text(status!, style: uiText(TextSize.small, color: ui.text2)),
+              ],
+            ),
+          ],
+          if (error != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 10, 24, 0),
+              child: Text(
+                error!,
+                textAlign: TextAlign.center,
+                maxLines: 3,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.small, color: ui.red),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -74,11 +97,14 @@ class NewChatSample extends StatelessWidget {
     composer: Composer(
       placeholder: 'Que doit faire l’agent ?',
       glass: true,
-      options: Row(mainAxisSize: MainAxisSize.min, children: [
-        ComposerChip(folder, icon: 'folder', onTap: () {}),
-        const SizedBox(width: 6),
-        ComposerChip(model, leading: const BrandLogo(Brand.claude, size: 12), onTap: () {}),
-      ]),
+      options: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ComposerChip(folder, icon: 'folder', onTap: () {}),
+          const SizedBox(width: 6),
+          ComposerChip(model, leading: const BrandLogo(Brand.claude, size: 12), onTap: () {}),
+        ],
+      ),
     ),
   );
 }

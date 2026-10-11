@@ -21,6 +21,7 @@ class WslPath {
 }
 
 AgentHost hostOfFolder(String folder) {
-  if (folder.startsWith('/') || RegExp(r'^\\\\wsl(\.localhost|\$)\\', caseSensitive: false).hasMatch(folder)) return AgentHost.wsl;
+  if (folder.startsWith('/') || RegExp(r'^\\\\wsl(\.localhost|\$)\\', caseSensitive: false).hasMatch(folder))
+    return AgentHost.wsl;
   return AgentHost.windows;
 }

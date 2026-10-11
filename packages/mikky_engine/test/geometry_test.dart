@@ -51,7 +51,8 @@ void main() {
 
   test('his arms are out of sight until the pose brings them out', () {
     final pose = MikkyPose();
-    double widest(MikkyGeometry g) => [for (var i = 0; i < g.contour.length; i += 2) g.contour[i].abs()].reduce(math.max);
+    double widest(MikkyGeometry g) =>
+        [for (var i = 0; i < g.contour.length; i += 2) g.contour[i].abs()].reduce(math.max);
     final still = MikkyGeometry.posed(pose, 40);
     pose[MikkyProp.arms] = 1;
     expect(widest(MikkyGeometry.posed(pose, 40)), greaterThan(widest(still) + 5));

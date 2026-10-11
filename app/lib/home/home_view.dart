@@ -264,7 +264,9 @@ class HomeApp {
   final AgentApp? app;
 
   /// [n] neutral apps, for the boards.
-  static List<HomeApp> placeholders(int n) => [for (var i = 0; i < n; i++) HomeApp(id: 'app-$i', name: 'Application ${i + 1}')];
+  static List<HomeApp> placeholders(int n) => [
+    for (var i = 0; i < n; i++) HomeApp(id: 'app-$i', name: 'Application ${i + 1}'),
+  ];
 }
 
 /// The home, one widget for both placements: Mikky alive, the two modes
@@ -454,16 +456,36 @@ class _HomeViewState extends State<HomeView> {
         // them, gone a little into Mikky's part (90 px in was « un tout
         // petit peu trop sur la gauche »). Upright, they rise from under
         // the task, fading towards it.
-        if (notch && !l.stacked) Positioned.fill(child: DotField(solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64)),
+        if (notch && !l.stacked)
+          Positioned.fill(
+            child: DotField(solidFrom: _areaLeft + 24, goneAt: _areaLeft - 64),
+          ),
         // Nothing at work, they fill the task's place too, beside Mikky
         // asleep, and fade towards him, as at the top.
         if (l.stacked)
           _idle
-              ? Positioned(left: 0, right: 0, top: l.barTop + l.bar - _dotsUnderTask, bottom: 0, child: DotField(solidFrom: _taskLeft + 24, goneAt: l.mikkyAt.dx + l.mikky / 2))
-              : Positioned(left: 0, right: 0, top: HomeLayout.taskTop + HomeLayout.taskHeight - _dotsUnderTask, bottom: 0, child: const DotField(solidFrom: 0, goneAt: -1)),
+              ? Positioned(
+                  left: 0,
+                  right: 0,
+                  top: l.barTop + l.bar - _dotsUnderTask,
+                  bottom: 0,
+                  child: DotField(solidFrom: _taskLeft + 24, goneAt: l.mikkyAt.dx + l.mikky / 2),
+                )
+              : Positioned(
+                  left: 0,
+                  right: 0,
+                  top: HomeLayout.taskTop + HomeLayout.taskHeight - _dotsUnderTask,
+                  bottom: 0,
+                  child: const DotField(solidFrom: 0, goneAt: -1),
+                ),
         Positioned.fill(child: _tiles()),
         Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
-        Positioned(top: l.barTop, left: 0, right: 0, child: Center(child: _modes())),
+        Positioned(
+          top: l.barTop,
+          left: 0,
+          right: 0,
+          child: Center(child: _modes()),
+        ),
         Positioned(top: l.barTop, right: 0, child: _tools()),
         // The star under the apps, on the selector's middle line.
         Positioned(
@@ -472,8 +494,13 @@ class _HomeViewState extends State<HomeView> {
           bottom: l.foot + (selectorH - PageDots.height) / 2,
           child: Center(child: _halo(_dots())),
         ),
-        Positioned(right: notch ? l.side - _haloPad.horizontal / 2 : l.side, bottom: notch ? l.foot - _haloPad.vertical / 2 : l.foot, child: _halo(_environmentSelector(inner))),
-        if (widget.onHistory != null) Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _history(inner)),
+        Positioned(
+          right: notch ? l.side - _haloPad.horizontal / 2 : l.side,
+          bottom: notch ? l.foot - _haloPad.vertical / 2 : l.foot,
+          child: _halo(_environmentSelector(inner)),
+        ),
+        if (widget.onHistory != null)
+          Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _history(inner)),
       ],
     );
   }
@@ -540,13 +567,23 @@ class _HomeViewState extends State<HomeView> {
     // The apps are here; the chat is a page of its own.
     selected: 0,
     onChanged: _canStart ? (m) => m == 1 ? _start() : null : null,
-    items: const [TabItem('grid', label: 'Applications'), TabItem('chat', label: 'Chat')],
+    items: const [
+      TabItem('grid', label: 'Applications'),
+      TabItem('chat', label: 'Chat'),
+    ],
   );
 
-  Widget _tools() => ToolsRail(tools: widget.tools, edge: RailEdge.right, height: _l.bar, onPressed: _canStart ? _start : null);
+  Widget _tools() =>
+      ToolsRail(tools: widget.tools, edge: RailEdge.right, height: _l.bar, onPressed: _canStart ? _start : null);
 
   Widget _history(BuildContext inner) => _l.notch
-      ? RoundButton('history', size: _smallButton, ghost: true, tooltip: 'Historique', onPressed: () => widget.onHistory!(inner))
+      ? RoundButton(
+          'history',
+          size: _smallButton,
+          ghost: true,
+          tooltip: 'Historique',
+          onPressed: () => widget.onHistory!(inner),
+        )
       : RoundButton('history', size: 34, tooltip: 'Historique', onPressed: () => widget.onHistory!(inner));
 
   Widget _environmentSelector(BuildContext inner) => EnvironmentSelector(
@@ -570,7 +607,9 @@ class _HomeViewState extends State<HomeView> {
   /// the title, the line that changes; the state on the corner.
   Widget _card(HomeApp app) {
     final ui = MikkyUi.of(context);
-    final sign = app.app != null ? AppGlyph(app.app!, size: 15) : (app.brand == null ? null : BrandLogo(app.brand!, size: 15));
+    final sign = app.app != null
+        ? AppGlyph(app.app!, size: 15)
+        : (app.brand == null ? null : BrandLogo(app.brand!, size: 15));
     return AppTile(
       key: ValueKey(app.id),
       size: _l.tile,
@@ -580,19 +619,35 @@ class _HomeViewState extends State<HomeView> {
       onTap: () => widget.onOpen?.call(app),
       child: Padding(
         padding: const EdgeInsets.only(left: 11, right: 12),
-        child: Row(children: [
-          SizedBox(width: 16, child: Center(child: sign)),
-          const SizedBox(width: 9),
-          Expanded(
-            child: Column(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(app.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.25)),
-              if (app.line.isNotEmpty) ...[
-                const SizedBox(height: 1),
-                Text(app.line, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, color: ui.text3, height: 1.25)),
-              ],
-            ]),
-          ),
-        ]),
+        child: Row(
+          children: [
+            SizedBox(width: 16, child: Center(child: sign)),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    app.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.25),
+                  ),
+                  if (app.line.isNotEmpty) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      app.line,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: uiText(TextSize.caption, color: ui.text3, height: 1.25),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -605,7 +660,8 @@ class _HomeViewState extends State<HomeView> {
     final wide = l.notch ? l.tileWidth : null;
     Widget cell(int i) {
       if (i < apps.length) return l.notch ? _card(apps[i]) : _tile(apps[i]);
-      if (i == apps.length && _canStart) return AddTile(key: const ValueKey('add'), size: l.tile, width: wide, onTap: _start);
+      if (i == apps.length && _canStart)
+        return AddTile(key: const ValueKey('add'), size: l.tile, width: wide, onTap: _start);
       return AppSlot(size: l.tile, width: wide);
     }
 
@@ -625,17 +681,22 @@ class _HomeViewState extends State<HomeView> {
     final watched = widget.watched, l = _l;
     final taskLeft = _taskLeft;
     final taskRight = l.stacked ? l.size.width - l.side : _areaLeft - HomeLayout.taskEnd;
-    return Stack(children: [
-      if (l.notch && watched != null)
-        Positioned(
-          left: taskLeft,
-          top: HomeLayout.taskTop,
-          width: taskRight - taskLeft,
-          height: HomeLayout.taskHeight,
-          child: _Watched(task: watched, onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name))),
-        ),
-      _pagerArea(),
-    ]);
+    return Stack(
+      children: [
+        if (l.notch && watched != null)
+          Positioned(
+            left: taskLeft,
+            top: HomeLayout.taskTop,
+            width: taskRight - taskLeft,
+            height: HomeLayout.taskHeight,
+            child: _Watched(
+              task: watched,
+              onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name)),
+            ),
+          ),
+        _pagerArea(),
+      ],
+    );
   }
 
   /// Room around the grid for the tiles' shadows and their lift.
@@ -673,7 +734,12 @@ class _HomeViewState extends State<HomeView> {
     // not only a finger.
     final pages = ScrollConfiguration(
       behavior: ScrollConfiguration.of(context).copyWith(
-        dragDevices: const {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.trackpad, PointerDeviceKind.stylus},
+        dragDevices: const {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.trackpad,
+          PointerDeviceKind.stylus,
+        },
         scrollbars: false,
       ),
       child: PageView.builder(
@@ -683,7 +749,10 @@ class _HomeViewState extends State<HomeView> {
         onPageChanged: (p) => _set(() => _page = p),
         itemBuilder: (_, p) => Align(
           alignment: Alignment.topCenter,
-          child: Padding(padding: const EdgeInsets.only(top: _air), child: _grid(p)),
+          child: Padding(
+            padding: const EdgeInsets.only(top: _air),
+            child: _grid(p),
+          ),
         ),
       ),
     );
@@ -707,11 +776,13 @@ class _HomeViewState extends State<HomeView> {
     final inset = top ? 0.0 : 18.0;
     return Listener(
       onPointerSignal: _onWheel,
-      child: Stack(children: [
-        Positioned.fill(child: shown),
-        Positioned(left: inset, top: arrowTop, child: arrow(false)),
-        Positioned(right: inset, top: arrowTop, child: arrow(true)),
-      ]),
+      child: Stack(
+        children: [
+          Positioned.fill(child: shown),
+          Positioned(left: inset, top: arrowTop, child: arrow(false)),
+          Positioned(right: inset, top: arrowTop, child: arrow(true)),
+        ],
+      ),
     );
   }
 
@@ -739,7 +810,11 @@ class _Watched extends StatelessWidget {
     label: task.name,
     child: MouseRegion(
       cursor: SystemMouseCursors.click,
-      child: GestureDetector(behavior: HitTestBehavior.opaque, onTap: onTap, child: TaskGlance(task: task)),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: TaskGlance(task: task),
+      ),
     ),
   );
 }
@@ -776,7 +851,12 @@ class HomeFrame extends StatelessWidget {
               bottom: 0,
               child: Surface(color: ui.island, radius: layout.radius, shadows: ui.islandShadow),
             ),
-            Positioned.fill(child: ClipRRect(borderRadius: top ? BorderRadius.vertical(bottom: r) : BorderRadius.horizontal(left: r), child: child)),
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: top ? BorderRadius.vertical(bottom: r) : BorderRadius.horizontal(left: r),
+                child: child,
+              ),
+            ),
           ],
         ),
       ),
@@ -791,7 +871,9 @@ class _ScreenEdge extends CustomClipper<Rect> {
   final bool top;
 
   @override
-  Rect getClip(Size size) => top ? Rect.fromLTRB(-80, 0, size.width + 80, size.height + 100) : Rect.fromLTRB(-80, -80, size.width, size.height + 100);
+  Rect getClip(Size size) => top
+      ? Rect.fromLTRB(-80, 0, size.width + 80, size.height + 100)
+      : Rect.fromLTRB(-80, -80, size.width, size.height + 100);
 
   @override
   bool shouldReclip(_ScreenEdge old) => old.top != top;

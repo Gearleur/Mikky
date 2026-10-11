@@ -74,10 +74,17 @@ class _AgentTextState extends State<AgentText> {
     if (after.isNotEmpty) blocks.addAll(_blocks(after, ui, base));
     if (blocks.length == 1) return blocks.single.child;
     final size = base.fontSize ?? TextSize.body;
-    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-      for (var i = 0; i < blocks.length; i++)
-        Padding(padding: EdgeInsets.only(top: i == 0 ? 0 : _gap(blocks[i - 1], blocks[i], size)), child: blocks[i].child),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (var i = 0; i < blocks.length; i++)
+          Padding(
+            padding: EdgeInsets.only(top: i == 0 ? 0 : _gap(blocks[i - 1], blocks[i], size)),
+            child: blocks[i].child,
+          ),
+      ],
+    );
   }
 
   /// The room above [b]: items of one list close; a title well apart from
@@ -117,14 +124,18 @@ class _AgentTextState extends State<AgentText> {
 
     void flushQuote() {
       if (quote.isEmpty) return;
-      out.add(_Block(
-        Container(
-          padding: const EdgeInsets.only(left: 12, top: 1, bottom: 1),
-          decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.track, width: 3))),
-          child: Text.rich(_inline(quote.join('\n'), ui), style: TextStyle(color: ui.text2)),
+      out.add(
+        _Block(
+          Container(
+            padding: const EdgeInsets.only(left: 12, top: 1, bottom: 1),
+            decoration: BoxDecoration(
+              border: Border(left: BorderSide(color: ui.track, width: 3)),
+            ),
+            child: Text.rich(_inline(quote.join('\n'), ui), style: TextStyle(color: ui.text2)),
+          ),
+          _Kind.quote,
         ),
-        _Kind.quote,
-      ));
+      );
       quote.clear();
       lastWasItem = false;
     }
@@ -133,33 +144,38 @@ class _AgentTextState extends State<AgentText> {
       if (table.isEmpty) return;
       final columns = table.map((r) => r.length).reduce((a, b) => a > b ? a : b);
       final cellStyle = base.copyWith(fontSize: size - 1, height: 1.4);
-      out.add(_Block(
-        Container(
-          clipBehavior: Clip.antiAlias,
-          decoration: BoxDecoration(borderRadius: BorderRadius.circular(Radii.md), border: Border.all(color: ui.line)),
-          child: Table(
-            defaultVerticalAlignment: TableCellVerticalAlignment.top,
-            border: TableBorder(horizontalInside: BorderSide(color: ui.line)),
-            children: [
-              for (var r = 0; r < table.length; r++)
-                TableRow(
-                  decoration: r == 0 ? BoxDecoration(color: ui.well) : null,
-                  children: [
-                    for (var c = 0; c < columns; c++)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                        child: Text.rich(
-                          _inline(c < table[r].length ? table[r][c] : '', ui),
-                          style: r == 0 ? cellStyle.copyWith(fontWeight: FontWeight.w600) : cellStyle,
+      out.add(
+        _Block(
+          Container(
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Radii.md),
+              border: Border.all(color: ui.line),
+            ),
+            child: Table(
+              defaultVerticalAlignment: TableCellVerticalAlignment.top,
+              border: TableBorder(horizontalInside: BorderSide(color: ui.line)),
+              children: [
+                for (var r = 0; r < table.length; r++)
+                  TableRow(
+                    decoration: r == 0 ? BoxDecoration(color: ui.well) : null,
+                    children: [
+                      for (var c = 0; c < columns; c++)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                          child: Text.rich(
+                            _inline(c < table[r].length ? table[r][c] : '', ui),
+                            style: r == 0 ? cellStyle.copyWith(fontWeight: FontWeight.w600) : cellStyle,
+                          ),
                         ),
-                      ),
-                  ],
-                ),
-            ],
+                    ],
+                  ),
+              ],
+            ),
           ),
+          _Kind.table,
         ),
-        _Kind.table,
-      ));
+      );
       table.clear();
       lastWasItem = false;
     }
@@ -169,29 +185,48 @@ class _AgentTextState extends State<AgentText> {
       if (it == null) return;
       final (level, marker, buf) = it;
       final bullet = !RegExp(r'^\d').hasMatch(marker);
-      out.add(_Block(
-        Padding(
-          padding: EdgeInsets.only(left: 2 + level * 18.0),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(
-              width: bullet ? 16 : 22,
-              child: bullet
-                  // A small round dot on the first line's middle.
-                  ? Padding(
-                      padding: EdgeInsets.only(top: (size * (base.height ?? 1.4) - 5) / 2, left: 2),
-                      child: Align(
-                        alignment: Alignment.topLeft,
-                        child: Container(width: 5, height: 5, decoration: BoxDecoration(color: level == 0 ? ui.text2 : ui.text3, shape: BoxShape.circle)),
-                      ),
-                    )
-                  : Text(marker, style: TextStyle(color: ui.text2, fontWeight: FontWeight.w500, fontFeatures: const [FontFeature.tabularFigures()])),
+      out.add(
+        _Block(
+          Padding(
+            padding: EdgeInsets.only(left: 2 + level * 18.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: bullet ? 16 : 22,
+                  child: bullet
+                      // A small round dot on the first line's middle.
+                      ? Padding(
+                          padding: EdgeInsets.only(top: (size * (base.height ?? 1.4) - 5) / 2, left: 2),
+                          child: Align(
+                            alignment: Alignment.topLeft,
+                            child: Container(
+                              width: 5,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: level == 0 ? ui.text2 : ui.text3,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Text(
+                          marker,
+                          style: TextStyle(
+                            color: ui.text2,
+                            fontWeight: FontWeight.w500,
+                            fontFeatures: const [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                ),
+                Expanded(child: Text.rich(_inline(buf.toString(), ui))),
+              ],
             ),
-            Expanded(child: Text.rich(_inline(buf.toString(), ui))),
-          ]),
+          ),
+          _Kind.item,
+          newList: !lastWasItem || blankSince,
         ),
-        _Kind.item,
-        newList: !lastWasItem || blankSince,
-      ));
+      );
       item = null;
       lastWasItem = true;
       blankSince = false;
@@ -238,8 +273,18 @@ class _AgentTextState extends State<AgentText> {
         flushItem();
         final level = h[1]!.length;
         final style = switch (level) {
-          1 => TextStyle(fontSize: (size * 1.3).roundToDouble(), fontWeight: FontWeight.w700, height: 1.3, color: ui.text),
-          2 => TextStyle(fontSize: (size * 1.15).roundToDouble(), fontWeight: FontWeight.w700, height: 1.3, color: ui.text),
+          1 => TextStyle(
+            fontSize: (size * 1.3).roundToDouble(),
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            color: ui.text,
+          ),
+          2 => TextStyle(
+            fontSize: (size * 1.15).roundToDouble(),
+            fontWeight: FontWeight.w700,
+            height: 1.3,
+            color: ui.text,
+          ),
           _ => TextStyle(fontSize: size, fontWeight: FontWeight.w600, height: 1.35, color: ui.text),
         };
         out.add(_Block(Text.rich(_inline(h[2]!, ui), style: style), _Kind.heading, level: level));
@@ -288,22 +333,48 @@ class _AgentTextState extends State<AgentText> {
       for (final m in token.allMatches(line)) {
         if (m.start > at) spans.add(TextSpan(text: line.substring(at, m.start)));
         if (m[1] != null) {
-          spans.add(TextSpan(text: m[1], style: const TextStyle(fontWeight: FontWeight.w600)));
+          spans.add(
+            TextSpan(
+              text: m[1],
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+          );
         } else if (m[2] != null) {
           // Code in a line: mono, a size smaller, on a light hollow.
-          spans.add(TextSpan(text: ' ${m[2]} ', style: TextStyle(fontFamily: 'Geist Mono', fontSize: TextSize.small, color: ui.text, backgroundColor: ui.well)));
+          spans.add(
+            TextSpan(
+              text: ' ${m[2]} ',
+              style: TextStyle(
+                fontFamily: 'Geist Mono',
+                fontSize: TextSize.small,
+                color: ui.text,
+                backgroundColor: ui.well,
+              ),
+            ),
+          );
         } else if (m[6] != null || m[7] != null) {
-          spans.add(TextSpan(text: m[6] ?? m[7], style: const TextStyle(fontStyle: FontStyle.italic)));
+          spans.add(
+            TextSpan(
+              text: m[6] ?? m[7],
+              style: const TextStyle(fontStyle: FontStyle.italic),
+            ),
+          );
         } else {
           final url = m[4] ?? m[5]!;
           final tap = TapGestureRecognizer()..onTap = () => openUrl(url);
           _links.add(tap);
-          spans.add(TextSpan(
-            text: m[3] ?? url,
-            style: TextStyle(color: ui.blue, decoration: TextDecoration.underline, decorationColor: ui.blue.withValues(alpha: .4)),
-            recognizer: tap,
-            mouseCursor: SystemMouseCursors.click,
-          ));
+          spans.add(
+            TextSpan(
+              text: m[3] ?? url,
+              style: TextStyle(
+                color: ui.blue,
+                decoration: TextDecoration.underline,
+                decorationColor: ui.blue.withValues(alpha: .4),
+              ),
+              recognizer: tap,
+              mouseCursor: SystemMouseCursors.click,
+            ),
+          );
         }
         at = m.end;
       }
@@ -351,30 +422,47 @@ class _CodeBlockViewState extends State<CodeBlockView> {
     return Container(
       decoration: BoxDecoration(color: ui.well, borderRadius: BorderRadius.circular(Radii.lg)),
       clipBehavior: Clip.antiAlias,
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 5, 5, 0),
-          child: Row(children: [
-            Expanded(child: Text(widget.language, style: uiText(TextSize.code, mono: true, color: ui.text3, height: 1.2))),
-            Pressable(
-              onTap: _copy,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-                child: Row(mainAxisSize: MainAxisSize.min, children: [
-                  MikkyIcon(_copied ? 'check' : 'file', size: 12, color: ui.text3),
-                  const SizedBox(width: 4),
-                  Text(_copied ? 'Copié' : 'Copier', style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.text3, height: 1.2)),
-                ]),
-              ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 5, 5, 0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(widget.language, style: uiText(TextSize.code, mono: true, color: ui.text3, height: 1.2)),
+                ),
+                Pressable(
+                  onTap: _copy,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        MikkyIcon(_copied ? 'check' : 'file', size: 12, color: ui.text3),
+                        const SizedBox(width: 4),
+                        Text(
+                          _copied ? 'Copié' : 'Copier',
+                          style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.text3, height: 1.2),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ]),
-        ),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.fromLTRB(12, 4, 12, 11),
-          child: Text(widget.code, softWrap: false, style: uiText(TextSize.code + 1, mono: true, color: ui.text, height: 1.55)),
-        ),
-      ]),
+          ),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 11),
+            child: Text(
+              widget.code,
+              softWrap: false,
+              style: uiText(TextSize.code + 1, mono: true, color: ui.text, height: 1.55),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

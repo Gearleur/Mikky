@@ -55,7 +55,8 @@ class IslandPainter extends CustomPainter {
     if (shader == null) {
       canvas.drawRRect(
         RRect.fromRectAndRadius(shape, Radius.circular(radius)),
-        Paint()..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility),
+        Paint()
+          ..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility),
       );
       return;
     }
@@ -125,7 +126,13 @@ class SideBubble {
 
 /// Small colored dot inside the split bubble.
 class BubbleDotPainter extends CustomPainter {
-  BubbleDotPainter({required this.center, required this.radius, required this.color, required this.opacity, required this.glow});
+  BubbleDotPainter({
+    required this.center,
+    required this.radius,
+    required this.color,
+    required this.opacity,
+    required this.glow,
+  });
 
   final Offset center;
   final double radius;
@@ -138,9 +145,13 @@ class BubbleDotPainter extends CustomPainter {
     if (opacity <= 0) return;
     final c = color.withValues(alpha: color.a * opacity);
     if (glow) {
-      canvas.drawCircle(center, radius, Paint()
-        ..color = c
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5));
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = c
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+      );
     }
     canvas.drawCircle(center, radius, Paint()..color = c);
   }
@@ -153,10 +164,7 @@ class BubbleDotPainter extends CustomPainter {
 /// rule 3), 16 × 16.
 class PillIndicatorPainter extends CustomPainter {
   PillIndicatorPainter.ring({required double this.progress, required this.color, required this.track}) : check = false;
-  PillIndicatorPainter.check({required this.color})
-      : progress = null,
-        track = null,
-        check = true;
+  PillIndicatorPainter.check({required this.color}) : progress = null, track = null, check = true;
 
   final double? progress;
   final Color color;
@@ -179,11 +187,21 @@ class PillIndicatorPainter extends CustomPainter {
       return;
     }
     const c = Offset(8, 8);
-    canvas.drawCircle(c, 6, Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..color = track!);
-    canvas.drawArc(Rect.fromCircle(center: c, radius: 6), -1.5707963, 6.2831853 * progress!, false, stroke..color = color);
+    canvas.drawCircle(
+      c,
+      6,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.2
+        ..color = track!,
+    );
+    canvas.drawArc(
+      Rect.fromCircle(center: c, radius: 6),
+      -1.5707963,
+      6.2831853 * progress!,
+      false,
+      stroke..color = color,
+    );
   }
 
   @override

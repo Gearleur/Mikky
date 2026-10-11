@@ -24,11 +24,7 @@ enum MikkyEnvironment {
 
 List<MenuEntry> environmentMenuEntries(MikkyEnvironment selected) => [
   for (final environment in MikkyEnvironment.values)
-    MenuEntry(
-      environment.index + 1,
-      environment.label,
-      checked: environment == selected,
-    ),
+    MenuEntry(environment.index + 1, environment.label, checked: environment == selected),
 ];
 
 /// What the selector looks like: at rest (flat), under the mouse (grey),
@@ -248,7 +244,10 @@ class _Name extends StatelessWidget {
       transitionBuilder: (child, t) {
         final incoming = child.key == ValueKey(text);
         final slide = Tween(begin: Offset(0, incoming ? .9 : -.9), end: Offset.zero).animate(t);
-        return FadeTransition(opacity: t, child: SlideTransition(position: slide, child: child));
+        return FadeTransition(
+          opacity: t,
+          child: SlideTransition(position: slide, child: child),
+        );
       },
       child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
     ),
@@ -261,7 +260,12 @@ final Map<(double, double), double> _widest = {};
 double _widestLabel(TextStyle style, TextScaler scaler) => _widest[(style.fontSize!, scaler.scale(1))] ??= () {
   var w = 0.0;
   for (final e in MikkyEnvironment.values) {
-    final p = TextPainter(text: TextSpan(text: e.label, style: style), textDirection: TextDirection.ltr, textScaler: scaler, maxLines: 1)..layout();
+    final p = TextPainter(
+      text: TextSpan(text: e.label, style: style),
+      textDirection: TextDirection.ltr,
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
     if (p.width > w) w = p.width;
     p.dispose();
   }

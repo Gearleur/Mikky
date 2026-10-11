@@ -17,7 +17,13 @@ enum SegmentSize {
 /// a spring (420 / 0.78) and stretches with its speed (≤ 10 px), like jelly.
 /// All options are as wide as the widest (`grid-auto-columns: 1fr`).
 class Segmented extends StatelessWidget {
-  const Segmented({super.key, required this.options, required this.selected, this.onChanged, this.size = SegmentSize.normal});
+  const Segmented({
+    super.key,
+    required this.options,
+    required this.selected,
+    this.onChanged,
+    this.size = SegmentSize.normal,
+  });
 
   final List<String> options;
   final int selected;
@@ -83,7 +89,12 @@ class Segmented extends StatelessWidget {
                         builder: (context, hover) => Center(
                           child: AnimatedDefaultTextStyle(
                             duration: Motion.fade,
-                            style: uiText(font, weight: FontWeight.w600, height: 1, color: i == selected || hover ? ui.text : ui.text2),
+                            style: uiText(
+                              font,
+                              weight: FontWeight.w600,
+                              height: 1,
+                              color: i == selected || hover ? ui.text : ui.text2,
+                            ),
                             child: Text(options[i], maxLines: 1),
                           ),
                         ),
@@ -190,7 +201,16 @@ class _MSwitchState extends State<MSwitch> {
 /// `.chip`: a small capsule (32 px). [on]: black; [soft]: in a hollow,
 /// like a folder picker; [count]: the grey number after the label.
 class MChip extends StatelessWidget {
-  const MChip(this.label, {super.key, this.on = false, this.soft = false, this.count, this.icon, this.trailingIcon, this.onTap});
+  const MChip(
+    this.label, {
+    super.key,
+    this.on = false,
+    this.soft = false,
+    this.count,
+    this.icon,
+    this.trailingIcon,
+    this.onTap,
+  });
 
   final String label;
   final bool on;
@@ -223,10 +243,19 @@ class MChip extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 '$count',
-                style: uiText(TextSize.label, weight: FontWeight.w600, height: 1, tabular: true, color: on ? fg.withValues(alpha: .6) : ui.text2),
+                style: uiText(
+                  TextSize.label,
+                  weight: FontWeight.w600,
+                  height: 1,
+                  tabular: true,
+                  color: on ? fg.withValues(alpha: .6) : ui.text2,
+                ),
               ),
             ],
-            if (trailingIcon != null) ...[const SizedBox(width: 4), MikkyIcon(trailingIcon!, size: 13, color: ui.text2)],
+            if (trailingIcon != null) ...[
+              const SizedBox(width: 4),
+              MikkyIcon(trailingIcon!, size: 13, color: ui.text2),
+            ],
           ],
         ),
       ),

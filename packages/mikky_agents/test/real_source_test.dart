@@ -47,7 +47,9 @@ void main() {
   AgentStatus? statusOf(String id) => source.agents.where((a) => a.id == id).firstOrNull?.status;
 
   test('launch: the agent works, asks, then finishes and leaves the island', () async {
-    final id = await source.launch(const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.wsl, cwd: '/p', prompt: 'write'));
+    final id = await source.launch(
+      const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.wsl, cwd: '/p', prompt: 'write'),
+    );
     await settle(() => statusOf(id) == AgentStatus.approval);
     expect(fakes.single.received, ['initialize', 'session/new', 'session/set_mode', 'session/prompt']);
     final agent = source.agents.single;
@@ -157,7 +159,11 @@ void main() {
   });
 
   test('a settled error counts as done, and leaves the island', () async {
-    final failing = RealAgentSource(clock: () => clock, store: store, spawn: (p, h, c) async => throw StateError('non'));
+    final failing = RealAgentSource(
+      clock: () => clock,
+      store: store,
+      spawn: (p, h, c) async => throw StateError('non'),
+    );
     final id = await failing.launch(
       const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'),
     );
@@ -170,7 +176,10 @@ void main() {
   });
 
   test('an agent that cannot start is in error, with the reason', () async {
-    final failing = RealAgentSource(clock: () => clock, spawn: (p, h, c) async => throw const ProcessException('node', [], 'introuvable'));
+    final failing = RealAgentSource(
+      clock: () => clock,
+      spawn: (p, h, c) async => throw const ProcessException('node', [], 'introuvable'),
+    );
     final id = await failing.launch(
       const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'x'),
     );
@@ -217,7 +226,9 @@ void main() {
       final lines = File('../mikky_engine/test/fixtures/claude/wsl_plan.jsonl').readAsLinesSync();
       File('${home.path}/projects/C--p/orig.jsonl').writeAsStringSync('${lines.join('\n')}\n');
       // The fork: the same history (same message ids) under a new session.
-      final fork = lines.map((l) => l.replaceAll('1735f552-326a-4423-82d2-138c1e35ba31', 'f0f0f0f0-0000-0000-0000-000000000000'));
+      final fork = lines.map(
+        (l) => l.replaceAll('1735f552-326a-4423-82d2-138c1e35ba31', 'f0f0f0f0-0000-0000-0000-000000000000'),
+      );
       File('${home.path}/projects/C--p/fork.jsonl').writeAsStringSync(
         '${fork.join('\n')}\n{"type":"ai-title","aiTitle":"La suite","sessionId":"f0f0f0f0-0000-0000-0000-000000000000"}\n',
       );
@@ -269,7 +280,9 @@ void main() {
   test('a permission from the hooks of Claude: on the island, answered through mikkyd', () {
     final sent = <(int, String?)>[];
     source.answerHook = (id, decision) => sent.add((id, decision));
-    source.hookAsks(const [HookAsk(id: 7, sessionId: 's-ext', tool: 'Bash', title: 'Bash cargo test', cwd: r'C:\p', command: 'cargo test')]);
+    source.hookAsks(const [
+      HookAsk(id: 7, sessionId: 's-ext', tool: 'Bash', title: 'Bash cargo test', cwd: r'C:\p', command: 'cargo test'),
+    ]);
     final agent = source.agents.single;
     expect(agent.status, AgentStatus.approval);
     expect(agent.detail, 'cargo test');
@@ -340,7 +353,10 @@ void main() {
     expect(q.questions.last.title, isNull);
     expect(q.questions.last.multiple, isTrue);
     expect(q.questions.first.otherKey, 'q1_custom');
-    expect(q.questions.first.choices.map((c) => (c.label, c.description)), [('SQLite', 'Un fichier'), ('Postgres', 'Un serveur')]);
+    expect(q.questions.first.choices.map((c) => (c.label, c.description)), [
+      ('SQLite', 'Un fichier'),
+      ('Postgres', 'Un serveur'),
+    ]);
 
     // Yes / no mean nothing to a question; half an answer is refused.
     expect(source.answer(agent.id, AgentAnswer.allow, clock), isFalse);
@@ -348,9 +364,19 @@ void main() {
     expect(sent, isEmpty);
 
     // A label, then free text winning over the choice, several labels.
-    expect(source.answerQuestion(agent.id, {'q1': 'SQLite', 'q1_custom': ' DuckDB ', 'q2': ['Unitaires', 'Bout en bout']}), isTrue);
+    expect(
+      source.answerQuestion(agent.id, {
+        'q1': 'SQLite',
+        'q1_custom': ' DuckDB ',
+        'q2': ['Unitaires', 'Bout en bout'],
+      }),
+      isTrue,
+    );
     expect(sent.single.$1, 9);
-    expect(sent.single.$2, {'Quelle base ?': 'DuckDB', 'Quels tests ?': ['Unitaires', 'Bout en bout']});
+    expect(sent.single.$2, {
+      'Quelle base ?': 'DuckDB',
+      'Quels tests ?': ['Unitaires', 'Bout en bout'],
+    });
     expect(source.questionOf(agent.id), isNull);
     expect(source.agents.where((a) => a.status.needsYou), isEmpty);
 
@@ -380,13 +406,28 @@ void main() {
     });
     expect(ask.isQuestion, isTrue);
     expect(ask.question!.message, 'A ?');
-    expect(ask.answersFor({'q1': 'x'}), {'A ?': ['x']});
-    expect(ask.answersFor({'q1': ['y', 'y']}), {'A ?': ['y']});
+    expect(ask.answersFor({'q1': 'x'}), {
+      'A ?': ['x'],
+    });
+    expect(
+      ask.answersFor({
+        'q1': ['y', 'y'],
+      }),
+      {
+        'A ?': ['y'],
+      },
+    );
     expect(ask.answersFor({'q1': <String>[], 'q1_custom': 'z'}), {'A ?': 'z'});
     expect(ask.answersFor({'q1': <String>[]}), isNull);
     expect(ask.answersFor({}), isNull);
     // A permission, as before.
-    final permission = HookAsk.fromJson({'id': 2, 'sessionId': 's', 'tool': 'Bash', 'title': 'Bash ls', 'command': 'ls'});
+    final permission = HookAsk.fromJson({
+      'id': 2,
+      'sessionId': 's',
+      'tool': 'Bash',
+      'title': 'Bash ls',
+      'command': 'ls',
+    });
     expect(permission.kind, HookKind.permission);
     expect(permission.question, isNull);
   });

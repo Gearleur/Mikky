@@ -150,7 +150,9 @@ void main() {
   });
 
   test('a real process: spawn, talk, stop', () async {
-    final run = await LocalAgentRun.spawn(WindowsTarget(), Platform.resolvedExecutable, ['test/support/fake_agent_main.dart']);
+    final run = await LocalAgentRun.spawn(WindowsTarget(), Platform.resolvedExecutable, [
+      'test/support/fake_agent_main.dart',
+    ]);
     await run.open(cwd: Directory.current.path);
     await run.prompt('bonjour');
     expect(run.log.statusAt(_now), AgentStatus.finished);

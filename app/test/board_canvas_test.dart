@@ -9,16 +9,23 @@ import 'package:mikky/boards/canvas.dart';
 void main() {
   Future<(Finder, List<int>)> pumpCanvas(WidgetTester tester) async {
     final taps = <int>[];
-    await tester.pumpWidget(Directionality(
-      textDirection: TextDirection.ltr,
-      child: BoardCanvas(
-        background: const Color(0xFFFFFFFF),
-        child: GestureDetector(
-          onTap: () => taps.add(1),
-          child: const SizedBox(key: Key('frame'), width: 300, height: 300, child: ColoredBox(color: Color(0xFF000000))),
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: BoardCanvas(
+          background: const Color(0xFFFFFFFF),
+          child: GestureDetector(
+            onTap: () => taps.add(1),
+            child: const SizedBox(
+              key: Key('frame'),
+              width: 300,
+              height: 300,
+              child: ColoredBox(color: Color(0xFF000000)),
+            ),
+          ),
         ),
       ),
-    ));
+    );
     return (find.byKey(const Key('frame')), taps);
   }
 
@@ -39,7 +46,11 @@ void main() {
   testWidgets('the middle button moves it too', (tester) async {
     final (frame, _) = await pumpCanvas(tester);
     final before = tester.getTopLeft(frame);
-    final g = await tester.startGesture(tester.getCenter(frame), buttons: kMiddleMouseButton, kind: PointerDeviceKind.mouse);
+    final g = await tester.startGesture(
+      tester.getCenter(frame),
+      buttons: kMiddleMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
     await g.moveBy(const Offset(50, 40));
     await g.up();
     await tester.pump();

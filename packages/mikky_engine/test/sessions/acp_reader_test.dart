@@ -38,20 +38,26 @@ void main() {
       expect(asked.pending.single.options.map((o) => o.kind), containsAll(['allow_once', 'reject_once']));
 
       var seen = false;
-      final answered = replayAcp('claude_wsl_plan.jsonl', until: (log, _) {
-        seen |= log.pending.isNotEmpty;
-        return seen && log.pending.isEmpty;
-      });
+      final answered = replayAcp(
+        'claude_wsl_plan.jsonl',
+        until: (log, _) {
+          seen |= log.pending.isNotEmpty;
+          return seen && log.pending.isEmpty;
+        },
+      );
       expect(answered.statusAt(_now), isNot(AgentStatus.approval));
       expect(answered.working, isTrue);
     });
 
     test('the plan moves step by step: the metro line', () {
       final plans = <List<PlanEntry>>[];
-      replayAcp('claude_wsl_plan.jsonl', until: (log, _) {
-        if (plans.isEmpty || plans.last != log.plan) plans.add(log.plan);
-        return false;
-      });
+      replayAcp(
+        'claude_wsl_plan.jsonl',
+        until: (log, _) {
+          if (plans.isEmpty || plans.last != log.plan) plans.add(log.plan);
+          return false;
+        },
+      );
       expect(plans.any((p) => p.any((e) => e.status == PlanStatus.inProgress)), isTrue);
       final last = plans.last;
       expect(last, hasLength(4));

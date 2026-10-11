@@ -272,7 +272,14 @@ class QuestionChoice {
 
 /// One question of a [QuestionAsked] form, with its choices.
 class Question {
-  const Question(this.key, {required this.text, this.title, this.choices = const [], this.multiple = false, this.otherKey});
+  const Question(
+    this.key, {
+    required this.text,
+    this.title,
+    this.choices = const [],
+    this.multiple = false,
+    this.otherKey,
+  });
 
   /// The form field to answer in.
   final String key;

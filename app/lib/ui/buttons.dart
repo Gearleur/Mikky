@@ -53,7 +53,13 @@ class MButton extends StatelessWidget {
       ButtonKind.ghost => (null, null, ui.text2, const <CssShadow>[]),
     };
     final enabled = onPressed != null && !loading;
-    final text = uiText(small ? TextSize.label : TextSize.lead, weight: FontWeight.w600, color: fg, height: 1, tracking: small ? 0 : -.005);
+    final text = uiText(
+      small ? TextSize.label : TextSize.lead,
+      weight: FontWeight.w600,
+      color: fg,
+      height: 1,
+      tracking: small ? 0 : -.005,
+    );
     Widget content = Row(
       mainAxisSize: block ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -88,9 +94,21 @@ class MButton extends StatelessWidget {
 /// 46 (the home's new-agent button), 32 (inside the field).
 class RoundButton extends StatelessWidget {
   const RoundButton.menu({super.key, this.onPressed, this.size = 34, this.tooltip = 'Menu'})
-      : icon = 'menu-star', ink = false, ghost = true, iconSize = 14;
+    : icon = 'menu-star',
+      ink = false,
+      ghost = true,
+      iconSize = 14;
 
-  const RoundButton(this.icon, {super.key, this.onPressed, this.size = 40, this.ink = false, this.ghost = false, this.iconSize, this.tooltip});
+  const RoundButton(
+    this.icon, {
+    super.key,
+    this.onPressed,
+    this.size = 40,
+    this.ink = false,
+    this.ghost = false,
+    this.iconSize,
+    this.tooltip,
+  });
 
   final String icon;
   final VoidCallback? onPressed;

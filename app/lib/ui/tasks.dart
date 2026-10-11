@@ -49,10 +49,19 @@ class _TaskSectionState extends State<TaskSection> {
         const SizedBox(width: 7),
         Expanded(
           child: Text.rich(
-            TextSpan(children: [
-              TextSpan(text: widget.title, style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text)),
-              if (widget.meta != null) TextSpan(text: '  ${widget.meta}', style: uiText(TextSize.small, color: ui.text3, tabular: true)),
-            ]),
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: widget.title,
+                  style: uiText(TextSize.label, weight: FontWeight.w600, color: ui.text),
+                ),
+                if (widget.meta != null)
+                  TextSpan(
+                    text: '  ${widget.meta}',
+                    style: uiText(TextSize.small, color: ui.text3, tabular: true),
+                  ),
+              ],
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -95,7 +104,9 @@ class _TaskSectionState extends State<TaskSection> {
                 : Container(
                     margin: const EdgeInsets.only(left: 6, bottom: 4),
                     padding: const EdgeInsets.only(left: 10),
-                    decoration: BoxDecoration(border: Border(left: BorderSide(color: ui.line, width: 1.5))),
+                    decoration: BoxDecoration(
+                      border: Border(left: BorderSide(color: ui.line, width: 1.5)),
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -104,7 +115,10 @@ class _TaskSectionState extends State<TaskSection> {
                             alignment: Alignment.centerLeft,
                             child: HoverRow(
                               onTap: () => setState(() => _all = true),
-                              child: Text('$hidden plus tôt', style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3)),
+                              child: Text(
+                                '$hidden plus tôt',
+                                style: uiText(TextSize.small, weight: FontWeight.w500, color: ui.text3),
+                              ),
                             ),
                           ),
                         ...widget.children.skip(hidden),
@@ -124,7 +138,15 @@ enum TaskStepState { done, now, todo, failed }
 /// A main step of a task: a dot and a few words (« Lit 3 fichiers »). A
 /// tap unfolds [detail], what the agent did for it.
 class TaskStep extends StatefulWidget {
-  const TaskStep({super.key, required this.label, this.state = TaskStepState.done, this.note, this.detail, this.tone, this.initiallyOpen = false});
+  const TaskStep({
+    super.key,
+    required this.label,
+    this.state = TaskStepState.done,
+    this.note,
+    this.detail,
+    this.tone,
+    this.initiallyOpen = false,
+  });
 
   final String label;
   final TaskStepState state;
@@ -171,13 +193,24 @@ class _TaskStepState extends State<TaskStep> {
         const SizedBox(width: 8),
         Expanded(
           child: Text.rich(
-            TextSpan(children: [
-              TextSpan(text: widget.label),
-              if (widget.note != null) TextSpan(text: ' · ${widget.note}', style: TextStyle(color: ui.red, fontWeight: FontWeight.w500)),
-            ]),
+            TextSpan(
+              children: [
+                TextSpan(text: widget.label),
+                if (widget.note != null)
+                  TextSpan(
+                    text: ' · ${widget.note}',
+                    style: TextStyle(color: ui.red, fontWeight: FontWeight.w500),
+                  ),
+              ],
+            ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: uiText(TextSize.label, weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400, color: text, height: 1.35),
+            style: uiText(
+              TextSize.label,
+              weight: widget.state == TaskStepState.now ? FontWeight.w600 : FontWeight.w400,
+              color: text,
+              height: 1.35,
+            ),
           ),
         ),
         if (widget.detail != null)
@@ -209,7 +242,15 @@ class _TaskStepState extends State<TaskStep> {
 /// mono the command or the file; on the right its state. A tap unfolds
 /// [body] (the code it changed, what the command printed).
 class ToolLine extends StatefulWidget {
-  const ToolLine({super.key, required this.icon, required this.title, this.detail, this.trailing, this.body, this.initiallyOpen = false});
+  const ToolLine({
+    super.key,
+    required this.icon,
+    required this.title,
+    this.detail,
+    this.trailing,
+    this.body,
+    this.initiallyOpen = false,
+  });
 
   /// [body] shown from the start (boards).
   final bool initiallyOpen;
@@ -232,17 +273,30 @@ class _ToolLineState extends State<ToolLine> {
     final row = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(padding: const EdgeInsets.only(top: 2), child: MikkyIcon(widget.icon, size: 14, color: ui.text3)),
+        Padding(
+          padding: const EdgeInsets.only(top: 2),
+          child: MikkyIcon(widget.icon, size: 14, color: ui.text3),
+        ),
         const SizedBox(width: 8),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(widget.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: uiText(TextSize.small, color: ui.text, height: 1.35)),
+              Text(
+                widget.title,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.small, color: ui.text, height: 1.35),
+              ),
               if (widget.detail != null)
                 Padding(
                   padding: const EdgeInsets.only(top: 1),
-                  child: Text(widget.detail!, maxLines: 1, overflow: TextOverflow.ellipsis, style: uiText(TextSize.caption, mono: true, color: ui.text3, height: 1.4)),
+                  child: Text(
+                    widget.detail!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: uiText(TextSize.caption, mono: true, color: ui.text3, height: 1.4),
+                  ),
                 ),
             ],
           ),
@@ -280,7 +334,10 @@ class NoteLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     if (!thought) {
-      return DefaultTextStyle(style: uiText(TextSize.label, color: ui.text, height: 1.45), child: AgentText(text));
+      return DefaultTextStyle(
+        style: uiText(TextSize.label, color: ui.text, height: 1.45),
+        child: AgentText(text),
+      );
     }
     return Text(
       // Short and plain: no markdown marks.

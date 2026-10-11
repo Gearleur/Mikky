@@ -10,7 +10,8 @@ import 'session_text.dart';
 // `session_views.dart` draws it.
 
 /// The items of a turn.
-List<ThreadItem> turnItems(SessionLog log, TurnSpan turn) => log.items.sublist(turn.start, turn.end ?? log.items.length);
+List<ThreadItem> turnItems(SessionLog log, TurnSpan turn) =>
+    log.items.sublist(turn.start, turn.end ?? log.items.length);
 
 /// The agent offers « always allow » for its pending request.
 bool canAlways(SessionLog log) => log.pending.firstOrNull?.options.any((o) => o.kind == 'allow_always') ?? false;
@@ -141,9 +142,10 @@ List<MainStep> planSteps(TurnSpan turn) {
         state: switch (turn.plan[i].status) {
           PlanStatus.completed => TaskStepState.done,
           // Stopped on the way (limit, error, by the user): not done.
-          PlanStatus.inProgress => turn.running
-              ? TaskStepState.now
-              : (turn.reason == StopReason.endTurn ? TaskStepState.done : TaskStepState.todo),
+          PlanStatus.inProgress =>
+            turn.running
+                ? TaskStepState.now
+                : (turn.reason == StopReason.endTurn ? TaskStepState.done : TaskStepState.todo),
           PlanStatus.pending => turn.running && !marked && i == firstTodo ? TaskStepState.now : TaskStepState.todo,
         },
       ),
@@ -253,7 +255,10 @@ List<AgentItem> turnAnswer(TurnSpan turn, List<ThreadItem> items) {
 /// plan, else its actions; at most [max], around the one at work.
 List<MainStep> glanceSteps(SessionLog log, {int max = 4}) {
   // The latest turn with work in it: a question after it has none.
-  final turn = log.turns.lastWhere((t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem), orElse: () => const TurnSpan(-1));
+  final turn = log.turns.lastWhere(
+    (t) => t.plan.isNotEmpty || turnItems(log, t).any((i) => i is ToolItem),
+    orElse: () => const TurnSpan(-1),
+  );
   if (turn.start < 0) return const [];
   final steps = turn.plan.isNotEmpty ? planSteps(turn) : toolSteps(turnItems(log, turn).whereType<ToolItem>().toList());
   if (steps.length <= max) return steps;
@@ -286,7 +291,12 @@ String taskTitle(TurnSpan turn) => turn.running
 
 /// « 4 étapes · 2 fichiers · 3 min » for a turn's task.
 String taskMeta(TurnSpan turn, List<ThreadItem> items, int steps) {
-  final files = items.whereType<ToolItem>().where((t) => t.kind == ToolKind.edit && t.status == ToolStatus.completed).map((t) => t.path).toSet().length;
+  final files = items
+      .whereType<ToolItem>()
+      .where((t) => t.kind == ToolKind.edit && t.status == ToolStatus.completed)
+      .map((t) => t.path)
+      .toSet()
+      .length;
   final start = items.firstOrNull?.at, end = items.lastOrNull?.at;
   final minutes = start == null || end == null ? null : end.difference(start).inMinutes;
   return [

@@ -82,10 +82,10 @@ class MikkyTheme {
   );
 
   static MikkyTheme resolve(ThemeChoice choice, Brightness system) => switch (choice) {
-        ThemeChoice.dark => dark,
-        ThemeChoice.light => light,
-        ThemeChoice.auto => system == Brightness.light ? light : dark,
-      };
+    ThemeChoice.dark => dark,
+    ThemeChoice.light => light,
+    ThemeChoice.auto => system == Brightness.light ? light : dark,
+  };
 
   final bool isLight;
   final Color foreground;

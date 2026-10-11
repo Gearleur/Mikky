@@ -60,7 +60,11 @@ class _HooksPageState extends State<HooksPage> {
 
   Future<void> _write() => _run(() async {
     final p = _preview!;
-    final backup = await widget.host.service.hooksWrite(widget.tool, install: _installing!, fingerprint: p['fingerprint']! as String);
+    final backup = await widget.host.service.hooksWrite(
+      widget.tool,
+      install: _installing!,
+      fingerprint: p['fingerprint']! as String,
+    );
     _message = _installing!
         ? 'Installé. Les prochaines demandes de $_name passent aussi par Mikky.'
         : 'Désinstallé. $_name demande de nouveau seulement dans son terminal.';
@@ -108,10 +112,12 @@ class _HooksPageState extends State<HooksPage> {
                 if (preview == null && status != null)
                   Align(
                     alignment: Alignment.centerRight,
-                    child: AnswerBar(answers: [
-                      if (installed) ('Désinstaller…', _busy ? null : () => _show(false)),
-                      (installed ? 'Réinstaller…' : 'Installer…', _busy ? null : () => _show(true)),
-                    ]),
+                    child: AnswerBar(
+                      answers: [
+                        if (installed) ('Désinstaller…', _busy ? null : () => _show(false)),
+                        (installed ? 'Réinstaller…' : 'Installer…', _busy ? null : () => _show(true)),
+                      ],
+                    ),
                   ),
                 if (preview != null) ...[
                   Text(
@@ -125,11 +131,13 @@ class _HooksPageState extends State<HooksPage> {
                   const SizedBox(height: 10),
                   Align(
                     alignment: Alignment.centerRight,
-                    child: AnswerBar(answers: [
-                      ('Annuler', _busy ? null : () => setState(() => _preview = null)),
-                      if (preview['changes'] == true)
-                        (_installing! ? 'Installer' : 'Désinstaller', _busy ? null : _write),
-                    ]),
+                    child: AnswerBar(
+                      answers: [
+                        ('Annuler', _busy ? null : () => setState(() => _preview = null)),
+                        if (preview['changes'] == true)
+                          (_installing! ? 'Installer' : 'Désinstaller', _busy ? null : _write),
+                      ],
+                    ),
                   ),
                 ],
               ],

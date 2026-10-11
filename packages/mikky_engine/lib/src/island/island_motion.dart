@@ -105,9 +105,9 @@ class IslandMetrics {
   );
 
   static IslandMetrics of(IslandEdge edge) => switch (edge) {
-        IslandEdge.top => top,
-        IslandEdge.right => right,
-      };
+    IslandEdge.top => top,
+    IslandEdge.right => right,
+  };
 
   final IslandSize compact, focus, list, page, hidden;
 
@@ -124,18 +124,18 @@ class IslandMetrics {
   final MikkySpot mikkyListIdle;
 
   MikkySpot mikkyAt(IslandLayout layout) => switch (layout) {
-        IslandLayout.focus => mikkyOpen,
-        IslandLayout.list => mikkyList,
-        IslandLayout.page => mikkyPage,
-        IslandLayout.greet => mikkyOpen,
-      };
+    IslandLayout.focus => mikkyOpen,
+    IslandLayout.list => mikkyList,
+    IslandLayout.page => mikkyPage,
+    IslandLayout.greet => mikkyOpen,
+  };
 
   IslandSize open(IslandLayout layout) => switch (layout) {
-        IslandLayout.focus => focus,
-        IslandLayout.list => list,
-        IslandLayout.page => page,
-        IslandLayout.greet => greet,
-      };
+    IslandLayout.focus => focus,
+    IslandLayout.list => list,
+    IslandLayout.page => page,
+    IslandLayout.greet => greet,
+  };
 }
 
 /// The island's size and the place of Mikky in it, driven by springs
@@ -173,7 +173,8 @@ class IslandMotion {
     _aimSpot(snap: _shape != IslandShape.open);
   }
 
-  MikkySpot get _spotWanted => _layout == IslandLayout.list && _listIdle ? metrics.mikkyListIdle : metrics.mikkyAt(_layout);
+  MikkySpot get _spotWanted =>
+      _layout == IslandLayout.list && _listIdle ? metrics.mikkyListIdle : metrics.mikkyAt(_layout);
 
   /// Closed, he is in place at once: opening shows him where he belongs.
   void _aimSpot({required bool snap}) {
@@ -272,8 +273,7 @@ class IslandMotion {
   /// Opacity of the open content (Focus / List views).
   double get openContentOpacity => ((openness - .5) * 2.4).clamp(0.0, 1.0);
 
-  double get mikkyRadius =>
-      _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
+  double get mikkyRadius => _lerp(metrics.mikkyCompact.radius, _open.radius, openness.clamp(0.0, 1.05));
 
   MikkySpot get _open => (x: _spotX.value, y: _spotY.value, radius: _spotRadius.value);
 

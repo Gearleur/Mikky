@@ -13,7 +13,13 @@ import 'tokens.dart';
 /// themselves with [HoverTarget] — [AgentCard] and [HoverRow] do it on
 /// their own when they sit in a [SlidingHover].
 class SlidingHover extends StatefulWidget {
-  const SlidingHover({super.key, required this.child, this.radius = Radii.md, this.followHover = true, this.hairline = true});
+  const SlidingHover({
+    super.key,
+    required this.child,
+    this.radius = Radii.md,
+    this.followHover = true,
+    this.hairline = true,
+  });
 
   final Widget child;
   final double radius;
@@ -28,7 +34,8 @@ class SlidingHover extends StatefulWidget {
   /// window; none on a grey background, like the Oui / Non picture.
   final bool hairline;
 
-  static SlidingHoverState? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<_Scope>()?.state;
+  static SlidingHoverState? maybeOf(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_Scope>()?.state;
 
   @override
   State<SlidingHover> createState() => SlidingHoverState();
@@ -221,17 +228,19 @@ class _HoverTargetState extends State<HoverTarget> {
   }
 
   @override
-  Widget build(BuildContext context) => MouseRegion(
-    onEnter: (_) => _scope?._enter(this),
-    onExit: (_) => _scope?._exit(this),
-    child: widget.child,
-  );
+  Widget build(BuildContext context) =>
+      MouseRegion(onEnter: (_) => _scope?._enter(this), onExit: (_) => _scope?._exit(this), child: widget.child);
 }
 
 /// Something to click in the chat: a light grey under the mouse, the
 /// hand cursor (user request, 2026-09-30).
 class HoverRow extends StatefulWidget {
-  const HoverRow({super.key, required this.child, this.onTap, this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4)});
+  const HoverRow({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+  });
 
   final Widget child;
   final VoidCallback? onTap;
@@ -271,7 +280,10 @@ class _HoverRowState extends State<HoverRow> {
         child: AnimatedContainer(
           duration: Motion.hover,
           padding: widget.padding,
-          decoration: BoxDecoration(color: _hover ? ui.hover : ui.hover.withValues(alpha: 0), borderRadius: BorderRadius.circular(Radii.md)),
+          decoration: BoxDecoration(
+            color: _hover ? ui.hover : ui.hover.withValues(alpha: 0),
+            borderRadius: BorderRadius.circular(Radii.md),
+          ),
           child: widget.child,
         ),
       ),

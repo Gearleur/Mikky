@@ -112,23 +112,22 @@ class Agent {
     bool clearProgress = false,
     String? name,
     String? sessionId,
-  }) =>
-      Agent(
-        id: id,
-        name: name ?? this.name,
-        status: status ?? this.status,
-        startedAt: startedAt,
-        statusSince: statusSince ?? this.statusSince,
-        detail: detail ?? this.detail,
-        progress: clearProgress ? null : (progress ?? this.progress),
-        progressRate: clearProgress ? 0 : (progressRate ?? this.progressRate),
-        provider: provider,
-        host: host,
-        origin: origin,
-        cwd: cwd,
-        sessionId: sessionId ?? this.sessionId,
-        permissions: permissions,
-      );
+  }) => Agent(
+    id: id,
+    name: name ?? this.name,
+    status: status ?? this.status,
+    startedAt: startedAt,
+    statusSince: statusSince ?? this.statusSince,
+    detail: detail ?? this.detail,
+    progress: clearProgress ? null : (progress ?? this.progress),
+    progressRate: clearProgress ? 0 : (progressRate ?? this.progressRate),
+    provider: provider,
+    host: host,
+    origin: origin,
+    cwd: cwd,
+    sessionId: sessionId ?? this.sessionId,
+    permissions: permissions,
+  );
 
   @override
   String toString() => 'Agent($id, $status)';

@@ -37,9 +37,7 @@ class MikkyPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final g = geometry;
     final r = g.radius;
-    final points = [
-      for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1]),
-    ];
+    final points = [for (var i = 0; i < g.pointCount; i++) Offset(g.contour[i * 2], g.contour[i * 2 + 1])];
     final body = Path()..addPolygon(points, true);
 
     canvas.save();
@@ -126,7 +124,10 @@ class MikkyPainter extends CustomPainter {
       case EyeShape.flat:
         final t = math.max(w * .34, 1.2);
         canvas.drawRRect(
-          RRect.fromRectAndRadius(Rect.fromCenter(center: Offset(0, full * .1), width: w * 1.25, height: t), Radius.circular(t / 2)),
+          RRect.fromRectAndRadius(
+            Rect.fromCenter(center: Offset(0, full * .1), width: w * 1.25, height: t),
+            Radius.circular(t / 2),
+          ),
           fill,
         );
       case EyeShape.tired:
@@ -138,7 +139,10 @@ class MikkyPainter extends CustomPainter {
       case EyeShape.slit:
         canvas.save();
         canvas.rotate(e.side * .28);
-        canvas.drawOval(Rect.fromCenter(center: Offset(0, full * .08), width: w * 1.2, height: math.max(w * .26, 1.2)), fill);
+        canvas.drawOval(
+          Rect.fromCenter(center: Offset(0, full * .08), width: w * 1.2, height: math.max(w * .26, 1.2)),
+          fill,
+        );
         canvas.restore();
       case EyeShape.spiral:
         canvas.save();
@@ -213,8 +217,10 @@ class MikkyPainter extends CustomPainter {
         canvas.drawCircle(c, h * .32, Paint()..color = color);
       case BadgeKind.dots:
         final w = h * 1.9;
-        canvas.drawRRect(RRect.fromRectAndRadius(Rect.fromCenter(center: c, width: w, height: h), Radius.circular(h / 2)),
-            Paint()..color = color);
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(Rect.fromCenter(center: c, width: w, height: h), Radius.circular(h / 2)),
+          Paint()..color = color,
+        );
         for (var i = 0; i < 3; i++) {
           // A wave through the three dots.
           final lift = math.max(0.0, math.sin(g.time * 6 - i * .9)) * h * .12;
@@ -225,7 +231,13 @@ class MikkyPainter extends CustomPainter {
         final text = TextPainter(
           text: TextSpan(
             text: b.kind == BadgeKind.bang ? '!' : '?',
-            style: TextStyle(fontFamily: 'Geist', fontWeight: FontWeight.w700, fontSize: h * .85, color: _eyeWhite, height: 1),
+            style: TextStyle(
+              fontFamily: 'Geist',
+              fontWeight: FontWeight.w700,
+              fontSize: h * .85,
+              color: _eyeWhite,
+              height: 1,
+            ),
           ),
           textDirection: TextDirection.ltr,
         )..layout();

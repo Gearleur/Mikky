@@ -11,7 +11,11 @@ import '../ui/tokens.dart';
 /// shapes. Each is a function of time on a grid; a dot lit by how close it
 /// is to the shape, in the four steps of the palette.
 enum DotWave {
-  ripple('Onde', 'La vague de réflexion : un petit groupe au centre s’ouvre en anneau ovale, grandit au-delà des bords et s’éteint ; une autre suit.', 1600),
+  ripple(
+    'Onde',
+    'La vague de réflexion : un petit groupe au centre s’ouvre en anneau ovale, grandit au-delà des bords et s’éteint ; une autre suit.',
+    1600,
+  ),
   pulse('Pouls', 'Un cœur qui bat au centre, et à chaque battement un anneau part.', 1400),
   sine('Vague', 'Une ligne de points qui ondule de gauche à droite, plus haute au milieu : une voix.', 1600),
   spiral('Spirale', 'Deux bras de points qui tournent en s’enroulant depuis le centre.', 2400),
@@ -19,7 +23,11 @@ enum DotWave {
   square('Carré', 'L’onde en carré arrondi, comme l’île.', 1600),
   radar('Radar', 'Un rayon qui balaie le cercle et laisse une traîne qui s’éteint.', 2000),
   equalizer('Égaliseur', 'Des colonnes de points qui montent et descendent, chacune à son rythme.', 1600),
-  spiralFade('Spirale qui s’efface', 'Un bras qui se dessine en tournant depuis le centre, sa tête vive, et s’efface derrière elle.', 2600),
+  spiralFade(
+    'Spirale qui s’efface',
+    'Un bras qui se dessine en tournant depuis le centre, sa tête vive, et s’efface derrière elle.',
+    2600,
+  ),
   orbit('Orbite', 'Une comète qui tourne sur l’ovale, sa traîne en dégradé.', 1800),
   drops('Gouttes', 'Des gouttes qui tombent ici et là, chacune ouvre son petit cercle.', 2400),
   breath('Respiration', 'Un disque en dégradé qui grandit et rapetisse, comme un souffle.', 2800),
@@ -31,13 +39,48 @@ enum DotWave {
   // Maths and magic (2026-10-06, « des choses mathématiques, des choses
   // magiques, dans la DA de notre app »): fields and curves that fill the
   // grid, on a wider gradient, from night blue to white.
-  lissajous('Lissajous', 'Une courbe de Lissajous (3 : 2) parcourue par un point, sa traîne en dégradé.', 3200, magic: true),
-  rose('Rosace', 'Une rose à trois pétales (r = cos 3θ) qui tourne lentement, plus vive au bout des pétales.', 3000, magic: true),
-  interference('Interférences', 'Deux sources d’ondes qui se croisent : leurs franges vont et viennent sur toute la grille.', 2200, magic: true),
-  plasma('Plasma', 'Une somme de sinus qui coule sur toute la grille, comme les démos des vieux ordinateurs.', 4000, magic: true),
-  goldenSpiral('Spirale d’or', 'Une spirale logarithmique (celle du nombre d’or) parcourue depuis le cœur, sa traîne en dégradé.', 2600, magic: true),
-  magicCircle('Cercle magique', 'Deux cercles, un hexagramme qui tourne, des runes qui tournent en sens inverse.', 6000, magic: true),
-  chladni('Chladni', 'Les lignes de sable d’une plaque qui vibre : elles se déforment d’un motif à l’autre.', 4000, magic: true),
+  lissajous(
+    'Lissajous',
+    'Une courbe de Lissajous (3 : 2) parcourue par un point, sa traîne en dégradé.',
+    3200,
+    magic: true,
+  ),
+  rose(
+    'Rosace',
+    'Une rose à trois pétales (r = cos 3θ) qui tourne lentement, plus vive au bout des pétales.',
+    3000,
+    magic: true,
+  ),
+  interference(
+    'Interférences',
+    'Deux sources d’ondes qui se croisent : leurs franges vont et viennent sur toute la grille.',
+    2200,
+    magic: true,
+  ),
+  plasma(
+    'Plasma',
+    'Une somme de sinus qui coule sur toute la grille, comme les démos des vieux ordinateurs.',
+    4000,
+    magic: true,
+  ),
+  goldenSpiral(
+    'Spirale d’or',
+    'Une spirale logarithmique (celle du nombre d’or) parcourue depuis le cœur, sa traîne en dégradé.',
+    2600,
+    magic: true,
+  ),
+  magicCircle(
+    'Cercle magique',
+    'Deux cercles, un hexagramme qui tourne, des runes qui tournent en sens inverse.',
+    6000,
+    magic: true,
+  ),
+  chladni(
+    'Chladni',
+    'Les lignes de sable d’une plaque qui vibre : elles se déforment d’un motif à l’autre.',
+    4000,
+    magic: true,
+  ),
   codeRain('Pluie de code', 'Des colonnes de points qui tombent, leur tête vive : du calcul.', 2000, magic: true),
   kaleidoscope('Kaléidoscope', 'Un motif à huit branches symétriques qui pulse depuis le centre.', 3000, magic: true),
   aurora('Aurore', 'Un ruban de lumière qui ondule, strié comme une aurore.', 4000, magic: true);
@@ -55,7 +98,15 @@ enum DotWave {
 
 /// One [wave] at [t] seconds, on the island's background.
 class DotWaveScene extends StatelessWidget {
-  const DotWaveScene(this.wave, this.t, {super.key, this.palette = PixelFxPalette.signatureBlue, this.cols = 30, this.rows = 18, this.step = 5.0});
+  const DotWaveScene(
+    this.wave,
+    this.t, {
+    super.key,
+    this.palette = PixelFxPalette.signatureBlue,
+    this.cols = 30,
+    this.rows = 18,
+    this.step = 5.0,
+  });
 
   final DotWave wave;
   final double t;
@@ -149,7 +200,13 @@ class _DotWavePainter extends CustomPainter {
         final column = (dx / 3).round();
         if ((dx - column * 3).abs() > .5) return 0;
         final seed = column * 1.7;
-        final h = rows * .42 * (.15 + .85 * math.pow(math.sin(u * math.pi * 2 * (1 + (column % 3)) + seed).abs(), 1.4) * math.exp(-math.pow(column / (half / 2), 2) * .6));
+        final h =
+            rows *
+            .42 *
+            (.15 +
+                .85 *
+                    math.pow(math.sin(u * math.pi * 2 * (1 + (column % 3)) + seed).abs(), 1.4) *
+                    math.exp(-math.pow(column / (half / 2), 2) * .6));
         if (dy.abs() > h) return 0;
         return .45 + .55 * (1 - dy.abs() / math.max(h, .5));
       case DotWave.spiralFade:
@@ -245,7 +302,8 @@ class _DotWavePainter extends CustomPainter {
         return math.pow(v, 2.2).toDouble();
       case DotWave.plasma:
         final w = u * math.pi * 2;
-        final v = math.sin(dx * .32 + w) +
+        final v =
+            math.sin(dx * .32 + w) +
             math.sin(dy * .55 - w) +
             math.sin((dx + dy) * .22 + w) +
             math.sin(math.sqrt(dx * dx + dy * dy * 2.5) * .42 - w);
@@ -286,7 +344,9 @@ class _DotWavePainter extends CustomPainter {
         final a = .5 - .5 * math.cos(u * math.pi * 2);
         // Never the same two frequencies: the plate would be all lines.
         final n = 1 + .8 * a, m = 3.2 - .8 * a;
-        final f = math.cos(n * math.pi * x) * math.cos(m * math.pi * y) - math.cos(m * math.pi * x) * math.cos(n * math.pi * y);
+        final f =
+            math.cos(n * math.pi * x) * math.cos(m * math.pi * y) -
+            math.cos(m * math.pi * x) * math.cos(n * math.pi * y);
         return math.exp(-math.pow(f / .32, 2));
       case DotWave.codeRain:
         final column = (dx / 2).round();
@@ -390,7 +450,13 @@ class _DotWavePainter extends CustomPainter {
   }
 
   Color _shade(double i) {
-    final ramp = [palette.levels[3], palette.levels[2], palette.levels[1], palette.levels[0], Color.lerp(palette.levels[0], const Color(0xFFFFFFFF), .7)!];
+    final ramp = [
+      palette.levels[3],
+      palette.levels[2],
+      palette.levels[1],
+      palette.levels[0],
+      Color.lerp(palette.levels[0], const Color(0xFFFFFFFF), .7)!,
+    ];
     final f = i * (ramp.length - 1);
     final k = math.min(f.floor(), ramp.length - 2);
     final color = Color.lerp(ramp[k], ramp[k + 1], f - k)!;
@@ -398,5 +464,6 @@ class _DotWavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DotWavePainter old) => old.t != t || old.wave != wave || old.palette != palette || old.light != light;
+  bool shouldRepaint(_DotWavePainter old) =>
+      old.t != t || old.wave != wave || old.palette != palette || old.light != light;
 }

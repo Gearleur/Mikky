@@ -65,7 +65,19 @@ enum EyeShape { oval, round, happy, flat, closed, tired, spiral, heart, star, sl
 enum Ear { left, right }
 
 /// What Mikky expresses, from the agent he stands for (spec §5.2 table).
-enum MikkyState { idle, working, thinking, searching, approval, question, error, finished, rateLimited, sleeping, dizzy }
+enum MikkyState {
+  idle,
+  working,
+  thinking,
+  searching,
+  approval,
+  question,
+  error,
+  finished,
+  rateLimited,
+  sleeping,
+  dizzy,
+}
 
 /// Short expressions on top of the state.
 enum MikkyEmote { love, surprised, proud, wink, yawn, content, annoyed }
@@ -124,14 +136,12 @@ class MikkyParticle {
 
 /// Mikky's pose, one value per [MikkyProp].
 class MikkyPose {
-  final List<double> _values = [
-    for (final prop in MikkyProp.values) _rest(prop),
-  ];
+  final List<double> _values = [for (final prop in MikkyProp.values) _rest(prop)];
 
   static double _rest(MikkyProp prop) => switch (prop) {
-        MikkyProp.open || MikkyProp.scaleX || MikkyProp.scaleY || MikkyProp.eyeScale => 1,
-        _ => 0,
-      };
+    MikkyProp.open || MikkyProp.scaleX || MikkyProp.scaleY || MikkyProp.eyeScale => 1,
+    _ => 0,
+  };
 
   double operator [](MikkyProp prop) => _values[prop.index];
   void operator []=(MikkyProp prop, double value) => _values[prop.index] = value;
@@ -162,8 +172,8 @@ class _Look {
     this.earLeft = 0,
     double? earRight,
     this.tilt = 0,
-  })  : right = right ?? left,
-        earRight = earRight ?? earLeft;
+  }) : right = right ?? left,
+       earRight = earRight ?? earLeft;
 
   final EyeShape left, right;
   final double eyeScale, earLeft, earRight, tilt;
@@ -215,7 +225,6 @@ class Mikky {
   bool _approvalBang = false;
   int _hopsLeft = 0;
 
-
   MikkyState _state = MikkyState.idle;
   double _dizzyUntil = -1;
   MikkyEmote? _emote;
@@ -265,21 +274,19 @@ class Mikky {
   MikkyBadge? get badge => _wantedForm != MikkyForm.cat || _showsWithForm(state) ? null : _stateBadge;
 
   MikkyBadge? get _stateBadge => switch (state) {
-        MikkyState.working => const MikkyBadge(BadgeKind.dots, AgentStatus.working),
-        MikkyState.thinking => const MikkyBadge(BadgeKind.dots, AgentStatus.thinking),
-        MikkyState.searching => const MikkyBadge(BadgeKind.dots, AgentStatus.searching),
-        MikkyState.approval => const MikkyBadge(BadgeKind.bang, AgentStatus.approval),
-        MikkyState.question => const MikkyBadge(BadgeKind.question, AgentStatus.question),
-        MikkyState.error => const MikkyBadge(BadgeKind.dot, AgentStatus.error),
-        MikkyState.finished => const MikkyBadge(BadgeKind.dot, AgentStatus.finished),
-        MikkyState.rateLimited => const MikkyBadge(BadgeKind.dot, AgentStatus.rateLimited),
-        MikkyState.idle || MikkyState.sleeping || MikkyState.dizzy => null,
-      };
+    MikkyState.working => const MikkyBadge(BadgeKind.dots, AgentStatus.working),
+    MikkyState.thinking => const MikkyBadge(BadgeKind.dots, AgentStatus.thinking),
+    MikkyState.searching => const MikkyBadge(BadgeKind.dots, AgentStatus.searching),
+    MikkyState.approval => const MikkyBadge(BadgeKind.bang, AgentStatus.approval),
+    MikkyState.question => const MikkyBadge(BadgeKind.question, AgentStatus.question),
+    MikkyState.error => const MikkyBadge(BadgeKind.dot, AgentStatus.error),
+    MikkyState.finished => const MikkyBadge(BadgeKind.dot, AgentStatus.finished),
+    MikkyState.rateLimited => const MikkyBadge(BadgeKind.dot, AgentStatus.rateLimited),
+    MikkyState.idle || MikkyState.sleeping || MikkyState.dizzy => null,
+  };
 
   /// Live particles, oldest first.
-  List<MikkyParticle> get particles => [
-        for (final p in _particles) _particleAt(p),
-      ];
+  List<MikkyParticle> get particles => [for (final p in _particles) _particleAt(p)];
 
   // ------------------------------------------------------------ gestures
 
@@ -293,18 +300,11 @@ class Mikky {
 
   void _after(double seconds, void Function() action) => _scheduled.add((_time + seconds, action));
 
-  void blink() => animate(MikkyProp.open, const [
-        Keyframe(.06, 70, Easings.inOut),
-        Keyframe(1, 130, Easings.out),
-      ]);
+  void blink() => animate(MikkyProp.open, const [Keyframe(.06, 70, Easings.inOut), Keyframe(1, 130, Easings.out)]);
 
   /// One ear flicks; both when [ear] is null (the right one slightly later).
   void twitch([Ear? ear]) {
-    const keys = [
-      Keyframe(.35, 90, Easings.out),
-      Keyframe(-.12, 120, Easings.inOut),
-      Keyframe(0, 160, Easings.out),
-    ];
+    const keys = [Keyframe(.35, 90, Easings.out), Keyframe(-.12, 120, Easings.inOut), Keyframe(0, 160, Easings.out)];
     if (ear != Ear.right) animate(MikkyProp.earLeft, keys);
     if (ear == Ear.right) animate(MikkyProp.earRight, keys);
     if (ear == null) _after(.06, () => animate(MikkyProp.earRight, keys));
@@ -432,11 +432,11 @@ class Mikky {
       case MikkyState.dizzy:
         roll(turns: 2, ms: 1100);
       case MikkyState.idle ||
-            MikkyState.working ||
-            MikkyState.thinking ||
-            MikkyState.searching ||
-            MikkyState.rateLimited ||
-            MikkyState.sleeping:
+          MikkyState.working ||
+          MikkyState.thinking ||
+          MikkyState.searching ||
+          MikkyState.rateLimited ||
+          MikkyState.sleeping:
         break;
     }
   }
@@ -445,7 +445,8 @@ class Mikky {
   void play(MikkyEmote e) {
     _emote = e;
     _nextEmit = _time;
-    _emoteUntil = _time +
+    _emoteUntil =
+        _time +
         switch (e) {
           MikkyEmote.love => 1.8,
           MikkyEmote.surprised => 1.2,
@@ -516,12 +517,12 @@ class Mikky {
 
   /// Where the state makes Mikky look, instead of the cursor.
   (double, double)? _stateGaze() => switch (state) {
-        MikkyState.thinking => (.55, -.8),
-        // Searching: he keeps looking at the cursor, like at work.
-        MikkyState.sleeping => (0, .35),
-        MikkyState.dizzy => (math.cos(_time * 6) * .5, math.sin(_time * 6) * .5),
-        _ => null,
-      };
+    MikkyState.thinking => (.55, -.8),
+    // Searching: he keeps looking at the cursor, like at work.
+    MikkyState.sleeping => (0, .35),
+    MikkyState.dizzy => (math.cos(_time * 6) * .5, math.sin(_time * 6) * .5),
+    _ => null,
+  };
 
   // --------------------------------------------------------- interactions
 
@@ -544,8 +545,19 @@ class Mikky {
     for (var i = 0; i < count; i++) {
       final a = -math.pi / 2 + (i / count - .5) * math.pi * 1.6 + (_random.nextDouble() - .5) * .3;
       final speed = 1.1 + _random.nextDouble() * .6;
-      _particles.add(_Particle(kind, _time, .9 + _random.nextDouble() * .4, math.cos(a) * .7, math.sin(a) * .6 - .2,
-          math.cos(a) * speed, math.sin(a) * speed, .16 + _random.nextDouble() * .08, (_random.nextDouble() - .5) * 4));
+      _particles.add(
+        _Particle(
+          kind,
+          _time,
+          .9 + _random.nextDouble() * .4,
+          math.cos(a) * .7,
+          math.sin(a) * .6 - .2,
+          math.cos(a) * speed,
+          math.sin(a) * speed,
+          .16 + _random.nextDouble() * .08,
+          (_random.nextDouble() - .5) * 4,
+        ),
+      );
     }
   }
 
@@ -569,7 +581,17 @@ class Mikky {
     final r = _random.nextDouble();
     _particles.add(switch (kind) {
       // Born above the ears, never over his face.
-      ParticleKind.heart => _Particle(kind, _time, 1.3, (r - .5) * 1.6, -1.35, (r - .5) * .3, -.8, .2 + r * .08, (r - .5) * .6),
+      ParticleKind.heart => _Particle(
+        kind,
+        _time,
+        1.3,
+        (r - .5) * 1.6,
+        -1.35,
+        (r - .5) * .3,
+        -.8,
+        .2 + r * .08,
+        (r - .5) * .6,
+      ),
       ParticleKind.sweat => _Particle(kind, _time, 1.1, 1.05, -.55, .15, .1, .16, 0),
       ParticleKind.sleep => _Particle(kind, _time, 2, .7, -1.1, .35, -.45, .22, -.2),
       ParticleKind.sparkle || ParticleKind.star => throw StateError('bursts only'),

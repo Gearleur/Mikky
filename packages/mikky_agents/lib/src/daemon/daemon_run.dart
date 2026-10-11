@@ -44,8 +44,14 @@ class DaemonAgentRun implements AgentRun {
     required AgentHost host,
     required String cwd,
   }) async {
-    final result = await client.request('tools.launch', {'provider': provider.name, 'host': host.name, 'cwd': cwd}) as Map;
-    return attach(client, result['run'] as String, cwd: result['cwd'] as String? ?? cwd, adapterPid: result['adapterPid'] as int?);
+    final result =
+        await client.request('tools.launch', {'provider': provider.name, 'host': host.name, 'cwd': cwd}) as Map;
+    return attach(
+      client,
+      result['run'] as String,
+      cwd: result['cwd'] as String? ?? cwd,
+      adapterPid: result['adapterPid'] as int?,
+    );
   }
 
   /// Follows run [runId] of `mikkyd`: what it did so far is replayed into
@@ -58,6 +64,7 @@ class DaemonAgentRun implements AgentRun {
 
   DaemonClient _client;
   final String runId;
+
   /// PID of the process spawned by mikkyd on the run's host. It may launch other processes.
   final int? adapterPid;
   late StreamSubscription<DaemonNotification> _sub;

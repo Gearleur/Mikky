@@ -51,8 +51,7 @@ class Spring {
   }
 
   /// True when the motion is no longer visible; [snap] then removes the rest.
-  bool isAtRest([double tolerance = .01]) =>
-      (value - target).abs() < tolerance && velocity.abs() < tolerance * 10;
+  bool isAtRest([double tolerance = .01]) => (value - target).abs() < tolerance && velocity.abs() < tolerance * 10;
 
   void snap() {
     value = target;

@@ -226,7 +226,13 @@ class FakeAgent {
           'result': {'stopReason': 'end_turn'},
         });
       case 'slow':
-        _update({'sessionUpdate': 'tool_call', 'toolCallId': 't2', 'title': 'npm test', 'kind': 'execute', 'status': 'in_progress'});
+        _update({
+          'sessionUpdate': 'tool_call',
+          'toolCallId': 't2',
+          'title': 'npm test',
+          'kind': 'execute',
+          'status': 'in_progress',
+        });
         _slow = Completer<void>();
         await _slow!.future;
         _send({

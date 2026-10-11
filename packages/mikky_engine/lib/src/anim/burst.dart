@@ -44,15 +44,42 @@ class Burst {
     double alphaMax = 1,
     this.drag = 0,
     this.gravity = 0,
-  }) : sparks = _draw(seed, count, angleFrom, angleTo, speedMin, speedMax, sizeMin, sizeMax, lifeMin, lifeMax, delayMax, alphaMin, alphaMax);
+  }) : sparks = _draw(
+         seed,
+         count,
+         angleFrom,
+         angleTo,
+         speedMin,
+         speedMax,
+         sizeMin,
+         sizeMax,
+         lifeMin,
+         lifeMax,
+         delayMax,
+         alphaMin,
+         alphaMax,
+       );
 
   final List<Spark> sparks;
 
   /// How fast they slow down (per second), and fall (pixels per second²).
   final double drag, gravity;
 
-  static List<Spark> _draw(int seed, int count, double a0, double a1, double v0, double v1, double s0, double s1, double l0,
-      double l1, double delay, double al0, double al1) {
+  static List<Spark> _draw(
+    int seed,
+    int count,
+    double a0,
+    double a1,
+    double v0,
+    double v1,
+    double s0,
+    double s1,
+    double l0,
+    double l1,
+    double delay,
+    double al0,
+    double al1,
+  ) {
     final rng = math.Random(seed);
     double between(double a, double b) => a + (b - a) * rng.nextDouble();
     return [
@@ -72,7 +99,15 @@ class Burst {
       final k = drag <= 0 ? age : (1 - math.exp(-drag * age)) / drag;
       final slow = drag <= 0 ? 1.0 : math.exp(-drag * age);
       final fade = (p < .08 ? p / .08 : 1.0) * math.pow(1 - p, 1.5);
-      yield SparkAt(cx * k, cy * k + gravity * age * age / 2, cx * slow, cy * slow + gravity * age, s.size, s.alpha * fade, p);
+      yield SparkAt(
+        cx * k,
+        cy * k + gravity * age * age / 2,
+        cx * slow,
+        cy * slow + gravity * age,
+        s.size,
+        s.alpha * fade,
+        p,
+      );
     }
   }
 }

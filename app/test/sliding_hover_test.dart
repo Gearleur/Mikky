@@ -8,25 +8,32 @@ import 'package:mikky/ui/tokens.dart';
 /// comes under the row under the mouse, slides to the next one, and goes
 /// back to rest on the chosen row.
 void main() {
-  Future<void> pump(WidgetTester tester, {int? selected, bool follow = true}) => tester.pumpWidget(MikkyUiTheme(
-    ui: MikkyUi.light,
-    child: Directionality(
-      textDirection: TextDirection.ltr,
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: SizedBox(
-          width: 200,
-          child: SlidingHover(
-            followHover: follow,
-            child: Column(children: [
-              for (var i = 0; i < 3; i++)
-                HoverTarget(selected: i == selected, child: SizedBox(key: Key('row$i'), width: 200, height: 40)),
-            ]),
+  Future<void> pump(WidgetTester tester, {int? selected, bool follow = true}) => tester.pumpWidget(
+    MikkyUiTheme(
+      ui: MikkyUi.light,
+      child: Directionality(
+        textDirection: TextDirection.ltr,
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: SizedBox(
+            width: 200,
+            child: SlidingHover(
+              followHover: follow,
+              child: Column(
+                children: [
+                  for (var i = 0; i < 3; i++)
+                    HoverTarget(
+                      selected: i == selected,
+                      child: SizedBox(key: Key('row$i'), width: 200, height: 40),
+                    ),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     ),
-  ));
+  );
 
   /// The square's place, or null when there is none.
   Rect? marker(WidgetTester tester) {

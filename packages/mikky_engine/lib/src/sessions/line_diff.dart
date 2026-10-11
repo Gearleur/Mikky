@@ -22,7 +22,12 @@ class DiffLine {
   int get hashCode => Object.hash(op, text, oldLine, newLine);
 
   @override
-  String toString() => '${switch (op) { DiffOp.same => ' ', DiffOp.added => '+', DiffOp.removed => '-' }}$text';
+  String toString() =>
+      '${switch (op) {
+        DiffOp.same => ' ',
+        DiffOp.added => '+',
+        DiffOp.removed => '-',
+      }}$text';
 }
 
 /// A run of lines to show, or unchanged lines folded away.
@@ -45,7 +50,13 @@ class DiffFolded extends DiffChunk {
 /// Every line of a file change, in order: kept, added, removed (removed
 /// lines before the added ones that replace them).
 class LineDiff {
-  const LineDiff(this.lines, {required this.added, required this.removed, this.approximate = false, this.isNew = false});
+  const LineDiff(
+    this.lines, {
+    required this.added,
+    required this.removed,
+    this.approximate = false,
+    this.isNew = false,
+  });
 
   final List<DiffLine> lines;
   final int added, removed;
@@ -134,9 +145,7 @@ LineDiff lineDiff(String? before, String after) {
     endB--;
     endA--;
   }
-  final out = <DiffLine>[
-    for (var i = 0; i < start; i++) DiffLine(DiffOp.same, b[i], oldLine: i + 1, newLine: i + 1),
-  ];
+  final out = <DiffLine>[for (var i = 0; i < start; i++) DiffLine(DiffOp.same, b[i], oldLine: i + 1, newLine: i + 1)];
   var approximate = false;
   final middle = b.length + a.length > lineDiffMaxLines ? null : _myers(b, start, endB, a, start, endA);
   if (middle == null) {

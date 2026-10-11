@@ -33,13 +33,13 @@ import 'island_painter.dart';
 /// Size of the transparent window for each edge: big enough for the open
 /// island, the bubble and the shadow, so it never resizes while animating.
 Size windowSizeFor(IslandEdge edge) => switch (edge) {
-      // At the top, the notch is 700 wide (2026-10-05), up to 380 high
-      // for an agent's page: room for their shadow.
-      IslandEdge.top => const Size(840, 480),
-      // At the right, up to 344 × 520 (an agent's page): room for its
-      // shadow on the left.
-      IslandEdge.right => const Size(420, 700),
-    };
+  // At the top, the notch is 700 wide (2026-10-05), up to 380 high
+  // for an agent's page: room for their shadow.
+  IslandEdge.top => const Size(840, 480),
+  // At the right, up to 344 × 520 (an agent's page): room for its
+  // shadow on the left.
+  IslandEdge.right => const Size(420, 700),
+};
 
 /// The shader box goes this far past the screen edge: only the corners
 /// away from the edge are rounded.
@@ -47,7 +47,12 @@ const _pastEdge = 40.0;
 
 const _menuThemeAuto = 1, _menuThemeDark = 2, _menuThemeLight = 3;
 const _menuEdgeTop = 4, _menuEdgeRight = 5;
-const _menuDemoScenario = 6, _menuDemoAdd = 7, _menuDemoStop = 8, _menuQuit = 9, _menuTuning = 10, _menuNotifications = 11;
+const _menuDemoScenario = 6,
+    _menuDemoAdd = 7,
+    _menuDemoStop = 8,
+    _menuQuit = 9,
+    _menuTuning = 10,
+    _menuNotifications = 11;
 const _menuAutoRelaunch = 20;
 const _menuStopAll = 12;
 const _menuAutostart = 13;
@@ -250,9 +255,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       SchedulerBinding.instance.addTimingsCallback(collect);
       Timer(const Duration(seconds: 12), () {
         SchedulerBinding.instance.removeTimingsCallback(collect);
-        double avg(Duration Function(ui.FrameTiming) f) =>
-            timings.isEmpty ? 0 : timings.map((t) => f(t).inMicroseconds).reduce((a, b) => a + b) / timings.length / 1000;
-        final line = '${widget.bench!.name}: ${(timings.length / 12).toStringAsFixed(1)} frames/s, '
+        double avg(Duration Function(ui.FrameTiming) f) => timings.isEmpty
+            ? 0
+            : timings.map((t) => f(t).inMicroseconds).reduce((a, b) => a + b) / timings.length / 1000;
+        final line =
+            '${widget.bench!.name}: ${(timings.length / 12).toStringAsFixed(1)} frames/s, '
             'build ${avg((t) => t.buildDuration).toStringAsFixed(2)} ms, raster ${avg((t) => t.rasterDuration).toStringAsFixed(2)} ms, '
             'fast clock started $_wakes times, decor clock $_calms times, motion at rest ${_motion.isAtRest}, bubble at rest ${_bubble.isAtRest()}';
         File('${Platform.environment['TEMP']}/mikky-bench.txt').writeAsStringSync('$line\n', mode: FileMode.append);
@@ -329,7 +336,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (out < .01 || _motion.visibility <= 0) return null;
     final r = _islandRect;
     return switch (_edge) {
-      IslandEdge.top => SideBubble.at(Offset(r.right - 20, _motion.metrics.compact.height / 2), const Offset(1, 0), out),
+      IslandEdge.top => SideBubble.at(
+        Offset(r.right - 20, _motion.metrics.compact.height / 2),
+        const Offset(1, 0),
+        out,
+      ),
       IslandEdge.right => SideBubble.at(compactBubbleAnchor(r), const Offset(0, 1), out),
     };
   }
@@ -370,7 +381,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final prev = _snap;
     final s = _machine.snapshot;
     _snap = s;
-    if (_edge == IslandEdge.right && s.openReason == OpenReason.alert &&
+    if (_edge == IslandEdge.right &&
+        s.openReason == OpenReason.alert &&
         (prev.shape != IslandShape.open || prev.focus?.id != s.focus?.id)) {
       final id = s.focus?.id;
       if (id != null && !_demo) {
@@ -393,7 +405,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final layout = _layoutWanted;
     // The notch with nothing at work: Mikky takes his bigger place there,
     // as the home draws it (`HomeLayout.top`).
-    _motion.listIdle = _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
+    _motion.listIdle =
+        _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
     final relaid = layout != _motion.layout;
     // While Mikky greets, the island stays open for him.
     if (!_greeting && (s.shape != _motion.shape || relaid)) {
@@ -429,7 +442,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _bubble.target = s.bubble ? 1 : 0;
     _notify(s);
     // Mikky moving to his other place on the home counts too.
-    final changed = relaid || s.shape != prev.shape || s.bubble != prev.bubble || !_sameAgents(s.agents, prev.agents) || !_motion.isAtRest;
+    final changed =
+        relaid ||
+        s.shape != prev.shape ||
+        s.bubble != prev.bubble ||
+        !_sameAgents(s.agents, prev.agents) ||
+        !_motion.isAtRest;
     if (changed || !_settled) {
       _wake();
     } else {
@@ -681,8 +699,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       MenuEntry(_menuAutoRelaunch, 'Relance automatique', checked: Enchantments.instance.everywhere),
       if (widget.agents.canLaunch) const MenuEntry(_menuHooks, 'Hooks Claude Code…'),
       if (widget.agents.canLaunch) const MenuEntry(_menuHooksCodex, 'Hooks Codex…'),
-      if (widget.agents.canLaunch)
-        MenuEntry(_menuAutostart, 'Moteur au démarrage de Windows', checked: autostart),
+      if (widget.agents.canLaunch) MenuEntry(_menuAutostart, 'Moteur au démarrage de Windows', checked: autostart),
       const MenuEntry.separator(),
       if (widget.agents.canLaunch) const MenuEntry(_menuStopAll, 'Arrêter tous les agents de Mikky…'),
       MenuEntry(_menuQuit, 'Fermer Mikky · les agents continuent'),
@@ -692,16 +709,22 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       case _menuQuit:
         await _quit();
       case _menuAutostart:
-        try { await widget.agents.setAutostart(!autostart); }
-        catch (_) { await _menu([const MenuEntry(1, 'Windows n’a pas pu modifier le démarrage automatique')]); }
+        try {
+          await widget.agents.setAutostart(!autostart);
+        } catch (_) {
+          await _menu([const MenuEntry(1, 'Windows n’a pas pu modifier le démarrage automatique')]);
+        }
       case _menuStopAll:
         final sure = await _menu([
           const MenuEntry(1, 'Arrêter tous les agents lancés par Mikky'),
           const MenuEntry(2, 'Annuler'),
         ]);
         if (sure == 1) {
-          try { await widget.agents.stopAll(); }
-          catch (_) { await _menu([const MenuEntry(1, 'Arrêt non confirmé : vérifie la connexion au moteur')]); }
+          try {
+            await widget.agents.stopAll();
+          } catch (_) {
+            await _menu([const MenuEntry(1, 'Arrêt non confirmé : vérifie la connexion au moteur')]);
+          }
         }
       case _menuAutoRelaunch:
         Enchantments.instance.everywhere = !Enchantments.instance.everywhere;
@@ -759,7 +782,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
   }
 
-
   void _toggleSound() {
     final s = widget.settings;
     s.sound = !s.sound;
@@ -775,7 +797,11 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// is then left out, said once in the console.
   Future<void> _setHotkeys() async {
     final keys = widget.settings.hotkeys
-        ? const [(_hotkeyAlert, _modCtrlAlt, _vkA), (_hotkeyToggle, _modCtrlAlt, _vkSpace), (_hotkeyMute, _modCtrlAlt, _vkM)]
+        ? const [
+            (_hotkeyAlert, _modCtrlAlt, _vkA),
+            (_hotkeyToggle, _modCtrlAlt, _vkSpace),
+            (_hotkeyMute, _modCtrlAlt, _vkM),
+          ]
         : const <(int, int, int)>[];
     try {
       final refused = await _overlay.setHotkeys(keys);
@@ -919,8 +945,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // On the home, on a request he brings (an alert page), and in the
     // notch on an agent's page, beside the thread (2026-10-05).
     final top = _sideKey.currentState?.topKey ?? '';
-    final shownOnPage = top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
-    final mikkyTarget = _greeting || ((_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage) ? 0.0 : 1.0;
+    final shownOnPage =
+        top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
+    final mikkyTarget =
+        _greeting ||
+            ((_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage)
+        ? 0.0
+        : 1.0;
     _mikkyOpacity += (mikkyTarget - _mikkyOpacity) * math.min(1.0, dt * 14);
     if ((mikkyTarget - _mikkyOpacity).abs() < .01) _mikkyOpacity = mikkyTarget;
 
@@ -1035,7 +1066,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
               opacity: fade,
               child: CustomPaint(
                 size: Size(size.width, size.height),
-                painter: IntroPainter(Intros.pop, math.max(0, math.min(t, Intros.pop.duration)), _edge == IslandEdge.top ? 30 : 32, stage: false, theme: theme),
+                painter: IntroPainter(
+                  Intros.pop,
+                  math.max(0, math.min(t, Intros.pop.duration)),
+                  _edge == IslandEdge.top ? 30 : 32,
+                  stage: false,
+                  theme: theme,
+                ),
               ),
             ),
           ),
@@ -1052,7 +1089,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       opacity: opacity,
       child: Transform.translate(
         offset: Offset(0, (1 - opacity) * 6),
-        child: blur > .05 ? ImageFiltered(imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur), child: child) : child,
+        child: blur > .05
+            ? ImageFiltered(
+                imageFilter: ui.ImageFilter.blur(sigmaX: blur, sigmaY: blur),
+                child: child,
+              )
+            : child,
       ),
     );
   }
@@ -1065,7 +1107,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final count = Text('${s.agents.length}', style: monoStyle(theme, size: 11.5));
     if (s.pendingAlerts > 0) return count;
     if (focus.status == AgentStatus.finished) {
-      return CustomPaint(size: const Size(16, 16), painter: PillIndicatorPainter.check(color: theme.status(AgentStatus.finished)));
+      return CustomPaint(
+        size: const Size(16, 16),
+        painter: PillIndicatorPainter.check(color: theme.status(AgentStatus.finished)),
+      );
     }
     final progress = focus.progressAt(_clock.now);
     if (progress != null) {
@@ -1080,20 +1125,34 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   List<Widget> _compactContent(MikkyTheme theme, Rect rect) {
     final opacity = _motion.compactContentOpacity;
     if (opacity <= 0) return const [];
-    final name = Text('Mikky', style: sansStyle(theme, size: _edge == IslandEdge.top ? 13 : 11.5, weight: FontWeight.w600));
+    final name = Text(
+      'Mikky',
+      style: sansStyle(theme, size: _edge == IslandEdge.top ? 13 : 11.5, weight: FontWeight.w600),
+    );
     switch (_edge) {
       case IslandEdge.top:
         final slideUp = math.min(0.0, _motion.currentHeight - _motion.metrics.compact.height);
         final top = _motion.metrics.compact.height / 2 - 9 + slideUp;
         final indicator = _indicator(theme);
         return [
-          Positioned(left: rect.left + 44, top: top, height: 18, child: Opacity(opacity: opacity, child: Center(child: name))),
+          Positioned(
+            left: rect.left + 44,
+            top: top,
+            height: 18,
+            child: Opacity(
+              opacity: opacity,
+              child: Center(child: name),
+            ),
+          ),
           if (indicator != null)
             Positioned(
               right: _window.width - rect.right + 14,
               top: top,
               height: 18,
-              child: Opacity(opacity: opacity, child: Center(child: indicator)),
+              child: Opacity(
+                opacity: opacity,
+                child: Center(child: indicator),
+              ),
             ),
         ];
       case IslandEdge.right:
@@ -1107,7 +1166,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             height: 18,
             child: Opacity(
               opacity: opacity,
-              child: Center(child: CompactUnderMikky(theme: theme, status: _snap.bubble ? null : _snap.focus?.status)),
+              child: Center(
+                child: CompactUnderMikky(theme: theme, status: _snap.bubble ? null : _snap.focus?.status),
+              ),
             ),
           ),
         ];
@@ -1165,7 +1226,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                     offset: Offset(0, (1 - opacity) * 6),
                     child: MikkyUiTheme(
                       ui: ui,
-                      child: DefaultTextStyle(style: uiText(14, color: ui.text), child: KeyedSubtree(key: _sideArea, child: content)),
+                      child: DefaultTextStyle(
+                        style: uiText(14, color: ui.text),
+                        child: KeyedSubtree(key: _sideArea, child: content),
+                      ),
                     ),
                   ),
                 ),
@@ -1195,77 +1259,82 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       child: Listener(
         onPointerDown: _onPointerDown,
         child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTapUp: _onTapUp,
-        onSecondaryTapUp: (_) => _showMenu(),
-        child: Stack(
-          children: [
-            Positioned.fill(
-              // Own layer: Mikky moving every frame does not redraw the island.
-              child: RepaintBoundary(
-                child: CustomPaint(
-                  painter: IslandPainter(
-                    shader: _shader,
-                    shape: _shapeRect,
-                    visible: rect,
-                    radius: _motion.cornerRadius,
-                    visibility: _motion.visibility,
-                    theme: theme,
-                    devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
-                    side: side,
-                    corners: _corners,
-                  ),
-                ),
-              ),
-            ),
-            if (side != null && _bubbleOut > .45)
-              Positioned(
-                left: side.center.dx - 10,
-                top: side.center.dy - 10,
-                width: 20,
-                height: 20,
-                child: GestureDetector(
-                  onTap: () {
-                    final id = _snap.focus?.id;
-                    _machine.click(_clock.now);
-                    _apply();
-                    _overlay.activate();
-                    if (id != null && !_demo) _sideKey.currentState?.openAlert(id);
-                  },
-                  child: Opacity(
-                    opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
-                    child: BubbleStatus(theme: theme, status: _snap.focus?.status ?? AgentStatus.approval),
-                  ),
-                ),
-              ),
-            if (!_greeting) ..._compactContent(theme, rect),
-            _sideWindow(theme, rect, !_greeting && (_edge == IslandEdge.right || _topHomeShown) ? openOpacity : 0, _side),
-            if (_greeting) _greet(theme, rect),
-            if (!_greeting && openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
-              Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
-            ?countdown,
-            if (_mikkyOpacity > 0)
+          behavior: HitTestBehavior.translucent,
+          onTapUp: _onTapUp,
+          onSecondaryTapUp: (_) => _showMenu(),
+          child: Stack(
+            children: [
               Positioned.fill(
-                child: IgnorePointer(
-                  child: Opacity(
-                    opacity: _mikkyOpacity,
-                    child: RepaintBoundary(
-                      child: CustomPaint(
-                        painter: MikkyPainter(
-                          geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
-                          center: _mikkyCenter,
-                          rim: theme.mikkyRim,
-                          statusColor: theme.status,
-                          foreground: theme.foreground,
+                // Own layer: Mikky moving every frame does not redraw the island.
+                child: RepaintBoundary(
+                  child: CustomPaint(
+                    painter: IslandPainter(
+                      shader: _shader,
+                      shape: _shapeRect,
+                      visible: rect,
+                      radius: _motion.cornerRadius,
+                      visibility: _motion.visibility,
+                      theme: theme,
+                      devicePixelRatio: MediaQuery.devicePixelRatioOf(context),
+                      side: side,
+                      corners: _corners,
+                    ),
+                  ),
+                ),
+              ),
+              if (side != null && _bubbleOut > .45)
+                Positioned(
+                  left: side.center.dx - 10,
+                  top: side.center.dy - 10,
+                  width: 20,
+                  height: 20,
+                  child: GestureDetector(
+                    onTap: () {
+                      final id = _snap.focus?.id;
+                      _machine.click(_clock.now);
+                      _apply();
+                      _overlay.activate();
+                      if (id != null && !_demo) _sideKey.currentState?.openAlert(id);
+                    },
+                    child: Opacity(
+                      opacity: ((_bubbleOut - .45) * 3).clamp(0.0, 1.0),
+                      child: BubbleStatus(theme: theme, status: _snap.focus?.status ?? AgentStatus.approval),
+                    ),
+                  ),
+                ),
+              if (!_greeting) ..._compactContent(theme, rect),
+              _sideWindow(
+                theme,
+                rect,
+                !_greeting && (_edge == IslandEdge.right || _topHomeShown) ? openOpacity : 0,
+                _side,
+              ),
+              if (_greeting) _greet(theme, rect),
+              if (!_greeting && openOpacity > 0 && _edge == IslandEdge.top && !_topHomeShown)
+                Positioned(left: rect.left + 104, top: 16, child: _reveal(openOpacity, _openContentFor(theme))),
+              ?countdown,
+              if (_mikkyOpacity > 0)
+                Positioned.fill(
+                  child: IgnorePointer(
+                    child: Opacity(
+                      opacity: _mikkyOpacity,
+                      child: RepaintBoundary(
+                        child: CustomPaint(
+                          painter: MikkyPainter(
+                            geometry: MikkyGeometry.of(_mikky, _motion.mikkyRadius, tuning: widget.tuning),
+                            center: _mikkyCenter,
+                            rim: theme.mikkyRim,
+                            statusColor: theme.status,
+                            foreground: theme.foreground,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -1282,7 +1351,8 @@ class _RoundClip extends CustomClipper<RRect> {
   final double radius;
 
   @override
-  RRect getClip(Size size) => RRect.fromRectAndRadius(shape, Radius.circular(math.max(0.0, math.min(radius, shape.shortestSide / 2))));
+  RRect getClip(Size size) =>
+      RRect.fromRectAndRadius(shape, Radius.circular(math.max(0.0, math.min(radius, shape.shortestSide / 2))));
 
   @override
   bool shouldReclip(_RoundClip old) => old.shape != shape || old.radius != radius;

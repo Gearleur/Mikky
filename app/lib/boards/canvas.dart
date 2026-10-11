@@ -69,14 +69,20 @@ class BoardSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final only = BoardFilter.of(context);
-    final frames = [for (final f in this.frames) if (only == null || _kindOf(f) == only) f];
+    final frames = [
+      for (final f in this.frames)
+        if (only == null || _kindOf(f) == only) f,
+    ];
     if (frames.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 72),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: uiText(22, weight: FontWeight.w600, color: ui.text, tracking: -.01)),
+          Text(
+            title,
+            style: uiText(22, weight: FontWeight.w600, color: ui.text, tracking: -.01),
+          ),
           if (note != null)
             Padding(
               padding: const EdgeInsets.only(top: 6),
@@ -89,7 +95,8 @@ class BoardSection extends StatelessWidget {
           // Every frame's head as tall as the tallest: the screens of a row
           // start on one line (user request, 2026-09-30).
           _HeadHeight(
-            height: [for (final f in frames.whereType<BoardFrame>()) f._headHeight(context)].fold(0.0, (a, b) => a > b ? a : b),
+            height: [for (final f in frames.whereType<BoardFrame>()) f._headHeight(context)]
+                .fold(0.0, (a, b) => a > b ? a : b),
             kind: kind,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,13 +146,17 @@ class BoardFrame extends StatelessWidget {
   double _headHeight(BuildContext context) {
     final ui = MikkyUi.of(context);
     double measure(String text, TextStyle style, double width) {
-      final p = TextPainter(text: TextSpan(text: text, style: style), textDirection: TextDirection.ltr)..layout(maxWidth: width);
+      final p = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: width);
       final h = p.height;
       p.dispose();
       return h;
     }
 
-    return measure(label, _labelStyle(ui), double.infinity) + (note == null ? 0 : 3 + measure(note!, _noteStyle(ui), width ?? 320));
+    return measure(label, _labelStyle(ui), double.infinity) +
+        (note == null ? 0 : 3 + measure(note!, _noteStyle(ui), width ?? 320));
   }
 
   @override
@@ -157,15 +168,21 @@ class BoardFrame extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(label, style: _labelStyle(ui)),
-          const SizedBox(width: 8),
-          _Tag(k),
-        ]),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(label, style: _labelStyle(ui)),
+            const SizedBox(width: 8),
+            _Tag(k),
+          ],
+        ),
         if (note != null)
           Padding(
             padding: const EdgeInsets.only(top: 3),
-            child: SizedBox(width: width ?? 320, child: Text(note!, style: _noteStyle(ui))),
+            child: SizedBox(
+              width: width ?? 320,
+              child: Text(note!, style: _noteStyle(ui)),
+            ),
           ),
       ],
     );
@@ -174,7 +191,13 @@ class BoardFrame extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        if (height == null) head else SizedBox(height: height, child: Align(alignment: Alignment.topLeft, child: head)),
+        if (height == null)
+          head
+        else
+          SizedBox(
+            height: height,
+            child: Align(alignment: Alignment.topLeft, child: head),
+          ),
         const SizedBox(height: 10),
         // Its own layer: what moves in one frame does not draw the others
         // again.
@@ -197,11 +220,21 @@ class _Tag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(6, 2, 7, 2),
       decoration: BoxDecoration(color: color.withValues(alpha: .12), borderRadius: BorderRadius.circular(Radii.sm)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Container(width: 6, height: 6, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-        const SizedBox(width: 5),
-        Text(kind.label, style: uiText(TextSize.badge, weight: FontWeight.w600, color: ui.text2, height: 1.2)),
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            kind.label,
+            style: uiText(TextSize.badge, weight: FontWeight.w600, color: ui.text2, height: 1.2),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -251,17 +284,31 @@ class BoardRules extends StatelessWidget {
     return Container(
       width: width,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
-      decoration: BoxDecoration(color: ui.island, borderRadius: BorderRadius.circular(Radii.lg), border: Border.all(color: ui.line)),
+      decoration: BoxDecoration(
+        color: ui.island,
+        borderRadius: BorderRadius.circular(Radii.lg),
+        border: Border.all(color: ui.line),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           for (final (title, text) in rules)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
-              child: Text.rich(TextSpan(children: [
-                TextSpan(text: '$title  ', style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45)),
-                TextSpan(text: text, style: uiText(TextSize.small, color: ui.text2, height: 1.45)),
-              ])),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '$title  ',
+                      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.45),
+                    ),
+                    TextSpan(
+                      text: text,
+                      style: uiText(TextSize.small, color: ui.text2, height: 1.45),
+                    ),
+                  ],
+                ),
+              ),
             ),
         ],
       ),
@@ -414,7 +461,10 @@ class ZoomPill extends StatelessWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
             decoration: BoxDecoration(color: hover ? ui.hover : null, borderRadius: BorderRadius.circular(8)),
-            child: Text(label, style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, tabular: true)),
+            child: Text(
+              label,
+              style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, tabular: true),
+            ),
           ),
         ),
       ),
@@ -427,11 +477,14 @@ class ZoomPill extends StatelessWidget {
         border: Border.all(color: ui.line),
         boxShadow: const [BoxShadow(color: Color(0x14000000), blurRadius: 12, offset: Offset(0, 4))],
       ),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        button('−', () => canvas.currentState?.zoomBy(1 / 1.25)),
-        button('${(scale * 100).round()} %', () => canvas.currentState?.reset()),
-        button('+', () => canvas.currentState?.zoomBy(1.25)),
-      ]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button('−', () => canvas.currentState?.zoomBy(1 / 1.25)),
+          button('${(scale * 100).round()} %', () => canvas.currentState?.reset()),
+          button('+', () => canvas.currentState?.zoomBy(1.25)),
+        ],
+      ),
     );
   }
 }

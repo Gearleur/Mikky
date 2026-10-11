@@ -58,7 +58,10 @@ class DemoAgentSource implements AgentSource {
   /// The full scenario, starting at [now].
   void startScenario(double now) {
     stop();
-    _at(now, (t) => _add('refacto', 'Refacto API', AgentStatus.working, 'Edit src/routes.rs', t, progress: .35, rate: .012));
+    _at(
+      now,
+      (t) => _add('refacto', 'Refacto API', AgentStatus.working, 'Edit src/routes.rs', t, progress: .35, rate: .012),
+    );
     _at(now + 1.2, (t) => _add('vitrine', 'Site vitrine', AgentStatus.thinking, 'Lecture de package.json', t));
     _at(now + 2.5, (t) => _add('scraper', 'VPS · scraper', AgentStatus.searching, 'grep -r "proxy" src/', t));
     _at(now + 4, (t) => _set('vitrine', AgentStatus.working, t, detail: 'npm test', progress: .1, rate: .02));
@@ -115,21 +118,38 @@ class DemoAgentSource implements AgentSource {
     _events.insert(i, (at, run));
   }
 
-  void _add(String id, String name, AgentStatus status, String detail, double now, {double? progress, double rate = 0}) {
-    _agents.add(Agent(
-      id: id,
-      name: name,
-      status: status,
-      detail: detail,
-      startedAt: now,
-      statusSince: now,
-      progress: progress,
-      progressRate: rate,
-    ));
+  void _add(
+    String id,
+    String name,
+    AgentStatus status,
+    String detail,
+    double now, {
+    double? progress,
+    double rate = 0,
+  }) {
+    _agents.add(
+      Agent(
+        id: id,
+        name: name,
+        status: status,
+        detail: detail,
+        startedAt: now,
+        statusSince: now,
+        progress: progress,
+        progressRate: rate,
+      ),
+    );
   }
 
-  void _set(String id, AgentStatus status, double now,
-      {String? detail, double? progress, double? rate, bool clearProgress = false}) {
+  void _set(
+    String id,
+    AgentStatus status,
+    double now, {
+    String? detail,
+    double? progress,
+    double? rate,
+    bool clearProgress = false,
+  }) {
     final i = _agents.indexWhere((a) => a.id == id);
     if (i < 0) return;
     _agents[i] = _agents[i].copyWith(

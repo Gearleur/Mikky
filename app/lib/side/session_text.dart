@@ -26,7 +26,8 @@ String hourText(DateTime t) {
 }
 
 /// « Claude », « Codex · WSL ».
-String whoOf(AgentEntry e) => '${e.provider == AgentProvider.claude ? 'Claude' : 'Codex'}${e.host == AgentHost.wsl ? ' · WSL' : ''}';
+String whoOf(AgentEntry e) =>
+    '${e.provider == AgentProvider.claude ? 'Claude' : 'Codex'}${e.host == AgentHost.wsl ? ' · WSL' : ''}';
 
 String folderName(String? path) =>
     path == null ? '' : path.split(RegExp(r'[\\/]')).where((p) => p.isNotEmpty).lastOrNull ?? path;
@@ -57,7 +58,8 @@ String formatTokens(int n) {
 /// « Contexte 34 % · 12,3 k jetons » for an agent's page; empty if unknown.
 String usageLine(SessionLog log) {
   final parts = <String>[
-    if (log.contextSize != null && log.contextUsed != null) 'Contexte ${(100 * log.contextUsed! / log.contextSize!).round()} %',
+    if (log.contextSize != null && log.contextUsed != null)
+      'Contexte ${(100 * log.contextUsed! / log.contextSize!).round()} %',
     if (log.tokens > 0) '${formatTokens(log.tokens)} jetons',
   ];
   return parts.join(' · ');

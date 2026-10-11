@@ -108,9 +108,7 @@ void main() {
       var wasUp = false;
       for (var i = 0; i < 60 * 14; i++) {
         m.update(1 / 60);
-        final phase = m.form == MikkyForm.bang && m.morph > .9
-            ? 'B'
-            : (m.morph.abs() < .1 ? 'C' : null);
+        final phase = m.form == MikkyForm.bang && m.morph > .9 ? 'B' : (m.morph.abs() < .1 ? 'C' : null);
         if (phase != null && (phases.isEmpty || phases.last != phase)) phases.add(phase);
         final up = m.pose.offsetY < -.1;
         if (up && !wasUp && phases.isNotEmpty) {

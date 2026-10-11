@@ -289,7 +289,10 @@ class GulpPainter extends CustomPainter {
     final g = base.reshaped(contour: contour, eyes: eyes);
 
     // He stands a little away from where the air comes from.
-    final center = Offset(size.width / 2 - dx * r * (.55 + .6 * p.stretch), size.height * .56 - dy.clamp(0.0, 1.0) * r * .2);
+    final center = Offset(
+      size.width / 2 - dx * r * (.55 + .6 * p.stretch),
+      size.height * .56 - dy.clamp(0.0, 1.0) * r * .2,
+    );
     final pivot = center + Offset(0, r * .95);
 
     // His shadow on the ground stays put while he leans.
@@ -333,7 +336,9 @@ class GulpPainter extends CustomPainter {
     ).paint(canvas, size);
 
     canvas.translate(center.dx, center.dy);
-    canvas.clipPath(Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(contour[i * 2], contour[i * 2 + 1])], true));
+    canvas.clipPath(
+      Path()..addPolygon([for (var i = 0; i < g.pointCount; i++) Offset(contour[i * 2], contour[i * 2 + 1])], true),
+    );
     _mouth(canvas, mouth, along, across, p.toward, r, p.mouthShape);
     canvas.restore();
   }
@@ -350,13 +355,23 @@ class GulpPainter extends CustomPainter {
     final outline = switch (shape) {
       GulpMouth.oval => Path()..addOval(rect),
       // The top lip nearly flat, a little dipped; the bottom a deep curve.
-      GulpMouth.dee => Path()
-        ..moveTo(-w / 2, -h * .22)
-        ..quadraticBezierTo(0, -h * .62, w / 2, -h * .22)
-        ..cubicTo(w / 2, h * .42, w * .22, h / 2, 0, h / 2)
-        ..cubicTo(-w * .22, h / 2, -w / 2, h * .42, -w / 2, -h * .22)
-        ..close(),
-      GulpMouth.soft => Path()..addRRect(RRect.fromRectAndCorners(rect, topLeft: Radius.elliptical(w * .3, h * .45), topRight: Radius.elliptical(w * .3, h * .45), bottomLeft: Radius.elliptical(w * .4, h * .55), bottomRight: Radius.elliptical(w * .4, h * .55))),
+      GulpMouth.dee =>
+        Path()
+          ..moveTo(-w / 2, -h * .22)
+          ..quadraticBezierTo(0, -h * .62, w / 2, -h * .22)
+          ..cubicTo(w / 2, h * .42, w * .22, h / 2, 0, h / 2)
+          ..cubicTo(-w * .22, h / 2, -w / 2, h * .42, -w / 2, -h * .22)
+          ..close(),
+      GulpMouth.soft =>
+        Path()..addRRect(
+          RRect.fromRectAndCorners(
+            rect,
+            topLeft: Radius.elliptical(w * .3, h * .45),
+            topRight: Radius.elliptical(w * .3, h * .45),
+            bottomLeft: Radius.elliptical(w * .4, h * .55),
+            bottomRight: Radius.elliptical(w * .4, h * .55),
+          ),
+        ),
     };
     canvas.drawPath(
       outline,
@@ -371,18 +386,38 @@ class GulpPainter extends CustomPainter {
     canvas.clipPath(outline);
     // The throat, at the back: up and in the middle, seen from the front.
     final throat = Rect.fromCenter(center: Offset(0, -h * .1), width: w * .85, height: h * .6);
-    canvas.drawOval(throat, Paint()..shader = const RadialGradient(colors: [Color(0x662A020A), Color(0x002A020A)]).createShader(throat));
+    canvas.drawOval(
+      throat,
+      Paint()..shader = const RadialGradient(colors: [Color(0x662A020A), Color(0x002A020A)]).createShader(throat),
+    );
     // The tongue, at the bottom.
     final tongue = Rect.fromCenter(center: Offset(0, h * .4), width: w * .72, height: h * .48);
-    canvas.drawOval(tongue, Paint()..shader = const RadialGradient(center: Alignment(0, -.4), colors: [Color(0xFFFF9AA8), Color(0xFFE5506A)]).createShader(tongue));
+    canvas.drawOval(
+      tongue,
+      Paint()
+        ..shader = const RadialGradient(
+          center: Alignment(0, -.4),
+          colors: [Color(0xFFFF9AA8), Color(0xFFE5506A)],
+        ).createShader(tongue),
+    );
     // The top lip's shadow, then a soft shine, like a lit sweet.
     final top = Rect.fromLTWH(-w / 2, -h / 2, w, h * .38);
     canvas.drawRect(
       top,
-      Paint()..shader = const LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [Color(0x99300208), Color(0x00300208)]).createShader(top),
+      Paint()
+        ..shader = const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0x99300208), Color(0x00300208)],
+        ).createShader(top),
     );
     final shine = Rect.fromCenter(center: Offset(-w * .22, -h * .08), width: w * .22, height: h * .13);
-    canvas.drawOval(shine, Paint()..color = const Color(0x40FFFFFF)..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .03));
+    canvas.drawOval(
+      shine,
+      Paint()
+        ..color = const Color(0x40FFFFFF)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * .03),
+    );
     canvas.restore();
   }
 
@@ -438,7 +473,10 @@ class GulpPainter extends CustomPainter {
       for (var k = 0; k < 4; k++) {
         final q = lip + dir * (head + k * px * 1.3);
         paint.color = levels[math.min(k, levels.length - 1)].withValues(alpha: alpha * (1 - k * .2));
-        canvas.drawRect(Rect.fromLTWH((q.dx / px).roundToDouble() * px, (q.dy / px).roundToDouble() * px, px, px), paint);
+        canvas.drawRect(
+          Rect.fromLTWH((q.dx / px).roundToDouble() * px, (q.dy / px).roundToDouble() * px, px, px),
+          paint,
+        );
       }
     }
   }
@@ -478,7 +516,10 @@ class GulpPainter extends CustomPainter {
     canvas.rotate(toMouth);
     canvas.scale(1.18 + .06 * breath, .88);
     canvas.rotate(-toMouth + .18 * math.sin(t * 2 * math.pi / pose.period * 2));
-    final page = RRect.fromRectAndRadius(Rect.fromCenter(center: Offset.zero, width: w, height: h), Radius.circular(w * .12));
+    final page = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset.zero, width: w, height: h),
+      Radius.circular(w * .12),
+    );
     canvas.drawRRect(page.shift(Offset(0, r * .04)), Paint()..color = const Color(0x22000000));
     canvas.drawRRect(page, Paint()..color = const Color(0xFFFFFFFF));
     canvas.drawRRect(
@@ -504,5 +545,6 @@ class GulpPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(GulpPainter old) => old.pose != pose || old.theme != theme || old.radius != radius || old.time != time;
+  bool shouldRepaint(GulpPainter old) =>
+      old.pose != pose || old.theme != theme || old.radius != radius || old.time != time;
 }

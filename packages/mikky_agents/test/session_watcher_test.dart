@@ -21,12 +21,17 @@ void main() {
   });
   tearDown(() async => home.delete(recursive: true));
 
-  SessionWatcher watcher() =>
-      SessionWatcher(target: WindowsTarget(), claudeProjects: claude, codexSessions: codex, since: const Duration(days: 30000));
+  SessionWatcher watcher() => SessionWatcher(
+    target: WindowsTarget(),
+    claudeProjects: claude,
+    codexSessions: codex,
+    since: const Duration(days: 30000),
+  );
 
   test('reads recent session files at start', () async {
     File('$claude/C--p/1735f552.jsonl').writeAsStringSync('${fixtureLines('claude/wsl_plan.jsonl').join('\n')}\n');
-    File('$codex/2026/09/29/rollout-x.jsonl').writeAsStringSync('${fixtureLines('codex/windows_steer.jsonl').join('\n')}\n');
+    File('$codex/2026/09/29/rollout-x.jsonl')
+        .writeAsStringSync('${fixtureLines('codex/windows_steer.jsonl').join('\n')}\n');
     // Not sessions: a subagent's file, and something else.
     await Directory('$claude/C--p/1735f552/subagents').create(recursive: true);
     File('$claude/C--p/1735f552/subagents/a.jsonl').writeAsStringSync('{}\n');
@@ -67,7 +72,8 @@ void main() {
     await w.start();
     addTearDown(w.stop);
     final got = w.updates.first.timeout(const Duration(seconds: 10));
-    File('$codex/2026/09/29/rollout-y.jsonl').writeAsStringSync('${fixtureLines('codex/windows_deny.jsonl').join('\n')}\n');
+    File('$codex/2026/09/29/rollout-y.jsonl')
+        .writeAsStringSync('${fixtureLines('codex/windows_deny.jsonl').join('\n')}\n');
     final s = await got;
     expect(s.provider, AgentProvider.codex);
     expect(s.host, AgentHost.windows);

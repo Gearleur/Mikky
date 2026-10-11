@@ -28,7 +28,15 @@ class TabItem {
 /// selectors' spring; the chosen icon pops (500 / 0.45, from 0.78).
 /// Kept for later (user, 2026-09-29).
 class MTabBar extends StatelessWidget {
-  const MTabBar({super.key, required this.items, required this.selected, this.onChanged, this.mini = false, this.height, this.ink = false});
+  const MTabBar({
+    super.key,
+    required this.items,
+    required this.selected,
+    this.onChanged,
+    this.mini = false,
+    this.height,
+    this.ink = false,
+  });
 
   final List<TabItem> items;
   final int selected;
@@ -70,7 +78,11 @@ class MTabBar extends StatelessWidget {
                         top: 0,
                         bottom: 0,
                         width: col + stretch,
-                        child: Surface(radius: mini ? (height - 10) / 2 : 26, color: ink ? ui.ink : ui.thumb, shadows: ink ? ui.shInk : ui.shThumb),
+                        child: Surface(
+                          radius: mini ? (height - 10) / 2 : 26,
+                          color: ink ? ui.ink : ui.thumb,
+                          shadows: ink ? ui.shInk : ui.shThumb,
+                        ),
                       ),
                     ],
                   );
@@ -85,7 +97,13 @@ class MTabBar extends StatelessWidget {
                   width: col,
                   child: PressDown(
                     onDown: onChanged == null || i == selected ? null : () => onChanged!(i),
-                    child: _Tab(item: items[i], on: i == selected, mini: mini, ink: ink, iconSize: height >= 52 ? 21 : (height >= 36 ? 18 : (height >= 30 ? 15 : 13))),
+                    child: _Tab(
+                      item: items[i],
+                      on: i == selected,
+                      mini: mini,
+                      ink: ink,
+                      iconSize: height >= 52 ? 21 : (height >= 36 ? 18 : (height >= 30 ? 15 : 13)),
+                    ),
                   ),
                 ),
             ],
@@ -118,7 +136,10 @@ class MTabBar extends StatelessWidget {
     );
   }
 
-  static final _frost = dui.ImageFilter.compose(outer: _saturate(1.5), inner: dui.ImageFilter.blur(sigmaX: 10, sigmaY: 10));
+  static final _frost = dui.ImageFilter.compose(
+    outer: _saturate(1.5),
+    inner: dui.ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+  );
 
   static ColorFilter _saturate(double s) {
     const r = .2126, g = .7152, b = .0722;

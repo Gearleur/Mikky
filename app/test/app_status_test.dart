@@ -37,18 +37,27 @@ void main() {
   testWidgets('each state draws its pixels in its color on the tile', (tester) async {
     for (final ui in [MikkyUi.light, MikkyUi.dark]) {
       for (final s in [UiStatus.working, UiStatus.approval, UiStatus.finished, UiStatus.error, UiStatus.limited]) {
-        await tester.pumpWidget(MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
-          child: Directionality(
-            textDirection: TextDirection.ltr,
-            child: MikkyUiTheme(ui: ui, child: Center(child: AppTile(size: 64, status: s))),
+        await tester.pumpWidget(
+          MediaQuery(
+            data: const MediaQueryData(disableAnimations: true),
+            child: Directionality(
+              textDirection: TextDirection.ltr,
+              child: MikkyUiTheme(
+                ui: ui,
+                child: Center(child: AppTile(size: 64, status: s)),
+              ),
+            ),
           ),
-        ));
+        );
         expect(find.byType(StatusFx), findsOneWidget, reason: '$s');
         final fx = tester.widget<PixelFx>(find.byType(PixelFx));
         expect(fx.palette.name, PixelFxPalette.of(s, ui).name, reason: '$s');
         // Something is drawn in the badge (not an empty square).
-        expect(find.descendant(of: find.byType(PixelFx), matching: find.byType(CustomPaint)), findsWidgets, reason: '$s');
+        expect(
+          find.descendant(of: find.byType(PixelFx), matching: find.byType(CustomPaint)),
+          findsWidgets,
+          reason: '$s',
+        );
       }
     }
   });

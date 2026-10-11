@@ -106,42 +106,49 @@ class CompactIslandPreview extends StatelessWidget {
       child: SizedBox(
         width: island.right,
         height: island.bottom + _below,
-        child: Stack(children: [
-          Positioned.fill(
-            child: CustomPaint(
-              painter: IslandPainter(
-                shader: program?.fragmentShader(),
-                shape: Rect.fromLTRB(island.left, island.top, island.right + 40, island.bottom),
-                visible: island,
-                radius: _m.compactRadius,
-                visibility: 1,
-                theme: theme,
-                devicePixelRatio: MediaQuery.maybeDevicePixelRatioOf(context) ?? 1,
-                side: bubble,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: CustomPaint(
+                painter: IslandPainter(
+                  shader: program?.fragmentShader(),
+                  shape: Rect.fromLTRB(island.left, island.top, island.right + 40, island.bottom),
+                  visible: island,
+                  radius: _m.compactRadius,
+                  visibility: 1,
+                  theme: theme,
+                  devicePixelRatio: MediaQuery.maybeDevicePixelRatioOf(context) ?? 1,
+                  side: bubble,
+                ),
               ),
             ),
-          ),
-          Positioned(
-            left: island.left + spot.x - size / 2,
-            top: island.top + spot.y - size * .54,
-            child: MiniMikky(key: ValueKey(status), size: size, state: mikkyStateFor(status)),
-          ),
-          Positioned(
-            left: island.left,
-            top: island.top + 57,
-            width: w,
-            height: 18,
-            child: Center(child: CompactUnderMikky(theme: theme, status: status)),
-          ),
-          if (bubble != null && out > .45)
             Positioned(
-              left: bubble.center.dx - 10,
-              top: bubble.center.dy - 10,
-              width: 20,
-              height: 20,
-              child: Opacity(opacity: ((out - .45) * 3).clamp(0.0, 1.0), child: BubbleStatus(theme: theme, status: status!)),
+              left: island.left + spot.x - size / 2,
+              top: island.top + spot.y - size * .54,
+              child: MiniMikky(key: ValueKey(status), size: size, state: mikkyStateFor(status)),
             ),
-        ]),
+            Positioned(
+              left: island.left,
+              top: island.top + 57,
+              width: w,
+              height: 18,
+              child: Center(
+                child: CompactUnderMikky(theme: theme, status: status),
+              ),
+            ),
+            if (bubble != null && out > .45)
+              Positioned(
+                left: bubble.center.dx - 10,
+                top: bubble.center.dy - 10,
+                width: 20,
+                height: 20,
+                child: Opacity(
+                  opacity: ((out - .45) * 3).clamp(0.0, 1.0),
+                  child: BubbleStatus(theme: theme, status: status!),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

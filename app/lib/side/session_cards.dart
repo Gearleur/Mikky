@@ -47,10 +47,11 @@ class LimitActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Align(
     alignment: Alignment.centerRight,
-    child: AnswerBar(answers: [if (onFinish != null) ('Terminer', onFinish), if (onSpell != null) ('Relance auto', onSpell)]),
+    child: AnswerBar(
+      answers: [if (onFinish != null) ('Terminer', onFinish), if (onSpell != null) ('Relance auto', onSpell)],
+    ),
   );
 }
-
 
 /// The limit card, tied to the spell of its agent (relaunched by itself
 /// when the limit lifts, set in its ··· menu).
@@ -213,7 +214,16 @@ class AutoRelaunchMark extends StatelessWidget {
 /// (2026-10-01): one line, like under the spell, « Ensorcelé · se relance
 /// à 17 h 11 » with the violet star, then the flat answer bar.
 class LimitCard extends StatelessWidget {
-  const LimitCard({super.key, this.resetsAt, this.seen, this.message, this.relaunchAt, this.relaunched = false, this.onFinish, this.onSpell});
+  const LimitCard({
+    super.key,
+    this.resetsAt,
+    this.seen,
+    this.message,
+    this.relaunchAt,
+    this.relaunched = false,
+    this.onFinish,
+    this.onSpell,
+  });
 
   /// When it stopped: a reset another day says its day.
   final DateTime? seen;
@@ -236,33 +246,43 @@ class LimitCard extends StatelessWidget {
     final spell = relaunchAt != null || relaunched;
     final line = Padding(
       padding: const EdgeInsets.fromLTRB(2, 4, 2, 4),
-      child: Row(children: [
-        spell ? const SpellFx(size: 20) : const StatusFx(UiStatus.limited, size: 20),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text.rich(
-            TextSpan(children: [
+      child: Row(
+        children: [
+          spell ? const SpellFx(size: 20) : const StatusFx(UiStatus.limited, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
               TextSpan(
-                text: spell ? 'Ensorcelé' : 'Limite atteinte',
-                style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, height: 1.3),
+                children: [
+                  TextSpan(
+                    text: spell ? 'Ensorcelé' : 'Limite atteinte',
+                    style: uiText(TextSize.heading, weight: FontWeight.w600, color: ui.text, height: 1.3),
+                  ),
+                  TextSpan(
+                    text: spell
+                        ? (relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}')
+                        : (resetsAt == null
+                              ? ' · ${message ?? 'réessaie plus tard'}'
+                              : ' · ${limitWhen(resetsAt!, seen: seen)}'),
+                    style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
+                  ),
+                ],
               ),
-              TextSpan(
-                text: spell
-                    ? (relaunched ? ' · relancé' : ' · se relance à ${hourText(relaunchAt!)}')
-                    : (resetsAt == null ? ' · ${message ?? 'réessaie plus tard'}' : ' · ${limitWhen(resetsAt!, seen: seen)}'),
-                style: uiText(TextSize.lead, color: ui.text2, height: 1.3),
-              ),
-            ]),
+            ),
           ),
-        ),
-      ]),
+        ],
+      ),
     );
     final finish = relaunched ? null : onFinish;
     final relaunch = spell ? null : onSpell;
     if (finish == null && relaunch == null) return line;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [line, const SizedBox(height: 6), LimitActions(onFinish: finish, onSpell: relaunch)],
+      children: [
+        line,
+        const SizedBox(height: 6),
+        LimitActions(onFinish: finish, onSpell: relaunch),
+      ],
     );
   }
 }
@@ -277,17 +297,17 @@ class AskCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AgentCard(
-        status: UiStatus.approval,
-        title: askLabel(log),
-        who: '',
-        style: AgentCardStyle.waiting,
-        actions: WaitActions(
-          command: log.detail,
-          onYes: () => onAnswer(AgentAnswer.allow),
-          onNo: () => onAnswer(AgentAnswer.deny),
-          onAlways: canAlways(log) ? () => onAnswer(AgentAnswer.allowAlways) : null,
-        ),
-      );
+    status: UiStatus.approval,
+    title: askLabel(log),
+    who: '',
+    style: AgentCardStyle.waiting,
+    actions: WaitActions(
+      command: log.detail,
+      onYes: () => onAnswer(AgentAnswer.allow),
+      onNo: () => onAnswer(AgentAnswer.deny),
+      onAlways: canAlways(log) ? () => onAnswer(AgentAnswer.allowAlways) : null,
+    ),
+  );
 }
 
 /// An agent put on hold: its turn stopped, its session kept. « Reprendre »
@@ -299,14 +319,16 @@ class PausedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => AgentCard(
-        status: UiStatus.paused,
-        title: 'En pause',
-        who: '',
-        subtitle: 'Travail arrêté, session gardée',
-        actions: Align(alignment: Alignment.centerRight, child: AnswerBar(answers: [('Reprendre', onResume)])),
-      );
+    status: UiStatus.paused,
+    title: 'En pause',
+    who: '',
+    subtitle: 'Travail arrêté, session gardée',
+    actions: Align(
+      alignment: Alignment.centerRight,
+      child: AnswerBar(answers: [('Reprendre', onResume)]),
+    ),
+  );
 }
-
 
 /// A question with choices (Claude's question tool): the question, its
 /// choices as chips (one, or several), then Envoyer — or Passer, to let
@@ -336,47 +358,70 @@ class _QuestionCardState extends State<QuestionCard> {
       color: ui.well,
       shadows: [ui.waitRing],
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        if (q.questions.length > 1 || q.questions.first.text.isEmpty)
-          Padding(padding: const EdgeInsets.only(bottom: 8), child: Text(q.message, style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text))),
-        for (final x in q.questions) ...[
-          if (x.text.isNotEmpty) Text(x.text, style: uiText(q.questions.length > 1 ? TextSize.label : TextSize.body, weight: FontWeight.w600, color: ui.text)),
-          const SizedBox(height: 8),
-          Wrap(spacing: 6, runSpacing: 6, children: [
-            for (final c in x.choices)
-              MChip(
-                c.label,
-                on: _picked[x.key]?.contains(c.label) ?? false,
-                onTap: () => setState(() {
-                  final set = _picked[x.key] ??= {};
-                  if (x.multiple) {
-                    set.contains(c.label) ? set.remove(c.label) : set.add(c.label);
-                  } else {
-                    set
-                      ..clear()
-                      ..add(c.label);
-                  }
-                }),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (q.questions.length > 1 || q.questions.first.text.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                q.message,
+                style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text),
               ),
-          ]),
-          const SizedBox(height: 10),
-        ],
-        Row(children: [
-          MButton('Passer', small: true, kind: ButtonKind.ghost, onPressed: () => widget.onAnswer(null)),
-          const Spacer(),
-          MButton(
-            'Envoyer',
-            small: true,
-            kind: ButtonKind.primary,
-            onPressed: complete
-                ? () => widget.onAnswer({
-                      for (final x in q.questions)
-                        x.key: x.multiple ? _picked[x.key]!.toList() : _picked[x.key]!.first,
-                    })
-                : null,
+            ),
+          for (final x in q.questions) ...[
+            if (x.text.isNotEmpty)
+              Text(
+                x.text,
+                style: uiText(
+                  q.questions.length > 1 ? TextSize.label : TextSize.body,
+                  weight: FontWeight.w600,
+                  color: ui.text,
+                ),
+              ),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final c in x.choices)
+                  MChip(
+                    c.label,
+                    on: _picked[x.key]?.contains(c.label) ?? false,
+                    onTap: () => setState(() {
+                      final set = _picked[x.key] ??= {};
+                      if (x.multiple) {
+                        set.contains(c.label) ? set.remove(c.label) : set.add(c.label);
+                      } else {
+                        set
+                          ..clear()
+                          ..add(c.label);
+                      }
+                    }),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 10),
+          ],
+          Row(
+            children: [
+              MButton('Passer', small: true, kind: ButtonKind.ghost, onPressed: () => widget.onAnswer(null)),
+              const Spacer(),
+              MButton(
+                'Envoyer',
+                small: true,
+                kind: ButtonKind.primary,
+                onPressed: complete
+                    ? () => widget.onAnswer({
+                        for (final x in q.questions)
+                          x.key: x.multiple ? _picked[x.key]!.toList() : _picked[x.key]!.first,
+                      })
+                    : null,
+              ),
+            ],
           ),
-        ]),
-      ]),
+        ],
+      ),
     );
   }
 }
@@ -400,11 +445,16 @@ class SubscriptionLimits extends StatelessWidget {
           for (final (brand, text) in lines)
             Padding(
               padding: const EdgeInsets.only(bottom: 4),
-              child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(brand, size: 12)),
-                const SizedBox(width: 6),
-                Expanded(child: Text(text, style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true))),
-              ]),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(padding: const EdgeInsets.only(top: 1), child: BrandLogo(brand, size: 12)),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(text, style: uiText(11.5, color: ui.text3, height: 1.3, tabular: true)),
+                  ),
+                ],
+              ),
             ),
         ],
       ),

@@ -25,7 +25,10 @@ void main() {
               maxWidth: double.infinity,
               minHeight: 0,
               maxHeight: double.infinity,
-              child: RepaintBoundary(key: key, child: BoardBand(spec: spec, ui: ui)),
+              child: RepaintBoundary(
+                key: key,
+                child: BoardBand(spec: spec, ui: ui),
+              ),
             ),
           ),
         );

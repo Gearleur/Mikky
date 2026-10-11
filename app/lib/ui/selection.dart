@@ -34,7 +34,10 @@ class _SelectableAreaState extends State<SelectableArea> {
       child: SelectableRegion(
         focusNode: _focus,
         selectionControls: emptyTextSelectionControls,
-        contextMenuBuilder: (context, state) => MikkyUiTheme(ui: ui, child: _CopyMenu(state: state)),
+        contextMenuBuilder: (context, state) => MikkyUiTheme(
+          ui: ui,
+          child: _CopyMenu(state: state),
+        ),
         child: widget.child,
       ),
     );

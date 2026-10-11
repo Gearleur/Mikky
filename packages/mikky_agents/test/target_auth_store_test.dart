@@ -87,9 +87,15 @@ void main() {
         ),
       );
       for (var i = 0; i < 10; i++) {
-        store.usedFolder('/p$i', const LaunchChoice(provider: AgentProvider.claude, host: AgentHost.wsl, permissions: PermissionMode.ask));
+        store.usedFolder(
+          '/p$i',
+          const LaunchChoice(provider: AgentProvider.claude, host: AgentHost.wsl, permissions: PermissionMode.ask),
+        );
       }
-      store.usedFolder('/p3', const LaunchChoice(provider: AgentProvider.codex, host: AgentHost.wsl, permissions: PermissionMode.auto));
+      store.usedFolder(
+        '/p3',
+        const LaunchChoice(provider: AgentProvider.codex, host: AgentHost.wsl, permissions: PermissionMode.auto),
+      );
       await store.save();
 
       final again = AgentStore(store.file);

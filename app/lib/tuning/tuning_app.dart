@@ -20,16 +20,16 @@ class TuningApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-        title: 'Réglage de Mikky',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: 'Geist',
-          colorSchemeSeed: const Color(0xFF007AFF),
-          scaffoldBackgroundColor: const Color(0xFFF5F5F7),
-        ),
-        home: _TuningPage(tuning: tuning),
-      );
+    title: 'Réglage de Mikky',
+    debugShowCheckedModeBanner: false,
+    theme: ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Geist',
+      colorSchemeSeed: const Color(0xFF007AFF),
+      scaffoldBackgroundColor: const Color(0xFFF5F5F7),
+    ),
+    home: _TuningPage(tuning: tuning),
+  );
 }
 
 const _stateLabels = {
@@ -116,7 +116,9 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
   Future<void> _save() async {
     final messenger = ScaffoldMessenger.of(context);
     await Settings.saveTuning(_tuning);
-    messenger.showSnackBar(const SnackBar(content: Text('Enregistré. Relance l\'île (Quitter puis relancer) pour l\'appliquer.')));
+    messenger.showSnackBar(
+      const SnackBar(content: Text('Enregistré. Relance l\'île (Quitter puis relancer) pour l\'appliquer.')),
+    );
   }
 
   Future<void> _copy() async {
@@ -152,77 +154,77 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
   }
 
   Widget _bigCard(MikkyTheme island) => ClipRRect(
-        borderRadius: BorderRadius.circular(16),
-        child: MouseRegion(
-          onHover: (e) {
-            _pointer = e.localPosition;
-            final box = _bigKey.currentContext?.findRenderObject() as RenderBox?;
-            if (box == null) return;
-            final over = (e.localPosition - _bigCenter(box.size)).distance < _bigRadius * 1.2;
-            _mikky.hover(over);
-            if (over) _mikky.pointerMoved();
-          },
-          onExit: (_) {
-            _pointer = null;
-            _mikky.hover(false);
-          },
-          child: GestureDetector(
-            onTap: _mikky.boop,
-            child: ColoredBox(
-              key: _bigKey,
-              color: _dark ? const Color(0xFF070708) : const Color(0xFFEEE9E1),
-              child: LayoutBuilder(
-                builder: (context, c) => CustomPaint(
-                  size: Size(c.maxWidth, c.maxHeight),
-                  painter: MikkyPainter(
-                    geometry: MikkyGeometry.of(_mikky, _bigRadius, tuning: _tuning),
-                    center: _bigCenter(Size(c.maxWidth, c.maxHeight)),
-                    rim: island.mikkyRim,
-                    statusColor: island.status,
-                    foreground: island.foreground,
-                  ),
-                ),
+    borderRadius: BorderRadius.circular(16),
+    child: MouseRegion(
+      onHover: (e) {
+        _pointer = e.localPosition;
+        final box = _bigKey.currentContext?.findRenderObject() as RenderBox?;
+        if (box == null) return;
+        final over = (e.localPosition - _bigCenter(box.size)).distance < _bigRadius * 1.2;
+        _mikky.hover(over);
+        if (over) _mikky.pointerMoved();
+      },
+      onExit: (_) {
+        _pointer = null;
+        _mikky.hover(false);
+      },
+      child: GestureDetector(
+        onTap: _mikky.boop,
+        child: ColoredBox(
+          key: _bigKey,
+          color: _dark ? const Color(0xFF070708) : const Color(0xFFEEE9E1),
+          child: LayoutBuilder(
+            builder: (context, c) => CustomPaint(
+              size: Size(c.maxWidth, c.maxHeight),
+              painter: MikkyPainter(
+                geometry: MikkyGeometry.of(_mikky, _bigRadius, tuning: _tuning),
+                center: _bigCenter(Size(c.maxWidth, c.maxHeight)),
+                rim: island.mikkyRim,
+                statusColor: island.status,
+                foreground: island.foreground,
               ),
             ),
           ),
         ),
-      );
+      ),
+    ),
+  );
 
   /// Mikky at his real sizes in the island (closed 9, open 28), on both
   /// island themes.
   Widget _previews() {
     Widget one(String label, double radius, MikkyTheme t) => Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                color: t.isLight ? Colors.white : const Color(0xFF070708),
-                borderRadius: BorderRadius.circular(radius < 20 ? 18 : 24),
-                border: Border.all(color: const Color(0x1F000000), width: .5),
-              ),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: MikkyPainter(
-                        geometry: MikkyGeometry.of(_mikky, radius, tuning: _tuning),
-                        center: Offset(radius < 20 ? 30 : 60, radius < 20 ? 60 : 68),
-                        rim: t.mikkyRim,
-                        statusColor: t.status,
-                        foreground: t.foreground,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 10,
-                    bottom: 8,
-                    child: Text(label, style: TextStyle(fontSize: 11, color: t.secondary)),
-                  ),
-                ],
-              ),
-            ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: t.isLight ? Colors.white : const Color(0xFF070708),
+            borderRadius: BorderRadius.circular(radius < 20 ? 18 : 24),
+            border: Border.all(color: const Color(0x1F000000), width: .5),
           ),
-        );
+          child: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: MikkyPainter(
+                    geometry: MikkyGeometry.of(_mikky, radius, tuning: _tuning),
+                    center: Offset(radius < 20 ? 30 : 60, radius < 20 ? 60 : 68),
+                    rim: t.mikkyRim,
+                    statusColor: t.status,
+                    foreground: t.foreground,
+                  ),
+                ),
+              ),
+              Positioned(
+                right: 10,
+                bottom: 8,
+                child: Text(label, style: TextStyle(fontSize: 11, color: t.secondary)),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
     return Row(
       children: [
         one('fermée · noir', 9, MikkyTheme.dark),
@@ -236,18 +238,21 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
   Widget _controls(BuildContext context) {
     final t = _tuning;
     Widget section(String title) => Padding(
-          padding: const EdgeInsets.only(top: 18, bottom: 8),
-          child: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
-        );
+      padding: const EdgeInsets.only(top: 18, bottom: 8),
+      child: Text(title, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
+    );
     Widget slider(String label, double value, double min, double max, void Function(double) set) => Row(
-          children: [
-            SizedBox(width: 132, child: Text(label, style: const TextStyle(fontSize: 13))),
-            Expanded(
-              child: Slider(value: value.clamp(min, max), min: min, max: max, onChanged: (v) => setState(() => set(v))),
-            ),
-            SizedBox(width: 44, child: Text(value.toStringAsFixed(2), style: const TextStyle(fontFamily: 'Geist Mono', fontSize: 12))),
-          ],
-        );
+      children: [
+        SizedBox(width: 132, child: Text(label, style: const TextStyle(fontSize: 13))),
+        Expanded(
+          child: Slider(value: value.clamp(min, max), min: min, max: max, onChanged: (v) => setState(() => set(v))),
+        ),
+        SizedBox(
+          width: 44,
+          child: Text(value.toStringAsFixed(2), style: const TextStyle(fontFamily: 'Geist Mono', fontSize: 12)),
+        ),
+      ],
+    );
     return Material(
       color: Colors.white,
       child: ListView(
@@ -267,7 +272,8 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
             spacing: 6,
             runSpacing: 6,
             children: [
-              for (final e in MikkyEmote.values) ActionChip(label: Text(_emoteLabels[e]!), onPressed: () => _mikky.play(e)),
+              for (final e in MikkyEmote.values)
+                ActionChip(label: Text(_emoteLabels[e]!), onPressed: () => _mikky.play(e)),
             ],
           ),
           section('Gestes'),
@@ -285,8 +291,10 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
             ],
           ),
           const SizedBox(height: 4),
-          const Text('Survole Mikky : il cligne. Reste immobile dessus 2 s : amour. Trois clics rapides : sonné.',
-              style: TextStyle(fontSize: 12, color: Colors.black54)),
+          const Text(
+            'Survole Mikky : il cligne. Reste immobile dessus 2 s : amour. Trois clics rapides : sonné.',
+            style: TextStyle(fontSize: 12, color: Colors.black54),
+          ),
           section('Proportions'),
           slider('Hauteur des yeux', t.eyeElevation, -.1, .4, (v) => t.eyeElevation = v),
           slider('Taille des yeux', t.eyeSize, .7, 1.4, (v) => t.eyeSize = v),

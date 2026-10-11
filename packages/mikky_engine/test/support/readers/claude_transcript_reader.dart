@@ -54,12 +54,14 @@ class ClaudeTranscriptReader {
       if (b['type'] == 'tool_result') {
         final id = b['tool_use_id'] as String;
         if (_planTools.remove(id)) continue;
-        events.add(ToolCallEvent(
-          id,
-          status: b['is_error'] == true ? ToolStatus.failed : ToolStatus.completed,
-          output: _text(b['content']),
-          at: at,
-        ));
+        events.add(
+          ToolCallEvent(
+            id,
+            status: b['is_error'] == true ? ToolStatus.failed : ToolStatus.completed,
+            output: _text(b['content']),
+            at: at,
+          ),
+        );
       } else if (b['type'] == 'text') {
         _userText(b['text'] as String? ?? '', at, events);
       }
@@ -96,11 +98,22 @@ class ClaudeTranscriptReader {
           if (text.isNotEmpty) events.add(AgentMessage(text, messageId: messageId, thought: true, at: at));
         case 'tool_use':
           usesTool = true;
-          final plan = _plan(b['id'] as String, b['name'] as String? ?? '', (b['input'] as Map?)?.cast<String, dynamic>() ?? const {});
+          final plan = _plan(
+            b['id'] as String,
+            b['name'] as String? ?? '',
+            (b['input'] as Map?)?.cast<String, dynamic>() ?? const {},
+          );
           if (plan != null) {
             events.add(PlanChanged(plan, at: at));
           } else {
-            events.add(claudeToolCall(b['id'] as String, b['name'] as String? ?? '', (b['input'] as Map?)?.cast<String, dynamic>() ?? const {}, at: at));
+            events.add(
+              claudeToolCall(
+                b['id'] as String,
+                b['name'] as String? ?? '',
+                (b['input'] as Map?)?.cast<String, dynamic>() ?? const {},
+                at: at,
+              ),
+            );
           }
       }
     }
@@ -136,7 +149,13 @@ class ClaudeTranscriptReader {
           _tasks.removeAt(i);
         } else {
           final old = _tasks[i].$2;
-          _tasks[i] = (taskId, PlanEntry(input['subject'] as String? ?? old.content, input.containsKey('status') ? _status(input['status'] as String?) : old.status));
+          _tasks[i] = (
+            taskId,
+            PlanEntry(
+              input['subject'] as String? ?? old.content,
+              input.containsKey('status') ? _status(input['status'] as String?) : old.status,
+            ),
+          );
         }
       default:
         return null;
@@ -145,10 +164,10 @@ class ClaudeTranscriptReader {
   }
 
   static PlanStatus _status(String? s) => switch (s) {
-        'in_progress' => PlanStatus.inProgress,
-        'completed' => PlanStatus.completed,
-        _ => PlanStatus.pending,
-      };
+    'in_progress' => PlanStatus.inProgress,
+    'completed' => PlanStatus.completed,
+    _ => PlanStatus.pending,
+  };
 
   static String _text(Object? content) {
     if (content is String) return content;

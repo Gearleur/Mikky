@@ -34,7 +34,11 @@ Future<void> main() async {
     }
     reloading = true;
     again = false;
-    final request = {'id': nextId++, 'method': 'app.restart', 'params': {'appId': appId, 'fullRestart': false, 'pause': false}};
+    final request = {
+      'id': nextId++,
+      'method': 'app.restart',
+      'params': {'appId': appId, 'fullRestart': false, 'pause': false},
+    };
     run.stdin.writeln(jsonEncode([request]));
   }
 
@@ -80,7 +84,11 @@ Future<void> main() async {
 
   // Saved code, here or in the packages: reload once the saving is over.
   Timer? settle;
-  for (final dir in [Directory('${app.path}/lib'), Directory('${root.path}/packages/mikky_engine/lib'), Directory('${root.path}/packages/mikky_agents/lib')]) {
+  for (final dir in [
+    Directory('${app.path}/lib'),
+    Directory('${root.path}/packages/mikky_engine/lib'),
+    Directory('${root.path}/packages/mikky_agents/lib'),
+  ]) {
     if (!dir.existsSync()) continue;
     dir.watch(recursive: true).where((e) => e.path.endsWith('.dart')).listen((_) {
       settle?.cancel();
@@ -89,9 +97,15 @@ Future<void> main() async {
   }
 
   ProcessSignal.sigint.watch().listen((_) {
-    run.stdin.writeln(jsonEncode([
-      {'id': nextId++, 'method': 'app.stop', 'params': {'appId': appId}},
-    ]));
+    run.stdin.writeln(
+      jsonEncode([
+        {
+          'id': nextId++,
+          'method': 'app.stop',
+          'params': {'appId': appId},
+        },
+      ]),
+    );
   });
   exit(await run.exitCode);
 }

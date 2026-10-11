@@ -24,7 +24,14 @@ import 'side_app.dart';
 /// half inside. The model's menu also holds where it runs (Windows / WSL,
 /// from the folder) and the permissions (Demander by default, or Auto).
 class NewAgentPage extends StatefulWidget {
-  const NewAgentPage({super.key, required this.host, required this.back, required this.launched, required this.login, this.mikky});
+  const NewAgentPage({
+    super.key,
+    required this.host,
+    required this.back,
+    required this.launched,
+    required this.login,
+    this.mikky,
+  });
 
   final SideHost host;
   final VoidCallback back;
@@ -120,7 +127,11 @@ class _NewAgentPageState extends State<NewAgentPage> {
       for (var i = 0; i < models.length; i++) MenuEntry(_models + i, models[i].name, checked: models[i].id == _model),
       const MenuEntry.separator(),
       MenuEntry(_windows, 'Où : Windows', checked: _host == AgentHost.windows),
-      MenuEntry(_wsl, wsl.state == TargetState.unavailable ? 'Où : WSL (indisponible)' : 'Où : WSL', checked: _host == AgentHost.wsl),
+      MenuEntry(
+        _wsl,
+        wsl.state == TargetState.unavailable ? 'Où : WSL (indisponible)' : 'Où : WSL',
+        checked: _host == AgentHost.wsl,
+      ),
       const MenuEntry.separator(),
       MenuEntry(_ask, 'Permissions : demander', checked: _permissions == PermissionMode.ask),
       MenuEntry(_auto, 'Permissions : auto', checked: _permissions == PermissionMode.auto),
@@ -177,14 +188,16 @@ class _NewAgentPageState extends State<NewAgentPage> {
         widget.login(host, _provider, () => _send(text));
         return;
       }
-      final id = await _service.launch(LaunchRequest(
-        provider: _provider,
-        host: host,
-        cwd: _folder!,
-        prompt: text,
-        permissions: _permissions,
-        model: _model,
-      ));
+      final id = await _service.launch(
+        LaunchRequest(
+          provider: _provider,
+          host: host,
+          cwd: _folder!,
+          prompt: text,
+          permissions: _permissions,
+          model: _model,
+        ),
+      );
       widget.launched(id);
       // In the home, the Chat stays: ready for the next one.
       if (mounted) setState(() => _starting = false);
@@ -198,16 +211,20 @@ class _NewAgentPageState extends State<NewAgentPage> {
 
   @override
   Widget build(BuildContext context) {
-    final installing = _service.target(_hostChosen ? _host : hostOfFolder(_folder ?? '')).state == TargetState.installing;
+    final installing =
+        _service.target(_hostChosen ? _host : hostOfFolder(_folder ?? '')).state == TargetState.installing;
     final composer = Composer(
       placeholder: 'Que doit faire l’agent ?',
       autofocus: true,
       onSend: _send,
-      options: Row(mainAxisSize: MainAxisSize.min, children: [
-        ComposerChip(_folder == null ? 'Dossier' : folderName(_folder), icon: 'folder', onTap: _folderMenu),
-        const SizedBox(width: 6),
-        ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
-      ]),
+      options: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ComposerChip(_folder == null ? 'Dossier' : folderName(_folder), icon: 'folder', onTap: _folderMenu),
+          const SizedBox(width: 6),
+          ComposerChip(_modelLabel, leading: BrandLogo(Brand.of(_provider), size: 12), onTap: _modelMenu),
+        ],
+      ),
     );
     return NewChatView(
       back: widget.back,
@@ -223,7 +240,14 @@ class _NewAgentPageState extends State<NewAgentPage> {
 /// Sign-in, as Paperclip does it: Mikky runs the tool's own login and shows
 /// its link (and Codex's one-time code); the tool keeps the credential.
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key, required this.host, required this.target, required this.provider, required this.back, required this.done});
+  const LoginPage({
+    super.key,
+    required this.host,
+    required this.target,
+    required this.provider,
+    required this.back,
+    required this.done,
+  });
 
   final SideHost host;
   final AgentHost target;
@@ -281,7 +305,11 @@ class _LoginPageState extends State<LoginPage> {
             });
           }
         case LoginDone():
-          setState(() => _failed = s.message == null ? 'La connexion n’a pas abouti.' : 'La connexion n’a pas abouti : ${s.message}');
+          setState(
+            () => _failed = s.message == null
+                ? 'La connexion n’a pas abouti.'
+                : 'La connexion n’a pas abouti : ${s.message}',
+          );
       }
     });
   }
@@ -293,62 +321,96 @@ class _LoginPageState extends State<LoginPage> {
     final ui = MikkyUi.of(context);
     final prompt = _prompt;
     final installed = widget.host.service.auth[(widget.target, widget.provider)]?.installed ?? true;
-    return Stack(children: [
-      SideHead(title: 'Connexion à $_tool', small: true, leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour')),
-      Positioned.fill(
-        top: 68,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            Text(
-              installed ? '$_tool n’est pas connecté $_where.' : '$_tool n’est pas installé $_where.',
-              style: uiText(TextSize.lead, weight: FontWeight.w600, color: ui.text),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              installed
-                  ? 'Mikky lance la connexion officielle de $_tool. Tu te connectes dans ton navigateur ; Mikky ne voit jamais ton mot de passe ni tes jetons.'
-                  : widget.provider == AgentProvider.claude
+    return Stack(
+      children: [
+        SideHead(
+          title: 'Connexion à $_tool',
+          small: true,
+          leading: RoundButton('left', size: 34, onPressed: widget.back, tooltip: 'Retour'),
+        ),
+        Positioned.fill(
+          top: 68,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  installed ? '$_tool n’est pas connecté $_where.' : '$_tool n’est pas installé $_where.',
+                  style: uiText(TextSize.lead, weight: FontWeight.w600, color: ui.text),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  installed
+                      ? 'Mikky lance la connexion officielle de $_tool. Tu te connectes dans ton navigateur ; Mikky ne voit jamais ton mot de passe ni tes jetons.'
+                      : widget.provider == AgentProvider.claude
                       ? 'Installe Claude Code (claude.ai/install), puis reviens ici.'
                       : 'Installe Codex (npm install -g @openai/codex), puis reviens ici.',
-              style: uiText(TextSize.label, color: ui.text2),
+                  style: uiText(TextSize.label, color: ui.text2),
+                ),
+                const SizedBox(height: 20),
+                if (prompt?.code != null) ...[
+                  Text('Ton code, à taper sur la page qui s’ouvre :', style: uiText(TextSize.small, color: ui.text2)),
+                  const SizedBox(height: 8),
+                  Center(
+                    child: Text(
+                      prompt!.code!,
+                      style: uiText(
+                        TextSize.display,
+                        weight: FontWeight.w600,
+                        mono: true,
+                        color: ui.text,
+                        tracking: .06,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (prompt != null) ...[
+                  Row(
+                    children: [
+                      const Spinner(size: 14),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _checking ? 'Vérification…' : 'En attente de ta connexion…',
+                          style: uiText(TextSize.small, color: ui.text2),
+                        ),
+                      ),
+                      MButton('Ouvrir le lien', small: true, onPressed: () => _openLink(prompt.url)),
+                    ],
+                  ),
+                ] else if (installed)
+                  MButton('Se connecter', kind: ButtonKind.primary, onPressed: _start)
+                else
+                  MButton(
+                    'J’ai installé $_tool',
+                    kind: ButtonKind.primary,
+                    onPressed: () async {
+                      final auth = await widget.host.service.checkAuth(widget.target, widget.provider);
+                      if (auth.loggedIn) {
+                        widget.done();
+                      } else {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                if (_failed != null) ...[
+                  const SizedBox(height: 14),
+                  Text(_failed!, style: uiText(TextSize.small, color: ui.red)),
+                  const SizedBox(height: 8),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: MButton('Réessayer', small: true, onPressed: _start),
+                  ),
+                ],
+                const Spacer(),
+                if (prompt != null) CodePill(prompt.url),
+              ],
             ),
-            const SizedBox(height: 20),
-            if (prompt?.code != null) ...[
-              Text('Ton code, à taper sur la page qui s’ouvre :', style: uiText(TextSize.small, color: ui.text2)),
-              const SizedBox(height: 8),
-              Center(child: Text(prompt!.code!, style: uiText(TextSize.display, weight: FontWeight.w600, mono: true, color: ui.text, tracking: .06))),
-              const SizedBox(height: 12),
-            ],
-            if (prompt != null) ...[
-              Row(children: [
-                const Spinner(size: 14),
-                const SizedBox(width: 8),
-                Expanded(child: Text(_checking ? 'Vérification…' : 'En attente de ta connexion…', style: uiText(TextSize.small, color: ui.text2))),
-                MButton('Ouvrir le lien', small: true, onPressed: () => _openLink(prompt.url)),
-              ]),
-            ] else if (installed)
-              MButton('Se connecter', kind: ButtonKind.primary, onPressed: _start)
-            else
-              MButton('J’ai installé $_tool', kind: ButtonKind.primary, onPressed: () async {
-                final auth = await widget.host.service.checkAuth(widget.target, widget.provider);
-                if (auth.loggedIn) {
-                  widget.done();
-                } else {
-                  setState(() {});
-                }
-              }),
-            if (_failed != null) ...[
-              const SizedBox(height: 14),
-              Text(_failed!, style: uiText(TextSize.small, color: ui.red)),
-              const SizedBox(height: 8),
-              Align(alignment: Alignment.centerLeft, child: MButton('Réessayer', small: true, onPressed: _start)),
-            ],
-            const Spacer(),
-            if (prompt != null) CodePill(prompt.url),
-          ]),
+          ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
