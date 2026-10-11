@@ -1,15 +1,15 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 
-import 'brand_logo.dart';
+import '../brand/brand_logo.dart';
+import '../controls/sliding_hover.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 import 'feedback.dart';
-import 'icons.dart';
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'sliding_hover.dart';
-import 'status.dart';
-import 'surface.dart';
-import 'tokens.dart';
 
 /// `.code`: a command in mono, in a small hollow.
 class CodePill extends StatelessWidget {

@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import '../pixel_fx.dart';
+import '../pixels/pixel_fx.dart';
 
 // Trials, shown on the design boards only: pixel effects set aside for
 // the calm firework (design.md §12, point 4: to sort once chosen).

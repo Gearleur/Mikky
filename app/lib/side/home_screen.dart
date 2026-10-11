@@ -5,8 +5,8 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../home/history_sheet.dart';
 import '../home/home_view.dart';
 import '../home/task_glance.dart';
-import '../ui/brand_logo.dart';
-import '../ui/status.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/foundation/status.dart';
 import 'session_text.dart';
 
 /// More finished agents than this go to the history.

@@ -6,10 +6,10 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
 import '../overlay/overlay_channel.dart';
-import '../ui/buttons.dart';
-import '../ui/field.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/controls/field.dart';
+import '../ui/foundation/tokens.dart';
 import 'side_app.dart';
 
 const _rename = 1, _pin = 2, _archive = 3, _settle = 4, _delete = 5, _code = 6, _folder = 7;

@@ -4,11 +4,11 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../overlay/overlay_channel.dart';
+import '../../overlay/overlay_channel.dart';
+import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
+import '../overlays/floating_menu.dart';
 import 'buttons.dart';
-import 'floating_menu.dart';
-import 'motion.dart';
-import 'tokens.dart';
 
 /// Where an agent runs. Local and WSL work today; VPS and Cloud are only
 /// drawn (design.md §7, « Choisir l'environnement »).

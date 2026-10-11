@@ -1,7 +1,7 @@
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/status.dart';
-import '../ui/tasks.dart' show TaskStepState;
+import '../ui/content/tasks.dart' show TaskStepState;
+import '../ui/foundation/status.dart';
 import 'session_text.dart';
 
 // How a session becomes its thread, before any widget: each turn's task,

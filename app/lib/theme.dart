@@ -2,7 +2,7 @@ import 'dart:ui';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
-import 'ui/tokens.dart';
+import 'ui/foundation/tokens.dart';
 
 /// What the user picked; [auto] follows Windows' light / dark setting.
 enum ThemeChoice { auto, dark, light }

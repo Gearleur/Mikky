@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_views.dart';
-import 'package:mikky/ui/thread_page.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/content/thread_page.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 /// What keeps an agent's page light (2026-10-05): its thread builds only

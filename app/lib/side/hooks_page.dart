@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/buttons.dart';
-import '../ui/cards.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/cards.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/foundation/tokens.dart';
 import 'side_app.dart';
 
 /// The hooks of Claude Code or Codex (2026-10-04): with them, a session

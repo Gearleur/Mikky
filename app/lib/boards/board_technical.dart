@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/backend_status.dart';
-import '../ui/selectors.dart';
-import '../ui/tokens.dart';
+import '../ui/content/backend_status.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/foundation/tokens.dart';
 import 'canvas.dart';
 
 enum _Stage {

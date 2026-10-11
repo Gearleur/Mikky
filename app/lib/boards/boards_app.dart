@@ -2,11 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/motion.dart';
-import '../ui/selectors.dart';
-import '../ui/side.dart';
-import '../ui/sliding_hover.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/controls/sliding_hover.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 import 'board_brand.dart';
 import 'board_components.dart';
 import 'board_home.dart';

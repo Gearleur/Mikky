@@ -4,8 +4,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/pixel_fx.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'launch.dart';
 import 'sprite128.dart';
 

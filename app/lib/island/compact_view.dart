@@ -4,11 +4,11 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../theme.dart';
-import '../ui/motion.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/side.dart';
-import '../ui/status.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'content/parts.dart';
 import 'island_painter.dart';
 

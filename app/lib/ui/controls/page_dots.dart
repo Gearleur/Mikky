@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'tokens.dart';
+import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 
 /// Where we are among pages (the home's apps, redone 2026-10-02): small
 /// grey pixels, one per page, and a pixel star in our signature blues on

@@ -7,9 +7,9 @@ import '../motion/intro.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
 import '../motion/pixel_power.dart';
-import '../ui/motion.dart';
-import '../ui/side.dart';
-import '../ui/tokens.dart';
+import '../ui/content/side.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 import 'canvas.dart';
 
 /// The curves we animate with, each seen as a curve and as a dot moving

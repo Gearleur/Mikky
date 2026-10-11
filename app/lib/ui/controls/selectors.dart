@@ -1,9 +1,9 @@
 import 'package:flutter/widgets.dart';
 
-import 'icons.dart';
-import 'motion.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 
 enum SegmentSize {
   /// `.seg`: 38 px buttons, at least 260 px wide.

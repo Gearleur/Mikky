@@ -3,7 +3,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../mikky/mikky_painter.dart';
 import '../theme.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
 
 /// His arms, still (2026-10-06: « pour l'instant ne fais pas d'animation,
 /// juste des keyframes »; the arms are animated once these are right):

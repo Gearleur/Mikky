@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+import '../foundation/tokens.dart';
 import 'markdown.dart';
-import 'tokens.dart';
 
 /// A chat bubble (`.msg`, `.bub`): the user's in ink on the right, the
 /// agent's grey on the left; the corner towards the speaker is sharper.

@@ -2,12 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import 'icons.dart';
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'status.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 
 /// `.spin`: 16 px ring open on the right, one turn in 0.7 s.
 class Spinner extends StatelessWidget {

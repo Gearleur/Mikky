@@ -2,12 +2,12 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand_logo.dart';
-import '../ui/icons.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/side.dart';
-import '../ui/status.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/side.dart';
+import '../ui/foundation/icons.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';

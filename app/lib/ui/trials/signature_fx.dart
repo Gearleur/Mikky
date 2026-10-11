@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../motion.dart';
-import '../pixel_fx.dart';
+import '../foundation/motion.dart';
+import '../pixels/pixel_fx.dart';
 import 'pixel_map.dart';
 
 // Trials, shown on the design boards only: fireworks in the two signature

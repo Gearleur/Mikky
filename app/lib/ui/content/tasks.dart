@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import 'icons.dart';
+import '../controls/sliding_hover.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 import 'markdown.dart';
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'sliding_hover.dart';
-import 'status.dart';
-import 'tokens.dart';
 
 /// A task in the thread, part of the page (no card): its state in pixels,
 /// its title and figures, a chevron. Open: everything that happened in it,

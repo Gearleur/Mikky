@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/home_screen.dart';
-import 'package:mikky/ui/app_tile.dart';
-import 'package:mikky/ui/pixel_fx.dart';
-import 'package:mikky/ui/status.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/brand/app_tile.dart';
+import 'package:mikky/ui/foundation/status.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
+import 'package:mikky/ui/pixels/pixel_fx.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 void main() {

@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../content/side.dart';
+import '../foundation/icons.dart';
+import '../foundation/tokens.dart';
 import 'brand_logo.dart';
-import 'icons.dart';
-import 'side.dart';
-import 'tokens.dart';
 
 /// The sign of the software a task runs in (2026-10-05): ours for VS Code
 /// and the terminal (their logos are not ours to ship; the installed VS

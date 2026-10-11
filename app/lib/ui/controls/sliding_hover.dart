@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 
-import 'motion.dart';
-import 'tokens.dart';
+import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
 
 /// The hover of a list: the white square of the Oui / Non answers, which
 /// slides on a spring to the row under the mouse and rests on the chosen

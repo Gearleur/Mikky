@@ -2,8 +2,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../ui/motion.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 
 /// A board of the design boards: a name in the sidebar, and its sections.
 class BoardSpec {

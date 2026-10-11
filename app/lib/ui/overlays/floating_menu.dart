@@ -6,13 +6,13 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import '../overlay/overlay_channel.dart';
-import 'icons.dart';
-import 'motion.dart';
-import 'overlay_area.dart';
-import 'pixel_fx.dart';
-import 'sliding_hover.dart';
-import 'tokens.dart';
+import '../../overlay/overlay_channel.dart';
+import '../controls/sliding_hover.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/overlay_area.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 
 /// Our own floating menu, in place of Windows' (user requests, 2026-09-30:
 /// « notre menu flottant, avec les paramètres et tout »; « le bouton étoile

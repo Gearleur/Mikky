@@ -1,12 +1,12 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'icons.dart';
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'status.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
+import '../pixels/pixel_fx.dart';
 
 /// An app on the home (2026-10-02, mockups `docs/notch_haut/`): a neutral
 /// tile, white fading to grey, its drawing to come. One radius for every

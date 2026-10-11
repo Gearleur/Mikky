@@ -5,11 +5,11 @@ import 'package:flutter/physics.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'buttons.dart';
-import 'motion.dart';
-import 'overlay_area.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../controls/buttons.dart';
+import '../foundation/motion.dart';
+import '../foundation/overlay_area.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 
 /// A page over the window (2026-10-02, the history first): the window
 /// behind darkens and blurs a little, and a panel comes up in its middle

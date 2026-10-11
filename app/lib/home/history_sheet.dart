@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand_logo.dart';
-import '../ui/cards.dart';
-import '../ui/field.dart';
-import '../ui/sheet.dart';
-import '../ui/sliding_hover.dart';
-import '../ui/status.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/cards.dart';
+import '../ui/controls/field.dart';
+import '../ui/controls/sliding_hover.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/overlays/sheet.dart';
 
 /// One agent of the history: its tool, its title, when and where it ran.
 typedef HistoryRow = ({String id, String title, Brand brand, String when});

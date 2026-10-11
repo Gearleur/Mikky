@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import 'surface.dart';
-import 'tokens.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 
 /// Which edge of the window a rail is attached to.
 enum RailEdge { left, right }

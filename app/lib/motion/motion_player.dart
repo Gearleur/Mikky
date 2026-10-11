@@ -5,10 +5,10 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/buttons.dart';
-import '../ui/motion.dart';
-import '../ui/selectors.dart';
-import '../ui/tokens.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/foundation/motion.dart';
+import '../ui/foundation/tokens.dart';
 
 /// A [Choreography] to look at closely (2026-10-05, « qu'on regarde tout
 /// ça ensemble »): its scene, a time bar to go to any instant (click or

@@ -1,8 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import 'buttons.dart';
-import 'selection.dart';
+import '../controls/buttons.dart';
+import '../foundation/selection.dart';
 import 'side.dart';
 
 /// Where Mikky stands beside a thread (2026-10-05, chosen among three

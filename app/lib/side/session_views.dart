@@ -1,13 +1,13 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/code_card.dart';
-import '../ui/feedback.dart';
-import '../ui/messages.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/status.dart';
-import '../ui/tasks.dart';
-import '../ui/tokens.dart';
+import '../ui/content/code_card.dart';
+import '../ui/content/feedback.dart';
+import '../ui/content/messages.dart';
+import '../ui/content/tasks.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'session_cards.dart';
 import 'session_steps.dart';
 import 'session_text.dart';

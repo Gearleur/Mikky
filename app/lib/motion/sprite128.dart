@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/pixel_fx.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// The 128-bit look (2026-10-06: « dès que Mikky change de couleur, il
 /// doit être en 128 bits… les animations deviennent en 128 bits »): a

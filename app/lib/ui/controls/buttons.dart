@@ -1,12 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import 'feedback.dart';
-import 'floating_menu.dart';
-import 'icons.dart';
-import 'motion.dart';
-import 'pixel_fx.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../content/feedback.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
+import '../overlays/floating_menu.dart';
+import '../pixels/pixel_fx.dart';
 
 enum ButtonKind {
   /// Black (white in dark), one per screen.

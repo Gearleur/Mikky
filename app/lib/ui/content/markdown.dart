@@ -5,9 +5,9 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
-import 'icons.dart';
-import 'motion.dart';
-import 'tokens.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
 
 /// Opens [url] in the default browser.
 void openUrl(String url) {

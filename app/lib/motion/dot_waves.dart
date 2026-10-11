@@ -2,8 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/pixel_fx.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// Waves of dots on a small grid (2026-10-06, after the user's frames of a
 /// « vague de réflexion »: a little cluster opens into an oval ring of

@@ -3,9 +3,9 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
-import 'motion.dart';
+import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
 import 'pixel_fx.dart';
-import 'tokens.dart';
 
 /// Small grey dots behind the notch's apps (2026-10-05, chosen on the
 /// boards): « glitched », big squares of 6 × 6 dots more or less present,

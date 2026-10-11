@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mikky/ui/cards.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/content/cards.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 
 void main() {
   testWidgets('pressing Non slides the white square to it, then answers on release', (tester) async {

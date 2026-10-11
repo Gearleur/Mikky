@@ -2,10 +2,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/overlay/overlay_channel.dart';
-import 'package:mikky/ui/buttons.dart';
-import 'package:mikky/ui/floating_menu.dart';
-import 'package:mikky/ui/pixel_fx.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/controls/buttons.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
+import 'package:mikky/ui/overlays/floating_menu.dart';
+import 'package:mikky/ui/pixels/pixel_fx.dart';
 
 import 'load_fonts.dart';
 

@@ -4,10 +4,10 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/home/home_view.dart';
 import 'package:mikky/home/task_glance.dart';
-import 'package:mikky/ui/app_tile.dart';
-import 'package:mikky/ui/environment_selector.dart';
-import 'package:mikky/ui/page_dots.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/brand/app_tile.dart';
+import 'package:mikky/ui/controls/environment_selector.dart';
+import 'package:mikky/ui/controls/page_dots.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'load_fonts.dart';

@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 
-import 'buttons.dart';
-import 'tokens.dart';
+import '../controls/buttons.dart';
+import '../foundation/tokens.dart';
 
 /// A connection notice, shared by the live app and its design boards.
 class BackendStatus extends StatelessWidget {

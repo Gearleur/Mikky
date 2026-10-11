@@ -6,7 +6,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/intro.dart';
 import '../theme.dart';
-import '../ui/tokens.dart';
+import '../ui/foundation/tokens.dart';
 import 'compact_view.dart';
 import 'content/parts.dart';
 import 'island_clip.dart';

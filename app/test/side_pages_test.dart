@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_views.dart';
-import 'package:mikky/ui/side.dart';
-import 'package:mikky/ui/tokens.dart';
+import 'package:mikky/ui/content/side.dart';
+import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../../packages/mikky_engine/test/support/readers/acp_reader.dart';

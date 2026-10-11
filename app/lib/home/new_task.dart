@@ -1,10 +1,10 @@
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand_logo.dart';
-import '../ui/feedback.dart';
-import '../ui/field.dart';
-import '../ui/thread_page.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/feedback.dart';
+import '../ui/content/thread_page.dart';
+import '../ui/controls/field.dart';
+import '../ui/foundation/tokens.dart';
 
 /// A new chat (2026-10-05: « comme pour l'agent, propre et smooth, un chat
 /// vide »): the page of an agent ([ThreadPage]) with its thread empty —

@@ -2,9 +2,9 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import 'motion.dart';
-import 'status.dart';
-import 'tokens.dart';
+import '../foundation/motion.dart';
+import '../foundation/status.dart';
+import '../foundation/tokens.dart';
 
 /// Four colors, from the brightest (the heart) to the darkest (the edge).
 class PixelFxPalette {

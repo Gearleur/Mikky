@@ -4,11 +4,11 @@ import 'dart:ui' show ImageFilter, TileMode;
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../mikky/mikky_painter.dart';
-import '../theme.dart';
-import 'motion.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../../mikky/mikky_painter.dart';
+import '../../theme.dart';
+import '../foundation/motion.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 
 /// `.side`: the small window at the right edge, 320 × 560, radius 38, the
 /// island's color and shadow.

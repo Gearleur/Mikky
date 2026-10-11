@@ -1,6 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-import 'tokens.dart';
+import '../foundation/tokens.dart';
 
 /// One line of a [CodeCard]: its number, its text (spans for colors), and
 /// whether it was removed or added.

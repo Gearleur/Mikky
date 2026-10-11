@@ -3,11 +3,11 @@ import 'dart:ui' as dui show ImageFilter;
 import 'package:flutter/physics.dart';
 import 'package:flutter/widgets.dart';
 
-import 'feedback.dart';
-import 'icons.dart';
-import 'motion.dart';
-import 'surface.dart';
-import 'tokens.dart';
+import '../content/feedback.dart';
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 
 /// One tab: an icon, a label (not in the mini bar), and what waits there.
 class TabItem {

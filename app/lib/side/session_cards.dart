@@ -2,14 +2,14 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
-import '../ui/brand_logo.dart';
-import '../ui/buttons.dart';
-import '../ui/cards.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/selectors.dart';
-import '../ui/status.dart';
-import '../ui/surface.dart';
-import '../ui/tokens.dart';
+import '../ui/brand/brand_logo.dart';
+import '../ui/content/cards.dart';
+import '../ui/controls/buttons.dart';
+import '../ui/controls/selectors.dart';
+import '../ui/foundation/status.dart';
+import '../ui/foundation/surface.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 import 'session_steps.dart';
 import 'session_text.dart';
 

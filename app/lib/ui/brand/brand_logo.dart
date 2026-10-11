@@ -2,7 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import 'tokens.dart';
+import '../foundation/tokens.dart';
 
 /// The tools Mikky can run, and their logos (`assets/brands/`, see its
 /// README for where they come from). Only Claude and Codex run today; the

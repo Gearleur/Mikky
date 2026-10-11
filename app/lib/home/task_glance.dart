@@ -3,11 +3,11 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import '../side/session_steps.dart';
 import '../side/session_views.dart' show stepPalette;
-import '../ui/app_glyph.dart';
-import '../ui/pixel_fx.dart';
-import '../ui/status.dart';
-import '../ui/tasks.dart' show TaskStepState;
-import '../ui/tokens.dart';
+import '../ui/brand/app_glyph.dart';
+import '../ui/content/tasks.dart' show TaskStepState;
+import '../ui/foundation/status.dart';
+import '../ui/foundation/tokens.dart';
+import '../ui/pixels/pixel_fx.dart';
 
 /// The task Mikky looks at in the notch: the latest one at work.
 class WatchedTask {

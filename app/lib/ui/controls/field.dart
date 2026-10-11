@@ -4,11 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../foundation/icons.dart';
+import '../foundation/motion.dart';
+import '../foundation/surface.dart';
+import '../foundation/tokens.dart';
 import 'buttons.dart';
-import 'icons.dart';
-import 'motion.dart';
-import 'surface.dart';
-import 'tokens.dart';
 
 /// The text itself, for both fields: widgets-level, Geist, the ink caret.
 class _Input extends StatelessWidget {
