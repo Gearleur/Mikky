@@ -2,6 +2,8 @@ import 'dart:ui';
 
 import 'package:mikky_engine/mikky_engine.dart';
 
+import 'ui/tokens.dart';
+
 /// What the user picked; [auto] follows Windows' light / dark setting.
 enum ThemeChoice { auto, dark, light }
 
@@ -88,6 +90,9 @@ class MikkyTheme {
   };
 
   final bool isLight;
+
+  /// The window's UI tokens that go with this theme.
+  MikkyUi get ui => isLight ? MikkyUi.light : MikkyUi.dark;
   final Color foreground;
   final Color secondary;
   final Color faint;

@@ -279,6 +279,23 @@ class MikkyUiTheme extends InheritedWidget {
   bool updateShouldNotify(MikkyUiTheme old) => old.ui != ui;
 }
 
+/// [ui]'s tokens and the window's text (Geist 14) for what is below.
+class MikkyUiScope extends StatelessWidget {
+  const MikkyUiScope({super.key, required this.ui, required this.child});
+
+  final MikkyUi ui;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => MikkyUiTheme(
+    ui: ui,
+    child: DefaultTextStyle(
+      style: uiText(14, color: ui.text),
+      child: child,
+    ),
+  );
+}
+
 /// Text in the window's font (Geist), as the CSS sets it: [size] in px,
 /// [tracking] in em.
 TextStyle uiText(

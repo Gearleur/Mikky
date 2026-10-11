@@ -6,6 +6,8 @@ import 'package:mikky_engine/mikky_engine.dart';
 import 'agents/agents_service.dart';
 import 'agents/enchant.dart';
 import 'boards/boards_app.dart';
+import 'island/island_bench.dart';
+import 'island/island_geometry.dart';
 import 'island/island_painter.dart';
 import 'island/island_view.dart';
 import 'overlay/overlay_channel.dart';

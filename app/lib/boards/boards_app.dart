@@ -111,51 +111,48 @@ class _BoardsState extends State<Boards> {
   Widget build(BuildContext context) {
     const shell = MikkyUi.light;
     final bands = [if (_themes != 1) MikkyUi.light, if (_themes != 0) MikkyUi.dark];
-    return MikkyUiTheme(
+    return MikkyUiScope(
       ui: shell,
-      child: DefaultTextStyle(
-        style: uiText(14, color: shell.text),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _Sidebar(
-              selected: _picked,
-              onSelect: (i) {
-                setState(() => _picked = i);
-                _switch?.cancel();
-                _switch = Timer(Duration(milliseconds: Motion.reduced(context) ? 0 : 220), () {
-                  if (!mounted) return;
-                  setState(() => _board = i);
-                  _canvas.currentState?.reset();
-                });
-              },
-              themes: _themes,
-              onThemes: (i) => setState(() => _themes = i),
-              only: _only,
-              onOnly: (k) => setState(() => _only = k),
-            ),
-            Container(width: 1, color: shell.line),
-            Expanded(
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: BoardCanvas(
-                      key: _canvas,
-                      background: bands.first.board,
-                      onScale: (s) => setState(() => _scale = s),
-                      child: _contentOf(bands),
-                    ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _Sidebar(
+            selected: _picked,
+            onSelect: (i) {
+              setState(() => _picked = i);
+              _switch?.cancel();
+              _switch = Timer(Duration(milliseconds: Motion.reduced(context) ? 0 : 220), () {
+                if (!mounted) return;
+                setState(() => _board = i);
+                _canvas.currentState?.reset();
+              });
+            },
+            themes: _themes,
+            onThemes: (i) => setState(() => _themes = i),
+            only: _only,
+            onOnly: (k) => setState(() => _only = k),
+          ),
+          Container(width: 1, color: shell.line),
+          Expanded(
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: BoardCanvas(
+                    key: _canvas,
+                    background: bands.first.board,
+                    onScale: (s) => setState(() => _scale = s),
+                    child: _contentOf(bands),
                   ),
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: ZoomPill(canvas: _canvas, scale: _scale),
-                  ),
-                ],
-              ),
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 16,
+                  child: ZoomPill(canvas: _canvas, scale: _scale),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

@@ -32,7 +32,7 @@ class CompactUnderMikky extends StatelessWidget {
     if (s == null || s == UiStatus.paused) {
       return Text('Mikky', style: sansStyle(theme, size: 17).copyWith(fontFamily: 'Jacquard 24', height: 1));
     }
-    return MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(s, size: 18));
+    return MikkyUiTheme(ui: theme.ui, child: StatusFx(s, size: 18));
   }
 }
 
@@ -44,8 +44,7 @@ class BubbleStatus extends StatelessWidget {
   final AgentStatus status;
 
   @override
-  Widget build(BuildContext context) =>
-      MikkyUiTheme(ui: theme.isLight ? MikkyUi.light : MikkyUi.dark, child: StatusFx(UiStatus.of(status), size: 20));
+  Widget build(BuildContext context) => MikkyUiTheme(ui: theme.ui, child: StatusFx(UiStatus.of(status), size: 20));
 }
 
 /// Where the bubble leaves the closed island at the right edge, from its
