@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
-import '../ui/tokens.dart';
+import 'canvas.dart';
 
 /// Simple logos (2026-10-06, after SFEIR's: a mascot, a symbol and a
 /// name in brackets; « un logo plus simple… pour l'entreprise »): Mikky's
@@ -197,7 +197,6 @@ class MarkSymbolSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -218,13 +217,9 @@ class MarkSymbolSheet extends StatelessWidget {
               (16.0, true),
               (16.0, false),
             ]) ...[
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  MarkTile(symbol, size: px, dark: dark),
-                  const SizedBox(height: 4),
-                  Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
-                ],
+              SizeSample(
+                px,
+                child: MarkTile(symbol, size: px, dark: dark),
               ),
               const SizedBox(width: 10),
             ],

@@ -86,20 +86,8 @@ WatchedTask _watched(SessionLog log, {String name = 'Corrige les tests du moteur
 
 /// The notch in its window, on a board, its Mikky in the task's state.
 /// The task he looks at is not among the apps, as in the app.
-Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
-  layout: HomeLayout.top,
-  child: HomeView(
-    apps: [
-      for (final a in apps)
-        if (a.name != watched?.name) a,
-    ],
-    watched: watched,
-    animate: false,
-    mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
-    onNew: () {},
-    onHistory: (_) {},
-  ),
-);
+Widget _notch({WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) =>
+    _notchIn(HomeLayout.top, watched: watched, apps: apps);
 
 /// An agent's page in the island at the top: taller than the notch.
 Widget _page(Widget page) => HomeFrame(layout: HomeLayout.top, size: HomeLayout.top.pageSize, child: page);
@@ -600,8 +588,8 @@ const _manyApps = [
   HomeApp(id: 'n12', name: 'Prépare la démo', line: 'Terminée · lundi', app: AgentApp.mikky, status: UiStatus.finished),
 ];
 
-/// The notch at the right in its window, on a board (as [_notch]).
-Widget _right(HomeLayout layout, {WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
+/// The notch in [layout] in its window, on a board.
+Widget _notchIn(HomeLayout layout, {WatchedTask? watched, List<HomeApp> apps = sampleNotchApps}) => HomeFrame(
   layout: layout,
   child: HomeView(
     layout: layout,
@@ -624,7 +612,7 @@ List<BoardFrame> _situations(HomeLayout layout) {
     BoardFrame(
       label: 'Au travail, sans plan',
       width: w,
-      child: _right(
+      child: _notchIn(
         layout,
         watched: _watched(FakeSessions.workingNoPlan(), name: 'Ajoute un test Codex', app: AgentApp.terminal),
       ),
@@ -632,7 +620,7 @@ List<BoardFrame> _situations(HomeLayout layout) {
     BoardFrame(
       label: 'Attend ton feu vert',
       width: w,
-      child: _right(
+      child: _notchIn(
         layout,
         watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex),
       ),
@@ -640,7 +628,7 @@ List<BoardFrame> _situations(HomeLayout layout) {
     BoardFrame(
       label: 'Te pose une question',
       width: w,
-      child: _right(
+      child: _notchIn(
         layout,
         watched: _watched(FakeSessions.question(), name: 'Prépare le stockage', app: AgentApp.claude),
       ),
@@ -648,40 +636,40 @@ List<BoardFrame> _situations(HomeLayout layout) {
     BoardFrame(
       label: 'En erreur',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.error())),
+      child: _notchIn(layout, watched: _watched(FakeSessions.error())),
     ),
     BoardFrame(
       label: 'Limite atteinte',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.limited(), app: AgentApp.claude)),
+      child: _notchIn(layout, watched: _watched(FakeSessions.limited(), app: AgentApp.claude)),
     ),
     BoardFrame(
       label: 'Terminée',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.done(), app: AgentApp.mikky)),
+      child: _notchIn(layout, watched: _watched(FakeSessions.done(), app: AgentApp.mikky)),
     ),
     BoardFrame(
       label: 'Rien en cours',
       note: 'Mikky dort à sa place (l’île l’y garde) ; les applications ne bougent pas.',
       width: w,
-      child: _right(layout, apps: sampleNotchApps.skip(3).toList()),
+      child: _notchIn(layout, apps: sampleNotchApps.skip(3).toList()),
     ),
     BoardFrame(
       label: 'Une application',
       note: 'La tâche que Mikky regarde, puis « + » et de petits points.',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.working()), apps: sampleNotchApps.take(1).toList()),
+      child: _notchIn(layout, watched: _watched(FakeSessions.working()), apps: sampleNotchApps.take(1).toList()),
     ),
     BoardFrame(
       label: 'Aucun agent',
       width: w,
-      child: _right(layout, apps: const []),
+      child: _notchIn(layout, apps: const []),
     ),
     BoardFrame(
       label: 'Beaucoup d’applications',
       note: 'Douze autres : des pages, la flèche de droite.',
       width: w,
-      child: _right(layout, watched: _watched(FakeSessions.working()), apps: _manyApps),
+      child: _notchIn(layout, watched: _watched(FakeSessions.working()), apps: _manyApps),
     ),
   ];
 }
@@ -699,19 +687,19 @@ final notchRightBoard = BoardSpec(
           label: 'Empilé · dans l’app',
           note: '320 × 416. Les applications en une colonne de tuiles 248 × 42, quatre par page : les titres se lisent en entier.',
           width: 320,
-          child: _right(HomeLayout.rightNotch, watched: _watched(FakeSessions.working())),
+          child: _notchIn(HomeLayout.rightNotch, watched: _watched(FakeSessions.working())),
         ),
         BoardFrame(
           label: 'Deux colonnes',
           note: '360 × 366. Les applications deux par deux, 140 × 42, six par page ; plus courte mais plus large, et les titres se coupent.',
           width: 360,
-          child: _right(HomeLayout.rightTwoColumns, watched: _watched(FakeSessions.working())),
+          child: _notchIn(HomeLayout.rightTwoColumns, watched: _watched(FakeSessions.working())),
         ),
         BoardFrame(
           label: 'Taille de la page',
           note: '344 × 520, la taille de la page d’un agent : l’île ne change plus de taille en l’ouvrant. Six applications par page, 272 × 42.',
           width: 344,
-          child: _right(HomeLayout.rightPage, watched: _watched(FakeSessions.working())),
+          child: _notchIn(HomeLayout.rightPage, watched: _watched(FakeSessions.working())),
         ),
         BoardFrame(
           label: 'Avant : l’accueil de droite',
@@ -747,7 +735,7 @@ final notchRightBoard = BoardSpec(
           BoardFrame(
             label: '$name · attend',
             width: layout.size.width,
-            child: _right(
+            child: _notchIn(
               layout,
               watched: _watched(FakeSessions.approval(), name: 'Met à jour le site', app: AgentApp.codex),
             ),
@@ -755,12 +743,12 @@ final notchRightBoard = BoardSpec(
           BoardFrame(
             label: '$name · rien en cours',
             width: layout.size.width,
-            child: _right(layout, apps: sampleNotchApps.skip(3).toList()),
+            child: _notchIn(layout, apps: sampleNotchApps.skip(3).toList()),
           ),
           BoardFrame(
             label: '$name · beaucoup',
             width: layout.size.width,
-            child: _right(
+            child: _notchIn(
               layout,
               watched: _watched(FakeSessions.limited(), app: AgentApp.claude),
               apps: _manyApps,

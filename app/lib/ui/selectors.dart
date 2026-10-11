@@ -52,26 +52,10 @@ class Segmented extends StatelessWidget {
           clipBehavior: Clip.none,
           children: [
             Positioned.fill(
-              child: RepaintBoundary(
-                child: SpringValue(
-                  target: selected * col,
-                  spring: Motion.thumb,
-                  builder: (context, x, v) {
-                    final stretch = (v.abs() * Motion.thumbStretch).clamp(0.0, Motion.thumbStretchMax);
-                    return Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Positioned(
-                          left: x - (v > 0 ? stretch : 0),
-                          top: 0,
-                          bottom: 0,
-                          width: col + stretch,
-                          child: Surface(color: ui.thumb, shadows: ui.shThumb),
-                        ),
-                      ],
-                    );
-                  },
-                ),
+              child: SlidingThumb(
+                selected: selected,
+                cell: col,
+                child: Surface(color: ui.thumb, shadows: ui.shThumb),
               ),
             ),
             Row(

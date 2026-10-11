@@ -159,6 +159,34 @@ class PressDown extends StatelessWidget {
   );
 }
 
+/// The thumb of a row of equal cells, [cell] wide: [child] slides to the
+/// cell [selected] on [Motion.thumb], stretched by its speed. Fills its
+/// parent (put it under a [Positioned.fill]).
+class SlidingThumb extends StatelessWidget {
+  const SlidingThumb({super.key, required this.selected, required this.cell, required this.child});
+
+  final int selected;
+  final double cell;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => RepaintBoundary(
+    child: SpringValue(
+      target: selected * cell,
+      spring: Motion.thumb,
+      builder: (context, x, v) {
+        final stretch = (v.abs() * Motion.thumbStretch).clamp(0.0, Motion.thumbStretchMax);
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(left: x - (v > 0 ? stretch : 0), top: 0, bottom: 0, width: cell + stretch, child: child),
+          ],
+        );
+      },
+    ),
+  );
+}
+
 /// A value driven by a spring towards [target], with its speed: the
 /// sliding thumb, the jelly island. Rebuilds [builder] while it moves.
 class SpringValue extends StatefulWidget {

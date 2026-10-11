@@ -488,3 +488,22 @@ class ZoomPill extends StatelessWidget {
     );
   }
 }
+
+/// A logo or a mark with its size in px written under it (the boards' rows
+/// of sizes).
+class SizeSample extends StatelessWidget {
+  const SizeSample(this.px, {super.key, required this.child});
+
+  final double px;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      child,
+      const SizedBox(height: 4),
+      Text('${px.round()}', style: uiText(TextSize.badge, color: MikkyUi.of(context).text3, tabular: true)),
+    ],
+  );
+}

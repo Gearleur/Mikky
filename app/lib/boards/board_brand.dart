@@ -257,7 +257,6 @@ class _LogoProposal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -276,13 +275,9 @@ class _LogoProposal extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (final (px, dark) in [(48.0, false), (32.0, false), (24.0, true), (16.0, true)]) ...[
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  _Logo(kind, size: px, dark: dark),
-                  const SizedBox(height: 4),
-                  Text('${px.round()}', style: uiText(TextSize.badge, color: ui.text3, tabular: true)),
-                ],
+              SizeSample(
+                px,
+                child: _Logo(kind, size: px, dark: dark),
               ),
               const SizedBox(width: 10),
             ],

@@ -156,25 +156,36 @@ abstract class PixelEffect {
   double at(double t, int dx, int dy);
 }
 
-/// The calm firework (user requests, 2026-09-30): in the eight
-/// directions, frame by frame like a sprite — a small star, a middle one,
-/// a big one, the middle one again (3.6 s) — keeping its colors; more
-/// than two steps, but no burst.
-class CalmFirework extends PixelEffect {
-  const CalmFirework();
+/// An effect played frame by frame like a sprite, on 7 × 7 (bigger pixels
+/// when small): its frames 0, 1, 2, 1 over 3.6 s, each drawn by [frameAt].
+abstract class SpriteLoopEffect extends PixelEffect {
+  const SpriteLoopEffect();
 
-  /// It needs only 7 × 7: bigger pixels when small.
   @override
   int get grid => 7;
 
   @override
   double get still => 1.0;
 
+  /// The brightness of one frame's pixel.
+  double frameAt(int frame, int dx, int dy);
+
   @override
   double at(double t, int dx, int dy) {
     const frames = [0, 1, 2, 1];
-    return frame(frames[((t / 3.6) % 1 * frames.length).floor()], dx, dy);
+    return frameAt(frames[((t / 3.6) % 1 * frames.length).floor()], dx, dy);
   }
+}
+
+/// The calm firework (user requests, 2026-09-30): in the eight
+/// directions, frame by frame like a sprite — a small star, a middle one,
+/// a big one, the middle one again (3.6 s) — keeping its colors; more
+/// than two steps, but no burst.
+class CalmFirework extends SpriteLoopEffect {
+  const CalmFirework();
+
+  @override
+  double frameAt(int frame, int dx, int dy) => CalmFirework.frame(frame, dx, dy);
 
   /// One frame: 0 small, 1 middle, 2 big.
   static double frame(int frame, int dx, int dy) {
@@ -204,20 +215,11 @@ class CalmFirework extends PixelEffect {
 /// « ! » in pixels (user request, 2026-10-01: an exclamation for what
 /// needs the user's OK): the bar and its dot, lit from the top, frame by
 /// frame like the firework — plain, lit, lit with a glow, lit.
-class Exclamation extends PixelEffect {
+class Exclamation extends SpriteLoopEffect {
   const Exclamation();
 
   @override
-  int get grid => 7;
-
-  @override
-  double get still => 1.0;
-
-  @override
-  double at(double t, int dx, int dy) {
-    const frames = [0, 1, 2, 1];
-    return frame(frames[((t / 3.6) % 1 * frames.length).floor()], dx, dy);
-  }
+  double frameAt(int frame, int dx, int dy) => Exclamation.frame(frame, dx, dy);
 
   /// One frame: 0 plain, 1 lit, 2 lit with a glow. The bar is 3 pixels
   /// wide at the top, 1 lower down, then the dot: it reads at 18 px.

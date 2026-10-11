@@ -55,6 +55,35 @@ class HomeLayout {
        mikkyIdleAt = mikkyIdleAt ?? mikkyAt,
        idleColumns = idleColumns ?? columns;
 
+  /// The notch at the right in [size]: its head (bar, Mikky 96 and the task
+  /// side by side), then [columns] × [rows] wide tiles, [tileWidth] × 42,
+  /// between the arrows, [gridGap] under the task.
+  const HomeLayout._rightNotch({
+    required Size size,
+    required double tileWidth,
+    required int columns,
+    required int rows,
+    double gridGap = 10,
+  }) : this._(
+         placement: HomePlacement.right,
+         size: size,
+         columns: columns,
+         rows: rows,
+         tile: 42,
+         tileWidth: tileWidth,
+         gap: 8,
+         rowGap: 8,
+         gridTop: taskTop + taskHeight + gridGap,
+         barTop: 10,
+         bar: 32,
+         foot: 8,
+         side: 12,
+         mikky: 96,
+         mikkyAt: const Offset(10, taskTop + (taskHeight - 96) / 2),
+         notch: true,
+         stacked: true,
+       );
+
   /// Top: the notch (user, 2026-10-05, « Côte à côte »), 700 × 200 (760 ×
   /// 216 was « trop grand »). On the left, Mikky (96) and the latest task
   /// at work beside him, reaching to the apps (« la partie de gauche plus
@@ -97,70 +126,32 @@ class HomeLayout {
   /// four a page, the arrows on each side; the dots behind them, the
   /// same small foot. Nothing at work: Mikky sleeps in his place (the
   /// island keeps him there), the apps do not move.
-  static const rightNotch = HomeLayout._(
-    placement: HomePlacement.right,
+  static const rightNotch = HomeLayout._rightNotch(
     size: Size(320, 416),
+    tileWidth: 320 - 2 * 8 - 2 * _arrowRoom,
     columns: 1,
     rows: 4,
-    tile: 42,
-    tileWidth: 320 - 2 * 8 - 2 * _arrowRoom,
-    gap: 8,
-    rowGap: 8,
-    gridTop: taskTop + taskHeight + 10,
-    barTop: 10,
-    bar: 32,
-    foot: 8,
-    side: 12,
-    mikky: 96,
-    mikkyAt: Offset(10, taskTop + (taskHeight - 96) / 2),
-    notch: true,
-    stacked: true,
   );
 
   /// A trial of the notch at the right (boards « Notch Right »): the same
   /// head, the apps two by two under it, 140 × 42 (120 cut « Nouvelle
   /// tâche »), six a page; wider and shorter, 360 × 366.
-  static const rightTwoColumns = HomeLayout._(
-    placement: HomePlacement.right,
+  static const rightTwoColumns = HomeLayout._rightNotch(
     size: Size(360, 366),
+    tileWidth: (360 - 2 * 8 - 2 * _arrowRoom - 8) / 2,
     columns: 2,
     rows: 3,
-    tile: 42,
-    tileWidth: (360 - 2 * 8 - 2 * _arrowRoom - 8) / 2,
-    gap: 8,
-    rowGap: 8,
-    gridTop: taskTop + taskHeight + 10,
-    barTop: 10,
-    bar: 32,
-    foot: 8,
-    side: 12,
-    mikky: 96,
-    mikkyAt: Offset(10, taskTop + (taskHeight - 96) / 2),
-    notch: true,
-    stacked: true,
   );
 
   /// A trial of the notch at the right (boards « Notch Right »): as big as
   /// an agent's page, 344 × 520, so the island keeps its size from the
   /// home to a page; six apps a page in one column, 272 × 42.
-  static const rightPage = HomeLayout._(
-    placement: HomePlacement.right,
+  static const rightPage = HomeLayout._rightNotch(
     size: Size(344, 520),
+    tileWidth: 344 - 2 * 8 - 2 * _arrowRoom,
     columns: 1,
     rows: 6,
-    tile: 42,
-    tileWidth: 344 - 2 * 8 - 2 * _arrowRoom,
-    gap: 8,
-    rowGap: 8,
-    gridTop: taskTop + taskHeight + 14,
-    barTop: 10,
-    bar: 32,
-    foot: 8,
-    side: 12,
-    mikky: 96,
-    mikkyAt: Offset(10, taskTop + (taskHeight - 96) / 2),
-    notch: true,
-    stacked: true,
+    gridGap: 14,
   );
 
   /// Right until 2026-10-08: the home of 2026-10-02 upright (« une version
