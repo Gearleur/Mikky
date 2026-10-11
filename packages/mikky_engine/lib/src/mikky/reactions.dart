@@ -1,5 +1,6 @@
 import '../agents/agent.dart';
 import 'mikky.dart';
+import 'mikky_types.dart';
 
 /// A sound, by what it means; the app picks the file (`app/lib/sound/`).
 /// Silent updates (an agent moving from one tool to the next) have none.
