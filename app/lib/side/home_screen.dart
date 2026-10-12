@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../agents/enchant.dart';
 import '../home/history_sheet.dart';
 import '../home/home_app.dart';
 import '../home/home_layout.dart';
@@ -23,14 +24,22 @@ const maxDone = 5;
 /// state on their tile.
 /// [except]: the agent the notch shows beside Mikky: not among the apps
 /// too (user, 2026-10-05: « ça fait redondant »).
-List<HomeApp> homeApps(List<AgentEntry> entries, DateTime now, {Set<String> recalled = const {}, String? except}) => [
+List<HomeApp> homeApps(
+  List<AgentEntry> entries,
+  DateTime now, {
+  Set<String> recalled = const {},
+  String? except,
+  Set<String> autoRelaunch = const {},
+}) => [
   for (final e in _shown(entries, now, recalled))
     if (e.id != except)
       HomeApp(
         id: e.id,
         name: e.name,
         brand: Brand.of(e.provider),
-        status: appStatus(e.status, e.homeStatus),
+        status: e.status == AgentStatus.rateLimited && autoRelaunch.contains(e.id)
+            ? null
+            : appStatus(e.status, e.homeStatus),
         line: appLine(e.homeStatus, e.log, e.lastActivity, now),
         app: e.app,
       ),
@@ -183,21 +192,30 @@ class HomeScreen extends StatelessWidget {
   /// Null: [open].
   final ValueChanged<String>? recall;
 
-  /// An agent's ··· menu (a row of the history).
+  /// An agent's menu: right click on its app/task, or ⋯ in the history.
   final ValueChanged<String>? onMenu;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      ListenableBuilder(listenable: Enchantments.instance, builder: (context, _) => _view(context));
+
+  Widget _view(BuildContext context) {
     final now = DateTime.now();
     // The notch, at the top and (since 2026-10-08) at the right.
-    final watched = layout.notch ? watchedTask(entries, now) : null;
+    final autoRelaunch = {
+      for (final e in entries)
+        if (Enchantments.instance.isOn(e.id)) e.id,
+    };
+    final attention = Enchantments.instance.attentionEntries(entries);
+    final watched = layout.notch ? watchedTask(attention, now) : null;
     return HomeView(
       key: ValueKey(layout.placement),
       layout: layout,
       watched: watched,
-      apps: homeApps(entries, now, recalled: recalled, except: watched?.id),
+      apps: homeApps(entries, now, recalled: recalled, except: watched?.id, autoRelaunch: autoRelaunch),
       drawMikky: false,
       onOpen: (app) => open(app.id),
+      onMenu: onMenu,
       // « + », the tools and the Chat mode: the new chat's page.
       onNew: canLaunch ? () => open('new') : null,
       onHistory: (within) => showHistory(

@@ -8,11 +8,21 @@ import '../foundation/surface.dart';
 import '../foundation/tokens.dart';
 import '../pixels/pixel_fx.dart';
 
-/// An app on the home (2026-10-02, mockups `docs/notch_haut/`): a neutral
-/// tile, white fading to grey, its drawing to come. One radius for every
-/// size (27 % of the side), the light top edge and a hairline of the
-/// raised controls; under the mouse it rises 2 px and its shadow grows;
-/// pressed, it shrinks like every button.
+/// Readable text on the opaque white application tile, in either UI theme.
+class AppTileInk extends InheritedWidget {
+  const AppTileInk({super.key, required this.text, required this.secondary, required super.child});
+
+  final Color text, secondary;
+
+  static AppTileInk? maybeOf(BuildContext context) => context.dependOnInheritedWidgetOfExactType<AppTileInk>();
+
+  @override
+  bool updateShouldNotify(AppTileInk old) => text != old.text || secondary != old.secondary;
+}
+
+/// An opaque pure-white tile with a quiet edge and short shadow.
+/// Corners use 27 % of its height; it grows 5 % on hover and shrinks
+/// when pressed. Shared by the app and the boards.
 class AppTile extends StatefulWidget {
   const AppTile({super.key, this.size = 64, this.width, this.label, this.onTap, this.child, this.status});
 
@@ -27,10 +37,10 @@ class AppTile extends StatefulWidget {
   final String? label;
   final VoidCallback? onTap;
 
-  /// The app's drawing, later; empty for now.
+  /// The application's drawing or its sign and words.
   final Widget? child;
 
-  /// Trial: the agent's state in a small disc on the corner.
+  /// The agent's state in a small disc on the corner.
   final UiStatus? status;
 
   static double radiusFor(double size) => (size * .27 * 2).roundToDouble() / 2;
@@ -47,58 +57,47 @@ class _AppTileState extends State<AppTile> {
     final ui = MikkyUi.of(context);
     final s = widget.size, r = AppTile.radiusFor(s);
     final on = widget.onTap != null;
-    final face = Surface(
-      width: widget.width ?? s,
-      height: s,
-      radius: r,
-      gradient: ui.tile,
-      shadows: [...ui.shThumb, ...ui.tileEdges, if (_keyboard) ...ui.focusRing],
-      child: widget.child,
-    );
     final status = widget.status;
     // The state's pastille: 22 on the 64 px tiles, 16 on the small ones.
     final pin = s >= 60 ? 22.0 : 16.0;
-    final tile = status == null
-        ? face
-        : Stack(
-            clipBehavior: Clip.none,
-            children: [
-              face,
-              Positioned(
-                right: -pin * .23,
-                top: -pin * .23,
-                child: Surface(
-                  width: pin,
-                  height: pin,
-                  color: ui.thumb,
-                  shadows: [...ui.shCtl, CssShadow(0, 0, 0, ui.line, spread: .7, inset: true)],
-                  child: Center(child: StatusFx(status, size: pin >= 22 ? 14 : 10)),
-                ),
-              ),
-            ],
+    final badge = status == null
+        ? null
+        : Surface(
+            width: pin,
+            height: pin,
+            color: ui.thumb,
+            shadows: [...ui.shCtl, CssShadow(0, 0, 0, ui.line, spread: .7, inset: true)],
+            child: Center(child: StatusFx(status, size: pin >= 22 ? 14 : 10)),
           );
-    final lifted = TweenAnimationBuilder<double>(
+    final enlarged = TweenAnimationBuilder<double>(
       tween: Tween(end: _hover && on ? 1 : 0),
       duration: Motion.of(context, Motion.hover),
       curve: Motion.enter,
-      child: tile,
-      builder: (context, t, tile) => Transform.translate(
-        offset: Offset(0, -2 * t),
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            // The bigger shadow of a lifted tile, faded in under it.
-            if (t > 0)
-              Positioned.fill(
-                child: Opacity(
-                  opacity: t,
-                  child: Surface(radius: r, shadows: ui.shBar),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Surface(
+            width: widget.width ?? s,
+            height: s,
+            radius: r,
+            color: ui.tileColor,
+            shadows: [...ui.tileShadows, if (_keyboard) CssShadow(0, 0, 0, ui.ink, spread: 1.5)],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(r),
+              child: MikkyUiTheme(
+                ui: MikkyUi.light,
+                child: AppTileInk(
+                  text: ui.tileText,
+                  secondary: ui.tileText2,
+                  child: widget.child ?? const SizedBox.shrink(),
                 ),
               ),
-            tile!,
-          ],
-        ),
+            ),
+          ),
+          if (badge != null) Positioned(right: -pin * .23, top: -pin * .23, child: badge),
+        ],
       ),
+      builder: (context, t, content) => Transform.scale(scale: 1 + .05 * t, child: content),
     );
     return Semantics(
       button: on,
@@ -124,7 +123,7 @@ class _AppTileState extends State<AppTile> {
           child: Pressable(
             onTap: widget.onTap,
             pressedScale: .95,
-            child: RepaintBoundary(child: lifted),
+            child: RepaintBoundary(child: enlarged),
           ),
         ),
       ),
@@ -144,34 +143,46 @@ class AddTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final w = width;
     return AppTile(
       size: size,
-      width: w,
+      width: width,
       label: 'Nouvelle tâche',
       onTap: onTap,
-      child: w == null
-          ? Center(
-              child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: ui.text2, stroke: 2),
-            )
-          : Padding(
-              padding: const EdgeInsets.only(left: 11, right: 12),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 16,
-                    child: Center(child: MikkyIcon('plus', size: 15, color: ui.text2, stroke: 2)),
-                  ),
-                  const SizedBox(width: 9),
-                  Text(
-                    'Nouvelle tâche',
-                    style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text2),
-                  ),
-                ],
-              ),
-            ),
+      child: _AddTileContent(size: size, wide: width != null),
     );
+  }
+}
+
+/// Resolves the same readable colours as the other white tile contents.
+class _AddTileContent extends StatelessWidget {
+  const _AddTileContent({required this.size, required this.wide});
+
+  final double size;
+  final bool wide;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = AppTileInk.maybeOf(context)?.secondary ?? MikkyUi.of(context).text2;
+    return !wide
+        ? Center(
+            child: MikkyIcon('plus', size: (size * .3).roundToDouble(), color: color, stroke: 2),
+          )
+        : Padding(
+            padding: const EdgeInsets.only(left: 11, right: 12),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 16,
+                  child: Center(child: MikkyIcon('plus', size: 15, color: color, stroke: 2)),
+                ),
+                const SizedBox(width: 9),
+                Text(
+                  'Nouvelle tâche',
+                  style: uiText(TextSize.small, weight: FontWeight.w600, color: color),
+                ),
+              ],
+            ),
+          );
   }
 }
 

@@ -79,6 +79,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// The demo plays (menu « Démo »): the island shows fake agents.
   bool _demo = false;
   AgentSource get _source => _demo ? _demoSource : widget.agents.source;
+  List<Agent> get _attentionAgents => _demo ? _source.agents : Enchantments.instance.attentionAgents(_source.agents);
   StreamSubscription<void>? _agentsSub;
 
   /// The island's window — the home and its pages — at the right and,
@@ -208,7 +209,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     if (widget.bench case final bench?) {
       _demo = true;
       _demoSource.addAgent(_clock.now);
-      _machine.setAgents(_source.agents, _clock.now);
+      _machine.setAgents(_attentionAgents, _clock.now);
       bench.run(
         describe: () =>
             'fast clock started $_wakes times, decor clock $_calms times, '
@@ -220,6 +221,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _agentsSub = widget.agents.source.changes.listen((_) {
       if (!_demo && mounted) _sync();
     });
+    Enchantments.instance.addListener(_onSpells);
     _sync();
   }
 
@@ -234,6 +236,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     _overlay.onHotkey = null;
     _mikky.onSound = null;
     _agentsSub?.cancel();
+    Enchantments.instance.removeListener(_onSpells);
     _deadlines.cancel();
     _ticker.dispose();
     _leaveCalm();
@@ -258,9 +261,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// the next deadline.
   void _sync() {
     final now = _clock.now;
-    if (_source.advance(now)) _machine.setAgents(_source.agents, now);
+    if (_source.advance(now)) _machine.setAgents(_attentionAgents, now);
     _machine.advance(now);
     _react(_director.advance(now));
+    _apply();
+  }
+
+  void _onSpells() {
+    if (_demo || !mounted) return;
+    _machine.setAgents(_attentionAgents, _clock.now);
     _apply();
   }
 
@@ -306,7 +315,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // The notch with nothing at work: Mikky takes his bigger place there,
     // as the home draws it (`HomeLayout.top`).
     _motion.listIdle =
-        _edge == IslandEdge.top && !_demo && watchedTask(widget.agents.source.homeEntries, DateTime.now()) == null;
+        _edge == IslandEdge.top &&
+        !_demo &&
+        watchedTask(Enchantments.instance.attentionEntries(widget.agents.source.homeEntries), DateTime.now()) == null;
     final relaid = layout != _motion.layout;
     // While Mikky greets, the island stays open for him.
     if (!_greeting && (s.shape != _motion.shape || relaid)) {
@@ -457,7 +468,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     }
     // Activity first: once answered, an alert closes the island.
     _machine.click(now);
-    if (_source.answer(agent.id, answer, now)) _machine.setAgents(_source.agents, now);
+    if (_source.answer(agent.id, answer, now)) _machine.setAgents(_attentionAgents, now);
     _react(reactionToAnswer(answer));
     _apply();
   }
@@ -568,18 +579,18 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       case IslandMenuItem.demoScenario:
         _demo = true;
         _demoSource.startScenario(now);
-        _machine.setAgents(_source.agents, now);
+        _machine.setAgents(_attentionAgents, now);
         _sync();
       case IslandMenuItem.demoAdd:
         if (!_demo) _demoSource.stop();
         _demo = true;
         _demoSource.addAgent(now);
-        _machine.setAgents(_source.agents, now);
+        _machine.setAgents(_attentionAgents, now);
         _apply();
       case IslandMenuItem.demoStop:
         _demoSource.stop();
         _demo = false;
-        _machine.setAgents(_source.agents, now);
+        _machine.setAgents(_attentionAgents, now);
         _apply();
       case IslandMenuItem.notifications:
         s.notifications = !s.notifications;
@@ -889,12 +900,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-              if (side != null && geo.bubbleOut > .45)
-                Positioned(
-                  left: side.center.dx - 10,
-                  top: side.center.dy - 10,
-                  width: 20,
-                  height: 20,
+              if (side != null && geo.bubbleOut > .3)
+                bubbleContentLayer(
+                  side,
+                  geo.bubbleOut,
                   child: GestureDetector(
                     onTap: () {
                       final id = _snap.focus?.id;
@@ -903,13 +912,14 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                       _overlay.activate();
                       if (id != null && !_demo) _sideKey.currentState?.openAlert(id);
                     },
-                    child: Opacity(
-                      opacity: ((geo.bubbleOut - .45) * 3).clamp(0.0, 1.0),
-                      child: BubbleStatus(theme: theme, status: _snap.focus?.status ?? AgentStatus.approval),
+                    child: BubbleAlert(
+                      theme: theme,
+                      status: _snap.focus?.status ?? AgentStatus.approval,
+                      waiting: _snap.pendingAlerts,
                     ),
                   ),
                 ),
-              if (!_greeting) ...compactLayers(geo, _snap, theme, now: _clock.now),
+              if (!_greeting) ...compactLayers(geo, _snap, theme),
               sideWindowLayer(
                 geo,
                 theme,

@@ -9,6 +9,7 @@ import '../agents/enchant.dart';
 import '../home/home_layout.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/content/backend_status.dart';
+import '../ui/content/diff_view.dart';
 import '../ui/content/thread_page.dart';
 import '../ui/foundation/motion.dart';
 import '../ui/foundation/tokens.dart';
@@ -241,6 +242,10 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     _ => _pushPage(_agentPage(what)),
   };
 
+  /// The diff of a file, from a click on its « +N −M » (2026-10-12).
+  void _openDiff(String path, List<FileDiff> changes) =>
+      _pushPage(_Page('diff:$path', () => DiffPage(path: path, changes: changes, back: back)));
+
   _Page _agentPage(String id) => _Page(
     'agent:$id',
     () => AgentPage(host: host, id: id, back: back, rename: () => _open('rename:$id'), mikky: _beside),
@@ -342,46 +347,50 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     // fades out drawing back a little; back, the other timing.
     final aboveOpacity = _t.drive(CurveTween(curve: _back ? _backOut : _in));
     final belowOpacity = _t.drive(Tween(begin: 1.0, end: 0.0).chain(CurveTween(curve: _back ? _backIn : _out)));
-    return Column(
-      children: [
-        ?notice,
-        Expanded(
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Pages further down keep their state but are not drawn.
-              for (final p in _pages)
-                if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
-              // Hidden and still at rest, in the same widgets: it keeps
-              // its state.
-              if (below != null)
-                Offstage(
-                  offstage: !_moving,
-                  child: TickerMode(
-                    enabled: _moving,
-                    child: FadeTransition(
-                      opacity: belowOpacity,
-                      child: ScaleTransition(
-                        scale: _t.drive(Tween(begin: 1.0, end: 1.015)),
-                        alignment: Alignment.topCenter,
-                        child: page(below),
+    // A click on « +N −M » below opens its diff.
+    return DiffOpener(
+      open: _openDiff,
+      child: Column(
+        children: [
+          ?notice,
+          Expanded(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Pages further down keep their state but are not drawn.
+                for (final p in _pages)
+                  if (p != top && p != below) Offstage(child: TickerMode(enabled: false, child: page(p))),
+                // Hidden and still at rest, in the same widgets: it keeps
+                // its state.
+                if (below != null)
+                  Offstage(
+                    offstage: !_moving,
+                    child: TickerMode(
+                      enabled: _moving,
+                      child: FadeTransition(
+                        opacity: belowOpacity,
+                        child: ScaleTransition(
+                          scale: _t.drive(Tween(begin: 1.0, end: 1.015)),
+                          alignment: Alignment.topCenter,
+                          child: page(below),
+                        ),
                       ),
                     ),
                   ),
+                // The same widgets at rest (1, 1): the page keeps its state.
+                FadeTransition(
+                  opacity: aboveOpacity,
+                  child: ScaleTransition(
+                    scale: _t.drive(Tween(begin: .97, end: 1.0)),
+                    alignment: Alignment.topCenter,
+                    child: page(top),
+                  ),
                 ),
-              // The same widgets at rest (1, 1): the page keeps its state.
-              FadeTransition(
-                opacity: aboveOpacity,
-                child: ScaleTransition(
-                  scale: _t.drive(Tween(begin: .97, end: 1.0)),
-                  alignment: Alignment.topCenter,
-                  child: page(top),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

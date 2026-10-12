@@ -4,10 +4,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../agents/enchant.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/content/cards.dart';
-import '../ui/controls/buttons.dart';
-import '../ui/controls/selectors.dart';
 import '../ui/foundation/status.dart';
-import '../ui/foundation/surface.dart';
 import '../ui/foundation/tokens.dart';
 import '../ui/pixels/pixel_fx.dart';
 import 'session_steps.dart';
@@ -328,102 +325,6 @@ class PausedCard extends StatelessWidget {
       child: AnswerBar(answers: [('Reprendre', onResume)]),
     ),
   );
-}
-
-/// A question with choices (Claude's question tool): the question, its
-/// choices as chips (one, or several), then Envoyer — or Passer, to let
-/// the agent go on without an answer.
-class QuestionCard extends StatefulWidget {
-  const QuestionCard({super.key, required this.question, required this.onAnswer});
-
-  final QuestionAsked question;
-
-  /// The answers by question key; null: skipped.
-  final ValueChanged<Map<String, Object>?> onAnswer;
-
-  @override
-  State<QuestionCard> createState() => _QuestionCardState();
-}
-
-class _QuestionCardState extends State<QuestionCard> {
-  final Map<String, Set<String>> _picked = {};
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final q = widget.question;
-    final complete = q.questions.every((x) => (_picked[x.key] ?? const {}).isNotEmpty);
-    return Surface(
-      radius: Radii.xl,
-      color: ui.well,
-      shadows: [ui.waitRing],
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (q.questions.length > 1 || q.questions.first.text.isEmpty)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                q.message,
-                style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text),
-              ),
-            ),
-          for (final x in q.questions) ...[
-            if (x.text.isNotEmpty)
-              Text(
-                x.text,
-                style: uiText(
-                  q.questions.length > 1 ? TextSize.label : TextSize.body,
-                  weight: FontWeight.w600,
-                  color: ui.text,
-                ),
-              ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final c in x.choices)
-                  MChip(
-                    c.label,
-                    on: _picked[x.key]?.contains(c.label) ?? false,
-                    onTap: () => setState(() {
-                      final set = _picked[x.key] ??= {};
-                      if (x.multiple) {
-                        set.contains(c.label) ? set.remove(c.label) : set.add(c.label);
-                      } else {
-                        set
-                          ..clear()
-                          ..add(c.label);
-                      }
-                    }),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 10),
-          ],
-          Row(
-            children: [
-              MButton('Passer', small: true, kind: ButtonKind.ghost, onPressed: () => widget.onAnswer(null)),
-              const Spacer(),
-              MButton(
-                'Envoyer',
-                small: true,
-                kind: ButtonKind.primary,
-                onPressed: complete
-                    ? () => widget.onAnswer({
-                        for (final x in q.questions)
-                          x.key: x.multiple ? _picked[x.key]!.toList() : _picked[x.key]!.first,
-                      })
-                    : null,
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// What is left of the subscriptions, at the top of the home (user

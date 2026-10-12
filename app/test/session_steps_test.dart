@@ -190,11 +190,4 @@ void main() {
     expect([for (final s in glanceSteps(log)) s.label], ['2', '3', '4', '5']);
     expect(glanceSteps(SessionLog()), isEmpty);
   });
-
-  test('a change shows two removed lines, then the added ones', () {
-    final (:removed, :added) = diffPreview(const FileDiff('a.dart', 'one\n\ntwo\nthree', 'uno\ndos\ntres\ncuatro'));
-    expect(removed, ['one', 'two']);
-    expect(added, ['uno', 'dos', 'tres']);
-    expect(diffCounts(const FileDiff('a.dart', null, 'x\n\ny')), (added: 2, removed: 0));
-  });
 }

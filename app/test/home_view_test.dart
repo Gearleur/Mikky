@@ -30,6 +30,54 @@ void main() {
 
   int page(WidgetTester tester) => tester.widget<PageDots>(find.byType(PageDots)).page;
 
+  for (final layout in [HomeLayout.top, HomeLayout.rightNotch, HomeLayout.rightTiles]) {
+    testWidgets('right click on an app opens its menu, not the island menu (${layout.placement})', (tester) async {
+      String? menu, opened;
+      var islandMenus = 0;
+      const app = HomeApp(id: 'remove-me', name: 'Agent à supprimer');
+      await tester.pumpWidget(
+        host(
+          GestureDetector(
+            onSecondaryTapUp: (_) => islandMenus++,
+            child: HomeView(
+              layout: layout,
+              apps: const [app],
+              animate: false,
+              onOpen: (a) => opened = a.id,
+              onMenu: (id) => menu = id,
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.byKey(const ValueKey('remove-me')), buttons: kSecondaryMouseButton);
+      await tester.pump();
+      expect(menu, 'remove-me');
+      expect(opened, isNull);
+      expect(islandMenus, 0);
+      await tester.tap(find.byKey(const ValueKey('remove-me')));
+      expect(opened, 'remove-me');
+    });
+  }
+
+  testWidgets('the watched task has the same right-click menu', (tester) async {
+    String? menu;
+    await tester.pumpWidget(
+      host(
+        HomeView(
+          watched: WatchedTask(id: 'watched', name: 'Agent suivi', log: SessionLog(), status: AgentStatus.working),
+          animate: false,
+          onMenu: (id) => menu = id,
+        ),
+      ),
+    );
+    await tester.tap(
+      find.ancestor(of: find.byType(TaskGlance), matching: find.byType(GestureDetector)).first,
+      buttons: kSecondaryMouseButton,
+    );
+    await tester.pump();
+    expect(menu, 'watched');
+  });
+
   testWidgets('notch: pages by arrows, dots and keys, arrows hidden at the ends', (tester) async {
     // Nothing at work: three columns, six wide tiles a page.
     await tester.pumpWidget(host(HomeView(apps: HomeApp.placeholders(14), animate: false)));

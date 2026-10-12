@@ -65,12 +65,8 @@ class _PageDotsState extends State<PageDots> with SingleTickerProviderStateMixin
     if (widget.count <= 1) return const SizedBox(height: PageDots.height);
     final ui = MikkyUi.of(context);
     final on = widget.onSelect != null;
-    // Our signature blues; on black, one step lighter (the darkest would
-    // vanish).
-    final sig = PixelFxPalette.signatureBlue.levels;
-    final blues = ui.isLight
-        ? PixelFxPalette.signatureBlue
-        : PixelFxPalette('Bleus', [Color.lerp(sig[0], const Color(0xFFFFFFFF), .4)!, sig[0], sig[1], sig[2]]);
+    // Our signature blues; on black, one step lighter.
+    final blues = PixelFxPalette.signatureBlue.onWindow(ui);
     return Semantics(
       label: 'Page ${widget.page + 1} sur ${widget.count}',
       child: MouseRegion(

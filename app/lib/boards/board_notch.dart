@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../home/home_app.dart';
+import '../home/home_app_tile.dart';
 import '../home/home_frame.dart';
 import '../home/home_layout.dart';
 import '../home/home_view.dart';
@@ -19,6 +20,7 @@ import '../ui/controls/tabs.dart';
 import '../ui/foundation/status.dart';
 import '../ui/foundation/tokens.dart';
 import 'board_home.dart' show sampleApps;
+import 'board_notch_requests.dart';
 import 'board_screens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
@@ -226,6 +228,7 @@ final notchTopBoard = BoardSpec(
         ),
       ],
     ),
+    ...notchRequestSections(),
     const BoardSection(
       title: 'Fonctionnement',
       frames: [
@@ -365,7 +368,7 @@ class NotchRight extends StatelessWidget {
           for (final a in apps)
             Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: _Wide(app: a, width: appsW, height: 40),
+              child: HomeAppTile(app: a, width: appsW, size: 40, onTap: () {}),
             ),
         ],
       ),
@@ -447,54 +450,6 @@ class NotchRight extends StatelessWidget {
   }
 }
 
-/// The title and the line under it.
-Widget _words(HomeApp a, MikkyUi ui) => Column(
-  mainAxisSize: MainAxisSize.min,
-  crossAxisAlignment: CrossAxisAlignment.start,
-  children: [
-    Text(
-      a.name,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.25),
-    ),
-    const SizedBox(height: 1),
-    Text(
-      a.line,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: uiText(TextSize.caption, color: ui.text3, height: 1.25),
-    ),
-  ],
-);
-
-/// A wide tile, as in the notch at the top.
-class _Wide extends StatelessWidget {
-  const _Wide({required this.app, required this.width, required this.height});
-
-  final HomeApp app;
-  final double width, height;
-
-  @override
-  Widget build(BuildContext context) => AppTile(
-    size: height,
-    width: width,
-    label: app.name,
-    status: app.status,
-    onTap: () {},
-    child: Padding(
-      padding: const EdgeInsets.only(left: 11, right: 12),
-      child: Row(
-        children: [
-          SizedBox(width: 16, child: Center(child: AppGlyph(app.app!, size: 15))),
-          const SizedBox(width: 9),
-          Expanded(child: _words(app, MikkyUi.of(context))),
-        ],
-      ),
-    ),
-  );
-}
-
 /// A small tile with the sign, the words beside it.
 class _IconAndWords extends StatelessWidget {
   const _IconAndWords({required this.app, required this.width});
@@ -516,7 +471,7 @@ class _IconAndWords extends StatelessWidget {
           child: Center(child: AppGlyph(app.app!, size: 15)),
         ),
         const SizedBox(width: 9),
-        Expanded(child: _words(app, MikkyUi.of(context))),
+        Expanded(child: HomeAppWords(app: app)),
       ],
     ),
   );

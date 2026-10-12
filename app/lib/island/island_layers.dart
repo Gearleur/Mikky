@@ -8,10 +8,8 @@ import '../motion/intro.dart';
 import '../theme.dart';
 import '../ui/foundation/tokens.dart';
 import 'compact_view.dart';
-import 'content/parts.dart';
 import 'island_clip.dart';
 import 'island_geometry.dart';
-import 'island_painter.dart';
 
 // The layers the island draws over its shape, each one a pure function of
 // what the island is at this frame (no state here).
@@ -78,31 +76,10 @@ Widget islandGreeting(IslandGeometry geo, MikkyTheme theme, {required double t, 
   );
 }
 
-/// Right end of the pill: ring, check or number of agents (rule 3).
-Widget? pillIndicator(IslandSnapshot s, MikkyTheme theme, {required double now}) {
-  final focus = s.focus;
-  if (s.agents.isEmpty || focus == null) return null;
-  final count = Text('${s.agents.length}', style: monoStyle(theme, size: 11.5));
-  if (s.pendingAlerts > 0) return count;
-  if (focus.status == AgentStatus.finished) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: PillIndicatorPainter.check(color: theme.status(AgentStatus.finished)),
-    );
-  }
-  final progress = focus.progressAt(now);
-  if (progress != null) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: PillIndicatorPainter.ring(progress: progress, color: theme.status(focus.status), track: theme.faint),
-    );
-  }
-  return count;
-}
-
-/// What the closed island shows beside Mikky: at the top his name and the
-/// indicator; at the right, under him, the state of his agent.
-List<Widget> compactLayers(IslandGeometry geo, IslandSnapshot s, MikkyTheme theme, {required double now}) {
+/// What the closed island shows beside Mikky: at the top the stars of the
+/// agents ([TopPillContent]); at the right, under him, the state of his
+/// agent.
+List<Widget> compactLayers(IslandGeometry geo, IslandSnapshot s, MikkyTheme theme) {
   final motion = geo.motion;
   final opacity = motion.compactContentOpacity;
   if (opacity <= 0) return const [];
@@ -113,14 +90,16 @@ List<Widget> compactLayers(IslandGeometry geo, IslandSnapshot s, MikkyTheme them
   );
   switch (geo.edge) {
     case IslandEdge.top:
-      final name = Text('Mikky', style: sansStyle(theme));
-      final slideUp = math.min(0.0, motion.currentHeight - motion.metrics.compact.height);
-      final top = motion.metrics.compact.height / 2 - 9 + slideUp;
-      final indicator = pillIndicator(s, theme, now: now);
+      // It slides up with the island while it hides.
+      final size = motion.metrics.compact;
       return [
-        Positioned(left: rect.left + 44, top: top, height: 18, child: faded(name)),
-        if (indicator != null)
-          Positioned(right: geo.window.width - rect.right + 14, top: top, height: 18, child: faded(indicator)),
+        Positioned(
+          left: rect.center.dx - size.width / 2,
+          top: math.min(0.0, motion.currentHeight - size.height),
+          width: size.width,
+          height: size.height,
+          child: faded(TopPillContent(theme: theme, stars: CompactStars.from(s))),
+        ),
       ];
     case IslandEdge.right:
       // Under Mikky, the state of the agent he stands for; his name when

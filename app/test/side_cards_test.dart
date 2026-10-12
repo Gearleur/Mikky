@@ -1,31 +1,18 @@
-import 'dart:io';
-
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mikky/side/question_card.dart';
 import 'package:mikky/side/session_cards.dart';
 import 'package:mikky/ui/content/messages.dart';
 import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import 'load_fonts.dart';
+
 /// The cards that wait for the user (A7.2): a permission with « Toujours »
 /// and a question with choices. Update with `flutter test --update-goldens
 /// test/side_cards_test.dart`, then look.
-Future<void> _loadFonts() async {
-  for (final (family, files) in [
-    ('Geist', ['Geist-Regular.ttf', 'Geist-Medium.ttf', 'Geist-SemiBold.ttf']),
-    ('Geist Mono', ['GeistMono-Regular.ttf', 'GeistMono-Medium.ttf']),
-  ]) {
-    final loader = FontLoader(family);
-    for (final f in files) {
-      loader.addFont(Future.value(ByteData.sublistView(File('assets/fonts/$f').readAsBytesSync())));
-    }
-    await loader.load();
-  }
-}
-
 void main() {
-  setUpAll(_loadFonts);
+  setUpAll(loadAppFonts);
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
     testWidgets('waiting cards, $name', (tester) async {

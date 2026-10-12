@@ -7,7 +7,9 @@ import '../ui/content/side.dart';
 import '../ui/foundation/icons.dart';
 import '../ui/foundation/status.dart';
 import '../ui/foundation/tokens.dart';
+import '../ui/pixels/magic_sky.dart';
 import '../ui/pixels/pixel_fx.dart';
+import '../ui/pixels/status_stack.dart';
 import '../ui/trials/pixel_trials.dart';
 import '../ui/trials/signature_fx.dart';
 import 'canvas.dart';
@@ -367,6 +369,15 @@ String _fxNote(SignatureFxKind k) => switch (k) {
   SignatureFxKind.waves => 'Des ondes carrées, bleue puis orange.',
 };
 
+/// The piles of the « Étoiles superposées » frame, and their number.
+const _piles = <(List<UiStatus>, int?)>[
+  ([UiStatus.working], null),
+  ([UiStatus.working, UiStatus.working], null),
+  ([UiStatus.limited, UiStatus.working, UiStatus.working], null),
+  ([UiStatus.working, UiStatus.working, UiStatus.working], 7),
+  ([UiStatus.finished], null),
+];
+
 final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui manque', (context) {
   final ui = MikkyUi.of(context);
   return [
@@ -490,6 +501,28 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
           ),
         ),
         BoardFrame(
+          label: 'Étoiles superposées',
+          note: 'StatusStack et StackNumber (la petite île en haut) : centrées, la plus pressante à gauche et dessus, chacune découpe un pixel de marge dans celles de derrière et garde son rythme ; au-delà de trois, leur nombre.',
+          width: 520,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final (stars, number) in _piles)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      StatusStack(stars: [for (final (i, st) in stars.indexed) (key: i, status: st)]),
+                      const SizedBox(width: 8),
+                      StackNumber(number),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+        BoardFrame(
           label: 'Effets à l’essai',
           kind: FrameKind.trial,
           note: 'Étincelle, feu d’artifice complet, galaxie.',
@@ -582,6 +615,15 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
             ],
           ),
         ),
+      ],
+    ),
+    BoardSection(
+      title: 'Le ciel de Mikky · essai',
+      kind: FrameKind.trial,
+      note: 'D’après ton image (12 octobre) : quelques nuages de points sur une grille, glitchés — des tranches décalées, des trous, un bord dédoublé en bleu à gauche et en orange à droite — et des étoiles fines. Les nuages ne bougent pas ; seules des étoiles scintillent, et une étoile filante passe de temps en temps, bleue puis orange. Léger : tout est dessiné une fois, seule une fine couche bouge, 15 images par seconde.',
+      frames: [
+        BoardFrame(label: 'La nuit', width: 700, child: _sky(light: false)),
+        BoardFrame(label: 'La version blanche', width: 700, child: _sky(light: true)),
       ],
     ),
     BoardSection(
@@ -776,4 +818,10 @@ BoardSection interfaceColorsSection(MikkyUi ui) => BoardSection(
       ]),
     ),
   ],
+);
+
+/// Mikky's sky, 700 × 380, round-cornered.
+Widget _sky({required bool light}) => ClipRRect(
+  borderRadius: BorderRadius.circular(Radii.xl),
+  child: SizedBox(width: 700, height: 380, child: MagicSky(light: light)),
 );

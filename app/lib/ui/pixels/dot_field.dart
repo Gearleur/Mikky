@@ -36,39 +36,13 @@ class DotField extends StatefulWidget {
   State<DotField> createState() => _DotFieldState();
 }
 
-class _DotFieldState extends State<DotField> {
+class _DotFieldState extends State<DotField> with DecorTicks {
   /// Seconds on the clock, every other tick of it (15 a second).
-  final _time = ValueNotifier(0.0);
-  bool _onClock = false;
-  int _ticks = 0;
+  @override
+  double? get decorStill => widget.at;
 
   /// The dots, laid out once for a size.
   _Dots? _dots;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final run = widget.at == null && Motion.loops(context);
-    if (run && !_onClock) {
-      DecorClock.listen(_tick);
-      _onClock = true;
-    } else if (!run && _onClock) {
-      DecorClock.unlisten(_tick);
-      _onClock = false;
-    }
-  }
-
-  void _tick() {
-    if ((_ticks++).isOdd) return;
-    _time.value = DecorClock.now.value.inMicroseconds / 1e6;
-  }
-
-  @override
-  void dispose() {
-    if (_onClock) DecorClock.unlisten(_tick);
-    _time.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,10 +69,10 @@ class _DotFieldState extends State<DotField> {
             fit: StackFit.expand,
             children: [
               RepaintBoundary(child: CustomPaint(painter: _DotsPainter(dots, color))),
-              if (_onClock || widget.at != null)
+              if (decorRuns || widget.at != null)
                 RepaintBoundary(
                   child: CustomPaint(
-                    painter: _LivePainter(dots, color, widget.at == null ? _time : ValueNotifier(widget.at!), [
+                    painter: _LivePainter(dots, color, decorTime, [
                       PixelFxPalette.blue.on(ui),
                       PixelFxPalette.fire.on(ui),
                       PixelFxPalette.violet.on(ui),

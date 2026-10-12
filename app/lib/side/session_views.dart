@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/content/code_card.dart';
+import '../ui/content/diff_view.dart';
 import '../ui/content/feedback.dart';
 import '../ui/content/messages.dart';
 import '../ui/content/tasks.dart';
@@ -12,19 +12,10 @@ import 'session_cards.dart';
 import 'session_steps.dart';
 import 'session_text.dart';
 
-/// The code under the step at work: the lines the agent changes.
-Widget? _code(FileDiff? diff) {
-  if (diff == null) return null;
-  final (:removed, :added) = diffPreview(diff);
-  var n = 1;
-  return CodeCard(
-    file: folderName(diff.path),
-    lines: [
-      for (final l in removed) CodeLine(n++, [TextSpan(text: l)], removed: true),
-      for (final l in added) CodeLine(n++, [TextSpan(text: l)], added: true),
-    ],
-  );
-}
+/// The code under the step at work, or of a tool opened: the lines the
+/// agent changes (2026-10-12, the diff's look); a fold opens the whole
+/// diff.
+Widget? _code(FileDiff? diff) => diff == null ? null : DiffPreview(diff);
 
 /// The agent thinks: its dots, where its words will come.
 class _Waiting extends StatelessWidget {
@@ -64,23 +55,8 @@ Widget _toolLine(ToolItem t, MikkyUi ui) {
       style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.red),
     );
   } else if (diff != null) {
-    final (:added, :removed) = diffCounts(diff);
-    trailing = Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: '+$added',
-            style: TextStyle(color: ui.green),
-          ),
-          if (removed > 0)
-            TextSpan(
-              text: ' −$removed',
-              style: TextStyle(color: ui.red),
-            ),
-        ],
-      ),
-      style: uiText(TextSize.caption, weight: FontWeight.w500, mono: true),
-    );
+    // A click opens the whole diff (2026-10-12).
+    trailing = DiffCount.of(diff.path, t.changes, hideZero: true);
   }
   final output = t.output?.trim();
   return ToolLine(

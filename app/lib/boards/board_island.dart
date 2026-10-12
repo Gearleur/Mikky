@@ -1,17 +1,13 @@
-import 'dart:ui' as ui;
-
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../island/compact_view.dart';
-import '../island/island_painter.dart';
+import '../agents/enchant.dart';
+
+import 'board_island_top.dart';
 import 'canvas.dart';
+import 'compact_preview.dart';
 
-/// The island's shader, loaded once for the boards (null: its plain
-/// fallback, as when the graphics driver cannot compile it).
-final Future<ui.FragmentProgram?> _program = loadIslandProgram();
-
-/// The closed island at the right edge, with the shader once it is there.
+/// The closed island at the right edge, one agent in [status] (null: none).
 class _Compact extends StatelessWidget {
   const _Compact(this.status, {this.detach = false});
 
@@ -19,16 +15,36 @@ class _Compact extends StatelessWidget {
   final bool detach;
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<ui.FragmentProgram?>(
-    future: _program,
-    builder: (context, shot) => CompactIslandPreview(status: status, program: shot.data, detach: detach),
-  );
+  Widget build(BuildContext context) => CompactPreview(IslandEdge.right, switch (status) {
+    null => CompactStars.empty,
+    final s => fakeStars([(s, 0)], justFinished: s == AgentStatus.finished ? 0 : null),
+  }, detach: detach);
 }
 
 final islandBoard = BoardSpec(
   'Petite île',
-  'L’île fermée, à droite de l’écran, dans chaque état',
+  'L’île fermée, en haut et à droite de l’écran, dans chaque état',
   (context) => [
+    ...topIslandSections(),
+    BoardSection(
+      title: 'Dernier état et relance automatique',
+      kind: FrameKind.trial,
+      frames: [
+        BoardFrame(
+          label: 'Une ancienne limite, puis un agent au travail',
+          note: 'Mikky suit le travail plus récent ; la limite reste dans les étoiles.',
+          child: CompactPreview(IslandEdge.top, CompactStars.of(_recentStates)),
+        ),
+        BoardFrame(
+          label: 'Relance automatique activée',
+          note: 'Le jaune disparaît dès que la relance est planifiée ; Mikky suit l’autre agent.',
+          child: CompactPreview(
+            IslandEdge.top,
+            CompactStars.of(Enchantments.instance.attentionAgents(_recentStates, scheduled: const {'limit'})),
+          ),
+        ),
+      ],
+    ),
     const BoardSection(
       title: 'Petite île à droite',
       note: 'Fermée : un petit onglet collé au bord droit, Mikky dans l’état de l’agent qu’il suit, et sous lui ce que fait cet agent (le même dessin que sur les lignes de l’accueil) ; son nom « Mikky », en Jacquard 24 (la police pixel du nom), quand il n’y a personne ou rien à montrer. Mikky travaille aussi quand l’agent réfléchit ou cherche (son animation de travail). Ce qui attend ton feu vert, ta réponse ou une erreur sort dans une bulle qui se détache de l’île, jamais sous Mikky. Survol : elle s’ouvre en petite fenêtre.',
@@ -104,8 +120,12 @@ final islandBoard = BoardSpec(
             ),
             ('Fini', 'La petite île sort 5,2 s, l’état « terminé » sous Mikky, puis l’agent quitte l’île.'),
             (
+              'En haut',
+              'Les étoiles des agents au milieu de la pilule, seulement le bleu et au-dessus, le jaune devant, la plus récente devant ; trois au plus, puis leur nombre au bout droit ; son nom collé à Mikky seulement sans étoile ; le vert seulement seul, ses 5,2 s. Feu vert, question, erreur : la bulle tombe du milieu, jamais dans la pile.',
+            ),
+            (
               'Qui Mikky suit',
-              'Le plus pressant : attend ou erreur, puis limite, puis travail, puis fini ; à égalité, le plus récent. Mikky prend son état (réfléchir et chercher, c’est travailler).',
+              'Le dernier état actif reçu ; une ancienne limite ne le fige plus. Une demande ouverte garde son agent, et un agent qui vient de finir a ses 5,2 s. Une limite en relance automatique ne garde pas le jaune. Réfléchir et chercher, c’est travailler.',
             ),
             (
               'Sessions d’ailleurs',
@@ -121,3 +141,8 @@ final islandBoard = BoardSpec(
     ),
   ],
 );
+
+const _recentStates = [
+  Agent(id: 'limit', name: 'Ancienne limite', status: AgentStatus.rateLimited, startedAt: 0, statusSince: 1),
+  Agent(id: 'work', name: 'Dernier agent', status: AgentStatus.working, startedAt: 0, statusSince: 2),
+];

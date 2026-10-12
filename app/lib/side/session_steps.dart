@@ -32,20 +32,6 @@ String? toolNote(ToolItem t) {
   return out.contains('refused') || out.contains('rejected') || out.contains('denied') ? 'refusé' : 'échec';
 }
 
-/// Lines added and removed by a change (blank lines left out).
-({int added, int removed}) diffCounts(FileDiff diff) => (
-  added: diff.newText.split('\n').where((l) => l.trim().isNotEmpty).length,
-  removed: (diff.oldText ?? '').split('\n').where((l) => l.trim().isNotEmpty).length,
-);
-
-/// The few lines of a change shown under the step at work: up to two
-/// removed, then the first added (five when nothing was removed).
-({List<String> removed, List<String> added}) diffPreview(FileDiff diff) {
-  final removed = (diff.oldText ?? '').split('\n').where((l) => l.trim().isNotEmpty).take(2).toList();
-  final added = diff.newText.split('\n').take(removed.isEmpty ? 5 : 3).toList();
-  return (removed: removed, added: added);
-}
-
 // --------------------------------------------------------------- Steps
 
 /// What an important action is, for the color of its step's star (user

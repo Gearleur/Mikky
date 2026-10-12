@@ -6,7 +6,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/brand/app_glyph.dart';
 import '../ui/brand/app_tile.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/content/side.dart';
@@ -18,6 +17,8 @@ import '../ui/foundation/motion.dart';
 import '../ui/foundation/tokens.dart';
 import '../ui/pixels/dot_field.dart';
 import 'home_app.dart';
+import 'home_app_tile.dart';
+import 'home_apps_background.dart';
 import 'home_layout.dart';
 import 'task_glance.dart';
 import 'tools_rail.dart';
@@ -37,6 +38,7 @@ class HomeView extends StatefulWidget {
     this.apps = const [],
     this.watched,
     this.onOpen,
+    this.onMenu,
     this.onNew,
     this.onHistory,
     this.drawMikky = true,
@@ -56,6 +58,9 @@ class HomeView extends StatefulWidget {
 
   /// A tile pressed (the watched task too).
   final ValueChanged<HomeApp>? onOpen;
+
+  /// Right click on an app or the watched task: its agent's menu.
+  final ValueChanged<String>? onMenu;
 
   /// A new task: « + », the tools' rail and the Chat mode open the new
   /// chat's page. Null: cannot launch.
@@ -205,6 +210,14 @@ class _HomeViewState extends State<HomeView> {
     return Stack(
       clipBehavior: Clip.none,
       children: [
+        if (notch)
+          Positioned.fill(
+            child: HomeAppsBackground(
+              axis: l.stacked ? Axis.vertical : Axis.horizontal,
+              goneAt: l.stacked ? HomeLayout.taskTop + HomeLayout.taskHeight - _dotsUnderTask : _areaLeft - l.tile,
+              solidFrom: l.stacked ? l.gridTop + l.tile : _areaLeft + l.tileWidth,
+            ),
+          ),
         // The notch: grey dots behind the apps (2026-10-05), whole under
         // them, gone a little into Mikky's part (90 px in was « un tout
         // petit peu trop sur la gauche »). Upright, they rise from under
@@ -344,65 +357,6 @@ class _HomeViewState extends State<HomeView> {
     onChanged: (e) => _set(() => _environment = e),
   );
 
-  /// A square tile (the right): the tool's logo, the state on the corner.
-  Widget _tile(HomeApp app) => AppTile(
-    key: ValueKey(app.id),
-    size: _l.tile,
-    label: app.name,
-    status: app.status,
-    onTap: () => widget.onOpen?.call(app),
-    child: app.brand == null ? null : Center(child: BrandLogo(app.brand!, size: (_l.tile * .34).roundToDouble())),
-  );
-
-  /// A wide tile (the notch): the software's sign (else the tool's logo),
-  /// the title, the line that changes; the state on the corner.
-  Widget _card(HomeApp app) {
-    final ui = MikkyUi.of(context);
-    final sign = app.app != null
-        ? AppGlyph(app.app!, size: 15)
-        : (app.brand == null ? null : BrandLogo(app.brand!, size: 15));
-    return AppTile(
-      key: ValueKey(app.id),
-      size: _l.tile,
-      width: _l.tileWidth,
-      label: [app.name, ?app.app?.label].join(', '),
-      status: app.status,
-      onTap: () => widget.onOpen?.call(app),
-      child: Padding(
-        padding: const EdgeInsets.only(left: 11, right: 12),
-        child: Row(
-          children: [
-            SizedBox(width: 16, child: Center(child: sign)),
-            const SizedBox(width: 9),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    app.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: uiText(TextSize.small, weight: FontWeight.w600, color: ui.text, height: 1.25),
-                  ),
-                  if (app.line.isNotEmpty) ...[
-                    const SizedBox(height: 1),
-                    Text(
-                      app.line,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: uiText(TextSize.caption, color: ui.text3, height: 1.25),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   /// Page [p], always full: its apps, then « + » in the first free
   /// place, then small tokens where apps will come (2026-10-02; in the
   /// notch too, user 2026-10-05).
@@ -410,7 +364,17 @@ class _HomeViewState extends State<HomeView> {
     final l = _l, apps = widget.apps;
     final wide = l.notch ? l.tileWidth : null;
     Widget cell(int i) {
-      if (i < apps.length) return l.notch ? _card(apps[i]) : _tile(apps[i]);
+      if (i < apps.length) {
+        final app = apps[i];
+        return HomeAppTile(
+          key: ValueKey(app.id),
+          app: app,
+          size: l.tile,
+          width: wide,
+          onTap: () => widget.onOpen?.call(app),
+          onMenu: widget.onMenu == null ? null : () => widget.onMenu!(app.id),
+        );
+      }
       if (i == apps.length && _canStart) {
         return AddTile(key: const ValueKey('add'), size: l.tile, width: wide, onTap: _start);
       }
@@ -444,6 +408,7 @@ class _HomeViewState extends State<HomeView> {
             child: _Watched(
               task: watched,
               onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name)),
+              onMenu: widget.onMenu == null ? null : () => widget.onMenu!(watched.id),
             ),
           ),
         _pagerArea(),
@@ -551,10 +516,11 @@ class _HomeViewState extends State<HomeView> {
 
 /// The task Mikky looks at, beside him in the notch; a click opens it.
 class _Watched extends StatelessWidget {
-  const _Watched({required this.task, required this.onTap});
+  const _Watched({required this.task, required this.onTap, this.onMenu});
 
   final WatchedTask task;
   final VoidCallback onTap;
+  final VoidCallback? onMenu;
 
   @override
   Widget build(BuildContext context) => Semantics(
@@ -565,6 +531,7 @@ class _Watched extends StatelessWidget {
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
+        onSecondaryTapUp: onMenu == null ? null : (_) => onMenu!(),
         child: TaskGlance(task: task),
       ),
     ),

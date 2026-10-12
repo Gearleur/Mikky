@@ -114,6 +114,18 @@ class Enchantments extends ChangeNotifier {
   /// through.
   bool isOn(String id) => _at.containsKey(id) || _sentAt.containsKey(id);
 
+  /// A scheduled limit needs no attention. Keep the actual session state:
+  /// when work resumes it is shown again, even before the spell is lifted.
+  List<Agent> attentionAgents(List<Agent> agents, {Set<String>? scheduled}) => [
+    for (final a in agents)
+      if (a.status != AgentStatus.rateLimited || !(scheduled?.contains(a.id) ?? isOn(a.id))) a,
+  ];
+
+  List<AgentEntry> attentionEntries(List<AgentEntry> entries) => [
+    for (final e in entries)
+      if (e.status != AgentStatus.rateLimited || !isOn(e.id)) e,
+  ];
+
   /// Relaunch [id] once its limit lifts at [resetsAt] (unknown: in 30 min),
   /// with [send].
   void enchant(String id, DateTime? resetsAt, Future<void> Function(String text) send, {DateTime? now}) {

@@ -5,6 +5,22 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/agents/agents_service.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 
+/// What a fresh `mikkyd` answers to the calls the service makes as it
+/// starts; anything else: an empty result.
+Object _freshDaemon(String method) => switch (method) {
+  'hello' => {'protocol': 3, 'persistent': true},
+  'state.get' => {
+    'agents': <String, Object?>{},
+    'marks': <String, Object?>{},
+    'choices': <String, Object?>{},
+    'recentFolders': <Object>[],
+  },
+  'runs.list' || 'sessions.list' => <Object>[],
+  'tools.status' => {'ready': false},
+  'autostart.status' => {'enabled': false},
+  _ => <String, Object>{},
+};
+
 void main() {
   test('an unavailable backend never switches to local execution', () async {
     final dir = await Directory.systemTemp.createTemp('mikky-service-');
@@ -38,16 +54,6 @@ void main() {
         final method = message['method'] as String;
         calls.add((method, message['params']));
         final Object result = switch (method) {
-          'hello' => {'protocol': 3, 'persistent': true},
-          'state.get' => {
-            'agents': <String, Object?>{},
-            'marks': <String, Object?>{},
-            'choices': <String, Object?>{},
-            'recentFolders': <Object>[],
-          },
-          'runs.list' || 'sessions.list' => <Object>[],
-          'tools.status' => {'ready': false},
-          'autostart.status' => {'enabled': false},
           'hooks.list' => [
             {
               'id': 5,
@@ -77,7 +83,7 @@ void main() {
             'cwd': r'C:\projet',
           },
           'hooks.answer' => true,
-          _ => <String, Object>{},
+          _ => _freshDaemon(method),
         };
         socket.add(jsonEncode({'jsonrpc': '2.0', 'id': message['id'], 'result': result}));
       });
@@ -151,18 +157,8 @@ void main() {
         final method = message['method'] as String;
         requests.add(method);
         final Object result = switch (method) {
-          'hello' => {'protocol': 3, 'persistent': true},
-          'state.get' => {
-            'agents': <String, Object?>{},
-            'marks': <String, Object?>{},
-            'choices': <String, Object?>{},
-            'recentFolders': <Object>[],
-          },
-          'runs.list' || 'sessions.list' => <Object>[],
-          'tools.status' => {'ready': false},
           'tools.auth' => {'installed': false, 'loggedIn': false},
-          'autostart.status' => {'enabled': false},
-          _ => <String, Object>{},
+          _ => _freshDaemon(method),
         };
         try {
           socket.add(jsonEncode({'jsonrpc': '2.0', 'id': message['id'], 'result': result}));

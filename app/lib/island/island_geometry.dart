@@ -72,15 +72,11 @@ class IslandGeometry {
   /// How far the split bubble is out: only while the island is closed.
   double get bubbleOut => bubble.clamp(0.0, 1.2) * (1 - (motion.openness * 2).clamp(0.0, 1.0));
 
-  /// Top: out of the right end of the pill. Right: out of the bottom of the tab.
+  /// Out of the middle of the island's bottom, dropping ([compactBubbleAnchor]).
   SideBubble? get sideBubble {
     final out = bubbleOut;
     if (out < .01 || motion.visibility <= 0) return null;
-    final r = island;
-    return switch (edge) {
-      IslandEdge.top => SideBubble.at(Offset(r.right - 20, motion.metrics.compact.height / 2), const Offset(1, 0), out),
-      IslandEdge.right => SideBubble.at(compactBubbleAnchor(r), const Offset(0, 1), out),
-    };
+    return SideBubble.at(compactBubbleAnchor(island, edge), const Offset(0, 1), out);
   }
 
   /// Where clicks land on the island (with its bubble), the rest of the

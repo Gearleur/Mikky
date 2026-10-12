@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../foundation/motion.dart';
@@ -18,6 +19,13 @@ class PixelFxPalette {
   PixelFxPalette on(MikkyUi ui) => ui.isLight && levels.first.computeLuminance() > .8
       ? PixelFxPalette(name, [Color.lerp(levels[1], const Color(0xFFFFFFFF), .45)!, ...levels.skip(1)])
       : this;
+
+  /// A signature palette as marks on the window: on black, one step
+  /// lighter — its darkest would vanish (the page star, the question's
+  /// mark, the diff's lines).
+  PixelFxPalette onWindow(MikkyUi ui) => ui.isLight
+      ? this
+      : PixelFxPalette(name, [Color.lerp(levels[0], const Color(0xFFFFFFFF), .4)!, ...levels.take(3)]);
 
   static const violet = PixelFxPalette('Violet', [
     Color(0xFFFFFFFF),
@@ -113,6 +121,13 @@ double pixelHash(int i) {
   h = (h ^ (h >> 13)) * 1274126177;
   return ((h ^ (h >> 16)) & 0xffff) / 0xffff;
 }
+
+/// A 4 × 4 ordered dither, 0 to 1: a pixel is kept where its density is
+/// above it — pixel grain instead of a smooth fade, never random (the
+/// sky's clouds, [PixelEdge]).
+double pixelDither(int x, int y) => (_bayer[(y % 4) * 4 + x % 4] + .5) / 16;
+
+const _bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
 /// Paints [n] × [n] small square pixels, a little apart ([gap], against the
 /// side), no background; [colorOf] gives each one's color, null: empty.
@@ -249,7 +264,7 @@ class SpellFx extends StatelessWidget {
 
 /// An agent's state as a small pixel effect in its color — the calm
 /// firework (user request, 2026-09-30), each state at its own pace (see
-/// [_slow]); finished stays still, at a moment where it shows well.
+/// [slowOf]); finished stays still, at a moment where it shows well.
 class StatusFx extends StatelessWidget {
   const StatusFx(this.status, {super.key, this.size = 16, this.effect});
 
@@ -273,7 +288,7 @@ class StatusFx extends StatelessWidget {
       palette: PixelFxPalette.of(status, MikkyUi.of(context)),
       size: size,
       at: status == UiStatus.finished ? effect.still : null,
-      slow: _slow(status),
+      slow: slowOf(status),
     );
   }
 
@@ -281,7 +296,7 @@ class StatusFx extends StatelessWidget {
   /// firework: 3.6 s there and back): waiting fastest (1.2 s), then
   /// working (1.6 s), the others (2.4 s), asleep slowest (4.8 s) (user
   /// request, 2026-09-30).
-  static double _slow(UiStatus s) => switch (s) {
+  static double slowOf(UiStatus s) => switch (s) {
     UiStatus.approval => 1 / 3,
     UiStatus.working => 1.6 / 3.6,
     _ => 2 / 3,
@@ -378,4 +393,126 @@ class _StarPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_StarPainter old) => old.palette != palette;
+}
+
+/// An edge of pixels along a block (2026-10-12: the mark of a question,
+/// the changed lines of a diff): dots of 2 px every 3 px, in [columns]
+/// (how present each one's dots are, left to right; twice as present in
+/// its first [head] rows), thinning out to [foot] towards its bottom by an
+/// ordered dither, never a smooth fade. Its colour goes through [colours]
+/// (lightest first) from its top to its bottom the same way, dot by dot —
+/// pixel grain of a palette's tints — each column [columnShift] tints
+/// lighter than the one on its left. [glitch]: slices of rows slip to the
+/// right, one dot then two, a row missing after them, like the slices of
+/// the sky's clouds (« en tranches », chosen 2026-10-12).
+///
+/// One edge can be drawn in pieces (a diff's lines): this one is rows
+/// [offset] onwards of an edge [total] rows long. It fills the height it
+/// is given.
+class PixelEdge extends StatelessWidget {
+  const PixelEdge({
+    super.key,
+    required this.colours,
+    this.columns = const [1],
+    this.head = 0,
+    this.foot = 1,
+    this.columnShift = 0,
+    this.glitch = false,
+    this.offset = 0,
+    this.total,
+  });
+
+  /// The mark of what waits for the user (2026-10-12, a question: « ici,
+  /// tu réponds »): our oranges on three columns, whole at its head, glitched.
+  factory PixelEdge.waiting(MikkyUi ui) => PixelEdge(
+    colours: PixelFxPalette.signatureOrange.onWindow(ui).levels,
+    columns: const [1, .55, .2],
+    head: 6,
+    foot: .45,
+    columnShift: 1,
+    glitch: true,
+  );
+
+  /// The grain beside a changed line of a diff (2026-10-12): [colours] on
+  /// three columns, glitched; it goes on along its [run] of changed lines
+  /// (which line it is, how many there are) of [rowsPerLine] rows each.
+  factory PixelEdge.change(List<Color> colours, {required (int, int) run, required int rowsPerLine}) => PixelEdge(
+    colours: colours,
+    columns: const [1, .55, .2],
+    columnShift: 1,
+    glitch: true,
+    offset: run.$1 * rowsPerLine,
+    total: run.$2 * rowsPerLine,
+  );
+
+  final List<Color> colours;
+  final List<double> columns;
+  final int head;
+  final double foot;
+  final int columnShift;
+  final bool glitch;
+  final int offset;
+  final int? total;
+
+  /// A dot, and from one dot to the next.
+  static const dot = 2.0, step = 3.0;
+
+  /// Its width: its columns, and two more on the right for its glitch.
+  double get width => (columns.length + (glitch ? 2 : 0)) * step - (step - dot);
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: width,
+    child: CustomPaint(painter: _EdgePainter(this)),
+  );
+}
+
+class _EdgePainter extends CustomPainter {
+  _EdgePainter(this.edge);
+
+  final PixelEdge edge;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final e = edge;
+    const step = PixelEdge.step, dot = PixelEdge.dot;
+    final rows = ((size.height + step - dot) / step).floor();
+    final total = e.total ?? rows;
+    // Where its glitch is: parts of its whole height, only when it is tall
+    // enough for it.
+    int at(double part, int least) => e.glitch && total >= least ? (total * part).round() : -9;
+    final slip1 = at(.3, 10), slip2 = at(.62, 15);
+    final paint = Paint()..isAntiAlias = false;
+    final n = e.colours.length;
+    for (var r = 0; r < rows; r++) {
+      final row = e.offset + r;
+      if (row == slip2 + 3) continue;
+      final shift = row == slip1 || row == slip1 + 1 ? step : (row >= slip2 && row < slip2 + 3 ? 2 * step : 0.0);
+      final t = total < 2 ? 0.0 : (row / (total - 1)).clamp(0.0, 1.0);
+      // Whole for its first third, then thinner and thinner.
+      final profile = t < .34 ? 1.0 : 1 - (1 - e.foot) * (t - .34) / .66;
+      // Through the colours, top to bottom, dot by dot.
+      final v = t * (n - 1);
+      final tint = v.floor() + (v - v.floor() > pixelDither(row, row ~/ 4) ? 1 : 0);
+      for (var c = 0; c < e.columns.length; c++) {
+        final presence = e.columns[c] * (row < e.head ? 2 : profile);
+        if (presence <= pixelDither(c + row ~/ 4, row)) continue;
+        paint.color = e.colours[(tint - c * e.columnShift).clamp(0, n - 1)];
+        canvas.drawRect(Rect.fromLTWH(c * step + shift, r * step, dot, dot), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_EdgePainter old) {
+    final a = old.edge, b = edge;
+    return !listEquals(a.colours, b.colours) ||
+        !listEquals(a.columns, b.columns) ||
+        a.head != b.head ||
+        a.foot != b.foot ||
+        a.columnShift != b.columnShift ||
+        a.glitch != b.glitch ||
+        a.offset != b.offset ||
+        a.total != b.total;
+  }
 }

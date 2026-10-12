@@ -46,7 +46,8 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
     MenuEntry(_pin, m.pinned ? 'Désépingler' : 'Épingler'),
     MenuEntry(_archive, m.archived ? 'Sortir des archives' : 'Archiver'),
     if (e.homeStatus == AgentStatus.error) const MenuEntry(_settle, 'Marquer l’erreur comme réglée'),
-    if (!busy) ...[const MenuEntry.separator(), const MenuEntry(_delete, 'Supprimer…')],
+    const MenuEntry.separator(),
+    const MenuEntry(_delete, 'Supprimer…'),
   ]);
   switch (chosen) {
     case _pause:
@@ -84,6 +85,7 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
       ]);
       if (how == _forget || how == _forgetAndFile) {
         await source.forget(e.id, deleteFile: how == _forgetAndFile);
+        Enchantments.instance.cancel(e.id);
         deleted?.call();
       }
   }

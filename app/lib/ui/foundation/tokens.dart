@@ -231,23 +231,22 @@ class MikkyUi {
   /// Raised control: `linear-gradient(--ctl-a, --ctl-b)`.
   Gradient get control => LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [ctlA, ctlB]);
 
-  /// An app's tile on the home (2026-10-02): white fading to the well in
-  /// light; in dark a deeper grey than the raised controls (« Relief
-  /// doux », 2026-10-05: their grey « fait cheap, pas premium »).
-  Gradient get tile => LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: isLight ? [thumb, well] : const [Color(0xFF1F1F22), Color(0xFF131315)],
-  );
+  /// Opaque pure white in both themes, at rest and on hover.
+  Color get tileColor => const Color(0xFFFFFFFF);
 
-  /// An app's tile's edges: its sheen on top (stronger in dark) and its
-  /// fine rim.
-  List<CssShadow> get tileEdges => isLight
-      ? [highlight, CssShadow(0, 0, 0, line, spread: .8, inset: true)]
-      : const [
-          CssShadow(0, 1, 0, Color(0x24FFFFFF), inset: true),
-          CssShadow(0, 0, 0, Color(0x0DFFFFFF), spread: .8, inset: true),
-        ];
+  Color get tileText => const Color(0xFF151519);
+  Color get tileText2 => const Color(0xFF666975);
+
+  /// A fine edge and a quiet contact shadow, unchanged on hover.
+  List<CssShadow> get tileShadows => [
+    CssShadow(0, 1, 2, Color(isLight ? 0x13000000 : 0x66000000)),
+    CssShadow(0, 3, 8, Color(isLight ? 0x12000000 : 0x40000000)),
+    const CssShadow(0, 0, 0, Color(0x15000000), spread: .65, inset: true),
+    const CssShadow(0, 1, 0, Color(0xC0FFFFFF), inset: true),
+  ];
+
+  /// Half the grey wash used in the trials: a quiet background for white apps.
+  Color get appsBackground => Color.lerp(island, isLight ? const Color(0xFFF0F0F3) : const Color(0xFF101114), .5)!;
 
   /// `inset 0 1px 0 var(--hl)`: the light edge on top of raised controls.
   CssShadow get highlight => CssShadow(0, 1, 0, hl, inset: true);

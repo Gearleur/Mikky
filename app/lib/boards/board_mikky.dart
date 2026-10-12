@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../motion/dot_waves.dart';
-import '../motion/gulp.dart';
 import '../motion/intro.dart';
 import '../motion/launch.dart';
 import '../motion/motion_player.dart';
@@ -88,20 +87,6 @@ final mikkyBoard = BoardSpec(
                 poster: poster,
                 scene: (context, t) => IntroScene(c, t),
               ),
-            ),
-        ],
-      ),
-      BoardSection(
-        title: 'La bouche ouverte',
-        note: 'Mikky qui avale un fichier, à la Kirby (la seule fois où il a une bouche) : gardée des essais du 8 octobre, « De face » — une boule qui se penche à peine en arrière, la bouche en ovale horizontal. La suite du travail de la bouche est pour plus tard.',
-        kind: FrameKind.trial,
-        frames: [
-          for (final pose in GulpPoses.all)
-            BoardFrame(
-              label: pose.name,
-              note: pose.note,
-              width: 260,
-              child: ClipRRect(borderRadius: BorderRadius.circular(12), child: GulpLive(pose)),
             ),
         ],
       ),

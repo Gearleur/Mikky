@@ -52,16 +52,16 @@ class IslandPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (visibility <= 0) return;
     final shader = this.shader;
+    final side = this.side;
     if (shader == null) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(shape, Radius.circular(radius)),
-        Paint()
-          ..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility),
-      );
+      final fill = Paint()
+        ..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility);
+      canvas.drawRRect(RRect.fromRectAndRadius(shape, Radius.circular(radius)), fill);
+      // The bubble, plain too: not fused, but there.
+      if (side != null) canvas.drawCircle(side.center, side.radius, fill);
       return;
     }
     final c = shape.center;
-    final side = this.side;
     final values = <double>[
       c.dx, c.dy, shape.width / 2, shape.height / 2, // uBox
       radius, // uR
@@ -122,88 +122,4 @@ class SideBubble {
   @override
   int get hashCode => Object.hash(center, radius, smoothness);
   final double smoothness;
-}
-
-/// Small colored dot inside the split bubble.
-class BubbleDotPainter extends CustomPainter {
-  BubbleDotPainter({
-    required this.center,
-    required this.radius,
-    required this.color,
-    required this.opacity,
-    required this.glow,
-  });
-
-  final Offset center;
-  final double radius;
-  final Color color;
-  final double opacity;
-  final bool glow;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (opacity <= 0) return;
-    final c = color.withValues(alpha: color.a * opacity);
-    if (glow) {
-      canvas.drawCircle(
-        center,
-        radius,
-        Paint()
-          ..color = c
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
-      );
-    }
-    canvas.drawCircle(center, radius, Paint()..color = c);
-  }
-
-  @override
-  bool shouldRepaint(BubbleDotPainter old) => true;
-}
-
-/// Right end of the compact island: progress ring or check mark (spec §5.3,
-/// rule 3), 16 × 16.
-class PillIndicatorPainter extends CustomPainter {
-  PillIndicatorPainter.ring({required double this.progress, required this.color, required this.track}) : check = false;
-  PillIndicatorPainter.check({required this.color}) : progress = null, track = null, check = true;
-
-  final double? progress;
-  final Color color;
-  final Color? track;
-  final bool check;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final stroke = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.2
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    if (check) {
-      final path = Path()
-        ..moveTo(3.5, 8.5)
-        ..relativeLineTo(3, 3)
-        ..relativeLineTo(6, -7);
-      canvas.drawPath(path, stroke..color = color);
-      return;
-    }
-    const c = Offset(8, 8);
-    canvas.drawCircle(
-      c,
-      6,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.2
-        ..color = track!,
-    );
-    canvas.drawArc(
-      Rect.fromCircle(center: c, radius: 6),
-      -1.5707963,
-      6.2831853 * progress!,
-      false,
-      stroke..color = color,
-    );
-  }
-
-  @override
-  bool shouldRepaint(PillIndicatorPainter old) => old.progress != progress || old.color != color || old.check != check;
 }

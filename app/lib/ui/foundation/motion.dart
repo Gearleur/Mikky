@@ -374,3 +374,51 @@ abstract final class KeyboardUse {
     });
   }
 }
+
+/// The decor clock at 15 images a second for a widget that lives a little
+/// ([DotField], [MagicSky]): its seconds in [decorTime], or the still
+/// moment [decorStill] (a picture); off when hidden or when Windows asks
+/// for fewer animations.
+mixin DecorTicks<T extends StatefulWidget> on State<T> {
+  final _decorTime = ValueNotifier(0.0);
+  bool _onDecor = false;
+  int _decorTicks = 0;
+
+  /// A moment (seconds) to show still instead of the clock; null: live.
+  double? get decorStill;
+
+  /// The clock runs for this widget.
+  bool get decorRuns => _onDecor;
+
+  /// Seconds on the clock, or [decorStill].
+  ValueListenable<double> get decorTime {
+    final still = decorStill;
+    return still == null ? _decorTime : ValueNotifier(still);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final run = decorStill == null && Motion.loops(context);
+    if (run && !_onDecor) {
+      DecorClock.listen(_decorTick);
+      _onDecor = true;
+    } else if (!run && _onDecor) {
+      DecorClock.unlisten(_decorTick);
+      _onDecor = false;
+    }
+  }
+
+  /// Every other tick of the clock: 15 a second.
+  void _decorTick() {
+    if ((_decorTicks++).isOdd) return;
+    _decorTime.value = DecorClock.now.value.inMicroseconds / 1e6;
+  }
+
+  @override
+  void dispose() {
+    if (_onDecor) DecorClock.unlisten(_decorTick);
+    _decorTime.dispose();
+    super.dispose();
+  }
+}

@@ -226,4 +226,175 @@ abstract final class FakeSessions {
 
   /// Stopped by the user.
   static SessionLog cancelled() => _log([..._fixing(), TurnEnded(StopReason.cancelled, at: _at(30))]);
+
+  static const _yesAlwaysNo = [
+    PermissionOption('allow', 'Oui', 'allow_once'),
+    PermissionOption('always', 'Toujours', 'allow_always'),
+    PermissionOption('reject', 'Non', 'reject_once'),
+  ];
+
+  /// Waits for a yes on a file change: [islandEdit], two places far apart.
+  static SessionLog approvalEdit() => _log([
+    ..._fixing(),
+    ToolCallEvent(
+      't3',
+      name: 'Edit',
+      kind: ToolKind.edit,
+      title: 'Modifier island_machine.dart',
+      path: _file,
+      diff: islandEdit,
+      status: ToolStatus.pending,
+      at: _at(40),
+    ),
+    PermissionAsked(1, toolCallId: 't3', title: 'Modifier island_machine.dart', options: _yesAlwaysNo, at: _at(40)),
+  ]);
+
+  /// Done, after changing [islandEdit] and writing [newTest].
+  static SessionLog doneFiles() => _log([
+    ..._fixing(),
+    for (final (i, diff) in [islandEdit, newTest].indexed)
+      ToolCallEvent(
+        'f$i',
+        name: 'Edit',
+        kind: ToolKind.edit,
+        title: 'Modifier ${diff.path.split(r'\').last}',
+        path: diff.path,
+        diff: diff,
+        status: ToolStatus.completed,
+        at: _at(40 + i),
+      ),
+    AgentMessage('La fermeture auto attend 45 s, comme la spec ; un test le vérifie.', at: _at(60)),
+    TurnEnded(StopReason.endTurn, at: _at(61)),
+  ]);
+
+  /// One question, several choices to tick, and « Autre… ».
+  static SessionLog questionMultiple() => _log([
+    ..._start('Ajoute des tests au moteur.'),
+    QuestionAsked(
+      3,
+      message: 'Quels tests ajouter ?',
+      questions: const [
+        Question(
+          'tests',
+          text: 'Quels tests ajouter ?',
+          multiple: true,
+          otherKey: 'tests_other',
+          choices: [
+            QuestionChoice('Unitaires', 'Rapides, une fonction à la fois'),
+            QuestionChoice('Bout en bout', 'Avec le vrai mikkyd, plus lents'),
+            QuestionChoice('Images de référence', 'Les goldens des planches'),
+          ],
+        ),
+      ],
+      at: _at(4),
+    ),
+  ]);
+
+  /// Three questions in one form, answered one after the other.
+  static SessionLog questions() => _log([
+    ..._start('Prépare le stockage des tâches planifiées.'),
+    QuestionAsked(
+      4,
+      message: 'Trois choix avant de commencer',
+      questions: const [
+        Question(
+          'db',
+          title: 'Base',
+          text: 'Quelle base de données ?',
+          otherKey: 'db_other',
+          choices: [QuestionChoice('SQLite', 'Un fichier, rien à installer'), QuestionChoice('Postgres', 'Un serveur')],
+        ),
+        Question(
+          'when',
+          title: 'Quand',
+          text: 'Quand lancer les tâches ?',
+          choices: [QuestionChoice('À l’heure dite'), QuestionChoice('Au prochain démarrage')],
+        ),
+        Question(
+          'log',
+          title: 'Journal',
+          text: 'Garder un journal des lancements ?',
+          choices: [QuestionChoice('Oui'), QuestionChoice('Non')],
+        ),
+      ],
+      at: _at(4),
+    ),
+  ]);
+
+  /// [_file], two changes far apart: the delay, and the timer that uses it.
+  static final islandEdit = FileDiff(
+    _file,
+    _islandBefore,
+    _islandBefore.replaceAll(_beforeA, _afterA).replaceAll(_beforeB, _afterB),
+    line: 1,
+  );
+
+  /// A new test file.
+  static const newTest = FileDiff(
+    r'C:\Users\alexa\projet\mikky\packages\mikky_engine\test\auto_close_test.dart',
+    null,
+    "import 'package:mikky_engine/mikky_engine.dart';\n"
+        "import 'package:test/test.dart';\n"
+        '\n'
+        'void main() {\n'
+        "  test('the island closes after 45 s', () {\n"
+        '    final m = IslandMachine(now: () => 0);\n'
+        '    m.click(0);\n'
+        '    m.advance(IslandMachine.autoCloseSec - .1);\n'
+        '    expect(m.snapshot.shape, IslandShape.open);\n'
+        '    m.advance(IslandMachine.autoCloseSec);\n'
+        '    expect(m.snapshot.shape, IslandShape.closed);\n'
+        '  });\n'
+        '}\n',
+  );
+
+  static const _beforeA = '  static const autoCloseSec = 60.0;\n';
+  static const _afterA =
+      '  /// The spec\u2019s delay (\u00a73): the island closes 45 s after the last click.\n  static const autoCloseSec = 45.0;\n';
+  static const _beforeB = '    _closeAt = now + autoCloseSec;\n';
+  static const _afterB = '    _closeAt = now + autoCloseSec;\n    _countdownFrom = _closeAt! - countdownSec;\n';
+
+  static final _islandBefore = [
+    "import 'island_motion.dart';",
+    '',
+    '/// What the island does, as rules (spec \u00a75.3).',
+    'class IslandMachine {',
+    '  IslandMachine({required this.now});',
+    '',
+    '  final double Function() now;',
+    '',
+    '  static const autoCloseSec = 60.0;',
+    '  static const countdownSec = 10.0;',
+    '',
+    '  IslandShape _shape = IslandShape.closed;',
+    '  double? _closeAt;',
+    '  double? _countdownFrom;',
+    '',
+    '  IslandShape get shape => _shape;',
+    '',
+    '  /// The cursor reached the island, or left it.',
+    '  void pointer(double now, {required bool overIsland}) {',
+    '    if (overIsland) _closeAt = null;',
+    '  }',
+    '',
+    '  /// A click opens the island, or keeps it open.',
+    '  void click(double now) {',
+    '    _shape = IslandShape.open;',
+    '    _closeAt = now + autoCloseSec;',
+    '  }',
+    '',
+    '  /// Closes it at its deadline.',
+    '  void advance(double now) {',
+    '    final at = _closeAt;',
+    '    if (at != null && now >= at) close(now);',
+    '  }',
+    '',
+    '  void close(double now) {',
+    '    _shape = IslandShape.closed;',
+    '    _closeAt = null;',
+    '    _countdownFrom = null;',
+    '  }',
+    '}',
+    '',
+  ].join('\n');
 }

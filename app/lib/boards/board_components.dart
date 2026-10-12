@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../home/home_app_tile.dart';
 import '../home/home_layout.dart';
 import '../home/tools_rail.dart';
 import '../overlay/overlay_channel.dart';
@@ -21,6 +22,7 @@ import '../ui/foundation/tokens.dart';
 import '../ui/overlays/floating_menu.dart';
 import '../ui/trials/claude_spinner.dart';
 import 'board_brand.dart';
+import 'board_components_requests.dart';
 import 'board_home.dart';
 import 'canvas.dart';
 
@@ -46,8 +48,8 @@ Widget _row(List<Widget> children) =>
     Wrap(spacing: 10, runSpacing: 10, crossAxisAlignment: WrapCrossAlignment.center, children: children);
 
 /// Components on the window's background, [width] wide.
-class _Tray extends StatelessWidget {
-  const _Tray(this.children, {this.width = 340});
+class Tray extends StatelessWidget {
+  const Tray(this.children, {super.key, this.width = 340});
 
   final List<Widget> children;
   final double width;
@@ -125,7 +127,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Ronds',
               note: 'Les plus utilisés : retour, menu (l’étoile grise), envoyer, flèches des pages et historique (28 et 34 px, gris).',
-              child: _Tray([
+              child: Tray([
                 _row([
                   for (final i in ['folder', 'sliders', 'plus']) RoundButton(i, onPressed: () {}),
                   RoundButton.menu(size: 40, onPressed: () {}),
@@ -147,7 +149,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Réponses',
               note: 'Oui / Non d’un agent qui attend ; « Toujours » quand l’agent le propose. Toutes les actions d’une ligne ou d’une carte passent par cette barre.',
-              child: _Tray([
+              child: Tray([
                 AnswerBar(answers: [('Non', () {}), ('Oui', () {})]),
                 AnswerBar(answers: [('Toujours', () {}), ('Non', () {}), ('Oui', () {})]),
                 AnswerBar(answers: [('Terminer', () {}), ('Relance auto', () {})]),
@@ -163,7 +165,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Capsules',
               note: 'Réservées aux écrans (nouvel agent, connexion, réglages). Normal, petit, désactivé, en cours (clic sur « Envoyer »).',
-              child: _Tray([
+              child: Tray([
                 _row([
                   MButton('Lancer', kind: ButtonKind.primary, onPressed: () {}),
                   MButton('Annuler', onPressed: () {}),
@@ -209,7 +211,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               label: 'Le même, en blanc · onglets',
               kind: FrameKind.play,
               note: 'Même composant (`MTabBar`), le carré blanc qui glisse : des onglets dans une page (pour plus tard). Le noir reste à la navigation de l’accueil.',
-              child: _Tray([
+              child: Tray([
                 Local(
                   0,
                   (v, set) => MTabBar(
@@ -259,7 +261,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'En-têtes',
               note: 'Une page d’agent : sans titre, les boutons flottent sur le fil.',
-              child: _Tray([
+              child: Tray([
                 SizedBox(
                   height: 60,
                   child: Stack(
@@ -297,7 +299,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               label: 'Sélecteurs',
               kind: FrameKind.play,
               note: 'Le carré glisse avec un ressort (380 / 0,70) ; les autres options foncent au survol.',
-              child: _Tray([
+              child: Tray([
                 Local(
                   0,
                   (v, set) => Segmented(options: const ['Tous', 'En cours', 'Finis'], selected: v, onChanged: set),
@@ -366,7 +368,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Champ de saisie',
               note: 'Grandit jusqu’à 5 lignes ; les options à moitié dedans : dossier et modèle pour une nouvelle tâche ; rien pour écrire à un agent.',
-              child: _Tray([
+              child: Tray([
                 Composer(
                   placeholder: 'Que doit faire l’agent ?',
                   options: Row(
@@ -384,7 +386,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             ),
             BoardFrame(
               label: 'Champs',
-              child: _Tray([
+              child: Tray([
                 const SearchField(icon: 'search', placeholder: 'Chercher une session, un fichier…'),
                 SearchField(
                   placeholder: 'Nom du projet',
@@ -401,11 +403,11 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
       [
         BoardSection(
           title: 'Applications',
-          note: 'Une application : un ou plusieurs agents qui font une tâche. Des tuiles, un seul arrondi pour toutes les tailles (27 % du côté), le bord clair et le trait fin de nos contrôles en relief ; au survol elles montent de 2 px, à la pression elles rétrécissent. Leur dessin viendra.',
+          note: 'Blanc pur : une base opaque et unie, un bord discret et une ombre courte. Au survol, la tuile s’agrandit de 5 % avec son contenu et sa pastille. Carré et rectangle gardent le même arrondi (27 % de la hauteur) ; à la pression, ils rétrécissent.',
           frames: [
             const BoardFrame(
-              label: 'Tuiles',
-              note: 'Carrées, 64 px, 8 par page : l’accueil de droite. Larges, 160 × 42 : le notch (le signe du logiciel, le titre, une ligne qui change ; planche Notch Top). Neutres tant qu’elles n’ont pas leur dessin.',
+              label: 'Tuiles · Blanc pur',
+              note: 'Carrée 64 × 64 et rectangulaire 160 × 42. La même surface dans toutes les planches et dans l’app, en clair comme en sombre.',
               child: BoardPane(
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -418,21 +420,23 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               ),
             ),
             BoardFrame(
-              label: 'À droite, dans l’app',
-              note: 'En attendant leur dessin : le logo de l’outil et l’état de l’agent au coin (nos feux d’artifice, petits) ; rien en pause. Ceux qui attendent, travaillent et les derniers terminés ; pas l’historique.',
+              label: 'Avec le contenu',
+              note: 'Le même composant que dans l’accueil, avec les logos et les états au coin ; dessous, sa version rectangulaire avec le titre et la ligne d’activité.',
               child: BoardPane(
                 width: 340,
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (final a in sampleApps.take(4)) ...[
-                      AppTile(
-                        size: 56,
-                        status: a.status,
-                        onTap: _nothing,
-                        child: Center(child: BrandLogo(a.brand!, size: 19)),
-                      ),
-                      const SizedBox(width: 16),
-                    ],
+                    Row(
+                      children: [
+                        for (final a in sampleApps.take(4)) ...[
+                          HomeAppTile(app: a, size: 56, onTap: _nothing),
+                          const SizedBox(width: 16),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 22),
+                    HomeAppTile(app: sampleApps.first, size: 42, width: 248, onTap: _nothing),
                   ],
                 ),
               ),
@@ -442,15 +446,22 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               note: 'Après les applications, la première place libre devient « + » (une nouvelle tâche) ; les autres gardent un petit jeton creusé au milieu, qui attend une application. Une page est toujours pleine.',
               child: BoardPane(
                 width: 360,
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    AddTile(onTap: _nothing),
-                    SizedBox(width: 16),
-                    AppSlot(),
-                    SizedBox(width: 16),
-                    AppSlot(),
-                    SizedBox(width: 16),
-                    AppSlot(),
+                    Row(
+                      children: [
+                        AddTile(onTap: _nothing),
+                        SizedBox(width: 16),
+                        AppSlot(),
+                        SizedBox(width: 16),
+                        AppSlot(),
+                        SizedBox(width: 16),
+                        AppSlot(),
+                      ],
+                    ),
+                    SizedBox(height: 22),
+                    AddTile(size: 42, width: 248, onTap: _nothing),
                   ],
                 ),
               ),
@@ -549,7 +560,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'États d’un agent',
               note: 'Le feu d’artifice bleu pour tout le travail, « ! » pour ce qui attend ton feu vert ou ta réponse, « ! » rouge pour une erreur, le jaune pour la limite, le vert figé quand c’est fini ; rien en pause. Le violet est réservé à « Ensorcelé ».',
-              child: _Tray([
+              child: Tray([
                 Wrap(
                   spacing: 6,
                   runSpacing: 6,
@@ -582,7 +593,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Notifications',
               note: 'Un message qui arrive (toast) ; l’état du moteur, en haut de la fenêtre quand il manque.',
-              child: _Tray([
+              child: Tray([
                 Toast(
                   icon: 'file',
                   title: 'IMG_2041.jpg reçue',
@@ -597,7 +608,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             ),
             BoardFrame(
               label: 'Attente, progrès, pastilles',
-              child: _Tray([
+              child: Tray([
                 const ProgressBar(value: .4),
                 const ProgressBar(),
                 _row([
@@ -625,6 +636,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         ),
       ],
     ),
+    requestComponents(),
     ('Couleurs', [interfaceColorsSection(ui)]),
     (
       'Essais',
@@ -636,7 +648,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             BoardFrame(
               label: 'Claude au travail : deux essais',
               note: 'À gauche, son logo qui tourne et respire (dans l’app). À droite, l’étoile de Claude Code, comme dans son terminal.',
-              child: _Tray([
+              child: Tray([
                 Row(
                   children: [
                     const SizedBox(
