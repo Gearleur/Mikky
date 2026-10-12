@@ -10,6 +10,10 @@ pub struct Reader {
     permissions: HashMap<String, Value>,
     questions: HashSet<String>,
     prompts: Vec<String>,
+    steering: HashMap<String, String>,
+    user_echoes: Vec<String>,
+    detached_turn: bool,
+    codex_status: Option<String>,
     loading: Option<String>,
     mode_reported: bool,
     replay_turn: bool,
@@ -65,6 +69,18 @@ fn stop_reason(v: &Value) -> &str {
 }
 
 impl Reader {
+    pub fn detached_working(&self) -> bool {
+        self.detached_turn
+    }
+
+    fn expect_echo(&mut self, text: String) {
+        // Some adapters never echo their prompts. Bound this bookkeeping.
+        if self.user_echoes.len() == 256 {
+            self.user_echoes.remove(0);
+        }
+        self.user_echoes.push(text);
+    }
+
     pub fn read(&mut self, message: &Value, outgoing: bool, at: &str) -> Vec<Value> {
         let mut events = self.message(message, outgoing);
         for e in &mut events {
@@ -84,7 +100,16 @@ impl Reader {
                     self.methods.insert(key.clone(), method.into());
                 }
                 match method {
+                    "_session/steering" => {
+                        // Only status received during this request can tell us
+                        // that its detached continuation has already finished.
+                        self.codex_status = None;
+                        let message = text(&p["prompt"]);
+                        self.expect_echo(message.clone());
+                        self.steering.insert(key, message);
+                    }
                     "session/prompt" => {
+                        self.expect_echo(text(&p["prompt"]));
                         let queued = !self.prompts.is_empty();
                         self.prompts.push(key);
                         let mut out = vec![];
@@ -149,6 +174,28 @@ impl Reader {
         let r = &m["result"];
         let error = &m["error"];
         match method.as_str() {
+            "_session/steering" => {
+                let message = self.steering.remove(&key).unwrap_or_default();
+                if r["outcome"] == "injected" || r["outcome"] == "startedNewTurn" {
+                    let mut out = vec![];
+                    if r["outcome"] == "startedNewTurn" {
+                        self.detached_turn = self.codex_status.as_deref() != Some("idle");
+                        out.push(json!({"type":"start"}));
+                    }
+                    out.push(
+                        json!({"type":"user","text":message,"queued":r["outcome"] == "injected"}),
+                    );
+                    if r["outcome"] == "startedNewTurn" && !self.detached_turn {
+                        out.push(json!({"type":"end","reason":"endTurn"}));
+                    }
+                    out
+                } else {
+                    if let Some(i) = self.user_echoes.iter().position(|t| *t == message) {
+                        self.user_echoes.remove(i);
+                    }
+                    vec![]
+                }
+            }
             "session/new" | "session/load" | "session/resume" => {
                 let mut out = vec![];
                 if self.replay_turn {
@@ -190,7 +237,7 @@ impl Reader {
                     return vec![];
                 };
                 self.prompts.drain(..=i);
-                if !self.prompts.is_empty() {
+                if !self.prompts.is_empty() || self.detached_turn {
                     return vec![];
                 }
                 if !error.is_null() {
@@ -209,8 +256,31 @@ impl Reader {
     }
 
     fn update(&mut self, u: &Value) -> Vec<Value> {
+        if let Some(status) = u["_meta"]["codex"]["threadStatus"]["type"].as_str() {
+            self.codex_status = Some(status.to_owned());
+            if status == "idle" && self.detached_turn {
+                self.detached_turn = false;
+                if self.prompts.is_empty() {
+                    return vec![json!({"type":"end","reason":"endTurn"})];
+                }
+            }
+        }
         match string(&u["sessionUpdate"]) {
             "user_message_chunk" => {
+                if self.loading.is_none() {
+                    let t = text(&json!([u["content"]]));
+                    if let Some(i) = self
+                        .user_echoes
+                        .iter()
+                        .position(|s| !t.is_empty() && s.starts_with(&t))
+                    {
+                        self.user_echoes[i].drain(..t.len());
+                        if self.user_echoes[i].is_empty() {
+                            self.user_echoes.remove(i);
+                        }
+                        return vec![];
+                    }
+                }
                 let event =
                     json!({"type":"user","text":text(&json!([u["content"]])),"id":u["messageId"]});
                 if self.loading.is_none() {
@@ -305,6 +375,81 @@ fn tool(u: &Value) -> Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn steer_request() -> Value {
+        json!({"id":8,"method":"_session/steering","params":{"prompt":[{"type":"text","text":"suite"}]}})
+    }
+
+    fn echo(text: &str) -> Value {
+        json!({"method":"session/update","params":{"update":{"sessionUpdate":"user_message_chunk","messageId":"u8","content":{"type":"text","text":text}}}})
+    }
+
+    #[test]
+    fn steering_is_published_on_acceptance_and_echoes_are_suppressed() {
+        for before in [false, true] {
+            let mut r = Reader::default();
+            assert!(r.read(&steer_request(), true, "t0").is_empty());
+            if before {
+                assert!(r.read(&echo("su"), false, "t1").is_empty());
+                assert!(r.read(&echo("ite"), false, "t1").is_empty());
+            }
+            let events = r.read(
+                &json!({"id":8,"result":{"outcome":"injected"}}),
+                false,
+                "t2",
+            );
+            assert_eq!(
+                events,
+                vec![json!({"type":"user","text":"suite","queued":true,"at":"t2"})]
+            );
+            if !before {
+                assert!(r.read(&echo("suite"), false, "t3").is_empty());
+            }
+            assert_eq!(r.read(&echo("suite"), false, "t4").len(), 1);
+        }
+    }
+
+    #[test]
+    fn refused_steering_does_not_publish_a_user_message_or_end_the_turn() {
+        for outcome in ["failed", "promptRequired"] {
+            let mut r = Reader::default();
+            r.read(&steer_request(), true, "t0");
+            assert!(
+                r.read(&json!({"id":8,"result":{"outcome":outcome}}), false, "t1")
+                    .is_empty()
+            );
+            assert_eq!(r.read(&echo("suite"), false, "t2").len(), 1);
+        }
+    }
+
+    #[test]
+    fn codex_detached_turn_ends_on_idle_even_before_steering_response() {
+        let status = |kind| json!({"method":"session/update","params":{"update":{"sessionUpdate":"session_info_update","_meta":{"codex":{"threadStatus":{"type":kind}}}}}});
+        for early_idle in [false, true] {
+            let mut r = Reader::default();
+            r.read(&steer_request(), true, "t0");
+            r.read(&status("active"), false, "t1");
+            if early_idle {
+                r.read(&status("idle"), false, "t2");
+            }
+            let events = r.read(
+                &json!({"id":8,"result":{"outcome":"startedNewTurn"}}),
+                false,
+                "t3",
+            );
+            assert_eq!(events[0]["type"], "start");
+            assert_eq!(events[1]["type"], "user");
+            assert_eq!(r.detached_working(), !early_idle);
+            let end = if early_idle {
+                events.last().unwrap().clone()
+            } else {
+                r.read(&status("idle"), false, "t4").remove(0)
+            };
+            assert_eq!(end["type"], "end");
+            assert!(!r.detached_working());
+            assert!(r.read(&status("idle"), false, "t5").is_empty());
+        }
+    }
 
     fn failed_prompt(error: Value) -> Vec<Value> {
         let mut r = Reader::default();

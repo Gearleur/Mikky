@@ -1,6 +1,8 @@
 //! Provider formats are decoded once, in Rust. The screen only folds events.
+mod codex;
+
 use serde_json::{Value, json};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct Reader {
@@ -11,6 +13,25 @@ pub struct Reader {
     user_in_turn: bool,
     plan_tools: HashSet<String>,
     tasks: Vec<(String, Value)>,
+    /// Codex runs its tools in `exec` scripts: its `CommandExecution` items
+    /// then repeat them.
+    codex_exec: bool,
+    /// Codex writes its messages as items (`item_completed`): its plain
+    /// message events then repeat them.
+    codex_items: bool,
+    /// Codex messages without an id so far.
+    said: usize,
+    /// Codex calls waiting for their output: the tool each one reports on
+    /// (itself, or the command a poll waits for).
+    calls: HashMap<String, String>,
+    /// Scripts and commands that went on in the background: by cell and by
+    /// shell, the tool they belong to.
+    cells: HashMap<String, String>,
+    shells: HashMap<i64, String>,
+    /// The `apply_patch` script whose file changes Codex will report.
+    patch: Option<String>,
+    /// The question Codex asked, until the user answers.
+    asked: Option<String>,
     pub first_message: Option<String>,
 }
 
@@ -104,7 +125,11 @@ impl Reader {
                         match string(&b["type"]) {
                             "tool_result" => {
                                 if !self.plan_tools.remove(string(&b["tool_use_id"])) {
-                                    out.push(json!({"type":"tool", "id":b["tool_use_id"], "status": if b["is_error"] == true { "failed" } else { "completed" }, "output": text(&b["content"])}));
+                                    let mut tool = json!({"type":"tool", "id":b["tool_use_id"], "status": if b["is_error"] == true { "failed" } else { "completed" }, "output": text(&b["content"])});
+                                    if let Some(diff) = claude_change(&line["toolUseResult"]) {
+                                        tool["diff"] = diff;
+                                    }
+                                    out.push(tool);
                                 }
                             }
                             "text" => self.user(string(&b["text"]), &mut out),
@@ -210,121 +235,8 @@ impl Reader {
         self.turn = false;
         vec![json!({"type":"end", "reason":reason, "message":message})]
     }
-
-    fn codex(&mut self, line: &Value) -> Vec<Value> {
-        let p = &line["payload"];
-        match string(&line["type"]) {
-            "session_meta" => {
-                let id = p
-                    .get("id")
-                    .or_else(|| p.get("session_id"))
-                    .unwrap_or(&Value::Null);
-                if id.is_string() {
-                    let app = codex_app(string(&p["originator"]));
-                    return vec![json!({"type":"session", "id":id, "cwd":p["cwd"], "app":app})];
-                }
-            }
-            "response_item" if p["type"] == "function_call" && p["name"] == "update_plan" => {
-                if let Ok(args) = serde_json::from_str::<Value>(string(&p["arguments"])) {
-                    return vec![codex_plan(&args["plan"])];
-                }
-            }
-            "event_msg" => match string(&p["type"]) {
-                "task_started" => {
-                    self.turn = true;
-                    self.user_in_turn = false;
-                    return vec![json!({"type":"start"})];
-                }
-                // Codex now ends a refused turn here, with its error (the
-                // subscription limit: `usage_limit_exceeded`).
-                "task_complete" if p["error"].is_object() => {
-                    let e = &p["error"];
-                    return self.end(
-                        failure(string(&e["message"]), string(&e["codex_error_info"])),
-                        e["message"].clone(),
-                    );
-                }
-                "task_complete" => return self.end("endTurn", Value::Null),
-                "turn_aborted" => return self.end("cancelled", Value::Null),
-                "error" => {
-                    return self.end(
-                        failure(string(&p["message"]), string(&p["codex_error_info"])),
-                        p["message"].clone(),
-                    );
-                }
-                "plan_update" => return vec![codex_plan(&p["plan"])],
-                "token_count" => {
-                    let mut out = vec![];
-                    let info = &p["info"];
-                    if info["model_context_window"].is_number()
-                        && info["last_token_usage"].is_object()
-                    {
-                        out.push(json!({"type":"context", "used":info["last_token_usage"]["total_tokens"].as_u64().unwrap_or(0), "size":info["model_context_window"]}));
-                    }
-                    if p["rate_limits"].is_object() {
-                        out.push(json!({"type":"limits", "limits":p["rate_limits"]}));
-                    }
-                    return out;
-                }
-                "item_completed" => return self.codex_item(&p["item"]),
-                _ => {}
-            },
-            _ => {}
-        }
-        vec![]
-    }
-
-    fn codex_item(&mut self, item: &Value) -> Vec<Value> {
-        let id = string(&item["id"]);
-        let event = match string(&item["type"]) {
-            "UserMessage" => {
-                let value = text(&item["content"]);
-                if value.is_empty() {
-                    return vec![];
-                }
-                let queued = self.user_in_turn;
-                self.user_in_turn = true;
-                json!({"type":"user", "text":value, "queued":queued})
-            }
-            "AgentMessage" => {
-                let value = text(&item["content"]);
-                if value.is_empty() {
-                    return vec![];
-                }
-                json!({"type":"message", "text":value, "id":id})
-            }
-            "CommandExecution" => {
-                let first = item["parsed_cmd"].as_array().and_then(|p| p.first());
-                let command = first.map(|p| p["cmd"].clone()).unwrap_or_else(|| {
-                    item["command"]
-                        .as_array()
-                        .and_then(|a| a.last())
-                        .cloned()
-                        .unwrap_or_else(|| item["command"].clone())
-                });
-                let kind = match first.and_then(|p| p["type"].as_str()) {
-                    Some("read") => "read",
-                    Some("search" | "list_files") => "search",
-                    _ => "execute",
-                };
-                json!({"type":"tool", "id":id, "name":"exec_command", "kind":kind, "title":command, "command":command,
-                    "status":if item["status"] == "completed" && item["exit_code"].as_i64().unwrap_or(0) == 0 {"completed"} else {"failed"}, "output":item["aggregated_output"]})
-            }
-            "FileChange" => {
-                let path = item["changes"].as_object().and_then(|m| m.keys().next());
-                json!({"type":"tool", "id":id, "name":"apply_patch", "kind":"edit", "title":path.map(|p| format!("Edit {}", basename(p))).unwrap_or("Modifie des fichiers".into()), "path":path,
-                    "status":if item["status"] == "failed" {"failed"} else {"completed"}})
-            }
-            "WebSearch" => {
-                json!({"type":"tool", "id":id, "name":"web_search", "kind":"fetch", "title":item["query"], "status":"completed"})
-            }
-            _ => return vec![],
-        };
-        vec![event]
-    }
 }
 
-/// Why a Codex turn failed: the subscription limit, or another error.
 /// The software a Claude session runs in, from its `entrypoint`.
 fn claude_app(entrypoint: &str) -> Option<&'static str> {
     match entrypoint {
@@ -335,33 +247,22 @@ fn claude_app(entrypoint: &str) -> Option<&'static str> {
     }
 }
 
-/// The software a Codex session runs in, from its `originator`.
-fn codex_app(originator: &str) -> Option<&'static str> {
-    let o = originator.to_lowercase();
-    match o.as_str() {
-        "codex_cli_rs" | "codex_exec" => Some("terminal"),
-        o if o.contains("vscode") => Some("vscode"),
-        o if o.contains("desktop") => Some("codex"),
-        _ => None,
+/// The change a file tool of Claude made, from what its session keeps of
+/// it once done (`toolUseResult`): where it is in the file. An edit: its
+/// old and new strings and the line they start at in the file as it was;
+/// a file written over: the whole file before and after. None when the
+/// session does not say.
+fn claude_change(result: &Value) -> Option<Value> {
+    let path = result["filePath"].as_str()?;
+    let original = result["originalFile"].as_str()?;
+    if let (Some(old), Some(new)) = (result["oldString"].as_str(), result["newString"].as_str()) {
+        let at = original.find(old)?;
+        let line = original[..at].matches('\n').count() + 1;
+        return Some(json!({"path":path, "old":old, "new":new, "line":line}));
     }
-}
-
-fn failure(message: &str, info: &str) -> &'static str {
-    if info.contains("limit") || message.to_lowercase().contains("limit") {
-        "rateLimited"
-    } else {
-        "error"
-    }
-}
-
-fn codex_plan(plan: &Value) -> Value {
-    let entries: Vec<_> = plan
-        .as_array()
-        .into_iter()
-        .flatten()
-        .map(|p| json!({"content":string(&p["step"]), "status":status(&p["status"])}))
-        .collect();
-    json!({"type":"plan", "entries":entries})
+    let content = result["content"].as_str()?;
+    (result["type"] == "update")
+        .then(|| json!({"path":path, "old":original, "new":content, "line":1}))
 }
 
 fn claude_tool(b: &Value) -> Value {
@@ -406,38 +307,8 @@ fn claude_tool(b: &Value) -> Value {
 
 #[cfg(test)]
 mod tests {
+    use super::codex::codex_app;
     use super::*;
-
-    /// A Codex turn that starts, then [end]: what the reader says of [end].
-    fn codex_turn(end: Value) -> Vec<Value> {
-        let mut r = Reader::default();
-        r.read(
-            "codex",
-            &json!({"type":"event_msg","payload":{"type":"task_started"}}),
-        );
-        r.read("codex", &end)
-    }
-
-    #[test]
-    fn codex_limit_in_task_complete_is_rate_limited() {
-        let out = codex_turn(
-            json!({"type":"event_msg","payload":{"type":"task_complete","error":{
-                "message":"You've hit your usage limit. Try again at 2:10 PM.",
-                "codex_error_info":"usage_limit_exceeded"}}}),
-        );
-        assert_eq!(out[0]["type"], "end");
-        assert_eq!(out[0]["reason"], "rateLimited");
-        assert_eq!(
-            out[0]["message"],
-            "You've hit your usage limit. Try again at 2:10 PM."
-        );
-    }
-
-    #[test]
-    fn codex_task_complete_without_error_ends_the_turn() {
-        let out = codex_turn(json!({"type":"event_msg","payload":{"type":"task_complete"}}));
-        assert_eq!(out[0]["reason"], "endTurn");
-    }
 
     #[test]
     fn claude_compact_summary_does_not_cut_the_turn() {
@@ -455,6 +326,36 @@ mod tests {
             &json!({"type":"assistant","message":{"id":"m","stop_reason":"end_turn","content":[{"type":"text","text":"Fait."}]}}),
         );
         assert_eq!(out.last().unwrap()["reason"], "endTurn");
+    }
+
+    #[test]
+    fn a_finished_edit_says_where_it_is_in_the_file() {
+        let result = |tool_result: Value| {
+            let mut r = Reader::default();
+            r.read(
+                "claude",
+                &json!({"type":"user","sessionId":"s","message":{"content":"Go"}}),
+            );
+            r.read(
+                "claude",
+                &json!({"type":"user","sessionId":"s","toolUseResult":tool_result,
+                    "message":{"content":[{"type":"tool_result","tool_use_id":"t1","content":"ok"}]}}),
+            )
+        };
+        let out = result(
+            json!({"filePath":"/a/b.dart","oldString":"x = 1;","newString":"x = 2;",
+            "originalFile":"one\ntwo\n  x = 1;\nend\n"}),
+        );
+        assert_eq!(out[0]["diff"]["line"], 3);
+        assert_eq!(out[0]["diff"]["old"], "x = 1;");
+        // A file written over: the whole of it, before and after.
+        let out = result(
+            json!({"type":"update","filePath":"/a/b.dart","content":"new\n","originalFile":"old\n"}),
+        );
+        assert_eq!(out[0]["diff"]["old"], "old\n");
+        assert_eq!(out[0]["diff"]["line"], 1);
+        // Nothing kept: no change sent.
+        assert!(result(json!({"stdout":"ok"}))[0]["diff"].is_null());
     }
 
     #[test]

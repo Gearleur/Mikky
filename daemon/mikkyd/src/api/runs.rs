@@ -103,12 +103,14 @@ pub(super) async fn dispatch(
                 )
                 .await
         }
-        "run.prompt" => {
-            daemon
-                .agent(params)?
-                .run
-                .prompt(str_param(params, "text")?)
-                .await
+        "run.prompt" | "run.steer" => {
+            let a = daemon.agent(params)?;
+            let text = str_param(params, "text")?;
+            if method == "run.steer" {
+                a.run.steer(text).await
+            } else {
+                a.run.prompt(text).await
+            }
         }
         "run.answer" => {
             let a = daemon.agent(params)?;
