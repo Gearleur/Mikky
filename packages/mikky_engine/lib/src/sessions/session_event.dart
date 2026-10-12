@@ -163,11 +163,20 @@ enum ToolStatus { pending, running, completed, failed }
 
 /// A file change: [oldText] null for a new file.
 class FileDiff {
-  const FileDiff(this.path, this.oldText, this.newText);
+  const FileDiff(this.path, this.oldText, this.newText, {this.line});
 
   final String path;
   final String? oldText;
   final String newText;
+
+  /// The line of the file its texts start at, when known (2026-10-12:
+  /// Claude's sessions say it once an edit is done); null: unknown — the
+  /// texts may be an excerpt of the file.
+  final int? line;
+
+  /// Its lines can be numbered as in the file: a whole new file, or its
+  /// [line] known.
+  bool get numbered => oldText == null || line != null;
 }
 
 /// A tool call or an update of one. Null fields are unchanged.
@@ -181,6 +190,7 @@ class ToolCallEvent extends SessionEvent {
     this.command,
     this.path,
     this.diff,
+    this.diffs,
     this.output,
     super.at,
   });
@@ -195,6 +205,10 @@ class ToolCallEvent extends SessionEvent {
   final String? command;
   final String? path;
   final FileDiff? diff;
+
+  /// Every part of the change when it has several (Codex: one per `@@` of
+  /// its diff), [diff] first; null: [diff] alone.
+  final List<FileDiff>? diffs;
   final String? output;
 }
 

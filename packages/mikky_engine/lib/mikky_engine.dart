@@ -11,6 +11,7 @@ export 'src/anim/keyframes.dart';
 export 'src/anim/smoothing.dart';
 export 'src/anim/spring.dart';
 export 'src/clock.dart';
+export 'src/island/compact_stars.dart';
 export 'src/island/island_machine.dart';
 export 'src/island/island_motion.dart';
 export 'src/mikky/mikky.dart';

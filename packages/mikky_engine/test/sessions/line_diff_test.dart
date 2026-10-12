@@ -12,6 +12,16 @@ void main() {
       expect(d.lines.map((l) => l.newLine), [1, 2]);
     });
 
+    test('numbered from where the change starts in the file, when it is known', () {
+      final d = lineDiff('a\nb', 'a\nB', from: 40);
+      expect(d.lines.map((l) => l.oldLine), [40, 41, null]);
+      expect(d.lines.map((l) => l.newLine), [40, null, 41]);
+      expect(diffOf(const FileDiff('f', 'a\nb', 'a\nB', line: 40)).lines.first.newLine, 40);
+      expect(const FileDiff('f', 'a', 'b').numbered, isFalse, reason: 'an excerpt, its place unknown');
+      expect(const FileDiff('f', 'a', 'b', line: 3).numbered, isTrue);
+      expect(const FileDiff('f', null, 'b').numbered, isTrue, reason: 'a whole new file');
+    });
+
     test('nothing changed', () {
       final d = lineDiff('a\nb', 'a\nb');
       expect(d.added + d.removed, 0);

@@ -25,6 +25,14 @@ class DiffStat {
   String toString() => label;
 }
 
+/// What all [parts] of a change add and remove together.
+DiffStat diffStats(List<FileDiff> parts) => parts
+    .map(diffStat)
+    .fold(
+      const DiffStat(0, 0),
+      (a, b) => DiffStat(a.added + b.added, a.removed + b.removed, tooLarge: a.tooLarge || b.tooLarge),
+    );
+
 /// Above this many lines in both texts together, no line-by-line
 /// comparison (Mochi's limit).
 const _maxDiffLines = 4000;
@@ -93,11 +101,21 @@ int _lcs(List<String> a, List<String> b) {
 
 /// One thing the agent did: « Edit main.dart +3 −1 », « Bash cargo test ».
 class ActivityLine {
-  const ActivityLine({required this.kind, required this.text, this.diff, this.running = false, this.failed = false});
+  const ActivityLine({
+    required this.kind,
+    required this.text,
+    this.diff,
+    this.changes = const [],
+    this.running = false,
+    this.failed = false,
+  });
 
   final ToolKind kind;
   final String text;
   final DiffStat? diff;
+
+  /// The file change itself, every part of it, to show its diff.
+  final List<FileDiff> changes;
 
   /// Still going on.
   final bool running;
@@ -124,6 +142,7 @@ List<ActivityLine> activityOf(SessionLog log, {int max = 4}) {
 
 ActivityLine _lineOf(ToolItem t) {
   final diff = t.diff;
+  final changes = t.changes;
   final name = _fileName(diff?.path ?? t.path);
   final text = switch (t.kind) {
     ToolKind.edit || ToolKind.delete || ToolKind.move when name != null => '${_verb(t)} $name',
@@ -133,7 +152,8 @@ ActivityLine _lineOf(ToolItem t) {
   return ActivityLine(
     kind: t.kind,
     text: text,
-    diff: diff == null ? null : diffStat(diff),
+    diff: diff == null ? null : diffStats(changes),
+    changes: changes,
     running: t.active,
     failed: t.status == ToolStatus.failed,
   );
@@ -163,8 +183,9 @@ BriefKind briefKindOf(AgentStatus s) => switch (s) {
   AgentStatus.paused || AgentStatus.idle => BriefKind.idle,
 };
 
-/// A file the agent changed in its turn, with how much.
-typedef FileChange = ({String name, DiffStat diff});
+/// A file the agent changed in its turn, with how much; [path] and
+/// [changes] open its diff (2026-10-08).
+typedef FileChange = ({String name, DiffStat diff, String path, List<FileDiff> changes});
 
 /// Everything Mikky brings with a request (2026-10-04, « que ce soit
 /// Mikky qui l'amène avec le contexte de la tâche »): which task, where it
@@ -178,6 +199,7 @@ class TaskBrief {
     this.request = '',
     this.requestTitle,
     this.requestDiff,
+    this.requestChange,
     this.recent = const [],
     this.files = const [],
   });
@@ -202,6 +224,9 @@ class TaskBrief {
 
   /// For a file change waiting for a yes: how big.
   final DiffStat? requestDiff;
+
+  /// That change itself, to show its diff.
+  final FileDiff? requestChange;
 
   /// What the agent did just before, oldest first.
   final List<ActivityLine> recent;
@@ -268,6 +293,7 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
   String request = log.detail;
   String? requestTitle;
   DiffStat? requestDiff;
+  FileDiff? requestChange;
   final asked = log.pending.isEmpty ? null : log.pending.first;
   if (kind == BriefKind.approval && asked != null) {
     final tool = items.whereType<ToolItem>().where((t) => t.id == asked.toolCallId).firstOrNull;
@@ -275,6 +301,7 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
     final diff = tool?.diff;
     if (diff != null) {
       requestDiff = diffStat(diff);
+      requestChange = diff;
       request = '${_verbOfDiff(diff)} ${_fileName(diff.path) ?? diff.path}';
       requestTitle = diff.path;
     } else if (title.isNotEmpty && title != request) {
@@ -285,16 +312,19 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
   final files = <FileChange>[];
   if (kind == BriefKind.finished && turn != null) {
     final byPath = <String, DiffStat>{};
+    final changes = <String, List<FileDiff>>{};
     for (var i = turn.start; i < (turn.end ?? items.length); i++) {
       final item = items[i];
       if (item is ToolItem && item.diff != null && item.status != ToolStatus.failed) {
-        final d = diffStat(item.diff!);
-        final old = byPath[item.diff!.path];
-        byPath[item.diff!.path] = old == null ? d : DiffStat(old.added + d.added, old.removed + d.removed);
+        final path = item.diff!.path;
+        final d = diffStats(item.changes);
+        final old = byPath[path];
+        byPath[path] = old == null ? d : DiffStat(old.added + d.added, old.removed + d.removed);
+        (changes[path] ??= []).addAll(item.changes);
       }
     }
     for (final e in byPath.entries) {
-      files.add((name: _fileName(e.key) ?? e.key, diff: e.value));
+      files.add((name: _fileName(e.key) ?? e.key, diff: e.value, path: e.key, changes: changes[e.key]!));
     }
   }
 
@@ -307,6 +337,7 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
     request: kind == BriefKind.finished && said != null ? _one(_firstParagraph(said), 240) : request,
     requestTitle: requestTitle,
     requestDiff: requestDiff,
+    requestChange: requestChange,
     recent: kind == BriefKind.finished ? const [] : activityOf(log, max: 3),
     files: files,
   );

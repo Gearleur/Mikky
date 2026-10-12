@@ -119,13 +119,36 @@ const lineDiffMaxLines = 60000;
 
 final _cache = Expando<LineDiff>('lineDiff');
 
-/// The diff of [d], computed once per change (kept with it).
-LineDiff diffOf(FileDiff d) => _cache[d] ??= lineDiff(d.oldText, d.newText);
+/// The diff of [d], computed once per change (kept with it); its lines
+/// numbered from [FileDiff.line] when known.
+LineDiff diffOf(FileDiff d) => _cache[d] ??= lineDiff(d.oldText, d.newText, from: d.line ?? 1);
 
 /// Line by line, what [after] changes in [before] (null: a new file), the
 /// smallest change (Myers' algorithm, after the same start and the same
-/// end are set aside). Bounded: see [lineDiffMaxEdits].
-LineDiff lineDiff(String? before, String after) {
+/// end are set aside), its lines numbered [from] there. Bounded: see
+/// [lineDiffMaxEdits].
+LineDiff lineDiff(String? before, String after, {int from = 1}) {
+  final diff = _lineDiff(before, after);
+  if (from == 1) return diff;
+  final shift = from - 1;
+  return LineDiff(
+    [
+      for (final l in diff.lines)
+        DiffLine(
+          l.op,
+          l.text,
+          oldLine: l.oldLine == null ? null : l.oldLine! + shift,
+          newLine: l.newLine == null ? null : l.newLine! + shift,
+        ),
+    ],
+    added: diff.added,
+    removed: diff.removed,
+    approximate: diff.approximate,
+    isNew: diff.isNew,
+  );
+}
+
+LineDiff _lineDiff(String? before, String after) {
   final b = before == null ? const <String>[] : splitLines(before);
   final a = splitLines(after);
   if (before == null || b.isEmpty) {

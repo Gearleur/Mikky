@@ -59,7 +59,7 @@ void main() {
     expect(h.shape, IslandShape.open);
   });
 
-  test('compact focus follows priority then newest state, not insertion order', () {
+  test('compact focus follows the newest state; an older limit does not pin Mikky', () {
     final h = Harness();
     h.set('old', AgentStatus.working);
     h.wait(IslandTimings.bubbleLead + .1);
@@ -69,7 +69,7 @@ void main() {
     expect(h.s.focus?.id, 'limited');
     h.wait(IslandTimings.bubbleLead + .1);
     h.set('new', AgentStatus.thinking);
-    expect(h.s.focus?.id, 'limited');
+    expect(h.s.focus?.id, 'new');
     h.set('limited', AgentStatus.idle);
     expect(h.s.focus?.id, 'new');
   });

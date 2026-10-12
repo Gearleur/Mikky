@@ -36,6 +36,7 @@ class ToolItem extends ThreadItem {
     this.command,
     this.path,
     this.diff,
+    this.diffs = const [],
     this.output,
     super.at,
   });
@@ -48,7 +49,13 @@ class ToolItem extends ThreadItem {
   final String? command;
   final String? path;
   final FileDiff? diff;
+
+  /// See [ToolCallEvent.diffs]; empty: [diff] alone.
+  final List<FileDiff> diffs;
   final String? output;
+
+  /// Every part of the change it made, in order.
+  List<FileDiff> get changes => diffs.isNotEmpty ? diffs : [?diff];
 
   bool get active => status == ToolStatus.pending || status == ToolStatus.running;
 
@@ -61,6 +68,7 @@ class ToolItem extends ThreadItem {
     command: e.command ?? command,
     path: e.path ?? path,
     diff: e.diff ?? diff,
+    diffs: e.diff == null ? diffs : (e.diffs ?? const []),
     output: e.output ?? output,
     at: at,
   );

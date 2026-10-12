@@ -364,7 +364,7 @@ class IslandMachine {
     final Agent? focus = switch (reason) {
       OpenReason.alert => _agent(_alertHead),
       null when _finishedSince != null => _agent(_finished.firstOrNull),
-      _ => _priorityFocus(visible),
+      _ => _latestFocus(visible),
     };
     final content = switch (reason) {
       null => IslandContent.focus,
@@ -392,7 +392,7 @@ class IslandMachine {
   }
 }
 
-Agent? _priorityFocus(List<Agent> agents) {
+Agent? _latestFocus(List<Agent> agents) {
   int rank(AgentStatus status) => switch (status) {
     AgentStatus.approval || AgentStatus.question || AgentStatus.error => 4,
     AgentStatus.rateLimited => 3,
@@ -402,9 +402,10 @@ Agent? _priorityFocus(List<Agent> agents) {
   };
   Agent? best;
   for (final agent in agents) {
+    if (rank(agent.status) == 0) continue;
     if (best == null ||
-        rank(agent.status) > rank(best.status) ||
-        (rank(agent.status) == rank(best.status) && agent.statusSince > best.statusSince)) {
+        agent.statusSince > best.statusSince ||
+        (agent.statusSince == best.statusSince && rank(agent.status) > rank(best.status))) {
       best = agent;
     }
   }
