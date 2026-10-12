@@ -54,6 +54,10 @@ abstract interface class AgentRun {
   /// errors are in [log], never thrown.
   Future<void> prompt(String text);
 
+  /// Injects into the current turn; falls back to a queued prompt when
+  /// unsupported or explicitly refused. Completes once accepted by steering.
+  Future<void> steer(String text);
+
   /// Answers the oldest pending permission request (or [requestId]).
   /// [always]: the agent's « always allow » option, when it offers one (the
   /// same kind of action is then allowed without asking). Returns false if

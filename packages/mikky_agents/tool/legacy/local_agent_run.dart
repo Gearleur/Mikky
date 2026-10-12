@@ -103,6 +103,9 @@ class LocalAgentRun implements AgentRun {
   }
 
   @override
+  Future<void> steer(String text) => prompt(text);
+
+  @override
   Future<void> prompt(String text) async {
     try {
       await _connection.request('session/prompt', {

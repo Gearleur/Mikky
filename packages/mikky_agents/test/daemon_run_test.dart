@@ -100,6 +100,37 @@ void main() {
     expect(run.alive, isFalse);
   });
 
+  test('steering arrives once while a permission stays pending, including after reconnect', () async {
+    final run = await opened(client);
+    final done = run.prompt('write');
+    await until(run, (log) => log.pending.isNotEmpty);
+    await run.steer('Prends aussi ce message.');
+    expect(run.log.working, isTrue);
+    expect(run.log.pending, hasLength(1));
+    final users = run.log.items.whereType<UserItem>().toList();
+    expect(users.map((u) => u.text), ['write', 'Prends aussi ce message.']);
+    expect(users.last.queued, isTrue);
+    final other = await DaemonClient.connect(_endpoint);
+    try {
+      final replay = await DaemonAgentRun.attach(other, run.runId);
+      expect(replay.log.items.whereType<UserItem>().map((u) => u.text), users.map((u) => u.text));
+      expect(replay.log.pending, hasLength(1));
+    } finally {
+      await other.close();
+    }
+    run.answer(allow: false);
+    await done;
+    await run.stop();
+  });
+
+  test('steering at rest falls back to a normal prompt', () async {
+    final run = await opened(client);
+    await run.steer('bonjour');
+    expect(run.log.working, isFalse);
+    expect(run.log.items.whereType<UserItem>().single.queued, isFalse);
+    await run.stop();
+  });
+
   test('permissions: wait for the yes, « toujours », a no', () async {
     final run = await opened(client);
     var done = run.prompt('write');

@@ -12,7 +12,7 @@ class FakeAgent {
   /// The option chosen for the last permission request.
   String? lastPermission;
 
-  FakeAgent(Stream<List<int>> input, this._output, {this.autoFallback = false}) {
+  FakeAgent(Stream<List<int>> input, this._output, {this.autoFallback = false, this.steering = false}) {
     input.transform(utf8.decoder).transform(const LineSplitter()).listen(_onLine, onDone: () => closed = true);
   }
 
@@ -32,6 +32,7 @@ class FakeAgent {
 
   /// Like Claude with Haiku: asked for `auto`, it switches to `acceptEdits`.
   final bool autoFallback;
+  final bool steering;
 
   late Stream<List<int>> clientInput;
   // ignore: close_sinks, the client under test owns it.
@@ -72,6 +73,9 @@ class FakeAgent {
           'id': id,
           'result': {
             'protocolVersion': 1,
+            '_meta': {
+              'steering': {'supported': steering},
+            },
             'agentCapabilities': {'loadSession': true},
           },
         });
@@ -102,6 +106,17 @@ class FakeAgent {
         if (slow != null && !slow.isCompleted) slow.complete();
       case 'session/prompt':
         await _prompt(id as Object, (params['prompt'] as List).first['text'] as String);
+      case '_session/steering' when steering:
+        final text = (params['prompt'] as List).first['text'] as String;
+        _update({
+          'sessionUpdate': 'user_message_chunk',
+          'messageId': 'steered-$id',
+          'content': {'type': 'text', 'text': text},
+        });
+        _send({
+          'id': id,
+          'result': {'outcome': 'injected'},
+        });
       default:
         _send({
           'id': id,

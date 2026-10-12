@@ -160,6 +160,11 @@ class DaemonAgentRun implements AgentRun {
   }
 
   @override
+  Future<void> steer(String text) async {
+    await _client.request('run.steer', {'run': runId, 'text': text});
+  }
+
+  @override
   bool answer({required bool allow, bool always = false, Object? requestId}) {
     if (!connected) return false;
     final id = requestId ?? _asked.firstOrNull;

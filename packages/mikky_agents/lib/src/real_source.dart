@@ -328,7 +328,11 @@ class RealAgentSource implements AgentSource {
     if (e.mark.pausedAt != null) _mark(id, (m) => m.copyWith(clearPaused: true));
     if (!e.live) return resume(id, text);
     e.dismissed = false;
-    await e.run!.prompt(text);
+    if (e.log.working) {
+      await e.run!.steer(text);
+    } else {
+      await e.run!.prompt(text);
+    }
   }
 
   /// Stops the current work of agent [id]; it keeps its session.

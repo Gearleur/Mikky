@@ -95,12 +95,16 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
       command: e['command'] as String?,
       path: e['path'] as String?,
       output: e['output'] as String?,
-      diff: diff == null ? null : FileDiff(diff['path'] as String, diff['old'] as String?, diff['new'] as String),
+      diff: diff == null ? null : _diff(diff),
+      diffs: e['diffs'] == null ? null : [for (final d in e['diffs'] as List) _diff(d as Map)],
       at: at,
     ),
     _ => null,
   };
 }
+
+FileDiff _diff(Map d) =>
+    FileDiff(d['path'] as String, d['old'] as String?, d['new'] as String, line: d['line'] as int?);
 
 LimitWindow? _window(dynamic value) {
   if (value is! Map || value['used_percent'] is! num) return null;

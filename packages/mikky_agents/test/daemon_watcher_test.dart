@@ -12,7 +12,21 @@ import 'package:test/test.dart';
 import '../../mikky_engine/test/support/readers/claude_transcript_reader.dart';
 import '../../mikky_engine/test/support/readers/codex_rollout_reader.dart';
 
-Object snapshot(SessionLog log) => [
+/// [tools]: false leaves the tools out (the turns then count without
+/// them): Codex's `exec` scripts are read by mikkyd only, the old Dart
+/// reader knows its `CommandExecution` items alone.
+Object snapshot(SessionLog log, {bool tools = true}) {
+  final all = log.items;
+  final kept = [
+    for (var i = 0; i < all.length; i++)
+      if (tools || all[i] is! ToolItem) i,
+  ];
+  // A turn's bounds, counted in the items kept.
+  int? at(int? i) => i == null ? null : kept.where((k) => k < i).length;
+  return _snapshot(log, [for (final i in kept) all[i]], at);
+}
+
+Object _snapshot(SessionLog log, List<ThreadItem> items, int? Function(int?) at) => [
   log.sessionId,
   log.cwd,
   log.title,
@@ -23,10 +37,10 @@ Object snapshot(SessionLog log) => [
     for (final p in log.plan) [p.content, p.status.name],
   ],
   [
-    for (final t in log.turns) [t.start, t.end, t.reason?.name, t.message],
+    for (final t in log.turns) [at(t.start), at(t.end), t.reason?.name, t.message],
   ],
   [
-    for (final item in log.items)
+    for (final item in items)
       switch (item) {
         UserItem() => ['user', item.text, item.queued],
         AgentItem() => ['agent', item.text, item.messageId, item.thought],
@@ -99,12 +113,12 @@ void main() {
           );
         }
         await file.writeAsString('$text\n');
+        final tools = provider == 'claude';
         // Up to 15 s: the engine sees the file by watching its folder.
         final deadline = DateTime.now().add(const Duration(seconds: 15));
         while (DateTime.now().isBefore(deadline)) {
-          if (watcher.sessions.values.any(
-            (s) => s.log.version == expected.version && s.log.sessionId == expected.sessionId,
-          )) {
+          final want = jsonEncode(snapshot(expected, tools: tools));
+          if (watcher.sessions.values.any((s) => jsonEncode(snapshot(s.log, tools: tools)) == want)) {
             break;
           }
           await Future<void>.delayed(const Duration(milliseconds: 20));
@@ -113,7 +127,11 @@ void main() {
             .where((s) => s.path == file.path.replaceAll('/', Platform.pathSeparator))
             .firstOrNull;
         expect(actual, isNotNull, reason: fixture.path);
-        expect(snapshot(actual!.log), snapshot(expected), reason: fixture.path);
+        expect(
+          snapshot(actual!.log, tools: tools),
+          snapshot(expected, tools: tools),
+          reason: fixture.path,
+        );
       }
     });
   }
