@@ -83,6 +83,8 @@ class _HooksPageState extends State<HooksPage> {
     final ui = MikkyUi.of(context);
     final status = _status;
     final installed = status?['installed'] == true;
+    // Installed by an older Mikky: some events are missing or changed.
+    final stale = installed && status?['upToDate'] == false;
     final preview = _preview;
     final text = uiText(TextSize.small, color: ui.text2, height: 1.4);
     return Stack(
@@ -94,14 +96,18 @@ class _HooksPageState extends State<HooksPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Avec les hooks, une session $_name lancée dans un terminal ou VS Code te demande aussi ses permissions ici. '
-                  'Sans réponse dans Mikky, $_name demande dans son terminal, comme avant.',
+                  'Avec les hooks, une session $_name lancée ailleurs (terminal, VS Code, app Claude) montre aussi ses permissions et ses questions ici. '
+                  'Tu réponds dans Mikky ou là-bas : la première réponse gagne, rien n’attend.',
                   style: text,
                 ),
                 const SizedBox(height: 10),
                 if (status != null)
                   Text(
-                    installed ? 'Installés dans ${status['settingsPath']}' : 'Pas installés.',
+                    !installed
+                        ? 'Pas installés.'
+                        : stale
+                        ? 'Installés dans ${status['settingsPath']}, mais d’une ancienne version de Mikky : à mettre à jour.'
+                        : 'Installés et à jour dans ${status['settingsPath']}.',
                     style: uiText(TextSize.caption, color: ui.text3),
                   ),
                 if (_message != null) ...[
@@ -115,7 +121,14 @@ class _HooksPageState extends State<HooksPage> {
                     child: AnswerBar(
                       answers: [
                         if (installed) ('Désinstaller…', _busy ? null : () => _show(false)),
-                        (installed ? 'Réinstaller…' : 'Installer…', _busy ? null : () => _show(true)),
+                        (
+                          !installed
+                              ? 'Installer…'
+                              : stale
+                              ? 'Mettre à jour…'
+                              : 'Réinstaller…',
+                          _busy ? null : () => _show(true),
+                        ),
                       ],
                     ),
                   ),
