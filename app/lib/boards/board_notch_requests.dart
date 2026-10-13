@@ -144,7 +144,7 @@ Widget _request(
     startedAt: 0,
     statusSince: 0,
     provider: AgentProvider.claude,
-    cwd: r'C:\Users\alexa\projet\mikky',
+    cwd: r'C:\Users\sam\projet\mikky',
   );
   final limited = status == AgentStatus.rateLimited;
   void none() {}

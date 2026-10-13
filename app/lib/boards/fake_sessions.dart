@@ -52,8 +52,8 @@ abstract final class FakeSessions {
   }
 
   static final _t0 = DateTime(2026, 9, 30, 14);
-  static const _dir = r'C:\Users\alexa\projet\mikky';
-  static const _file = r'C:\Users\alexa\projet\mikky\packages\mikky_engine\lib\src\island\island_machine.dart';
+  static const _dir = r'C:\Users\sam\projet\mikky';
+  static const _file = r'C:\Users\sam\projet\mikky\packages\mikky_engine\lib\src\island\island_machine.dart';
 
   static DateTime _at(int seconds) => _t0.add(Duration(seconds: seconds));
 
@@ -379,7 +379,7 @@ abstract final class FakeSessions {
 
   /// A new test file.
   static const newTest = FileDiff(
-    r'C:\Users\alexa\projet\mikky\packages\mikky_engine\test\auto_close_test.dart',
+    r'C:\Users\sam\projet\mikky\packages\mikky_engine\test\auto_close_test.dart',
     null,
     "import 'package:mikky_engine/mikky_engine.dart';\n"
         "import 'package:test/test.dart';\n"
