@@ -4,6 +4,8 @@ import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
+import 'support/hook_requests.dart';
+
 class _Watcher implements SessionWatcher {
   @override
   final sessions = <String, WatchedSession>{};
@@ -27,24 +29,7 @@ void main() {
       await watcher.stop();
     });
     source.follow(watcher);
-    source.hookAsks([
-      HookAsk.fromJson({
-        'id': 7,
-        'sessionId': 's',
-        'tool': 'Bash',
-        'title': 'Bash cargo test',
-        'event': {
-          'type': 'permission',
-          'id': 'hook:7',
-          'title': 'Bash cargo test',
-          'command': 'cargo test',
-          'toolCallId': 'toolu_1',
-          'options': [
-            {'optionId': 'allow', 'name': 'Oui', 'kind': 'allow_once'},
-          ],
-        },
-      }),
-    ]);
+    source.hookAsks([permissionAsk(7, 's', 'cargo test')]);
     final entry = source.homeEntries.single;
     expect(entry.log.pending.single.requestId, 'hook:7');
     expect(entry.log.statusAt(DateTime(2026)), entry.status);
@@ -62,42 +47,5 @@ void main() {
     expect(entry.log.pending, isEmpty);
     expect(entry.status.isBusy, isTrue);
     expect(entry.log.items.whereType<UserItem>(), hasLength(1));
-  });
-
-  test('normalized questions keep the backend answer keys', () {
-    final ask = HookAsk.fromJson({
-      'id': 8,
-      'kind': 'question',
-      'sessionId': 's',
-      'tool': 'AskUserQuestion',
-      'title': 'Quelle base ?',
-      'event': {
-        'type': 'question',
-        'id': 'hook:8',
-        'message': 'Quelle base ?',
-        'questions': [
-          {
-            'key': 'q1',
-            'text': 'Quelle base ?',
-            'title': 'Base',
-            'multiple': true,
-            'otherKey': 'q1_custom',
-            'choices': [
-              {'value': 'SQLite', 'description': 'Locale'},
-            ],
-          },
-        ],
-      },
-    });
-    expect(ask.event, isA<QuestionAsked>());
-    expect(
-      ask.answersFor({
-        'q1': ['SQLite'],
-      }),
-      {
-        'Quelle base ?': ['SQLite'],
-      },
-    );
-    expect(ask.answersFor({'q1_custom': 'Autre base'}), {'Quelle base ?': 'Autre base'});
   });
 }

@@ -300,7 +300,7 @@ class AgentsService extends ChangeNotifier {
     if (list is! List) return;
     source.hookAsks([
       for (final r in list)
-        if (r is Map) HookAsk.fromJson(r.cast<String, Object?>()),
+        if (r is Map) ?HookAsk.fromJson(r.cast<String, Object?>()),
     ]);
   }
 

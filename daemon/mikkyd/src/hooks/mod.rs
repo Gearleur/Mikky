@@ -7,9 +7,10 @@
 //! Claude's questions (2026-10-08): Claude Code 2.1.85 and later sends its
 //! `AskUserQuestion` tool to a `PreToolUse` hook (matcher
 //! `AskUserQuestion`, `mikky-hook --ask`). It is listed with `kind:
-//! "question"` and its questions; the screen answers with `answers` (by
-//! question text: a label or free text, a list of labels for a multiple
-//! choice), and the relay gives them to Claude as the tool's input. The
+//! "question"` and its questions; the screen answers with `answers` by
+//! question key, as for an ACP form (`q1`, `q1_custom`); `mikkyd` turns them
+//! into Claude's (by question text) and the relay gives them to Claude as
+//! the tool's input. The
 //! `PermissionRequest` Claude may also send for that tool makes no card.
 //! Only a session in a terminal is held (2026-10-13): Claude's app and VS
 //! Code show their own question or permission once the hook is done, so
@@ -42,7 +43,7 @@ use std::time::Duration;
 use serde_json::{Map, Value, json};
 use tokio::sync::{broadcast, oneshot};
 
-use questions::{fits, questions_of};
+use questions::{by_text, fits, questions_of};
 
 /// How long a permission stays on the screens; the hook gives up a little
 /// later (110 s) and Claude's own timeout is 120 s (`claude_settings.rs`).
@@ -131,9 +132,10 @@ impl Hooks {
     }
 
     /// The user's answer to request `id`. A permission: `allow`, `deny`,
-    /// or none (left to the terminal). A question: `answers`, or none (the
-    /// terminal). False if it is gone, or if the answers do not fit its
-    /// questions (it then stays).
+    /// or none (left to the terminal). A question: `answers` by question key
+    /// (`q1`, `q1_custom`: [`by_text`]), or none (the terminal). False if it
+    /// is gone, or if the answers do not fit its questions (it then
+    /// stays).
     pub fn answer(&self, id: u64, decision: Option<&str>, answers: Option<&Value>) -> bool {
         let sender = {
             let mut pending = self.pending.lock().unwrap();
@@ -147,8 +149,13 @@ impl Hooks {
                     _ => None,
                 },
                 Kind::Question => match answers {
-                    Some(a) if fits(&pending[i].questions, a) => Some(a.clone()),
-                    Some(_) => return false,
+                    Some(a) => {
+                        let q = &pending[i].questions;
+                        match by_text(q, a).filter(|t| fits(q, t)) {
+                            Some(t) => Some(t),
+                            None => return false,
+                        }
+                    }
                     None => None,
                 },
             };

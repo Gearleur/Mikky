@@ -72,6 +72,53 @@ pub fn question_event(id: &str, questions: &Value, at: &Value) -> Value {
     json!({"type": "question", "id": id, "message": message, "questions": wire, "at": at})
 }
 
+/// The screens' answers, by question key as [`question_event`] names them
+/// (`q1`: a label or a list of labels; `q1_custom`: free text, which wins),
+/// as Claude takes them: by question text, a string, or a list of labels
+/// for a multiple choice. The same keys as an ACP form (`run.answerQuestion`).
+/// None when a question is left unanswered.
+pub fn by_text(questions: &Value, keyed: &Value) -> Option<Value> {
+    let keyed = keyed.as_object()?;
+    let mut out = serde_json::Map::new();
+    for (i, q) in questions.as_array()?.iter().enumerate() {
+        let key = format!("q{}", i + 1);
+        let multiple = q["multiSelect"] == true;
+        let text = q["question"].as_str()?.to_owned();
+        let other = keyed
+            .get(&format!("{key}_custom"))
+            .and_then(Value::as_str)
+            .map(str::trim)
+            .filter(|t| !t.is_empty());
+        let answer = match (other, keyed.get(&key)) {
+            (Some(t), _) => json!(t),
+            (None, Some(Value::String(s))) if !s.trim().is_empty() => {
+                if multiple {
+                    json!([s])
+                } else {
+                    json!(s)
+                }
+            }
+            (None, Some(Value::Array(picks))) if !picks.is_empty() => {
+                let mut labels: Vec<&str> = Vec::new();
+                for p in picks {
+                    let p = p.as_str()?;
+                    if !labels.contains(&p) {
+                        labels.push(p);
+                    }
+                }
+                if multiple {
+                    json!(labels)
+                } else {
+                    json!(labels[0])
+                }
+            }
+            _ => return None,
+        };
+        out.insert(text, answer);
+    }
+    Some(Value::Object(out))
+}
+
 /// True when `answers` answers each question once, by its text: free text
 /// or a label (a non-empty string), or for a multiple choice a non-empty
 /// list of distinct labels. Nothing else.

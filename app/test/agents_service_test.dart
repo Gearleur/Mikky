@@ -57,23 +57,27 @@ void main() {
           'hooks.list' => [
             {
               'id': 5,
-              'kind': 'question',
               'sessionId': 's-q',
-              'tool': 'AskUserQuestion',
-              'title': 'Quelle base ?',
               'cwd': r'C:\projet',
               'agent': 'claude',
-              'questions': [
-                {
-                  'question': 'Quelle base ?',
-                  'header': 'Base',
-                  'multiSelect': false,
-                  'options': [
-                    {'label': 'SQLite', 'description': ''},
-                    {'label': 'Postgres', 'description': ''},
-                  ],
-                },
-              ],
+              'event': {
+                'type': 'question',
+                'id': 'hook:5',
+                'message': 'Quelle base ?',
+                'questions': [
+                  {
+                    'key': 'q1',
+                    'otherKey': 'q1_custom',
+                    'text': 'Quelle base ?',
+                    'title': 'Base',
+                    'multiple': false,
+                    'choices': [
+                      {'value': 'SQLite', 'description': ''},
+                      {'value': 'Postgres', 'description': ''},
+                    ],
+                  },
+                ],
+              },
             },
           ],
           'hooks.origin' => {
@@ -121,7 +125,8 @@ void main() {
       }
       expect(calls.firstWhere((c) => c.$1 == 'hooks.answer').$2, {
         'id': 5,
-        'answers': {'Quelle base ?': 'Postgres'},
+        // By key, as for ACP: mikkyd turns them into Claude's.
+        'answers': {'q1': 'Postgres'},
       });
 
       // The window is gone: VS Code on the folder.

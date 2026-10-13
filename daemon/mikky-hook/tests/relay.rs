@@ -195,7 +195,7 @@ fn a_screen_answers_the_terminal_session() {
         next_id += 1;
         child.wait_with_output().unwrap().stdout
     };
-    let out = ask(&mut screen, json!({"Quels tests ?": ["Unitaires"]}));
+    let out = ask(&mut screen, json!({"q1": ["Unitaires"]}));
     let printed: Value = serde_json::from_slice(&out).unwrap();
     let o = &printed["hookSpecificOutput"];
     assert_eq!(o["hookEventName"], "PreToolUse");

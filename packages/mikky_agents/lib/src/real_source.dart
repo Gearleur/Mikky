@@ -104,7 +104,7 @@ class RealAgentSource implements AgentSource {
   void Function(int id, String? decision)? answerHook;
 
   /// Sends the answers to a hook question (`hooks.answer`), by question
-  /// text as Claude takes them ([HookAsk.answersFor]); null leaves it to
+  /// key as for ACP (`mikkyd` turns them into Claude's); null leaves it to
   /// the terminal.
   void Function(int id, Map<String, Object>? answers)? answerHookQuestion;
   final _changes = StreamController<void>.broadcast();
@@ -529,17 +529,14 @@ class RealAgentSource implements AgentSource {
 
   /// Answers agent [id]'s question ([questionOf]): the answers by
   /// [Question.key], free text by [Question.otherKey]; null skips it (ACP)
-  /// or leaves it to the terminal (hooks). False if nobody asks, or if a
-  /// hook question is left unanswered (it then stays).
+  /// or leaves it to the terminal (hooks). False if nobody asks.
   bool answerQuestion(String id, Map<String, Object>? answers) {
     final e = entry(id);
     if (e == null) return false;
     final hook = hookQuestionOf(id);
     if (hook != null) {
-      final claude = answers == null ? null : hook.answersFor(answers);
-      if (answers != null && claude == null) return false;
       _hookAsks.remove(e.sessionId);
-      answerHookQuestion?.call(hook.id, claude);
+      answerHookQuestion?.call(hook.id, answers);
       _changed();
       return true;
     }

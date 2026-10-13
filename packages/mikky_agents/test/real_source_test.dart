@@ -7,6 +7,7 @@ import 'package:test/test.dart';
 
 import '../tool/legacy/legacy.dart';
 import 'support/fake_agent.dart';
+import 'support/hook_requests.dart';
 
 void main() {
   late double clock;
@@ -278,9 +279,7 @@ void main() {
   test('a permission from the hooks of Claude: on the island, answered through mikkyd', () {
     final sent = <(int, String?)>[];
     source.answerHook = (id, decision) => sent.add((id, decision));
-    source.hookAsks(const [
-      HookAsk(id: 7, sessionId: 's-ext', tool: 'Bash', title: 'Bash cargo test', cwd: r'C:\p', command: 'cargo test'),
-    ]);
+    source.hookAsks([permissionAsk(7, 's-ext', 'cargo test', cwd: r'C:\p')]);
     final agent = source.agents.single;
     expect(agent.status, AgentStatus.approval);
     expect(agent.detail, 'cargo test');
@@ -293,7 +292,7 @@ void main() {
     expect(source.agents.where((a) => a.status.needsYou), isEmpty);
 
     // Again, left to the terminal; then mikkyd drops it.
-    source.hookAsks(const [HookAsk(id: 8, sessionId: 's-ext', tool: 'Bash', title: 'Bash ls', command: 'ls')]);
+    source.hookAsks([permissionAsk(8, 's-ext', 'ls')]);
     expect(source.answer(agent.id, AgentAnswer.dismiss, clock), isTrue);
     expect(sent.last, (8, null));
     source.hookAsks(const []);
@@ -306,35 +305,7 @@ void main() {
     source
       ..answerHookQuestion = ((id, answers) => sent.add((id, answers)))
       ..answerHook = ((id, decision) => decisions.add((id, decision)));
-    final ask = HookAsk.fromJson({
-      'id': 9,
-      'kind': 'question',
-      'sessionId': 's-q',
-      'tool': 'AskUserQuestion',
-      'title': 'Quelle base ?',
-      'cwd': r'C:\p',
-      'agent': 'claude',
-      'questions': [
-        {
-          'question': 'Quelle base ?',
-          'header': 'Base',
-          'multiSelect': false,
-          'options': [
-            {'label': 'SQLite', 'description': 'Un fichier'},
-            {'label': 'Postgres', 'description': 'Un serveur'},
-          ],
-        },
-        {
-          'question': 'Quels tests ?',
-          'header': '',
-          'multiSelect': true,
-          'options': [
-            {'label': 'Unitaires', 'description': ''},
-            {'label': 'Bout en bout', 'description': ''},
-          ],
-        },
-      ],
-    });
+    final ask = questionAsk(9, 's-q', cwd: r'C:\p');
     source.hookAsks([ask]);
     final agent = source.agents.single;
     expect(agent.status, AgentStatus.question);
@@ -343,38 +314,19 @@ void main() {
     expect(source.hookAskOf(agent.id), isNull);
     expect(source.hookQuestionOf(agent.id)?.id, 9);
     expect(source.canAnswerQuestion(agent.id), isTrue);
-
     final q = source.questionOf(agent.id)!;
     expect(q.requestId, 'hook:9');
     expect(q.questions.map((x) => x.key), ['q1', 'q2']);
-    expect(q.questions.first.title, 'Base');
-    expect(q.questions.last.title, isNull);
-    expect(q.questions.last.multiple, isTrue);
-    expect(q.questions.first.otherKey, 'q1_custom');
-    expect(q.questions.first.choices.map((c) => (c.label, c.description)), [
-      ('SQLite', 'Un fichier'),
-      ('Postgres', 'Un serveur'),
-    ]);
 
-    // Yes / no mean nothing to a question; half an answer is refused.
+    // Yes / no mean nothing to a question.
     expect(source.answer(agent.id, AgentAnswer.allow, clock), isFalse);
-    expect(source.answerQuestion(agent.id, {'q1': 'SQLite'}), isFalse);
-    expect(sent, isEmpty);
-
-    // A label, then free text winning over the choice, several labels.
-    expect(
-      source.answerQuestion(agent.id, {
-        'q1': 'SQLite',
-        'q1_custom': ' DuckDB ',
-        'q2': ['Unitaires', 'Bout en bout'],
-      }),
-      isTrue,
-    );
-    expect(sent.single.$1, 9);
-    expect(sent.single.$2, {
-      'Quelle base ?': 'DuckDB',
-      'Quels tests ?': ['Unitaires', 'Bout en bout'],
-    });
+    // The answers go by key, as for ACP: mikkyd turns them into Claude's.
+    final answers = <String, Object>{
+      'q1': 'SQLite',
+      'q2': ['Unitaires'],
+    };
+    expect(source.answerQuestion(agent.id, answers), isTrue);
+    expect(sent.single, (9, answers));
     expect(source.questionOf(agent.id), isNull);
     expect(source.agents.where((a) => a.status.needsYou), isEmpty);
 
@@ -385,48 +337,7 @@ void main() {
     expect(decisions, isEmpty);
   });
 
-  test('HookAsk.answersFor: as Claude takes them', () {
-    final ask = HookAsk.fromJson({
-      'id': 1,
-      'kind': 'question',
-      'sessionId': 's',
-      'title': 'A ?',
-      'questions': [
-        {
-          'question': 'A ?',
-          'multiSelect': true,
-          'options': [
-            {'label': 'x'},
-            {'label': 'y'},
-          ],
-        },
-      ],
-    });
-    expect(ask.isQuestion, isTrue);
-    expect(ask.question!.message, 'A ?');
-    expect(ask.answersFor({'q1': 'x'}), {
-      'A ?': ['x'],
-    });
-    expect(
-      ask.answersFor({
-        'q1': ['y', 'y'],
-      }),
-      {
-        'A ?': ['y'],
-      },
-    );
-    expect(ask.answersFor({'q1': <String>[], 'q1_custom': 'z'}), {'A ?': 'z'});
-    expect(ask.answersFor({'q1': <String>[]}), isNull);
-    expect(ask.answersFor({}), isNull);
-    // A permission, as before.
-    final permission = HookAsk.fromJson({
-      'id': 2,
-      'sessionId': 's',
-      'tool': 'Bash',
-      'title': 'Bash ls',
-      'command': 'ls',
-    });
-    expect(permission.kind, HookKind.permission);
-    expect(permission.question, isNull);
+  test('a request without its event is not shown', () {
+    expect(HookAsk.fromJson({'id': 1, 'sessionId': 's', 'kind': 'question'}), isNull);
   });
 }

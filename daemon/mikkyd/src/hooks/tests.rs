@@ -147,22 +147,25 @@ async fn a_screen_answers_a_question() {
         json!({"label": "Postgres", "description": "Un serveur"})
     );
     let id = list[0]["id"].as_u64().unwrap();
-    // Answers that do not fit: refused, the question stays.
+    // Answers by key, as for an ACP form; those that do not fit: refused,
+    // the question stays.
     for wrong in [
-        json!({"Quelle base ?": "SQLite"}),
-        json!({"Quelle base ?": ["SQLite"], "Quels tests ?": ["Unitaires"]}),
-        json!({"Quelle base ?": "SQLite", "Quels tests ?": ["Autre"]}),
-        json!({"Quelle base ?": " ", "Quels tests ?": ["Unitaires"]}),
-        json!({"Quelle base ?": "SQLite", "Quels tests ?": []}),
+        json!({"q1": "SQLite"}),
+        json!({"q1": "SQLite", "q2": ["Autre"]}),
+        json!({"q1": " ", "q2": ["Unitaires"]}),
+        json!({"q1": "SQLite", "q2": []}),
+        json!({"Quelle base ?": "SQLite", "Quels tests ?": ["Unitaires"]}),
     ] {
         assert!(!hooks.answer(id, None, Some(&wrong)), "{wrong}");
     }
     assert_eq!(hooks.list().as_array().unwrap().len(), 1);
-    // A label, free text, several labels.
-    let answers =
-        json!({"Quelle base ?": "DuckDB, en fait", "Quels tests ?": ["Unitaires", "Bout en bout"]});
-    assert!(hooks.answer(id, Some("allow"), Some(&answers)));
-    assert_eq!(call.await.unwrap(), json!({"answers": answers}));
+    // Free text (it wins over a label), several labels once each.
+    let keyed = json!({"q1": "SQLite", "q1_custom": " DuckDB, en fait ", "q2": ["Unitaires", "Bout en bout", "Unitaires"]});
+    assert!(hooks.answer(id, Some("allow"), Some(&keyed)));
+    assert_eq!(
+        call.await.unwrap(),
+        json!({"answers": {"Quelle base ?": "DuckDB, en fait", "Quels tests ?": ["Unitaires", "Bout en bout"]}})
+    );
     assert_eq!(hooks.list(), json!([]));
 }
 
