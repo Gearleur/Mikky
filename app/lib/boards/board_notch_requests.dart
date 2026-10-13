@@ -44,6 +44,12 @@ List<BoardSection> notchRequestSections() => [
         width: 700,
         child: _request(FakeSessions.approval(), 'Met à jour le site', position: 2, total: 3),
       ),
+      BoardFrame(
+        label: 'Feu vert dans l’app Claude',
+        note: 'Claude (l’app) ou VS Code le demandent eux-mêmes : Mikky le montre sans le retenir et mène là-bas (Entrée aussi).',
+        width: 700,
+        child: _request(FakeSessions.approval()..app = AgentApp.claude, 'Met à jour le site', answerable: false),
+      ),
       BoardFrame(label: 'Erreur', width: 700, child: _request(FakeSessions.error(), 'Corrige la fermeture auto')),
       BoardFrame(
         label: 'Limite atteinte',
@@ -94,6 +100,12 @@ List<BoardSection> notchRequestSections() => [
           question: const QuestionTrial(answers: {'db': 'SQLite', 'when': 'À l’heure dite'}, at: 1),
         ),
       ),
+      BoardFrame(
+        label: 'Posée dans l’app Claude',
+        note: 'Claude (l’app) ou VS Code la montrent eux-mêmes, une fois le hook fini : Mikky ne la retient pas (sinon les deux attendent). La même carte, ses choix non cliquables, et « Répondre dans Claude » (Entrée aussi).',
+        width: 700,
+        child: _request(FakeSessions.question()..app = AgentApp.claude, 'Prépare le stockage', answerable: false),
+      ),
     ],
   ),
   BoardSection(
@@ -135,6 +147,7 @@ Widget _request(
   int total = 1,
   QuestionTrial question = const QuestionTrial(),
   bool trial = true,
+  bool answerable = true,
 }) {
   final status = log.statusAt(log.lastEventAt ?? DateTime(2026));
   final agent = Agent(
@@ -166,7 +179,9 @@ Widget _request(
             trial: trial,
             actions: BriefActions(
               answer: (_) {},
-              answerQuestion: (_) {},
+              answerQuestion: answerable ? (_) {} : null,
+              reveal: answerable ? null : none,
+              answerable: answerable,
               open: none,
               later: trial ? none : null,
               finishLimit: limited ? none : null,

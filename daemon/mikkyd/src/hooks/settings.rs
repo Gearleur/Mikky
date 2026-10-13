@@ -93,6 +93,22 @@ pub fn hook_path() -> PathBuf {
     base.join("Mikky").join("bin").join(HOOK_NAME)
 }
 
+/// At start: an installed relay older than the one shipped is replaced,
+/// so that a fix of the relay reaches the hooks without installing them
+/// again. Never installs one, never touches Claude's or Codex's settings.
+pub fn refresh_hook() {
+    let (from, to) = (shipped_hook(), hook_path());
+    let same = |a: &Path, b: &Path| {
+        std::fs::read(a)
+            .ok()
+            .zip(std::fs::read(b).ok())
+            .is_some_and(|(a, b)| a == b)
+    };
+    if from.exists() && to.exists() && !same(&from, &to) {
+        let _ = place_hook();
+    }
+}
+
 /// Copies the shipped relay to [hook_path] (beside it, then renamed over
 /// it). A relay in use (a hook running) stays: it is replaced next time.
 fn place_hook() -> Result<PathBuf, String> {

@@ -29,6 +29,8 @@ fn relay_with(endpoint: &str, event: &Value, args: &[&str]) -> std::process::Chi
     let mut child = Command::new(env!("CARGO_BIN_EXE_mikky-hook"))
         .args(args)
         .env("MIKKY_HOOK_ENDPOINT", endpoint)
+        // A terminal, even when the tests run inside Claude's app.
+        .env_remove("CLAUDE_CODE_ENTRYPOINT")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()

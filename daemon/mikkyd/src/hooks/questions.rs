@@ -41,6 +41,37 @@ pub fn questions_of(input: &Value) -> Option<Value> {
     (texts.len() == out.len()).then_some(Value::Array(out))
 }
 
+/// The session event of a question (`type: "question"`, the engine's
+/// `QuestionAsked`), from questions as [`questions_of`] gives them. The
+/// hooks and the Claude session reader both use it.
+pub fn question_event(id: &str, questions: &Value, at: &Value) -> Value {
+    let wire: Vec<_> = questions
+        .as_array()
+        .into_iter()
+        .flatten()
+        .enumerate()
+        .map(|(i, q)| {
+            let key = format!("q{}", i + 1);
+            let choices: Vec<_> = q["options"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .map(|o| json!({"value": o["label"], "description": o["description"].as_str().unwrap_or_default()}))
+                .collect();
+            json!({
+                "key": key,
+                "otherKey": format!("{key}_custom"),
+                "text": q["question"],
+                "title": q["header"].as_str().filter(|s| !s.is_empty()),
+                "multiple": q["multiSelect"],
+                "choices": choices,
+            })
+        })
+        .collect();
+    let message = wire.first().map_or(Value::Null, |q| q["text"].clone());
+    json!({"type": "question", "id": id, "message": message, "questions": wire, "at": at})
+}
+
 /// True when `answers` answers each question once, by its text: free text
 /// or a label (a non-empty string), or for a multiple choice a non-empty
 /// list of distinct labels. Nothing else.

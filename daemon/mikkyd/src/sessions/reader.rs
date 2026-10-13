@@ -5,6 +5,8 @@ mod hook_messages;
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 
+use crate::hooks::questions::{question_event, questions_of};
+
 #[derive(Default)]
 pub struct Reader {
     hook_messages: hook_messages::Messages,
@@ -32,7 +34,7 @@ pub struct Reader {
     shells: HashMap<i64, String>,
     /// The `apply_patch` script whose file changes Codex will report.
     patch: Option<String>,
-    /// The question Codex asked, until the user answers.
+    /// The question Claude or Codex asked, until the user answers.
     asked: Option<String>,
     /// Codex's sub-agents: by thread, the call that launched each.
     agents: HashMap<String, String>,
@@ -144,6 +146,13 @@ impl Reader {
                     for b in content.as_array().into_iter().flatten() {
                         match string(&b["type"]) {
                             "tool_result" => {
+                                // Claude's question is over: answered (in its
+                                // app, its terminal or Mikky) or refused.
+                                if self.asked.as_deref() == b["tool_use_id"].as_str() {
+                                    out.push(
+                                        json!({"type":"questionAnswered", "id":self.asked.take()}),
+                                    );
+                                }
                                 if !self.plan_tools.remove(string(&b["tool_use_id"])) {
                                     let mut tool = json!({"type":"tool", "id":b["tool_use_id"], "status": if b["is_error"] == true { "failed" } else { "completed" }, "output": text(&b["content"])});
                                     let result = &line["toolUseResult"];
@@ -186,6 +195,15 @@ impl Reader {
                                 out.push(json!({"type":"plan", "entries":plan}));
                             } else {
                                 out.push(claude_tool(b));
+                                // Claude's question: what it asks, so that it
+                                // shows wherever it is answered.
+                                if b["name"] == "AskUserQuestion"
+                                    && let Some(questions) = questions_of(&b["input"])
+                                {
+                                    let id = string(&b["id"]).to_owned();
+                                    out.push(question_event(&id, &questions, &Value::Null));
+                                    self.asked = Some(id);
+                                }
                             }
                         }
                         _ => {}
@@ -356,6 +374,7 @@ fn claude_tool(b: &Value) -> Value {
         "Glob" => input["pattern"].clone(),
         "WebFetch" => input["url"].clone(),
         "WebSearch" => input["query"].clone(),
+        "AskUserQuestion" => input["questions"][0]["question"].clone(),
         _ if path.is_string() => json!(format!("{name} {}", basename(string(path)))),
         _ => input.get("description").cloned().unwrap_or(json!(name)),
     };
@@ -392,6 +411,34 @@ mod tests {
             &json!({"type":"assistant","message":{"id":"m","stop_reason":"end_turn","content":[{"type":"text","text":"Fait."}]}}),
         );
         assert_eq!(out.last().unwrap()["reason"], "endTurn");
+    }
+
+    #[test]
+    fn claude_questions_show_until_answered() {
+        let mut r = Reader::default();
+        r.read(
+            "claude",
+            &json!({"type":"user","sessionId":"s","message":{"content":"Range le dépôt"}}),
+        );
+        let out = r.read(
+            "claude",
+            &json!({"type":"assistant","message":{"id":"m","content":[{"type":"tool_use","id":"toolu_q","name":"AskUserQuestion",
+                "input":{"questions":[{"question":"On garde les images ?","header":"Images","multiSelect":false,
+                "options":[{"label":"Oui","description":"En local"},{"label":"Non"}]}]}}]}}),
+        );
+        // The tool reads as its question, never as « AskUserQuestion ».
+        assert_eq!(out[0]["title"], "On garde les images ?");
+        assert_eq!(out[1]["type"], "question");
+        assert_eq!(out[1]["id"], "toolu_q");
+        assert_eq!(out[1]["message"], "On garde les images ?");
+        assert_eq!(out[1]["questions"][0]["choices"][1]["value"], "Non");
+        let out = r.read(
+            "claude",
+            &json!({"type":"user","sessionId":"s","message":{"content":[{"type":"tool_result","tool_use_id":"toolu_q","content":"Oui"}]}}),
+        );
+        assert_eq!(out[0]["type"], "questionAnswered");
+        assert_eq!(out[0]["id"], "toolu_q");
+        assert_eq!(out[1]["status"], "completed");
     }
 
     #[test]

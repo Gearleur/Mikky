@@ -16,6 +16,8 @@ class BriefActions {
     this.open,
     this.terminal,
     this.later,
+    this.reveal,
+    this.answerable = true,
     this.finishLimit,
     this.enchant,
   });
@@ -36,6 +38,14 @@ class BriefActions {
 
   /// Not now: back where the island was, the request still waiting.
   final VoidCallback? later;
+
+  /// Brings forward the app the session runs in (Claude's app, VS Code, its
+  /// terminal): where to answer a question Mikky cannot answer itself.
+  final VoidCallback? reveal;
+
+  /// False when the request is answered in the app that asks it (Claude's
+  /// app, VS Code): Mikky shows it and takes you there ([reveal]).
+  final bool answerable;
 
   /// A limit: « Terminer » (no more waiting), « Relance auto ».
   final VoidCallback? finishLimit, enchant;
@@ -195,7 +205,7 @@ class BriefView extends StatelessWidget {
     // The trial (2026-10-12): who asks stays at the top, the request and
     // its answers at the bottom, always in sight; the task between them
     // scrolls. A question: its card fills it, the links in its bar.
-    final asking = answers is QuestionCard;
+    final asking = b.kind == BriefKind.question && question != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -206,7 +216,7 @@ class BriefView extends StatelessWidget {
           child: asking
               ? Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [Expanded(child: answers)],
+                  children: [Expanded(child: answers!)],
                 )
               : SingleChildScrollView(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: context_),
@@ -219,6 +229,21 @@ class BriefView extends StatelessWidget {
       ],
     );
   }
+
+  /// Answered in the app that asks it (2026-10-13): « Plus tard » (unless
+  /// among the links) and « Répondre dans Claude ».
+  List<(String, VoidCallback)> get _elsewhere => [
+    if (actions.later == null) ('Plus tard', () => actions.answer(AgentAnswer.dismiss)),
+    if (actions.reveal != null) ('Répondre dans ${brief.app?.label ?? 'son application'}', actions.reveal!),
+  ];
+
+  Widget get _elsewhereBar => _Keyed(
+    keys: {RequestKey.enter: ?actions.reveal},
+    child: Align(
+      alignment: Alignment.centerRight,
+      child: AnswerBar(answers: _elsewhere),
+    ),
+  );
 
   /// The request: what it is ([detail]), then how to answer it
   /// ([answers]).
@@ -269,38 +294,54 @@ class BriefView extends StatelessWidget {
                 ),
               ),
           ],
-          answers: _Keyed(
-            keys: {
-              RequestKey.yes: () => answer(AgentAnswer.allow),
-              RequestKey.enter: () => answer(AgentAnswer.allow),
-              RequestKey.no: () => answer(AgentAnswer.deny),
-              if (canAlways) RequestKey.always: () => answer(AgentAnswer.allowAlways),
-            },
-            child: WaitActions(
-              command: trial || diff == null ? b.request : '${b.request}  ${diff.label}',
-              onYes: () => answer(AgentAnswer.allow),
-              onNo: () => answer(AgentAnswer.deny),
-              onAlways: canAlways ? () => answer(AgentAnswer.allowAlways) : null,
-            ),
-          ),
+          answers: !actions.answerable
+              ? _elsewhereBar
+              : _Keyed(
+                  keys: {
+                    RequestKey.yes: () => answer(AgentAnswer.allow),
+                    RequestKey.enter: () => answer(AgentAnswer.allow),
+                    RequestKey.no: () => answer(AgentAnswer.deny),
+                    if (canAlways) RequestKey.always: () => answer(AgentAnswer.allowAlways),
+                  },
+                  child: WaitActions(
+                    command: trial || diff == null ? b.request : '${b.request}  ${diff.label}',
+                    onYes: () => answer(AgentAnswer.allow),
+                    onNo: () => answer(AgentAnswer.deny),
+                    onAlways: canAlways ? () => answer(AgentAnswer.allowAlways) : null,
+                  ),
+                ),
         );
       case BriefKind.question:
         final q = question;
         final onQuestion = actions.answerQuestion;
-        if (q != null && onQuestion != null) {
+        // Asked in Claude's app or VS Code (2026-10-13): they show it
+        // themselves; Mikky shows the same card and takes you there.
+        final readOnly = q == null || onQuestion == null;
+        final elsewhere = readOnly ? _elsewhere : const <(String, VoidCallback)>[];
+        if (q != null) {
           return (
             detail: const <Widget>[],
-            answers: trial
-                ? QuestionCard(question: q, onAnswer: onQuestion, trial: questionTrial, fill: true, barLeading: links)
-                : QuestionCard(question: q, onAnswer: onQuestion),
+            answers: _Keyed(
+              keys: {if (readOnly) RequestKey.enter: ?actions.reveal},
+              child: trial
+                  ? QuestionCard(
+                      question: q,
+                      onAnswer: onQuestion,
+                      trial: questionTrial,
+                      fill: true,
+                      barLeading: links,
+                      elsewhere: elsewhere,
+                    )
+                  : QuestionCard(question: q, onAnswer: onQuestion, elsewhere: elsewhere),
+            ),
           );
         }
         return (
-          detail: [CodePill(b.request, maxLines: 4), const SizedBox(height: 8)],
-          answers: Align(
-            alignment: Alignment.centerRight,
-            child: AnswerBar(answers: [('Plus tard', () => answer(AgentAnswer.dismiss))]),
-          ),
+          detail: [
+            if (b.request.isNotEmpty) Text(b.request, style: uiText(TextSize.small, color: ui.text)),
+            const SizedBox(height: 8),
+          ],
+          answers: _elsewhereBar,
         );
       case BriefKind.error:
         return (

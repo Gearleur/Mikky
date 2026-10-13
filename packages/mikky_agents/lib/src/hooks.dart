@@ -31,6 +31,7 @@ class HookAsk {
     this.questions = const [],
     this.at,
     this.normalized,
+    this.answerable = true,
   });
 
   /// What `mikkyd` lists; a field of an unexpected type is left out.
@@ -54,6 +55,7 @@ class HookAsk {
           : (kind == HookKind.question ? _questions(j['questions']) : const []),
       at: DateTime.tryParse(text('at') ?? ''),
       normalized: event,
+      answerable: j['answerable'] != false,
     );
   }
 
@@ -105,6 +107,10 @@ class HookAsk {
   final List<Question> questions;
   final DateTime? at;
   final SessionEvent? normalized;
+
+  /// False when Claude's app or VS Code asks it itself (2026-10-13): shown
+  /// here, answered there; « Plus tard » only takes it off the screens.
+  final bool answerable;
 
   /// New backends normalize this in Rust; older ones use the same model.
   SessionEvent? get event =>

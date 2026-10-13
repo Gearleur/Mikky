@@ -202,9 +202,14 @@ class TaskBrief {
     this.requestChange,
     this.recent = const [],
     this.files = const [],
+    this.app,
   });
 
   final BriefKind kind;
+
+  /// Where the session runs (Claude's app, VS Code, a terminal), if known:
+  /// where to answer what Mikky cannot.
+  final AgentApp? app;
 
   /// What the user asked in this turn, on one line.
   final String? task;
@@ -244,6 +249,7 @@ class TaskBrief {
     request: request,
     requestTitle: title,
     recent: recent,
+    app: app,
   );
 }
 
@@ -340,6 +346,7 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
     requestChange: requestChange,
     recent: kind == BriefKind.finished ? const [] : activityOf(log, max: 3),
     files: files,
+    app: log.app,
   );
 }
 

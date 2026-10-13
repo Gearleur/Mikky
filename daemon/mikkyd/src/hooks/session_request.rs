@@ -5,14 +5,7 @@ use serde_json::{Value, json};
 pub(super) fn event(request: &Value) -> Value {
     let id = format!("hook:{}", request["id"]);
     if request["kind"] == "question" {
-        let questions: Vec<_> = request["questions"].as_array().into_iter().flatten().enumerate().map(|(i, q)| {
-            let key = format!("q{}", i + 1);
-            let choices: Vec<_> = q["options"].as_array().into_iter().flatten().map(|o|
-                json!({"value":o["label"],"description":o["description"].as_str().unwrap_or_default()})
-            ).collect();
-            json!({"key":key,"otherKey":format!("{key}_custom"),"text":q["question"],"title":q["header"].as_str().filter(|s| !s.is_empty()),"multiple":q["multiSelect"],"choices":choices})
-        }).collect();
-        return json!({"type":"question","id":id,"message":request["title"],"questions":questions,"at":request["at"]});
+        return super::questions::question_event(&id, &request["questions"], &request["at"]);
     }
     let command = request["command"]
         .as_str()

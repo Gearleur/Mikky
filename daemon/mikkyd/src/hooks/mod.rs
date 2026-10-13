@@ -11,6 +11,11 @@
 //! question text: a label or free text, a list of labels for a multiple
 //! choice), and the relay gives them to Claude as the tool's input. The
 //! `PermissionRequest` Claude may also send for that tool makes no card.
+//! Only a session in a terminal is held (2026-10-13): Claude's app and VS
+//! Code show their own question or permission once the hook is done, so
+//! theirs go on at once. Mikky shows their questions from the session file
+//! and their permissions here, `answerable: false`, until the session's
+//! next event.
 //!
 //! Never block Claude Code: no screen connected, a session `mikkyd` runs
 //! itself (ACP asks it already), answers that do not fit the questions, or
@@ -24,7 +29,7 @@
 //! use it to bring that window forward (Ctrl + click on an agent).
 
 pub mod messages;
-mod questions;
+pub(crate) mod questions;
 mod session_request;
 pub mod settings;
 
@@ -193,6 +198,10 @@ impl Hooks {
             || (!asks && tool == "AskUserQuestion")
             || own(&session)
             || self.screens.load(Ordering::Relaxed) == 0
+            // Claude's app or VS Code shows its question only once the hook
+            // is done: holding it would block both. Mikky shows it from the
+            // session file and sends the user there.
+            || (asks && !in_terminal(payload))
         {
             return none;
         }
@@ -249,6 +258,12 @@ impl Hooks {
             ));
         }
         shown["event"] = session_request::event(&shown);
+        // Claude's app or VS Code asks it itself once the hook is done: shown
+        // here, never held, until the session's next event.
+        let held = in_terminal(payload);
+        if !held {
+            shown["answerable"] = json!(false);
+        }
         self.pending.lock().unwrap().push(Pending {
             id,
             session,
@@ -259,9 +274,12 @@ impl Hooks {
             },
             questions,
             shown,
-            answer: Some(tx),
+            answer: held.then_some(tx),
         });
         let _ = self.changes.send(());
+        if !held {
+            return none;
+        }
         let reply = tokio::select! {
             answer = rx => answer.ok().flatten(),
             _ = tokio::time::sleep(if asks { QUESTION_WAIT } else { WAIT }) => None,
@@ -344,6 +362,17 @@ impl Hooks {
         }
         let _ = self.changes.send(());
     }
+}
+
+/// True when the session runs in a terminal (`claude` itself), the only
+/// place where Claude asks nothing until its hook is done. Its app, VS Code
+/// and the SDK hosts (`CLAUDE_CODE_ENTRYPOINT`, forwarded by the relay as
+/// `entrypoint`) wait on the hook before they show their own question.
+/// Older relays send nothing: a terminal, as before.
+fn in_terminal(payload: &Value) -> bool {
+    payload["entrypoint"]
+        .as_str()
+        .is_none_or(|e| e.is_empty() || e == "cli")
 }
 
 /// The command, as text: Claude gives a string, Codex may give its words.

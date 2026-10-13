@@ -832,6 +832,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                             _sync();
                           }
                         : null,
+                    answerable: _demo || widget.agents.source.canAnswerRequests(focus.id),
+                    reveal: _demo
+                        ? null
+                        : () => widget.agents.revealOrOpen(focus.id, () {
+                            if (mounted) _openAgentPage(focus.id);
+                          }),
                     // Ctrl + click: its terminal or VS Code instead.
                     open: _demo
                         ? null

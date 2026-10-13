@@ -6,7 +6,8 @@
 //! store, WebSocket on 127.0.0.1 with the token. Only `PermissionRequest`
 //! waits for an answer, to print Claude's decision; and `--ask`, Claude's
 //! questions (`AskUserQuestion` in `PreToolUse`), to print the answers as
-//! the tool's input.
+//! the tool's input, in a terminal only: Claude's app and VS Code show
+//! their own question once the hook is done.
 //!
 //! Each event also says where the session runs: the window found among the
 //! relay's parent processes (a terminal, VS Code), so that Mikky can bring
@@ -68,7 +69,14 @@ fn main() {
         .unwrap_or_default()
         .to_owned();
     let injects = agent == "claude" && matches!(event.name.as_str(), "PostToolUse" | "Stop");
-    let budget = if event.question.is_some() {
+    // Claude's app or VS Code shows its question or permission once this
+    // hook is done: say it and go.
+    let in_app = event.payload["entrypoint"]
+        .as_str()
+        .is_some_and(|e| !e.is_empty() && e != "cli");
+    let budget = if in_app && (event.question.is_some() || event.name == "PermissionRequest") {
+        FIRE_AND_FORGET
+    } else if event.question.is_some() {
         ANSWERS
     } else if event.name == "PermissionRequest" {
         DECISION
@@ -220,6 +228,10 @@ fn read_event() -> Option<Event> {
         ("term_program", "TERM_PROGRAM"),
         ("wt_session", "WT_SESSION"),
         ("vscode_pid", "VSCODE_PID"),
+        // `cli` in a terminal; Claude's app, VS Code or an SDK host
+        // otherwise (they show their own questions: `mikkyd` never holds
+        // those).
+        ("entrypoint", "CLAUDE_CODE_ENTRYPOINT"),
     ] {
         if let Ok(v) = std::env::var(var) {
             map.insert(key.into(), json!(v));

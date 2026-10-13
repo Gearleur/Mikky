@@ -172,8 +172,8 @@ class RealAgentSource implements AgentSource {
   HookAsk? hookAskOf(String id) => _permissionRequest(id);
   HookAsk? hookQuestionOf(String id) => _questionRequest(id);
   QuestionAsked? questionOf(String id) => entry(id)?.log.question;
-  bool canAnswerRequests(String id) => _hookAskOf(id) != null || (entry(id)?.live ?? false);
-  bool canLeaveInTerminal(String id) => _hookAskOf(id) != null;
+  bool canAnswerRequests(String id) => _hookAskOf(id)?.answerable ?? (entry(id)?.live ?? false);
+  bool canLeaveInTerminal(String id) => _hookAskOf(id)?.answerable ?? false;
   bool canAnswerQuestion(String id) => _canAnswerQuestion(id);
   void hookAsks(List<HookAsk> asks) => _receiveRequests(asks);
 
@@ -495,6 +495,7 @@ class RealAgentSource implements AgentSource {
       if (answer != AgentAnswer.dismiss) return false;
       return answerQuestion(id, null);
     }
+    if (hook != null && !hook.answerable && answer != AgentAnswer.dismiss) return false;
     if (hook != null && answer != AgentAnswer.retry) {
       // Claude's hooks know yes and no; « Toujours » stays a yes there.
       final allow = switch (answer) {

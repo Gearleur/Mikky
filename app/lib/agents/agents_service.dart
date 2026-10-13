@@ -477,8 +477,16 @@ class AgentsService extends ChangeNotifier {
   /// the history): with Ctrl, the application it runs in ([reveal]);
   /// else, or with nowhere to go, [open] — its page.
   Future<void> openOrReveal(String id, VoidCallback open) async {
+    if (await _controlDown()) return revealOrOpen(id, open);
+    open();
+  }
+
+  /// The application agent [id] runs in ([reveal]); with nowhere to go,
+  /// [open] — its page. « Répondre dans Claude », for a question asked in
+  /// Claude's app or VS Code.
+  Future<void> revealOrOpen(String id, VoidCallback open) async {
     final sessionId = source.entry(id)?.sessionId;
-    if (sessionId != null && await _controlDown() && await reveal(sessionId)) return;
+    if (sessionId != null && await reveal(sessionId)) return;
     open();
   }
 

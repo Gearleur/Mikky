@@ -55,6 +55,8 @@ class BriefPage extends StatelessWidget {
                             }
                           : null,
                       open: openAgent,
+                      reveal: () => host.service.revealOrOpen(id, openAgent),
+                      answerable: source.canAnswerRequests(id),
                       // Claude's own question in its terminal instead.
                       terminal: !source.canLeaveInTerminal(id)
                           ? null

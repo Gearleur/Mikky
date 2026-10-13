@@ -55,12 +55,16 @@ class QuestionCard extends StatefulWidget {
     this.trial = const QuestionTrial(),
     this.fill = false,
     this.barLeading = const [],
+    this.elsewhere = const [],
   });
 
   final QuestionAsked question;
 
-  /// The answers by question key; null: skipped.
-  final ValueChanged<Map<String, Object>?> onAnswer;
+  /// The answers by question key; null: skipped. Itself null: shown, not
+  /// answered here (2026-10-13: asked in Claude's app or VS Code, which
+  /// show it themselves) — the same card, its choices not clickable, and
+  /// [elsewhere] in its bar.
+  final ValueChanged<Map<String, Object>?>? onAnswer;
 
   /// How it starts (the boards).
   final QuestionTrial trial;
@@ -72,6 +76,10 @@ class QuestionCard extends StatefulWidget {
   /// On the left of the answers (the request's links: « Plus tard »,
   /// « Voir l’agent »).
   final List<Widget> barLeading;
+
+  /// The bar's answers when it is not answered here: « Répondre dans
+  /// Claude ».
+  final List<(String, VoidCallback)> elsewhere;
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -160,7 +168,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     if (next != null) {
       _go(next);
     } else {
-      widget.onAnswer(Map.of(_answers));
+      widget.onAnswer?.call(Map.of(_answers));
     }
   }
 
@@ -212,8 +220,11 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   /// opened again, its answer kept, the next one.
   VoidCallback? get _goOn => _send ?? (_answered(_at) && _at + 1 < _count ? () => _go(_at + 1) : null);
 
+  bool get _readOnly => widget.onAnswer == null;
+
   @override
   bool onRequestKey(RequestKey key) {
+    if (_readOnly) return false;
     final i = key.choice;
     if (i != null) {
       final q = _question;
@@ -243,9 +254,9 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           description: q.choices[i].description,
           multiple: q.multiple,
           ticked: _ticked.contains(q.choices[i].label) || q.choices[i].label == _chosen,
-          onTap: () => _pick(i),
+          onTap: _readOnly ? null : () => _pick(i),
         ),
-      if (q.otherKey != null)
+      if (q.otherKey != null && !_readOnly)
         _ChoiceRow(
           index: q.choices.length,
           label: 'Autre…',
@@ -308,11 +319,13 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     final goOn = q.multiple || _other || _answered(_at);
     final answers = AnswerBar(
       key: ValueKey('bar-${_at > 0}-$goOn-$last'),
-      answers: [
-        if (_at > 0) ('Précédente', () => _go(_at - 1)),
-        (_count > 1 ? 'Tout passer' : 'Passer', () => widget.onAnswer(null)),
-        if (goOn) (last ? 'Envoyer' : 'Suivante', _goOn),
-      ],
+      answers: _readOnly
+          ? widget.elsewhere
+          : [
+              if (_at > 0) ('Précédente', () => _go(_at - 1)),
+              (_count > 1 ? 'Tout passer' : 'Passer', () => widget.onAnswer?.call(null)),
+              if (goOn) (last ? 'Envoyer' : 'Suivante', _goOn),
+            ],
     );
     final bar = widget.barLeading.isEmpty
         ? Align(alignment: Alignment.centerRight, child: answers)
@@ -389,7 +402,7 @@ class _ChoiceRow extends StatelessWidget {
     required this.label,
     required this.multiple,
     required this.ticked,
-    required this.onTap,
+    this.onTap,
     this.description,
   });
 
@@ -397,7 +410,7 @@ class _ChoiceRow extends StatelessWidget {
   final String label;
   final String? description;
   final bool multiple, ticked;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {

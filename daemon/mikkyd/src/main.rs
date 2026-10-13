@@ -71,6 +71,9 @@ async fn main() {
     if !stdout_endpoint && !system::endpoint::single_instance() {
         return;
     }
+    if !stdout_endpoint {
+        hooks::settings::refresh_hook();
+    }
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .expect("cannot listen on 127.0.0.1");

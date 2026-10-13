@@ -21,7 +21,8 @@ extension _SessionRequests on RealAgentSource {
 
   /// True when [answerQuestion] can reach whoever asks [questionOf].
   bool _canAnswerQuestion(String id) {
-    if (hookQuestionOf(id) != null) return true;
+    final hook = hookQuestionOf(id);
+    if (hook != null) return hook.answerable;
     final e = entry(id);
     return e != null && e.live && e.log.question != null;
   }
