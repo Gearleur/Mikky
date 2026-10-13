@@ -5,7 +5,7 @@ import '../home/home_frame.dart';
 import '../home/home_layout.dart';
 import '../island/content/brief_view.dart';
 import '../side/question_card.dart';
-import '../side/request_page.dart';
+import '../side/request_view.dart';
 import '../side/session_steps.dart';
 import '../ui/content/diff_view.dart';
 import '../ui/content/side.dart';
