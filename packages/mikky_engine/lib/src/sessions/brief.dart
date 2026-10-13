@@ -290,14 +290,14 @@ TaskBrief briefOf(SessionLog log, AgentStatus status) {
     if (at >= 0) step = '${at + 1}/${plan.length} · ${_one(plan[at].content, 80)}';
   }
 
-  String request = log.detail;
+  String request = kind == BriefKind.approval ? log.requestText : log.detail;
   String? requestTitle;
   DiffStat? requestDiff;
   FileDiff? requestChange;
   final asked = log.pending.isEmpty ? null : log.pending.first;
   if (kind == BriefKind.approval && asked != null) {
     final tool = items.whereType<ToolItem>().where((t) => t.id == asked.toolCallId).firstOrNull;
-    final title = tool?.title ?? asked.title;
+    final title = asked.description ?? tool?.title ?? asked.title;
     final diff = tool?.diff;
     if (diff != null) {
       requestDiff = diffStat(diff);

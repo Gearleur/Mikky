@@ -1,6 +1,7 @@
 import '../agents/agent.dart';
 import 'rate_limit.dart';
 import 'session_event.dart';
+import 'sub_agent.dart';
 
 /// One line of a session's thread, as the Chat view shows it.
 sealed class ThreadItem {
@@ -10,12 +11,13 @@ sealed class ThreadItem {
 }
 
 class UserItem extends ThreadItem {
-  const UserItem(this.text, {this.queued = false, super.at});
+  const UserItem(this.text, {this.queued = false, this.messageId, super.at});
 
   final String text;
 
   /// Slipped in while the agent worked: shown where it came in the task.
   final bool queued;
+  final String? messageId;
 }
 
 class AgentItem extends ThreadItem {
@@ -38,6 +40,7 @@ class ToolItem extends ThreadItem {
     this.diff,
     this.diffs = const [],
     this.output,
+    this.agent,
     super.at,
   });
 
@@ -53,6 +56,12 @@ class ToolItem extends ThreadItem {
   /// See [ToolCallEvent.diffs]; empty: [diff] alone.
   final List<FileDiff> diffs;
   final String? output;
+
+  /// See [ToolCallEvent.agent].
+  final String? agent;
+
+  /// It launched a sub-agent.
+  bool get launchesAgent => agent != null || const {'Agent', 'Task', 'agent'}.contains(name);
 
   /// Every part of the change it made, in order.
   List<FileDiff> get changes => diffs.isNotEmpty ? diffs : [?diff];
@@ -70,6 +79,7 @@ class ToolItem extends ThreadItem {
     diff: e.diff ?? diff,
     diffs: e.diff == null ? diffs : (e.diffs ?? const []),
     output: e.output ?? output,
+    agent: e.agent ?? agent,
     at: at,
   );
 }
@@ -77,7 +87,9 @@ class ToolItem extends ThreadItem {
 /// A turn: from the user's message to the agent's answer. Once ended, the
 /// app shows it as a « Tâche terminée » card (UX `ux-a.html`).
 class TurnSpan {
-  const TurnSpan(this.start, {this.end, this.reason, this.message, this.plan = const []});
+  const TurnSpan(this.start, {this.end, this.reason, this.message, this.plan = const [], this.resetsAt});
+
+  final DateTime? resetsAt;
 
   /// Index of its first item in [SessionLog.items]; [end] is exclusive,
   /// null while the turn runs.
@@ -91,19 +103,39 @@ class TurnSpan {
 
   bool get running => end == null;
 
-  TurnSpan copyWith({int? end, StopReason? reason, String? message, List<PlanEntry>? plan}) => TurnSpan(
-    start,
-    end: end ?? this.end,
-    reason: reason ?? this.reason,
-    message: message ?? this.message,
-    plan: plan ?? this.plan,
-  );
+  TurnSpan copyWith({int? end, StopReason? reason, String? message, List<PlanEntry>? plan, DateTime? resetsAt}) =>
+      TurnSpan(
+        start,
+        end: end ?? this.end,
+        reason: reason ?? this.reason,
+        message: message ?? this.message,
+        plan: plan ?? this.plan,
+        resetsAt: resetsAt ?? this.resetsAt,
+      );
 }
 
 /// Everything known about one session, folded from its [SessionEvent]s:
 /// the thread, the turns, the plan, the pending permission requests, and
 /// the state Mikky and the island show (MVP spec §6).
 class SessionLog {
+  /// Child sessions attached by the watcher, never separate home entries.
+  List<SubAgentLog> subAgents = const [];
+
+  SubAgentLog? subAgentOf(ToolItem tool) => subAgents.where((a) => a.id == tool.agent || a.tool == tool.id).firstOrNull;
+
+  Iterable<SubAgentLog> get descendants {
+    final seen = <SessionLog>{this};
+    Iterable<SubAgentLog> visit(SessionLog log) sync* {
+      for (final child in log.subAgents) {
+        if (!seen.add(child.log)) continue;
+        yield child;
+        yield* visit(child.log);
+      }
+    }
+
+    return visit(this);
+  }
+
   String? sessionId;
   String? cwd;
   String? title;
@@ -143,15 +175,59 @@ class SessionLog {
   final List<TurnSpan> _turns = [];
   final Map<Object, PermissionAsked> _pending = {};
   QuestionAsked? _question;
+  SessionEvent? _externalRequest;
+
+  /// A live request held by the backend, separate from transcript history.
+  /// Replacing its snapshot never creates a turn, tool or duplicate message.
+  void setExternalRequest(SessionEvent? request) {
+    assert(request == null || request is PermissionAsked || request is QuestionAsked);
+    if (identical(_externalRequest, request)) return;
+    _externalRequest = request;
+    version++;
+  }
+
+  DateTime? _lastUserAt;
+
+  /// The actual limit, including a child stopped on this task. A new user
+  /// request clears old child limits; automated notifications do not.
+  SessionLog? get limitSource => _limitSource({});
+
+  SessionLog? _limitSource(Set<SessionLog> seen) {
+    if (!seen.add(this)) return null;
+    if (_turns.lastOrNull?.reason == StopReason.rateLimited) return this;
+    final blocked =
+        subAgents
+            .map((a) => a.log._limitSource(seen))
+            .nonNulls
+            .where(
+              (log) =>
+                  log.turns.lastOrNull?.reason == StopReason.rateLimited &&
+                  (_lastUserAt == null || log.lastEventAt == null || !log.lastEventAt!.isBefore(_lastUserAt!)),
+            )
+            .toList()
+          ..sort((a, b) => (b.lastEventAt ?? DateTime(0)).compareTo(a.lastEventAt ?? DateTime(0)));
+    return blocked.firstOrNull;
+  }
+
+  String? get limitMessage => limitSource?.turns.last.message;
+  DateTime? get limitSeenAt => limitSource?.lastEventAt;
 
   List<ThreadItem> get items => List.unmodifiable(_items);
   List<TurnSpan> get turns => List.unmodifiable(_turns);
 
   /// Permission requests waiting for the user, oldest first.
-  List<PermissionAsked> get pending => List.unmodifiable(_pending.values);
+  List<PermissionAsked> get pending => switch (_externalRequest) {
+    final PermissionAsked request => [request],
+    QuestionAsked() => const [],
+    _ => List.unmodifiable(_pending.values),
+  };
 
   /// A question with choices waiting for the user, if any.
-  QuestionAsked? get question => _question;
+  QuestionAsked? get question => switch (_externalRequest) {
+    final QuestionAsked request => request,
+    PermissionAsked() => null,
+    _ => _question,
+  };
 
   /// True while the agent works on a turn.
   bool get working => _turns.isNotEmpty && _turns.last.running;
@@ -188,11 +264,15 @@ class SessionLog {
         _closeTurn(StopReason.cancelled, null);
         _turns.add(TurnSpan(_items.length));
       case TurnEnded():
-        _closeTurn(e.reason, e.message);
+        _closeTurn(e.reason, e.message, resetsAt: e.resetsAt);
         _pending.clear();
         _question = null;
       case UserMessage():
-        _items.add(UserItem(e.text, queued: e.queued, at: at));
+        if (!e.queued) _lastUserAt = e.at;
+        if (e.messageId?.startsWith('mikky-') != true ||
+            !_items.whereType<UserItem>().any((u) => u.messageId == e.messageId)) {
+          _items.add(UserItem(e.text, queued: e.queued, messageId: e.messageId, at: at));
+        }
       case AgentMessage():
         // A message slipped in while the agent was writing waits after the
         // end of that answer, where the agent actually reads it.
@@ -241,14 +321,22 @@ class SessionLog {
     }
   }
 
-  void _closeTurn(StopReason reason, String? message) {
+  void _closeTurn(StopReason reason, String? message, {DateTime? resetsAt}) {
     if (!working) return;
-    // A tool still running when the turn ends was stopped with it.
+    // A tool still running when the turn ends was stopped with it; a
+    // sub-agent goes on by itself.
     for (var i = _turns.last.start; i < _items.length; i++) {
       final item = _items[i];
-      if (item is ToolItem && item.active) _items[i] = item.merge(ToolCallEvent(item.id, status: ToolStatus.failed));
+      if (item is ToolItem && item.active && item.agent == null) {
+        _items[i] = item.merge(ToolCallEvent(item.id, status: ToolStatus.failed));
+      }
     }
-    _turns[_turns.length - 1] = _turns.last.copyWith(end: _items.length, reason: reason, message: message);
+    _turns[_turns.length - 1] = _turns.last.copyWith(
+      end: _items.length,
+      reason: reason,
+      message: message,
+      resetsAt: resetsAt,
+    );
   }
 
   /// State shown by Mikky and the island at [now].
@@ -256,10 +344,11 @@ class SessionLog {
   /// [staleAfter]: for sessions Mikky only watches, a turn with no news for
   /// that long is taken as dropped (its VS Code window was closed…).
   AgentStatus statusAt(DateTime now, {Duration? staleAfter}) {
-    if (_question != null) return AgentStatus.question;
-    if (_pending.isNotEmpty) {
-      return _toolFor(_pending.values.first)?.name == 'AskUserQuestion' ? AgentStatus.question : AgentStatus.approval;
+    if (question != null) return AgentStatus.question;
+    if (pending.isNotEmpty) {
+      return _toolFor(pending.first)?.name == 'AskUserQuestion' ? AgentStatus.question : AgentStatus.approval;
     }
+    if (limitSource != null) return AgentStatus.rateLimited;
     if (_turns.isEmpty) return AgentStatus.idle;
     final turn = _turns.last;
     if (turn.running) {
@@ -292,12 +381,13 @@ class SessionLog {
   /// One line for the island and the home card: the command waiting for a
   /// yes, what the agent does now, its answer, or the error.
   String get detail {
-    final q = _question;
+    final q = question;
     if (q != null) {
       return _line(q.questions.length == 1 && q.questions.first.text.isNotEmpty ? q.questions.first.text : q.message);
     }
-    final asked = _pending.isEmpty ? null : _pending.values.first;
+    final asked = pending.firstOrNull;
     if (asked != null) {
+      if (identical(asked, _externalRequest)) return _line(asked.command ?? asked.title);
       // The tool's title is the clean command; the request's may be wrapped
       // in a shell (`/usr/bin/zsh -lc "…"` with Codex).
       // The command itself: that is what the user says yes to.
@@ -306,6 +396,7 @@ class SessionLog {
       final title = tool?.title ?? '';
       return _line(command.isNotEmpty ? command : (title.isNotEmpty ? title : asked.command ?? asked.title));
     }
+    if (limitSource != null) return limitLine(limitResetsAt, seen: limitSeenAt);
     if (_turns.isEmpty) return '';
     final turn = _turns.last;
     if (!turn.running && turn.reason == StopReason.rateLimited) return limitLine(limitResetsAt, seen: lastEventAt);
@@ -322,6 +413,21 @@ class SessionLog {
     return '';
   }
 
+  /// The complete action awaiting approval; summaries may shorten [detail],
+  /// but the decision card must retain the command the user approves.
+  String get requestText {
+    final asked = pending.firstOrNull;
+    if (asked == null) return detail;
+    final tool = _toolFor(asked);
+    return [
+          asked.command,
+          tool?.command,
+          tool?.title,
+          asked.title,
+        ].whereType<String>().where((s) => s.trim().isNotEmpty).firstOrNull ??
+        detail;
+  }
+
   ToolItem? _toolFor(PermissionAsked asked) {
     final i = _tools[asked.toolCallId];
     return i == null ? null : _items[i] as ToolItem;
@@ -330,10 +436,11 @@ class SessionLog {
   /// When the subscription limit that stopped the last turn lifts, if the
   /// agent said.
   DateTime? get limitResetsAt {
-    if (_turns.isEmpty) return null;
-    final turn = _turns.last;
-    if (turn.running || turn.reason != StopReason.rateLimited || turn.message == null) return null;
-    return limitResetOf(turn.message!, lastEventAt ?? DateTime.now());
+    final source = limitSource;
+    if (source == null) return null;
+    final turn = source.turns.last;
+    return turn.resetsAt ??
+        (turn.message == null ? null : limitResetOf(turn.message!, source.lastEventAt ?? DateTime.now()));
   }
 
   static String _line(String s) {

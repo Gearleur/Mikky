@@ -129,7 +129,10 @@ class TurnStarted extends SessionEvent {
 enum StopReason { endTurn, cancelled, refused, maxTokens, rateLimited, error }
 
 class TurnEnded extends SessionEvent {
-  const TurnEnded(this.reason, {this.message, super.at});
+  const TurnEnded(this.reason, {this.message, this.resetsAt, super.at});
+
+  /// Exact reset supplied by the provider, preferred to parsing its text.
+  final DateTime? resetsAt;
 
   final StopReason reason;
 
@@ -192,6 +195,7 @@ class ToolCallEvent extends SessionEvent {
     this.diff,
     this.diffs,
     this.output,
+    this.agent,
     super.at,
   });
 
@@ -210,6 +214,10 @@ class ToolCallEvent extends SessionEvent {
   /// its diff), [diff] first; null: [diff] alone.
   final List<FileDiff>? diffs;
   final String? output;
+
+  /// The sub-agent it launched (Claude's `Agent`, Codex's `spawn_agent`):
+  /// its id, as its own session names it.
+  final String? agent;
 }
 
 enum PlanStatus { pending, inProgress, completed }
@@ -257,6 +265,7 @@ class PermissionAsked extends SessionEvent {
     required this.toolCallId,
     required this.title,
     this.command,
+    this.description,
     this.options = const [],
     super.at,
   });
@@ -267,6 +276,7 @@ class PermissionAsked extends SessionEvent {
   final String title;
   final String? command;
   final List<PermissionOption> options;
+  final String? description;
 }
 
 class PermissionAnswered extends SessionEvent {

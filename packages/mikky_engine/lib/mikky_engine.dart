@@ -26,3 +26,4 @@ export 'src/sessions/rate_limit.dart';
 export 'src/sessions/requests.dart';
 export 'src/sessions/session_event.dart';
 export 'src/sessions/session_log.dart';
+export 'src/sessions/sub_agent.dart';

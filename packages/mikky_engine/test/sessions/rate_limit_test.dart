@@ -5,6 +5,12 @@ void main() {
   final seen = DateTime(2026, 9, 30, 14, 20);
 
   group('when the limit lifts', () {
+    test('Claude weekly message without minutes', () {
+      expect(
+        limitResetOf("You've hit your weekly limit · resets Oct 2, 9pm (Europe/Paris)", seen),
+        DateTime(2026, 10, 2, 21),
+      );
+    });
     test('Claude, seconds after a bar', () {
       expect(
         limitResetOf('Claude AI usage limit reached|1759248000', seen),

@@ -8,21 +8,29 @@
 /// Codex: `try again at 5:10 PM`, `try again in 2 hours 13 minutes`,
 /// `try again at Oct 5th, 2026 9:47 AM` (a weekly limit, 2026-10-02).
 DateTime? limitResetOf(String message, DateTime seen) {
+  seen = seen.toLocal();
   final epoch = RegExp(r'\|(\d{9,11})\b').firstMatch(message);
   if (epoch != null) return DateTime.fromMillisecondsSinceEpoch(int.parse(epoch[1]!) * 1000);
 
   final text = message.toLowerCase();
   final dated = RegExp(
-    r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?,?\s+(\d{1,2}):(\d{2})\s*(am|pm)?',
+    r'\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+(\d{1,2})(?:st|nd|rd|th)?,?\s*(\d{4})?,?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?',
   ).firstMatch(text);
   if (dated != null) {
     const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
     var hour = int.parse(dated[4]!);
     final half = dated[6];
+    if (half == null && dated[5] == null) return null;
     if (half == 'pm' && hour < 12) hour += 12;
     if (half == 'am' && hour == 12) hour = 0;
     final year = int.tryParse(dated[3] ?? '') ?? seen.year;
-    final when = DateTime(year, months.indexOf(dated[1]!) + 1, int.parse(dated[2]!), hour, int.parse(dated[5]!));
+    final when = DateTime(
+      year,
+      months.indexOf(dated[1]!) + 1,
+      int.parse(dated[2]!),
+      hour,
+      int.tryParse(dated[5] ?? '') ?? 0,
+    );
     // No year said and already past: next year's.
     return dated[3] == null && !when.isAfter(seen)
         ? DateTime(year + 1, when.month, when.day, when.hour, when.minute)

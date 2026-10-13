@@ -10,6 +10,15 @@ SessionLog started() => SessionLog()
   ..apply(UserMessage('Corrige les tests', at: _at(0)));
 
 void main() {
+  test('Mikky hook messages deduplicate by id; ordinary user chunks keep their content', () {
+    final log = started();
+    log.apply(const UserMessage('suite', queued: true, messageId: 'mikky-one'));
+    log.apply(const UserMessage('suite', queued: true, messageId: 'mikky-one'));
+    log.apply(const UserMessage('A', messageId: 'ordinary'));
+    log.apply(const UserMessage('B', messageId: 'ordinary'));
+    expect(log.items.whereType<UserItem>().map((u) => u.text), ['Corrige les tests', 'suite', 'A', 'B']);
+  });
+
   test('no turn yet: idle', () {
     expect(SessionLog().statusAt(_t0), AgentStatus.idle);
   });
