@@ -4,6 +4,7 @@ description = "Relays Claude Code's hook events to mikkyd (permissions of sessio
 edition.workspace = true
 version.workspace = true
 publish.workspace = true
+license.workspace = true
 
 [dependencies]
 serde_json.workspace = true
