@@ -87,7 +87,8 @@ flowchart LR
 - **App and daemon talk locally.** The WebSocket only listens on `127.0.0.1`, behind a token kept in the Windows
   credential store. WSL runs its own daemon, linked to the Windows one.
 - **Hooks are optional.** `mikky-hook` is a tiny relay that Claude Code and Codex call to route their requests
-  through Mikky. It never blocks the agent: without an answer, it hands control back.
+  through Mikky. Claude shows its own request meanwhile: you answer in Mikky or there, the first answer wins, and the
+  agent is never blocked. The whole flow: [docs/agents-and-requests.md](docs/agents-and-requests.md).
 
 | Folder | Contents |
 |---|---|
