@@ -22,6 +22,13 @@ const EVENTS: &[(&str, u64)] = &[
     ("SessionEnd", 10),
 ];
 
+/// Each tool's own way of saying a tool did not run (refused, failed or
+/// interrupted, 2026-10-13, as Coucou): the request it waited on goes.
+const TOOL_EVENTS: &[(Tool, &str, u64)] = &[
+    (Tool::Claude, "PostToolUseFailure", 10),
+    (Tool::Codex, "Interrupt", 3),
+];
+
 /// Claude's questions (`AskUserQuestion`, Claude Code 2.1.85+) come to a
 /// `PreToolUse` hook of their own: `mikky-hook --ask` waits for the answers
 /// (125 s; `hooks.rs`), Claude for the hook 130 s. Codex has no such tool
@@ -147,7 +154,11 @@ fn command(hook: &Path, tool: Tool, event: &str) -> String {
 /// Mikky's entries, event by event: (event, matcher, hook).
 fn entries(hook: &Path, tool: Tool) -> Vec<(&'static str, Option<&'static str>, Value)> {
     let mut out = Vec::new();
-    for (event, timeout) in EVENTS {
+    let own = TOOL_EVENTS
+        .iter()
+        .filter(|(t, ..)| *t == tool)
+        .map(|(_, e, s)| (e, s));
+    for (event, timeout) in EVENTS.iter().map(|(e, s)| (e, s)).chain(own) {
         let mut entry =
             json!({"type": "command", "command": command(hook, tool, event), "timeout": timeout});
         if tool == Tool::Codex && *event == "PermissionRequest" {
@@ -524,6 +535,17 @@ mod tests {
         assert!(Tool::Codex.file().ends_with("hooks.json"));
         assert_eq!(Tool::named("codex"), Some(Tool::Codex));
         assert_eq!(Tool::named("x"), None);
+    }
+
+    #[test]
+    fn each_tool_says_when_a_tool_did_not_run() {
+        let hook = Path::new(r"C:\Mikky\mikky-hook.exe");
+        let claude = merged(&json!({}), hook, Tool::Claude);
+        assert!(claude["hooks"]["PostToolUseFailure"].is_array());
+        assert!(claude["hooks"]["Interrupt"].is_null());
+        let codex = merged(&json!({}), hook, Tool::Codex);
+        assert!(codex["hooks"]["Interrupt"].is_array());
+        assert!(codex["hooks"]["PostToolUseFailure"].is_null());
     }
 
     #[test]
