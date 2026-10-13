@@ -38,7 +38,7 @@ import 'island_painter.dart';
 
 /// The island with Mikky in it, glued to the top or the right edge.
 ///
-/// [IslandMachine] decides everything (spec §5.3); this widget feeds it the
+/// [IslandMachine] decides everything; this widget feeds it the
 /// cursor, clicks and agents, wakes it up at its deadlines, and draws its
 /// snapshot. Nothing runs while nothing happens.
 class IslandView extends StatefulWidget {

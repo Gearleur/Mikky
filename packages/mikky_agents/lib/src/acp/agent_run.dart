@@ -22,7 +22,7 @@ List<SessionModel> offeredModels(List<SessionModel> models) => [
 
 /// One agent session Mikky drives through ACP: open it, prompt it, answer
 /// its permission requests, cancel or stop it. Everything it does lands in
-/// [log] (MVP spec §3.1). Rust owns the adapter;
+/// [log]. Rust owns the adapter;
 /// `DaemonAgentRun` goes through `mikkyd`.
 abstract interface class AgentRun {
   SessionLog get log;

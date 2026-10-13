@@ -5,7 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 import 'daemon/daemon_client.dart';
 
-/// Is the agent tool there, and is its user signed in (MVP spec §3.3)?
+/// Is the agent tool there, and is its user signed in?
 /// Mikky only asks the tools; it never reads or writes a credential.
 class AuthStatus {
   const AuthStatus({required this.installed, required this.loggedIn, this.plan});

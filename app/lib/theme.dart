@@ -7,8 +7,7 @@ import 'ui/foundation/tokens.dart';
 /// What the user picked; [auto] follows Windows' light / dark setting.
 enum ThemeChoice { auto, dark, light }
 
-/// The two validated island themes (`design/prototypes/ile-noir-et-blanc.html`,
-/// `DARK` and `LIGHT`).
+/// The two island themes: dark and pure white.
 class MikkyTheme {
   const MikkyTheme._({
     required this.isLight,
@@ -27,7 +26,7 @@ class MikkyTheme {
   });
 
   /// Dark "A": the default. The prototype's colors, plus the states it did
-  /// not show (spec §5.2 table).
+  /// not show.
   static const dark = MikkyTheme._(
     isLight: false,
     foreground: Color(0xF0FFFFFF),

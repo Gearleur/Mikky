@@ -138,8 +138,8 @@ class IslandMetrics {
   };
 }
 
-/// The island's size and the place of Mikky in it, driven by springs
-/// (spec §3). Lengths are logical pixels.
+/// The island's size and the place of Mikky in it, driven by springs.
+/// Lengths are logical pixels.
 class IslandMotion {
   IslandMotion({this.edge = IslandEdge.top}) : metrics = IslandMetrics.of(edge) {
     _applyTargets();

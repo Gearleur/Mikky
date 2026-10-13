@@ -5,7 +5,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 /// the right edge.
 enum HomePlacement { top, right }
 
-/// The home's measures in one placement (design.md §7): the window, its
+/// The home's measures in one placement: the window, its
 /// bar, its pages of tiles and where Mikky sits. Set for the island's real
 /// sizes, not scaled from the mockups.
 class HomeLayout {

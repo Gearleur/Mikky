@@ -11,7 +11,7 @@ import '../overlays/floating_menu.dart';
 import 'buttons.dart';
 
 /// Where an agent runs. Local and WSL work today; VPS and Cloud are only
-/// drawn (design.md §7, « Choisir l'environnement »).
+/// drawn.
 enum MikkyEnvironment {
   local('Local'),
   wsl('WSL'),

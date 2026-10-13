@@ -6,8 +6,7 @@ import '../acp/agent_run.dart';
 import 'daemon_client.dart';
 import 'session_wire.dart';
 
-/// An [AgentRun] that `mikkyd` runs (spec `2026-09-30-mikkyd-design.md`,
-/// R1). `mikkyd` holds the adapter, its permission requests and questions;
+/// An [AgentRun] that `mikkyd` runs. `mikkyd` holds the adapter, its permission requests and questions;
 /// it sends every ACP message back, which [log] reads with the same
 /// [AcpReader] as a [LocalAgentRun].
 class DaemonAgentRun implements AgentRun {

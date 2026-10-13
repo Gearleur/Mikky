@@ -8,8 +8,8 @@ import 'package:mikky/mikky/mikky_painter.dart';
 import 'package:mikky/theme.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-/// Golden image of Mikky in every state and emote, at a fixed time
-/// (spec §9). Update with `flutter test --update-goldens`.
+/// Golden image of Mikky in every state and emote, at a fixed time.
+/// Update with `flutter test --update-goldens`.
 Future<void> _loadFonts() async {
   for (final (family, files) in [
     ('Geist', ['Geist-Regular.ttf', 'Geist-SemiBold.ttf']),

@@ -5,8 +5,7 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-/// Where `mikkyd` listens (127.0.0.1) and the token it wants (spec
-/// `2026-09-30-mikkyd-design.md` §5).
+/// Where `mikkyd` listens (127.0.0.1) and the token it wants.
 class DaemonEndpoint {
   const DaemonEndpoint(this.port, this.token, [this.pid]);
 

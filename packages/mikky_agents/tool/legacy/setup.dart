@@ -32,7 +32,7 @@ class SetupStatus {
 }
 
 /// Mikky's own folder on a target: the adapters (and, in WSL, its private
-/// Node) live there, never in the user's global install (MVP spec §3.1).
+/// Node) live there, never in the user's global install.
 ///
 /// Windows: `%LOCALAPPDATA%\Mikky`, system Node. WSL: `~/.local/share/mikky`,
 /// private Node (the user's choice of 2026-09-29: Ubuntu's Node 18 stays).

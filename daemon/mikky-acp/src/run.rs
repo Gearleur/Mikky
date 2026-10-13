@@ -1,5 +1,4 @@
-//! One agent session driven through ACP (MVP spec §3.1, the Rust twin of
-//! the Dart `AgentRun`): open it, prompt it, hold its permission requests
+//! One agent session driven through ACP: open it, prompt it, hold its permission requests
 //! and questions until someone answers, cancel it. Every message is kept
 //! and handed to subscribers as raw traffic.
 

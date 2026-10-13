@@ -1,5 +1,5 @@
-//! A Windows job object holding one agent and everything it starts (MVP
-//! spec §3.5): stopping the agent ends the whole tree at once, and if
+//! A Windows job object holding one agent and everything it starts:
+//! stopping the agent ends the whole tree at once, and if
 //! `mikkyd` ends, Windows ends the agents with it (kill on close).
 
 #[cfg(windows)]

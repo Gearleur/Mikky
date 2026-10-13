@@ -116,7 +116,7 @@ class TurnSpan {
 
 /// Everything known about one session, folded from its [SessionEvent]s:
 /// the thread, the turns, the plan, the pending permission requests, and
-/// the state Mikky and the island show (MVP spec §6).
+/// the state Mikky and the island show.
 class SessionLog {
   /// Child sessions attached by the watcher, never separate home entries.
   List<SubAgentLog> subAgents = const [];

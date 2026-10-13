@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 
-/// A CSS `box-shadow`, kept as written in `design/prototypes/mikky-ui.css`
-/// so the values can be checked against it. [inset] shadows are drawn
+/// A CSS-style `box-shadow`, written as in the HTML mockups. [inset] shadows are drawn
 /// inside the shape (Flutter has none of its own).
 class CssShadow {
   const CssShadow(this.dx, this.dy, this.blur, this.color, {this.spread = 0, this.inset = false});
@@ -30,7 +29,7 @@ class CssShadow {
   BoxShadow get box => BoxShadow(color: color, offset: Offset(dx, dy), blurRadius: blur, spreadRadius: spread);
 }
 
-/// The window's type scale (Geist; design.md §4): every text takes one of
+/// The window's type scale (Geist): every text takes one of
 /// these sizes. Line height and weight stay with each component.
 abstract final class TextSize {
   /// A number on a badge.
@@ -68,7 +67,7 @@ abstract final class TextSize {
   static const display = 24.0;
 }
 
-/// The window's corner radii (design.md §4): every rounded shape takes one
+/// The window's corner radii: every rounded shape takes one
 /// of these; a [Surface] without a radius is a pill.
 abstract final class Radii {
   /// Thin bars: a progress bar.
@@ -93,8 +92,7 @@ abstract final class Radii {
   static const window = 38.0;
 }
 
-/// The UI tokens of the small window (`mikky-ui.css`, `.t-light` and
-/// `.t-dark`), colors picked on `design/references/boutons-lanceur.png`.
+/// The UI tokens of the small window, light and dark.
 class MikkyUi {
   const MikkyUi._({
     required this.isLight,

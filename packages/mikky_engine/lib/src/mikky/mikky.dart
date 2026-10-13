@@ -33,7 +33,7 @@ class _Particle {
 
 /// Mikky's behaviour: states and emotes, keyframed gestures, random blinks
 /// and ear flicks, breathing, gaze, head tilt, particles. Port of the
-/// validated prototypes (`design/prototypes/`), itself based on Mochi's
+/// validated HTML prototypes, themselves based on Mochi's
 /// `BotEngine.swift`, with ears instead of a mouth.
 ///
 /// Time only moves through [update], so tests can drive it frame by frame.

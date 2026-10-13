@@ -1,6 +1,6 @@
 #version 460 core
 
-// Mikky's island, ported from design/prototypes/ile-noir-et-blanc.html
+// Mikky's island, ported from the validated HTML prototype
 // (modes 0 "noir A" and 6 "blanc pur"). Continuous-corner box (power-4
 // norm while closed, round corners — power 2 — once open, 2026-10-02),
 // merged by smooth-min with the notification drop and the split

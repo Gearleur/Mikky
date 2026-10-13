@@ -1,5 +1,5 @@
 /// What happens in an agent session, whatever it came from: the live ACP
-/// stream, or a Claude / Codex session file read afterwards (MVP spec §7).
+/// stream, or a Claude / Codex session file read afterwards.
 /// Readers turn their format into these events; [SessionLog] folds them.
 sealed class SessionEvent {
   const SessionEvent({this.at});

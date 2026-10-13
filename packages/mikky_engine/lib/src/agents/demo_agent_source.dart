@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'agent.dart';
 import 'agent_source.dart';
 
-/// Fake agents for the demo mode (spec §5.5). The scenario plays by itself:
+/// Fake agents for the demo mode. The scenario plays by itself:
 /// three agents at work, an approval, an error, a finished agent. Answers
 /// change what happens next.
 class DemoAgentSource implements AgentSource {

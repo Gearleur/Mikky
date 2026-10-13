@@ -1,4 +1,4 @@
-//! How the app finds and trusts `mikkyd` (spec §5): it listens on
+//! How the app finds and trusts `mikkyd`: it listens on
 //! 127.0.0.1 only, on a free port, and wants a random token. Port and token
 //! go to the Windows credential store for the user's session (rule: no
 //! secret on disk), where the app reads them. One `mikkyd` per session.

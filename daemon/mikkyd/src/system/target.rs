@@ -1,4 +1,4 @@
-//! Where an agent runs (MVP spec §3.4): Windows itself, or a WSL
+//! Where an agent runs: Windows itself, or a WSL
 //! distribution through `wsl.exe` (until WSL has its own `mikkyd`, R2).
 
 use std::process::Stdio;

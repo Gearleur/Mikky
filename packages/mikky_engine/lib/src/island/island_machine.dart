@@ -17,7 +17,7 @@ enum OpenReason {
 /// What the open island shows.
 enum IslandContent { empty, focus, list }
 
-/// Timings of the island rules (spec §5.3), in seconds.
+/// Timings of the island rules, in seconds.
 abstract final class IslandTimings {
   static const previewToOpen = .65;
   static const previewLinger = .4;
@@ -71,7 +71,7 @@ class IslandSnapshot {
   final double? closeCountdown;
 }
 
-/// The island's rules (spec §5.3, 1 to 10), without Flutter and without
+/// The island's rules, without Flutter and without
 /// timers: feed it events with their clock time, call [advance] at
 /// [nextDeadline], read [snapshot].
 ///

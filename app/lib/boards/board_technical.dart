@@ -317,7 +317,7 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
     ),
     const BoardSection(
       title: '07 — Le bilan livré',
-      note: 'Suivi du 1er octobre : main reste centré sur l’île. Où on en est : docs/superpowers/reprise.md.',
+      note: 'Suivi du 1er octobre : main reste centré sur l’île.',
       frames: [
         _Note(
           'R2 → R3 / Le socle Rust',

@@ -16,7 +16,7 @@ import 'watch/sub_agent_sessions.dart';
 part 'real_source_watch.dart';
 part 'real_source_requests.dart';
 
-/// The real agents behind the island and the home (MVP spec §5.5): those
+/// The real agents behind the island and the home: those
 /// Mikky launched through ACP, and the sessions found in Claude's and
 /// Codex's files. Same [AgentSource] as the demo, plus [changes] because
 /// real agents move on their own.

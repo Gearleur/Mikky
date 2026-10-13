@@ -3,8 +3,8 @@ import 'dart:io';
 
 import 'package:ffi/ffi.dart';
 
-/// A Windows job object holding one agent and everything it starts
-/// (MVP spec §3.5): stopping the agent ends the whole tree at once, and if
+/// A Windows job object holding one agent and everything it starts:
+/// stopping the agent ends the whole tree at once, and if
 /// Mikky itself ends, Windows ends the agents with it (kill on close).
 ///
 /// A process joins the job right after it starts, before Mikky sends it

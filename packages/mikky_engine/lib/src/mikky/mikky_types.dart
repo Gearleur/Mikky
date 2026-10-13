@@ -57,7 +57,7 @@ enum EyeShape { oval, round, happy, flat, closed, tired, spiral, heart, star, sl
 
 enum Ear { left, right }
 
-/// What Mikky expresses, from the agent he stands for (spec §5.2 table).
+/// What Mikky expresses, from the agent he stands for.
 enum MikkyState {
   idle,
   working,

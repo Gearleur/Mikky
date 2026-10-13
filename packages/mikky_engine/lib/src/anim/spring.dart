@@ -7,7 +7,7 @@ class SpringSpec {
   final double stiffness;
   final double dampingRatio;
 
-  /// The island itself: "dry" (spec §3); a little slower since 2026-10-05
+  /// The island itself: "dry"; a little slower since 2026-10-05
   /// (« un peu trop rapide », 210 before).
   static const island = SpringSpec(165, .74);
 

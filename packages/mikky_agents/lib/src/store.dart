@@ -165,7 +165,7 @@ class SessionMark {
 }
 
 /// `%APPDATA%\Mikky\agents.json`: Mikky's agents, recent folders, last
-/// choices per folder (MVP spec §7), and the marks on sessions. A broken
+/// choices per folder, and the marks on sessions. A broken
 /// file is set aside, not lost.
 class AgentStore {
   AgentStore(this.file);

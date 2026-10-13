@@ -1,5 +1,5 @@
 /// Mikky's adjustable proportions, in units of the radius R. The defaults
-/// are the validated design (spec §3); the tuning screen changes them live.
+/// are the validated design; the tuning screen changes them live.
 class MikkyTuning {
   MikkyTuning({
     this.eyeElevation = .26,

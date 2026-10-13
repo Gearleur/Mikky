@@ -19,7 +19,7 @@ class WatchedSession extends core.WatchedSession {
 }
 
 /// Watches Claude's and Codex's session folders on one target and reads
-/// the files as they grow (MVP spec §4.1): event-driven, no polling.
+/// the files as they grow: event-driven, no polling.
 ///
 /// Windows: `Directory.watch`. WSL: Windows gets no events from WSL
 /// folders, so a probe runs inside WSL with Mikky's Node ([wslWatchScript])

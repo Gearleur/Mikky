@@ -1,5 +1,4 @@
-//! `mikkyd`: the one that launches and follows agents (spec
-//! `docs/superpowers/specs/2026-09-30-mikkyd-design.md`). The app is only a
+//! `mikkyd`: the one that launches and follows agents. The app is only a
 //! screen on it.
 //!
 //! `mikkyd` alone: one per Windows session, endpoint in the credential

@@ -4,7 +4,7 @@ import 'acp/agent_run.dart';
 import 'store.dart';
 import 'watch/session_watcher.dart';
 
-/// What the new-agent screen sends (MVP spec §5.3).
+/// What the new-agent screen sends.
 class LaunchRequest {
   const LaunchRequest({
     required this.provider,

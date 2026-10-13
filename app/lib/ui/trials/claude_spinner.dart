@@ -5,8 +5,7 @@ import 'package:flutter/widgets.dart';
 import '../foundation/motion.dart';
 
 // A trial, shown on the design boards only: Claude at work, against its
-// logo that turns ([SpinningLogo], in use); the user picks one (design.md
-// §12, step 1).
+// logo that turns ([SpinningLogo], in use); one is to be picked.
 
 /// Claude Code's own « working » star, as its terminal shows it: a dot
 /// that grows into a cross, an asterisk, a star, a flower, then back, in

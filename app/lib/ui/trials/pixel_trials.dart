@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import '../pixels/pixel_fx.dart';
 
 // Trials, shown on the design boards only: pixel effects set aside for
-// the calm firework (design.md §12, point 4: to sort once chosen).
+// the calm firework.
 
 /// A cross star that grows from a dot, throws rays and diagonal dots,
 /// then goes out; two small ones twinkle in the corners.

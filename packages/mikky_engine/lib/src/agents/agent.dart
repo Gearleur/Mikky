@@ -1,4 +1,4 @@
-/// What an agent is doing, as in Mochi's states (spec §5.2).
+/// What an agent is doing, as in Mochi's states.
 enum AgentStatus {
   working,
   thinking,
@@ -14,7 +14,7 @@ enum AgentStatus {
   paused,
   idle;
 
-  /// The agent is blocked until the user answers: an alert (spec §5.3, 7).
+  /// The agent is blocked until the user answers: an alert.
   bool get needsYou => this == approval || this == question || this == error;
 
   /// The agent is making progress on its own.
@@ -42,7 +42,7 @@ enum AgentAnswer {
 /// Which agent tool runs the session.
 enum AgentProvider { claude, codex }
 
-/// Where the agent runs (MVP spec §3.4). Linux comes later.
+/// Where the agent runs. Linux comes later.
 enum AgentHost { windows, wsl }
 
 /// Launched by Mikky, or elsewhere (VS Code, a terminal) and only watched.

@@ -83,7 +83,7 @@ void main() {
     expect(m.pose.earLeft, closeTo(0, .02));
   });
 
-  group('states (spec §5.2 table)', () {
+  group('states', () {
     MikkyGeometry settle(MikkyState s) {
       final m = Mikky(random: math.Random(2))..setState(s);
       run(m, 2.5);

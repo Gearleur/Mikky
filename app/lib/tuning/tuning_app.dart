@@ -10,7 +10,7 @@ import '../mikky/mikky_painter.dart';
 import '../settings.dart';
 import '../theme.dart';
 
-/// Development tool (spec §5.6): Mikky in large, a button for each state,
+/// Development tool: Mikky in large, a button for each state,
 /// emote and gesture, sliders for his proportions. Used to tune and
 /// validate the expressions with the user before freezing them.
 class TuningApp extends StatelessWidget {

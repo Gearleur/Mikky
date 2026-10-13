@@ -1,4 +1,4 @@
-//! The API the screens use (spec §5): JSON-RPC 2.0 over a WebSocket on
+//! The API the screens use: JSON-RPC 2.0 over a WebSocket on
 //! 127.0.0.1, with the token in `Authorization: Bearer`.
 //!
 //! Each family of methods has its file: `run.*` and `runs.*` (`runs.rs`),
