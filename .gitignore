@@ -18,3 +18,9 @@ app/assets/sounds/*
 # The user's trial sounds (and the old PSP ones), not ours either.
 app/assets/sounds_test/
 app/assets/metadata.json
+# Kept on the PC only, out of git: project notes and plans, old prototypes,
+# the agents' guide, and the golden pictures of the app tests.
+docs/superpowers/
+design/
+CLAUDE.md
+app/test/goldens/
