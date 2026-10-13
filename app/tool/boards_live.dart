@@ -3,7 +3,7 @@
 // a change shows in a second, without building a bundle. For the design
 // sessions. Started by `Start-Mikky.ps1 -Boards -Live`; Ctrl + C stops it.
 //
-//   C:\dev\flutter\bin\dart.bat tool\boards_live.dart   (in app\)
+//   dart tool\boards_live.dart   (in app\; Flutter from FLUTTER_ROOT or the PATH)
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -11,7 +11,8 @@ import 'dart:io';
 Future<void> main() async {
   final app = File.fromUri(Platform.script).parent.parent;
   final root = app.parent;
-  final flutter = Platform.environment['MIKKY_FLUTTER'] ?? r'C:\dev\flutter\bin\flutter.bat';
+  final sdk = Platform.environment['FLUTTER_ROOT'];
+  final flutter = Platform.environment['MIKKY_FLUTTER'] ?? (sdk == null ? 'flutter' : '$sdk\\bin\\flutter.bat');
   stdout.writeln('Planches en direct : compilation (la première fois, une à deux minutes)…');
   final run = await Process.start(
     flutter,

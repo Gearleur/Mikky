@@ -1,5 +1,7 @@
-param([string]$FlutterRoot = 'C:\dev\flutter')
+param([string]$FlutterRoot = '')
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'Find-Flutter.ps1')
+$FlutterRoot = Find-FlutterRoot $FlutterRoot
 $mikkyRoot = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
 $mikkyApp = Join-Path $mikkyRoot 'app'
 $mikkyDart = Join-Path $FlutterRoot 'bin\cache\dart-sdk\bin\dart.exe'

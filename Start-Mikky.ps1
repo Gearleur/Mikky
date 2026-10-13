@@ -3,8 +3,11 @@ $ErrorActionPreference = 'Stop'
 # -Boards -Live: the boards in debug, reloaded at each saved change of the
 # code (app\tool\boards_live.dart), in a window of their own.
 if ($Live) {
+    . (Join-Path $PSScriptRoot 'scripts\Find-Flutter.ps1')
+    $env:FLUTTER_ROOT = Find-FlutterRoot
     $mikkyApp = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'app'))
-    Start-Process -FilePath 'powershell.exe' -WorkingDirectory $mikkyApp -ArgumentList '-NoExit', '-Command', "& 'C:\dev\flutter\bin\dart.bat' tool\boards_live.dart"
+    $mikkyDart = Join-Path $env:FLUTTER_ROOT 'bin\dart.bat'
+    Start-Process -FilePath 'powershell.exe' -WorkingDirectory $mikkyApp -ArgumentList '-NoExit', '-Command', "& '$mikkyDart' tool\boards_live.dart"
     return
 }
 $mikkyDist = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot 'dist'))

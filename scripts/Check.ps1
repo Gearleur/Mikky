@@ -23,16 +23,9 @@ $onWindows = [IO.Path]::DirectorySeparatorChar -eq '\'
 
 # --------------------------------------------------------------- tools
 
-function Find-Flutter {
-    foreach ($candidate in @($FlutterRoot, $env:FLUTTER_ROOT, 'C:\dev\flutter')) {
-        if ($candidate -and (Test-Path -LiteralPath (Join-Path $candidate 'bin'))) {
-            return Join-Path $candidate 'bin'
-        }
-    }
-    $onPath = Get-Command flutter -ErrorAction SilentlyContinue
-    if ($onPath) { return Split-Path $onPath.Source }
-    throw 'Flutter not found: pass -FlutterRoot or set FLUTTER_ROOT.'
-}
+. (Join-Path $PSScriptRoot 'Find-Flutter.ps1')
+
+function Find-Flutter { Join-Path (Find-FlutterRoot $FlutterRoot) 'bin' }
 
 function Find-Cargo {
     $onPath = Get-Command cargo -ErrorAction SilentlyContinue
