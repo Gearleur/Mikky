@@ -19,6 +19,7 @@
 //! Usage: `mikky-hook [--agent codex] [--ask] <EventName>` (the name is
 //! also read from the JSON).
 
+mod delivery;
 mod origin;
 
 use std::io::{Read, Write};
@@ -33,6 +34,8 @@ use tungstenite::client::IntoClientRequest;
 const CONNECT: Duration = Duration::from_millis(300);
 /// An event nobody waits on: connect and send, no more.
 const FIRE_AND_FORGET: Duration = Duration::from_secs(2);
+/// The injection path must stay well inside Claude's 10 s hook timeout.
+const DELIVERY: Duration = Duration::from_millis(300);
 /// A permission on the screens (mikkyd gives up at 105 s; Claude's own
 /// timeout for this hook is 120 s).
 const DECISION: Duration = Duration::from_secs(110);
@@ -56,10 +59,21 @@ fn main() {
     let Some(event) = read_event() else {
         std::process::exit(0)
     };
+    let agent = event.payload["mikky_agent"]
+        .as_str()
+        .unwrap_or_default()
+        .to_owned();
+    let session = event.payload["session_id"]
+        .as_str()
+        .unwrap_or_default()
+        .to_owned();
+    let injects = agent == "claude" && matches!(event.name.as_str(), "PostToolUse" | "Stop");
     let budget = if event.question.is_some() {
         ANSWERS
     } else if event.name == "PermissionRequest" {
         DECISION
+    } else if injects {
+        DELIVERY
     } else {
         FIRE_AND_FORGET
     };
@@ -70,8 +84,10 @@ fn main() {
     std::thread::spawn(move || {
         let _ = tx.send(talk(payload, waits, budget));
     });
-    let out = match rx.recv_timeout(budget) {
-        Ok(Some(result)) => match &event.question {
+    let result = rx.recv_timeout(budget).ok().flatten();
+    let out = match &result {
+        Some(result) if injects => delivery::output(&event.name, &agent, &result["delivery"]),
+        Some(result) => match &event.question {
             Some(input) => answers_json(input, &result["answers"]),
             None => result["decision"].as_str().and_then(decision_json),
         },
@@ -79,8 +95,25 @@ fn main() {
     };
     if let Some(out) = out {
         let mut stdout = std::io::stdout();
-        let _ = writeln!(stdout, "{out}");
-        let _ = stdout.flush();
+        if writeln!(stdout, "{out}").is_ok()
+            && stdout.flush().is_ok()
+            && injects
+            && let Some(token) = result
+                .as_ref()
+                .and_then(|r| r["delivery"]["delivery"].as_str())
+                .map(str::to_owned)
+        {
+            let (tx, rx) = mpsc::channel();
+            std::thread::spawn(move || {
+                let _ = tx.send(talk_call(
+                    "hooks.messages.ack",
+                    json!({"sessionId":session,"delivery":token}),
+                    true,
+                    DELIVERY,
+                ));
+            });
+            let _ = rx.recv_timeout(DELIVERY);
+        }
     }
     std::process::exit(0);
 }
@@ -229,6 +262,10 @@ fn shorten(value: &mut Value) {
 /// Sends the event; for a permission or a question, waits for `mikkyd`'s
 /// result (`{"decision"}` or `{"answers"}`).
 fn talk(payload: Value, waits: bool, budget: Duration) -> Option<Value> {
+    talk_call("hook.event", json!({"payload":payload}), waits, budget)
+}
+
+fn talk_call(method: &str, params: Value, waits: bool, budget: Duration) -> Option<Value> {
     let (port, token) = endpoint()?;
     let stream =
         TcpStream::connect_timeout(&SocketAddr::from(([127, 0, 0, 1], port)), CONNECT).ok()?;
@@ -243,8 +280,7 @@ fn talk(payload: Value, waits: bool, budget: Duration) -> Option<Value> {
         .headers_mut()
         .insert("authorization", format!("Bearer {token}").parse().ok()?);
     let (mut ws, _) = tungstenite::client(request, stream).ok()?;
-    let call =
-        json!({"jsonrpc": "2.0", "id": 1, "method": "hook.event", "params": {"payload": payload}});
+    let call = json!({"jsonrpc": "2.0", "id": 1, "method": method, "params": params});
     ws.send(Message::text(call.to_string())).ok()?;
     if !waits {
         // Let mikkyd read it before the connection goes.

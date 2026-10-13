@@ -153,21 +153,51 @@ impl Drop for Sessions {
 }
 
 fn describe(path: &Path, s: &Session) -> Value {
-    json!({"path": path.to_string_lossy(), "provider": s.provider, "generation": s.generation, "modified": s.modified, "count": s.lines.len(), "firstMessage": s.reader.first_message})
+    json!({"path": path.to_string_lossy(), "provider": s.provider, "generation": s.generation, "modified": s.modified, "count": s.lines.len(), "firstMessage": s.reader.first_message, "parent": s.reader.parent})
 }
 
-fn kind<'a>(path: &Path, roots: &'a [PathBuf; 2]) -> Option<&'a str> {
-    if path.extension()?.to_str()? != "jsonl" {
+/// A Claude session (`<project>/<session>.jsonl`), or one of its sub-agents
+/// (`<project>/<session>/subagents/agent-<id>.jsonl`).
+fn claude_file(path: &Path, roots: &[PathBuf; 2]) -> bool {
+    if path.extension().is_none_or(|e| e != "jsonl") {
+        return false;
+    }
+    let Ok(rest) = path.strip_prefix(&roots[0]) else {
+        return false;
+    };
+    let parts: Vec<_> = rest
+        .components()
+        .map(|c| c.as_os_str().to_string_lossy())
+        .collect();
+    parts.len() == 2
+        || (parts.len() == 4 && parts[2] == "subagents" && parts[3].starts_with("agent-"))
+}
+
+/// Who launched a Claude sub-agent, from its path and the `.meta.json`
+/// beside it: the parent session, its agent id, the `Agent` tool that
+/// launched it, its description.
+fn claude_parent(path: &Path) -> Option<Value> {
+    let folder = path.parent()?;
+    if folder.file_name()? != "subagents" {
         return None;
     }
-    if path.strip_prefix(&roots[0]).ok()?.components().count() == 2 {
-        return Some("claude");
-    }
-    None
+    let session = folder.parent()?.file_name()?.to_string_lossy().into_owned();
+    let agent = path
+        .file_stem()?
+        .to_string_lossy()
+        .strip_prefix("agent-")?
+        .to_owned();
+    let meta = std::fs::read(folder.join(format!("agent-{agent}.meta.json")))
+        .ok()
+        .and_then(|b| serde_json::from_slice::<Value>(&b).ok())
+        .unwrap_or_default();
+    Some(
+        json!({"session":session, "agent":agent, "tool":meta["toolUseId"], "name":meta["description"], "type":meta["agentType"]}),
+    )
 }
 
 fn provider(path: &Path, roots: &[PathBuf; 2]) -> Option<&'static str> {
-    if kind(path, roots).is_some() {
+    if claude_file(path, roots) {
         return Some("claude");
     }
     if path.starts_with(&roots[1])
@@ -225,6 +255,20 @@ fn read_new(
     sessions: &Mutex<HashMap<PathBuf, Session>>,
     changes: &broadcast::Sender<Value>,
 ) {
+    // Claude may write the metadata after the child's first lines.
+    let transcript;
+    let path = if path.to_string_lossy().ends_with(".meta.json") {
+        transcript = path.with_file_name(format!(
+            "{}.jsonl",
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .trim_end_matches(".meta.json")
+        ));
+        transcript.as_path()
+    } else {
+        path
+    };
     let Some(provider) = provider(path, roots) else {
         return;
     };
@@ -247,7 +291,17 @@ fn read_new(
             ..Default::default()
         };
     }
+    let parent = if provider == "claude" {
+        claude_parent(path)
+    } else {
+        s.reader.parent.clone()
+    };
+    let parent_changed = s.reader.parent != parent;
+    s.reader.parent = parent;
     if meta.len() == s.offset {
+        if parent_changed {
+            let _ = changes.send(describe(path, s));
+        }
         return;
     }
     if file.seek(SeekFrom::Start(s.offset)).is_err() {
@@ -289,6 +343,36 @@ fn read_new(
 mod tests {
     use super::*;
     #[test]
+    fn late_claude_metadata_attaches_without_replaying_the_child() {
+        let home = std::env::temp_dir().join(format!(
+            "mikky-child-{}",
+            crate::system::endpoint::new_token()
+        ));
+        let roots = [home.join("claude"), home.join("codex")];
+        let folder = roots[0].join("project/parent/subagents");
+        std::fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("agent-a85.jsonl");
+        std::fs::write(&path, "{\"type\":\"user\",\"sessionId\":\"parent\",\"isSidechain\":true,\"agentId\":\"a85\",\"message\":{\"content\":\"Vérifie le lecteur\"}}\n").unwrap();
+        let sessions = Mutex::new(HashMap::new());
+        let (changes, _) = broadcast::channel(10);
+        read_new(&path, &roots, &sessions, &changes);
+        let before = sessions.lock().unwrap()[&path].lines.len();
+        let meta = folder.join("agent-a85.meta.json");
+        std::fs::write(
+            &meta,
+            r#"{"description":"Lecteur","toolUseId":"toolu_1","agentType":"general-purpose"}"#,
+        )
+        .unwrap();
+        read_new(&meta, &roots, &sessions, &changes);
+        let state = sessions.lock().unwrap();
+        let s = &state[&path];
+        assert_eq!(s.lines.len(), before);
+        assert_eq!(s.reader.parent.as_ref().unwrap()["tool"], "toolu_1");
+        assert_eq!(s.reader.parent.as_ref().unwrap()["session"], "parent");
+        drop(state);
+        std::fs::remove_dir_all(home).unwrap();
+    }
+    #[test]
     fn scanning_a_large_file_does_not_retain_its_raw_buffer() {
         let home = std::env::temp_dir().join(format!(
             "mikky-watch-{}",
@@ -316,7 +400,7 @@ mod tests {
     }
 
     #[test]
-    fn ignores_subagents_and_accepts_codex_rollouts() {
+    fn follows_claude_subagents_and_codex_rollouts() {
         let roots = [PathBuf::from("claude"), PathBuf::from("codex")];
         assert_eq!(
             provider(Path::new("claude/p/session.jsonl"), &roots),
@@ -324,6 +408,14 @@ mod tests {
         );
         assert_eq!(
             provider(Path::new("claude/p/subagents/x.jsonl"), &roots),
+            None
+        );
+        assert_eq!(
+            provider(Path::new("claude/p/s/subagents/agent-a1.jsonl"), &roots),
+            Some("claude")
+        );
+        assert_eq!(
+            provider(Path::new("claude/p/s/subagents/other.jsonl"), &roots),
             None
         );
         assert_eq!(

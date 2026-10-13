@@ -1,11 +1,13 @@
 //! Provider formats are decoded once, in Rust. The screen only folds events.
 mod codex;
+mod hook_messages;
 
 use serde_json::{Value, json};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Default)]
 pub struct Reader {
+    hook_messages: hook_messages::Messages,
     started: bool,
     cwd: bool,
     app: bool,
@@ -32,7 +34,12 @@ pub struct Reader {
     patch: Option<String>,
     /// The question Codex asked, until the user answers.
     asked: Option<String>,
+    /// Codex's sub-agents: by thread, the call that launched each.
+    agents: HashMap<String, String>,
     pub first_message: Option<String>,
+    /// A sub-agent's link to who launched it: `{session, agent, tool, name,
+    /// type}`; null for a main session.
+    pub parent: Option<Value>,
 }
 
 fn text(v: &Value) -> String {
@@ -67,6 +74,14 @@ impl Reader {
         } else {
             self.codex(line)
         };
+        if provider == "claude" {
+            let messages = self.hook_messages.read(line);
+            if !messages.is_empty() && !self.turn {
+                self.turn = true;
+                events.push(json!({"type":"start"}));
+            }
+            events.extend(messages);
+        }
         for event in &mut events {
             event["at"] = line["timestamp"].clone();
         }
@@ -93,7 +108,9 @@ impl Reader {
     }
 
     fn claude(&mut self, line: &Value) -> Vec<Value> {
-        if line["isSidechain"] == true {
+        // A main file may hold its sub-agents' lines (older Claude Code):
+        // they are read from their own files.
+        if line["isSidechain"] == true && self.parent.is_none() {
             return vec![];
         }
         let mut out = vec![];
@@ -119,15 +136,28 @@ impl Reader {
                 }
                 let content = &line["message"]["content"];
                 if let Some(s) = content.as_str() {
-                    self.user(s, &mut out);
+                    match s.strip_prefix("<task-notification>") {
+                        Some(note) => self.notification(note, &mut out),
+                        None => self.user(s, &mut out),
+                    }
                 } else {
                     for b in content.as_array().into_iter().flatten() {
                         match string(&b["type"]) {
                             "tool_result" => {
                                 if !self.plan_tools.remove(string(&b["tool_use_id"])) {
                                     let mut tool = json!({"type":"tool", "id":b["tool_use_id"], "status": if b["is_error"] == true { "failed" } else { "completed" }, "output": text(&b["content"])});
-                                    if let Some(diff) = claude_change(&line["toolUseResult"]) {
+                                    let result = &line["toolUseResult"];
+                                    if let Some(diff) = claude_change(result) {
                                         tool["diff"] = diff;
+                                    }
+                                    // A sub-agent: which one; launched in the
+                                    // background, it goes on after this.
+                                    if result["agentId"].is_string() {
+                                        tool["agent"] = result["agentId"].clone();
+                                        if result["status"] == "async_launched" {
+                                            tool["status"] = json!("running");
+                                            tool["output"] = Value::Null;
+                                        }
                                     }
                                     out.push(tool);
                                 }
@@ -161,9 +191,15 @@ impl Reader {
                         _ => {}
                     }
                 }
-                if line["isApiErrorMessage"] == true {
+                if line["isApiErrorMessage"] == true
+                    || line["error"] == "rate_limit"
+                    || line["apiErrorStatus"] == 429
+                {
                     let message = text(&message["content"]);
-                    out.push(json!({"type":"end", "reason": if message.to_lowercase().contains("limit") {"rateLimited"} else {"error"}, "message":message}));
+                    let limited = line["error"] == "rate_limit"
+                        || line["apiErrorStatus"] == 429
+                        || message.to_lowercase().contains("limit");
+                    out.push(json!({"type":"end", "reason": if limited {"rateLimited"} else {"error"}, "message":message, "resetsAt":line["quotaLimits"]["resetsAt"]}));
                     self.turn = false;
                 } else if message["stop_reason"] == "end_turn" && !tool && self.turn {
                     self.turn = false;
@@ -189,6 +225,36 @@ impl Reader {
             _ => {}
         }
         out
+    }
+
+    /// Claude Code tells the session that something it ran in the
+    /// background stopped (a sub-agent, a command): that tool is done, and
+    /// Claude takes a turn to read it.
+    fn notification(&mut self, note: &str, out: &mut Vec<Value>) {
+        let tag = |name: &str| {
+            let open = format!("<{name}>");
+            let start = note.find(&open)? + open.len();
+            let end = note[start..].find(&format!("</{name}>"))?;
+            Some(note[start..start + end].trim().to_string())
+        };
+        if let Some(id) = tag("tool-use-id") {
+            let status = match tag("status").as_deref() {
+                Some("completed") => "completed",
+                _ => "failed",
+            };
+            out.push(json!({"type":"tool", "id":id, "status":status, "output":tag("summary")}));
+        }
+        if !self.turn {
+            self.turn = true;
+            out.push(json!({"type":"start"}));
+        }
+        if tag("status").as_deref() == Some("failed")
+            && let Some(summary) = tag("summary")
+            && (summary.contains("session limit") || summary.contains("weekly limit"))
+        {
+            self.turn = false;
+            out.push(json!({"type":"end", "reason":"rateLimited", "message":summary}));
+        }
     }
 
     fn plan(&mut self, tool: &Value) -> Option<Value> {
@@ -369,5 +435,84 @@ mod tests {
         assert_eq!(codex_app("codex_exec"), Some("terminal"));
         assert_eq!(claude_app("cli"), Some("terminal"));
         assert_eq!(claude_app("sdk-ts"), None);
+    }
+
+    #[test]
+    fn claude_session_and_weekly_limits_keep_the_exact_reset() {
+        for (message, reset) in [
+            (
+                "You've hit your session limit · resets 2:50pm (Europe/Paris)",
+                1791463800_i64,
+            ),
+            (
+                "You've hit your weekly limit · resets Oct 2, 9pm (Europe/Paris)",
+                1790967600,
+            ),
+        ] {
+            let mut r = Reader {
+                parent: Some(json!({"session":"p","agent":"a85"})),
+                ..Default::default()
+            };
+            r.read("claude", &json!({"type":"user","sessionId":"p","agentId":"a85","isSidechain":true,"message":{"content":"Vérifie le lecteur"}}));
+            let out = r.read("claude", &json!({"type":"assistant","isSidechain":true,"agentId":"a85",
+                "error":"rate_limit","isApiErrorMessage":true,"apiErrorStatus":429,
+                "quotaLimits":{"status":"rejected","resetsAt":reset},
+                "message":{"role":"assistant","stop_reason":"stop_sequence","content":[{"type":"text","text":message}]}}));
+            let end = out.last().unwrap();
+            assert_eq!(end["reason"], "rateLimited");
+            assert_eq!(end["resetsAt"], reset);
+            assert_eq!(end["message"], message);
+        }
+    }
+
+    #[test]
+    fn a_claude_sub_agent_runs_until_its_notification() {
+        let mut r = Reader::default();
+        let user =
+            |content: Value| json!({"type":"user","sessionId":"s","message":{"content":content}});
+        r.read("claude", &user(json!("Lance trois sous-agents")));
+        r.read(
+            "claude",
+            &json!({"type":"assistant","message":{"id":"m","content":[{"type":"tool_use","id":"toolu_1","name":"Agent",
+                "input":{"description":"Front: island interactions","subagent_type":"general-purpose","run_in_background":true}}]}}),
+        );
+        let mut launched = user(
+            json!([{"type":"tool_result","tool_use_id":"toolu_1","content":[{"type":"text","text":"Async agent launched successfully."}]}]),
+        );
+        launched["toolUseResult"] = json!({"isAsync":true,"status":"async_launched","agentId":"a85","description":"Front: island interactions"});
+        let out = r.read("claude", &launched);
+        assert_eq!(out[0]["agent"], "a85");
+        assert_eq!(out[0]["status"], "running");
+        r.read(
+            "claude",
+            &json!({"type":"assistant","message":{"id":"m2","stop_reason":"end_turn","content":[{"type":"text","text":"Ils travaillent."}]}}),
+        );
+        // Later, Claude Code tells the session; Claude reads it in a turn.
+        let note = user(json!("<task-notification>
+<task-id>a85</task-id>
+<tool-use-id>toolu_1</tool-use-id>
+<status>failed</status>
+<summary>Agent \"Front\" failed: You've hit your session limit · resets 2:50pm (Europe/Paris)</summary>
+</task-notification>"));
+        let out = r.read("claude", &note);
+        assert_eq!(out[0]["id"], "toolu_1");
+        assert_eq!(out[0]["status"], "failed");
+        assert!(out[0]["output"].as_str().unwrap().contains("session limit"));
+        assert_eq!(out[1]["type"], "start");
+        assert_eq!(out[2]["reason"], "rateLimited");
+    }
+
+    #[test]
+    fn a_sub_agent_file_reads_its_sidechain_lines() {
+        let line = json!({"type":"user","sessionId":"s","isSidechain":true,"agentId":"a85","message":{"content":"Tu es le sous-agent FRONT"}});
+        assert!(Reader::default().read("claude", &line).is_empty());
+        let mut r = Reader {
+            parent: Some(json!({"session":"s","agent":"a85"})),
+            ..Default::default()
+        };
+        assert_eq!(
+            r.read("claude", &line)[2]["text"],
+            "Tu es le sous-agent FRONT"
+        );
     }
 }

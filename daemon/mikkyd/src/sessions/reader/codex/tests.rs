@@ -277,3 +277,74 @@ fn a_codex_question_waits_for_the_answer() {
     assert_eq!(reply[0]["id"], "call_q");
     assert_eq!(reply[1]["text"], "Verre blanc");
 }
+
+#[test]
+fn a_codex_sub_agent_on_its_parent_tool() {
+    let mut r = Reader::default();
+    let spawn = r.read(
+        "codex",
+        &call(json!({"type":"function_call","name":"spawn_agent","namespace":"collaboration","call_id":"call_s",
+            "arguments":r#"{"task_name":"review_tile_preview","message":"gAAAA"}"#})),
+    );
+    assert_eq!(spawn[0]["title"], "review_tile_preview");
+    assert_eq!(spawn[0]["status"], "running");
+    let started = r.read(
+        "codex",
+        &event(
+            json!({"type":"sub_agent_activity","event_id":"call_s","agent_thread_id":"t1",
+            "agent_path":"/root/review_tile_preview","kind":"started"}),
+        ),
+    );
+    assert_eq!(started[0]["id"], "call_s");
+    assert_eq!(started[0]["agent"], "t1");
+    // Its launch returns at once: still running.
+    let launched = call(
+        json!({"type":"function_call_output","call_id":"call_s","output":"{\"task_name\":\"/root/review_tile_preview\"}"}),
+    );
+    assert!(r.read("codex", &launched).is_empty());
+    let done = r.read(
+        "codex",
+        &event(json!({"type":"item_completed","item":{"type":"SubAgentActivity","id":"subagent-completed-1",
+            "kind":"completed","agent_thread_id":"t1","agent_path":"/root/review_tile_preview"}})),
+    );
+    assert_eq!(done[0]["id"], "call_s");
+    assert_eq!(done[0]["status"], "completed");
+    let message = r.read(
+        "codex",
+        &call(json!({"type":"function_call","name":"send_message","namespace":"collaboration","call_id":"call_m",
+            "arguments":r#"{"target":"review_tile_preview","message":"gAAAA"}"#})),
+    );
+    assert_eq!(message[0]["title"], "Écrit à review_tile_preview");
+}
+
+#[test]
+fn a_codex_sub_agent_knows_its_parent() {
+    let mut r = Reader::default();
+    let meta = |extra: Value| {
+        let mut payload = json!({"session_id":"parent","id":"child","parent_thread_id":"parent","cwd":"C:/p","originator":"codex_vscode"});
+        payload
+            .as_object_mut()
+            .unwrap()
+            .extend(extra.as_object().unwrap().clone());
+        json!({"type":"session_meta","payload":payload})
+    };
+    let out = r.read(
+        "codex",
+        &meta(json!({"agent_path":"/root/review_tile_preview","agent_nickname":"Lorentz","thread_source":"subagent"})),
+    );
+    assert_eq!(out[0]["id"], "child");
+    let parent = r.parent.clone().unwrap();
+    assert_eq!(parent["session"], "parent");
+    assert_eq!(parent["agent"], "child");
+    assert_eq!(parent["name"], "Lorentz");
+    let mut r = Reader::default();
+    r.read("codex", &meta(json!({"thread_source":"guardian_review"})));
+    assert_eq!(r.parent.unwrap()["name"], "Relecteur");
+    // A main session has none.
+    let mut r = Reader::default();
+    r.read(
+        "codex",
+        &json!({"type":"session_meta","payload":{"id":"main","cwd":"C:/p"}}),
+    );
+    assert!(r.parent.is_none());
+}

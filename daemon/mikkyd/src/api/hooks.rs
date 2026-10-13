@@ -10,6 +10,31 @@ pub(super) async fn dispatch(
     out: &Out,
 ) -> RpcResult {
     match method {
+        "hooks.messages.list" => Ok(daemon.hooks.messages.list()),
+        "hooks.messages.send" => {
+            if params["agent"] != "claude" {
+                return Err(RpcError::new(
+                    -32602,
+                    "Seules les sessions Claude sont prises en charge par ce hook",
+                ));
+            }
+            let session = str_param(params, "sessionId")?;
+            if daemon.owns_session(session) {
+                return Err(RpcError::new(
+                    -32602,
+                    "Cette session est pilotée par Mikky : utilise le steering",
+                ));
+            }
+            daemon.hooks.messages.enqueue(
+                session,
+                str_param(params, "id")?,
+                str_param(params, "text")?,
+            )
+        }
+        "hooks.messages.ack" => Ok(json!(daemon.hooks.messages.acknowledge(
+            str_param(params, "sessionId")?,
+            str_param(params, "delivery")?
+        ))),
         "hook.event" => {
             let payload = params.get("payload").cloned().unwrap_or(Value::Null);
             let own = |session: &str| daemon.owns_session(session);

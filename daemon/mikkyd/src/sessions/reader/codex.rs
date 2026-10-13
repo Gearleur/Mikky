@@ -14,6 +14,9 @@ impl Reader {
                     .or_else(|| p.get("session_id"))
                     .unwrap_or(&Value::Null);
                 if id.is_string() {
+                    if p["parent_thread_id"].is_string() {
+                        self.parent = Some(codex_parent(p));
+                    }
                     let app = codex_app(string(&p["originator"]));
                     return vec![json!({"type":"session", "id":id, "cwd":p["cwd"], "app":app})];
                 }
@@ -77,6 +80,7 @@ impl Reader {
                         ];
                     }
                 }
+                "sub_agent_activity" => return self.sub_agent(p),
                 "patch_apply_end" => {
                     return self.codex_item(
                         &json!({"type":"FileChange", "id":p["call_id"], "changes":p["changes"],
@@ -110,6 +114,7 @@ impl Reader {
                 return thought(id, &item["summary_text"]);
             }
             "ContextCompaction" => return self.compacted(),
+            "SubAgentActivity" => return self.sub_agent(item),
             // Inside `exec` scripts, already shown as their tools.
             "CommandExecution" | "McpToolCall" | "ImageView" if self.codex_exec => return vec![],
             "McpToolCall" => {
@@ -225,6 +230,26 @@ impl Reader {
         self.codex_user(&text)
     }
 
+    /// Where a sub-agent stands (`sub_agent_activity`: started, interacted;
+    /// the `SubAgentActivity` item: completed), on the tool that launched it.
+    fn sub_agent(&mut self, p: &Value) -> Vec<Value> {
+        let thread = string(&p["agent_thread_id"]).to_string();
+        if p["kind"] == "started" && p["event_id"].is_string() {
+            let call = string(&p["event_id"]).to_string();
+            self.agents.insert(thread.clone(), call.clone());
+            return vec![json!({"type":"tool", "id":call, "agent":thread})];
+        }
+        let Some(call) = self.agents.get(&thread) else {
+            return vec![];
+        };
+        let status = if p["kind"] == "completed" {
+            "completed"
+        } else {
+            "running"
+        };
+        vec![json!({"type":"tool", "id":call, "status":status})]
+    }
+
     fn compacted(&mut self) -> Vec<Value> {
         self.said += 1;
         vec![
@@ -292,6 +317,30 @@ impl Reader {
                     .collect();
                 thought(string(&p["id"]), &json!(summary))
             }
+            // A sub-agent: its tool runs until Codex says it is done.
+            "function_call" if p["name"] == "spawn_agent" => {
+                let args =
+                    serde_json::from_str::<Value>(string(&p["arguments"])).unwrap_or_default();
+                vec![
+                    json!({"type":"tool", "id":call, "name":"agent", "kind":"other",
+                    "title":args["task_name"].as_str().unwrap_or("Sous-agent"), "status":"running"}),
+                ]
+            }
+            "function_call" if p["namespace"] == "collaboration" => {
+                let args =
+                    serde_json::from_str::<Value>(string(&p["arguments"])).unwrap_or_default();
+                let target = args["target"].as_str().unwrap_or("");
+                let title = match string(&p["name"]) {
+                    "send_message" | "followup_task" => format!("Écrit à {target}"),
+                    "wait_agent" => "Attend ses sous-agents".to_string(),
+                    "list_agents" => "Liste ses sous-agents".to_string(),
+                    name => name.to_string(),
+                };
+                self.calls.insert(call.clone(), call.clone());
+                vec![
+                    json!({"type":"tool", "id":call, "name":p["name"], "kind":"other", "title":title, "status":"running"}),
+                ]
+            }
             "function_call" if p["name"] == "wait" => {
                 let args =
                     serde_json::from_str::<Value>(string(&p["arguments"])).unwrap_or_default();
@@ -353,6 +402,32 @@ pub(super) fn codex_app(originator: &str) -> Option<&'static str> {
         o if o.contains("desktop") => Some("codex"),
         _ => None,
     }
+}
+
+/// Who launched a Codex sub-agent, from its `session_meta`: a task of
+/// another session (`agent_path: /root/review`, a nickname), or the
+/// reviewer Codex runs before a risky action (`guardian_review`).
+fn codex_parent(p: &Value) -> Value {
+    let path = string(&p["agent_path"]);
+    let name = p["agent_nickname"]
+        .as_str()
+        .map(str::to_owned)
+        .or_else(|| {
+            path.rsplit('/')
+                .next()
+                .filter(|n| !n.is_empty())
+                .map(str::to_owned)
+        })
+        .unwrap_or_else(|| match string(&p["thread_source"]) {
+            "guardian_review" => "Relecteur".into(),
+            _ => "Sous-agent".into(),
+        });
+    let kind = if path.is_empty() {
+        string(&p["thread_source"])
+    } else {
+        path
+    };
+    json!({"session":p["parent_thread_id"], "agent":p["id"], "tool":null, "name":name, "type":kind})
 }
 
 /// Codex's reasoning, as the thread's greyed thought: its summary titles

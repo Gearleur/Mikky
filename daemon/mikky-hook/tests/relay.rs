@@ -59,12 +59,7 @@ fn next_request<S: std::io::Read + std::io::Write>(
     }
 }
 
-#[test]
-fn a_screen_answers_the_terminal_session() {
-    let Some(exe) = mikkyd() else {
-        eprintln!("skipped: build mikkyd first (cargo build -p mikkyd)");
-        return;
-    };
+fn start_daemon(exe: PathBuf) -> (std::process::Child, String, Value) {
     let mut daemon = Command::new(exe)
         .arg("--stdout-endpoint")
         .stdin(Stdio::piped())
@@ -76,7 +71,54 @@ fn a_screen_answers_the_terminal_session() {
         .read_line(&mut line)
         .unwrap();
     let endpoint: Value = serde_json::from_str(&line).unwrap();
-    let endpoint_text = line.trim().to_owned();
+    (daemon, line.trim().to_owned(), endpoint)
+}
+
+type Screen = tungstenite::WebSocket<tungstenite::stream::MaybeTlsStream<std::net::TcpStream>>;
+
+fn connect_screen(endpoint: &Value) -> Screen {
+    let port = endpoint["port"].as_u64().unwrap();
+    let mut request = format!("ws://127.0.0.1:{port}/")
+        .into_client_request()
+        .unwrap();
+    request.headers_mut().insert(
+        "authorization",
+        format!("Bearer {}", endpoint["token"].as_str().unwrap())
+            .parse()
+            .unwrap(),
+    );
+    let (screen, _) = tungstenite::connect(request).unwrap();
+    if let tungstenite::stream::MaybeTlsStream::Plain(tcp) = screen.get_ref() {
+        tcp.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+    }
+    screen
+}
+
+fn call(screen: &mut Screen, method: &str, params: Value) -> Value {
+    screen
+        .send(Message::text(
+            json!({"jsonrpc":"2.0","id":99,"method":method,"params":params}).to_string(),
+        ))
+        .unwrap();
+    loop {
+        let Message::Text(text) = screen.read().unwrap() else {
+            continue;
+        };
+        let answer: Value = serde_json::from_str(&text).unwrap();
+        if answer["id"] == 99 {
+            assert!(answer["error"].is_null(), "{answer}");
+            return answer["result"].clone();
+        }
+    }
+}
+
+#[test]
+fn a_screen_answers_the_terminal_session() {
+    let Some(exe) = mikkyd() else {
+        eprintln!("skipped: build mikkyd first (cargo build -p mikkyd)");
+        return;
+    };
+    let (mut daemon, endpoint_text, endpoint) = start_daemon(exe);
 
     let ask = json!({
         "hook_event_name": "PermissionRequest",
@@ -96,21 +138,7 @@ fn a_screen_answers_the_terminal_session() {
     assert!(started.elapsed() < Duration::from_secs(2));
 
     // A screen says hello, then answers « allow ».
-    let port = endpoint["port"].as_u64().unwrap();
-    let mut request = format!("ws://127.0.0.1:{port}/")
-        .into_client_request()
-        .unwrap();
-    request.headers_mut().insert(
-        "authorization",
-        format!("Bearer {}", endpoint["token"].as_str().unwrap())
-            .parse()
-            .unwrap(),
-    );
-    let (mut screen, _) = tungstenite::connect(request).unwrap();
-    // A stale mikkyd (built before a change) must fail here, not hang.
-    if let tungstenite::stream::MaybeTlsStream::Plain(tcp) = screen.get_ref() {
-        tcp.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
-    }
+    let mut screen = connect_screen(&endpoint);
     screen
         .send(Message::text(
             json!({"jsonrpc": "2.0", "id": 1, "method": "hello"}).to_string(),
@@ -192,4 +220,110 @@ fn a_screen_answers_the_terminal_session() {
 
     drop(daemon.stdin.take());
     let _ = daemon.wait();
+}
+
+#[test]
+fn external_messages_are_printed_then_acknowledged_and_failures_are_silent() {
+    let (mut daemon, endpoint, address) = start_daemon(mikkyd().expect("build mikkyd first"));
+    let mut screen = connect_screen(&address);
+    for (i, event) in ["PostToolUse", "Stop"].into_iter().enumerate() {
+        call(
+            &mut screen,
+            "hooks.messages.send",
+            json!({"agent":"claude","sessionId":"external","id":format!("mikky-{i}"),"text":"Prends aussi ce message"}),
+        );
+        let payload =
+            json!({"hook_event_name":event,"session_id":"external","stop_hook_active":false});
+        let start = Instant::now();
+        let out = relay_with(&endpoint, &payload, &[event])
+            .wait_with_output()
+            .unwrap();
+        assert!(start.elapsed() < Duration::from_secs(2));
+        assert!(out.status.success());
+        let printed: Value = serde_json::from_slice(&out.stdout).unwrap();
+        if event == "Stop" {
+            assert_eq!(printed["decision"], "block");
+        } else {
+            assert_eq!(printed["hookSpecificOutput"]["hookEventName"], event);
+        }
+        let messages = call(&mut screen, "hooks.messages.list", json!({}));
+        assert!(
+            messages
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|m| m["state"] == "delivered")
+        );
+        assert!(
+            relay_with(&endpoint, &payload, &[event])
+                .wait_with_output()
+                .unwrap()
+                .stdout
+                .is_empty()
+        );
+    }
+    call(
+        &mut screen,
+        "hooks.messages.send",
+        json!({"agent":"claude","sessionId":"external","id":"mikky-pending","text":"Encore"}),
+    );
+    for (args, payload) in [
+        (
+            vec!["Stop"],
+            json!({"session_id":"external","hook_event_name":"Stop","stop_hook_active":true}),
+        ),
+        (
+            vec!["--agent", "codex", "Stop"],
+            json!({"session_id":"external","hook_event_name":"Stop"}),
+        ),
+    ] {
+        assert!(
+            relay_with(&endpoint, &payload, &args)
+                .wait_with_output()
+                .unwrap()
+                .stdout
+                .is_empty()
+        );
+    }
+    let messages = call(&mut screen, "hooks.messages.list", json!({}));
+    assert_eq!(
+        messages.as_array().unwrap().last().unwrap()["state"],
+        "waitingForTool"
+    );
+    drop(daemon.stdin.take());
+    daemon.wait().unwrap();
+    let out = relay_with(
+        &endpoint,
+        &json!({"session_id":"external","hook_event_name":"Stop"}),
+        &["Stop"],
+    )
+    .wait_with_output()
+    .unwrap();
+    assert!(out.stdout.is_empty());
+    assert!(out.status.success());
+}
+
+#[test]
+fn a_connected_but_unresponsive_daemon_cannot_hold_claude() {
+    let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let server = std::thread::spawn(move || {
+        let (stream, _) = listener.accept().unwrap();
+        let mut ws = tungstenite::accept(stream).unwrap();
+        let _ = ws.read();
+        std::thread::sleep(Duration::from_secs(2));
+    });
+    let start = Instant::now();
+    let endpoint = json!({"port":port,"token":"isolated-test"}).to_string();
+    let out = relay_with(
+        &endpoint,
+        &json!({"session_id":"external","hook_event_name":"Stop"}),
+        &["Stop"],
+    )
+    .wait_with_output()
+    .unwrap();
+    assert!(start.elapsed() < Duration::from_millis(1500));
+    assert!(out.stdout.is_empty());
+    assert!(out.status.success());
+    server.join().unwrap();
 }

@@ -23,7 +23,9 @@
 //! `TERM_PROGRAM`, `WT_SESSION`, `VSCODE_PID` and the folder. The screens
 //! use it to bring that window forward (Ctrl + click on an agent).
 
+pub mod messages;
 mod questions;
+mod session_request;
 pub mod settings;
 
 use std::collections::{HashMap, VecDeque};
@@ -66,6 +68,7 @@ struct Pending {
 }
 
 pub struct Hooks {
+    pub messages: messages::Messages,
     pending: Mutex<Vec<Pending>>,
     origins: Mutex<(HashMap<String, Value>, VecDeque<String>)>,
     next: AtomicU64,
@@ -76,6 +79,7 @@ pub struct Hooks {
 impl Default for Hooks {
     fn default() -> Self {
         Self {
+            messages: messages::Messages::default(),
             pending: Mutex::new(Vec::new()),
             origins: Mutex::new((HashMap::new(), VecDeque::new())),
             next: AtomicU64::new(1),
@@ -174,6 +178,14 @@ impl Hooks {
         if event != "PermissionRequest" && !asks {
             // The session moved on: whatever it asked was answered there.
             self.drop_session(&session);
+            if !session.is_empty()
+                && !own(&session)
+                && payload["mikky_agent"] == "claude"
+                && (event == "PostToolUse"
+                    || (event == "Stop" && payload["stop_hook_active"] != true))
+            {
+                return json!({"decision":null,"delivery":self.messages.offer(&session)});
+            }
             return none;
         }
         if session.is_empty()
@@ -202,6 +214,7 @@ impl Hooks {
             "sessionId": session,
             "cwd": payload["cwd"],
             "tool": tool,
+            "toolCallId": payload["tool_use_id"],
             "agent": payload["mikky_agent"].as_str().unwrap_or("claude"),
             "terminal": payload["term_program"],
             "at": chrono::Utc::now().to_rfc3339(),
@@ -235,6 +248,7 @@ impl Hooks {
                 .next())
             ));
         }
+        shown["event"] = session_request::event(&shown);
         self.pending.lock().unwrap().push(Pending {
             id,
             session,

@@ -58,6 +58,19 @@ fn codex_commands_come_as_words() {
 }
 
 #[tokio::test]
+async fn pending_hooks_publish_the_same_request_events_as_acp() {
+    let (hooks, mut changes) = with_screen();
+    let task = waiting(&hooks, ask("s", "cargo test"));
+    changes.recv().await.unwrap();
+    let request = hooks.list()[0].clone();
+    assert_eq!(request["event"]["type"], "permission");
+    assert_eq!(request["event"]["id"], format!("hook:{}", request["id"]));
+    assert_eq!(request["event"]["command"], "cargo test");
+    hooks.answer(request["id"].as_u64().unwrap(), Some("allow"), None);
+    assert_eq!(task.await.unwrap()["decision"], "allow");
+}
+
+#[tokio::test]
 async fn nobody_watching_never_waits() {
     let hooks = Hooks::default();
     let r = hooks

@@ -185,10 +185,16 @@ pub fn watch_notifications(
     let mut changes = daemon.sessions.changes.subscribe();
     let mut state = daemon.store.changes.subscribe();
     let mut hooks = daemon.hooks.changes.subscribe();
+    let mut messages = daemon.hooks.messages.changes.subscribe();
     let daemon = daemon.clone();
     tokio::spawn(async move {
         loop {
             let update = tokio::select! {
+                result = messages.recv() => {
+                    if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
+                    if notices.send(notification("hooks.messages.changed", json!({"messages":daemon.hooks.messages.list()}))).is_err() { break; }
+                    None
+                }
                 result = hooks.recv() => {
                     if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
                     if notices.send(notification("hooks.changed", json!({"requests": daemon.hooks.list()}))).is_err() { break; }
