@@ -29,14 +29,6 @@ const TOOL_EVENTS: &[(Tool, &str, u64)] = &[
     (Tool::Codex, "Interrupt", 3),
 ];
 
-/// Claude's questions (`AskUserQuestion`, Claude Code 2.1.85+) come to a
-/// `PreToolUse` hook of their own: `mikky-hook --ask` waits for the answers
-/// (125 s; `hooks.rs`), Claude for the hook 130 s. Codex has no such tool
-/// for its hooks: Claude only.
-const ASK_EVENT: &str = "PreToolUse";
-const ASK_MATCHER: &str = "AskUserQuestion";
-const ASK_TIMEOUT: u64 = 130;
-
 const MARKER: &str = "mikky-hook";
 
 /// Whose hooks.
@@ -167,14 +159,6 @@ fn entries(hook: &Path, tool: Tool) -> Vec<(&'static str, Option<&'static str>, 
         }
         out.push((*event, None, entry));
     }
-    if tool == Tool::Claude {
-        let exe = hook.to_string_lossy().replace('\\', "/");
-        out.push((
-            ASK_EVENT,
-            Some(ASK_MATCHER),
-            json!({"type": "command", "command": format!("\"{exe}\" --ask {ASK_EVENT}"), "timeout": ASK_TIMEOUT}),
-        ));
-    }
     out
 }
 
@@ -206,20 +190,18 @@ fn is_ours(entry: &Value) -> bool {
 }
 
 fn merged(existing: &Value, hook: &Path, tool: Tool) -> Value {
-    let mut root = existing.as_object().cloned().unwrap_or_default();
+    // Ours leave every event (one no longer listened to too: the questions'
+    // `PreToolUse` until 2026-10-13), then come back at the end of theirs.
+    let mut root = without_ours(existing)
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
     let mut hooks = root
         .get("hooks")
         .and_then(Value::as_object)
         .cloned()
         .unwrap_or_else(Map::new);
-    // Ours leave each event, then come back at its end.
-    let ours = entries(hook, tool);
-    for (event, _, _) in &ours {
-        if let Some(list) = hooks.get_mut(*event).and_then(Value::as_array_mut) {
-            list.retain(|e| !is_ours(e));
-        }
-    }
-    for (event, matcher, entry) in ours {
+    for (event, matcher, entry) in entries(hook, tool) {
         let list = hooks.entry(event).or_insert_with(|| json!([]));
         if !list.is_array() {
             *list = json!([]);
@@ -484,41 +466,22 @@ mod tests {
     }
 
     #[test]
-    fn claude_questions_have_their_own_hook() {
-        let hook = Path::new("C:\\Mikky\\mikky-hook.exe");
+    fn the_old_question_hook_goes_and_theirs_stay() {
+        let hook = Path::new(r"C:\Mikky\mikky-hook.exe");
         let theirs = json!({"matcher": "Bash", "hooks": [{"type": "command", "command": "guard"}]});
-        let mine = json!({"hooks": {"PreToolUse": [theirs]}});
-        let with = merged(&mine, hook, Tool::Claude);
-        let pre = with["hooks"]["PreToolUse"].as_array().unwrap();
-        assert_eq!(pre.len(), 2);
-        assert_eq!(pre[0], theirs);
-        assert_eq!(pre[1]["matcher"], "AskUserQuestion");
-        assert_eq!(
-            pre[1]["hooks"][0],
-            json!({"type": "command", "command": "\"C:/Mikky/mikky-hook.exe\" --ask PreToolUse", "timeout": 130})
-        );
-        // Again: still one; uninstalled: theirs only.
-        assert_eq!(merged(&with, hook, Tool::Claude), with);
-        assert_eq!(without_ours(&with), mine);
-        // An install from before the questions is not up to date.
-        let mut old = with.clone();
-        old["hooks"]
-            .as_object_mut()
-            .unwrap()
-            .insert("PreToolUse".into(), json!([theirs]));
+        let old_ask = json!({"matcher": "AskUserQuestion", "hooks": [{"type": "command",
+            "command": "\"C:/Mikky/mikky-hook.exe\" --ask PreToolUse", "timeout": 130}]});
+        let old = json!({"hooks": {"PreToolUse": [theirs, old_ask]}});
         assert!(installed(&old));
-        assert_ne!(merged(&old, hook, Tool::Claude), old);
-        // Codex has no question hook.
-        let codex = merged(&json!({}), hook, Tool::Codex);
-        assert!(codex["hooks"].get("PreToolUse").is_none());
-        // The preview shows it.
-        let dir = temp_dir("ask");
-        let path = dir.join("settings.json");
-        let p = preview_at(&path, hook, Tool::Claude, true).unwrap();
-        let diff = p["diff"].as_str().unwrap();
-        assert!(diff.contains("\"matcher\": \"AskUserQuestion\""), "{diff}");
-        assert!(diff.contains("--ask PreToolUse"), "{diff}");
-        let _ = std::fs::remove_dir_all(&dir);
+        let with = merged(&old, hook, Tool::Claude);
+        // Questions come with the permissions now: no PreToolUse of ours.
+        assert_eq!(with["hooks"]["PreToolUse"], json!([theirs]));
+        assert!(with["hooks"]["PermissionRequest"].is_array());
+        assert_eq!(merged(&with, hook, Tool::Claude), with);
+        assert_eq!(
+            without_ours(&with),
+            json!({"hooks": {"PreToolUse": [theirs]}})
+        );
     }
 
     #[test]

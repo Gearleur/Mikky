@@ -197,7 +197,7 @@ pub fn watch_notifications(
                 }
                 result = hooks.recv() => {
                     if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
-                    if notices.send(notification("hooks.changed", json!({"requests": daemon.hooks.list()}))).is_err() { break; }
+                    if notices.send(notification("hooks.changed", json!({"requests": daemon.hooks.list(), "settled": daemon.hooks.settled()}))).is_err() { break; }
                     None
                 }
                 result = changes.recv() => Some(result),

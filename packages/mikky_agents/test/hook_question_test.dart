@@ -19,25 +19,24 @@ void main() {
     expect(s.canAnswerQuestion(entry.id), isTrue);
   });
 
-  test('a question asked in Claude’s app shows but is answered there', () {
-    final s = source()..hookAsks([questionAsk(4, 'app', answerable: false)]);
-    final entry = s.homeEntries.single;
-    expect(entry.status, AgentStatus.question);
-    expect(s.canAnswerQuestion(entry.id), isFalse);
-  });
-
-  test('a permission asked in Claude’s app shows but is answered there', () {
-    final answered = <(int, String?)>[];
-    final s = source()
-      ..answerHook = ((id, decision) => answered.add((id, decision)))
-      ..hookAsks([permissionAsk(9, 'app', 'cargo test', answerable: false)]);
-    final entry = s.homeEntries.single;
-    expect(entry.status, AgentStatus.approval);
-    expect(s.canAnswerRequests(entry.id), isFalse);
-    expect(s.canLeaveInTerminal(entry.id), isFalse);
-    expect(s.answer(entry.id, AgentAnswer.allow, 0), isFalse);
-    // « Plus tard »: off the screens, the app still asks it.
-    expect(s.answer(entry.id, AgentAnswer.dismiss, 0), isTrue);
-    expect(answered, [(9, null)]);
+  test('a request answered where the session runs: the agent says so for a while', () {
+    var now = DateTime(2026, 10, 13, 15);
+    final s = RealAgentSource(clock: () => 0, now: () => now, spawn: (_, _, _) => throw StateError('read only'));
+    addTearDown(s.detach);
+    s.hookAsks([permissionAsk(5, 'term', 'ls')]);
+    final id = s.homeEntries.single.id;
+    s
+      ..hookAsks(const [])
+      ..requestsSettled([
+        {'id': 5, 'sessionId': 'term', 'how': 'elsewhere'},
+      ]);
+    expect(s.agentOf(id)?.detail, 'Répondu dans le terminal');
+    // Told once, then gone.
+    s.requestsSettled([
+      {'id': 5, 'sessionId': 'term', 'how': 'elsewhere'},
+    ]);
+    now = now.add(const Duration(seconds: 7));
+    expect(s.agentOf(id)?.detail, isNot('Répondu dans le terminal'));
+    expect(settledNote(timedOut: true, app: AgentApp.vscode), 'Toujours en attente dans VS Code');
   });
 }

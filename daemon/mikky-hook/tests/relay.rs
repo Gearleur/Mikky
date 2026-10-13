@@ -169,7 +169,7 @@ fn a_screen_answers_the_terminal_session() {
 
     // Claude's question: answered from the screen, then left to the terminal.
     let question = json!({
-        "hook_event_name": "PreToolUse",
+        "hook_event_name": "PermissionRequest",
         "session_id": "s-2",
         "cwd": "C:/projet",
         "tool_name": "AskUserQuestion",
@@ -182,7 +182,7 @@ fn a_screen_answers_the_terminal_session() {
     });
     let mut next_id = 3;
     let mut ask = |screen: &mut tungstenite::WebSocket<_>, answers: Value| {
-        let child = relay_with(&endpoint_text, &question, &["--ask", "PreToolUse"]);
+        let child = relay_with(&endpoint_text, &question, &["PermissionRequest"]);
         let first = next_request(screen);
         assert_eq!(first["kind"], "question");
         assert_eq!(first["questions"][0]["options"][1]["label"], "Bout en bout");
@@ -198,23 +198,19 @@ fn a_screen_answers_the_terminal_session() {
     let out = ask(&mut screen, json!({"q1": ["Unitaires"]}));
     let printed: Value = serde_json::from_slice(&out).unwrap();
     let o = &printed["hookSpecificOutput"];
-    assert_eq!(o["hookEventName"], "PreToolUse");
-    assert_eq!(o["permissionDecision"], "allow");
-    assert_eq!(
-        o["updatedInput"]["questions"],
-        question["tool_input"]["questions"]
-    );
-    assert_eq!(
-        o["updatedInput"]["answers"],
-        json!({"Quels tests ?": ["Unitaires"]})
-    );
+    assert_eq!(o["hookEventName"], "PermissionRequest");
+    assert_eq!(o["decision"]["behavior"], "allow");
+    let updated = &o["decision"]["updatedInput"];
+    assert_eq!(updated["questions"], question["tool_input"]["questions"]);
+    assert_eq!(updated["answers"], json!({"Quels tests ?": ["Unitaires"]}));
     // « Répondre dans le terminal »: nothing printed.
     assert!(ask(&mut screen, Value::Null).is_empty());
-    // Any other tool on the question hook: nothing asked, nothing printed.
+    // The old question hook (settings not written again yet): nothing
+    // asked, nothing printed, at once.
     let started = Instant::now();
-    let mut bash = question.clone();
-    bash["tool_name"] = json!("Bash");
-    let out = relay_with(&endpoint_text, &bash, &["--ask", "PreToolUse"])
+    let mut old = question.clone();
+    old["hook_event_name"] = json!("PreToolUse");
+    let out = relay_with(&endpoint_text, &old, &["--ask", "PreToolUse"])
         .wait_with_output()
         .unwrap();
     assert!(out.stdout.is_empty());

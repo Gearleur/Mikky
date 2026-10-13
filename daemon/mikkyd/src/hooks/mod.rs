@@ -4,19 +4,17 @@
 //! (`hooks.list`, notification `hooks.changed`) and answer it
 //! (`hooks.answer`).
 //!
-//! Claude's questions (2026-10-08): Claude Code 2.1.85 and later sends its
-//! `AskUserQuestion` tool to a `PreToolUse` hook (matcher
-//! `AskUserQuestion`, `mikky-hook --ask`). It is listed with `kind:
-//! "question"` and its questions; the screen answers with `answers` by
-//! question key, as for an ACP form (`q1`, `q1_custom`); `mikkyd` turns them
-//! into Claude's (by question text) and the relay gives them to Claude as
-//! the tool's input. The
-//! `PermissionRequest` Claude may also send for that tool makes no card.
-//! Only a session in a terminal is held (2026-10-13): Claude's app and VS
-//! Code show their own question or permission once the hook is done, so
-//! theirs go on at once. Mikky shows their questions from the session file
-//! and their permissions here, `answerable: false`, until the session's
-//! next event.
+//! Claude's questions (2026-10-13): its `AskUserQuestion` tool comes as a
+//! `PermissionRequest` like any tool. It is listed with `kind: "question"`
+//! and its questions; the screen answers with `answers` by question key, as
+//! for an ACP form (`q1`, `q1_custom`); `mikkyd` turns them into Claude's
+//! (by question text) and the relay allows the tool with them as its input.
+//!
+//! Claude calls that hook while it shows the request itself (tried in a
+//! terminal, 2026-10-13): nobody waits on the other. Answered there, Claude
+//! ends the hook (or the session moves on) and the request goes; answered
+//! here first, Claude's own closes. (Until then the questions came to a
+//! `PreToolUse` hook, before Claude could show them: it blocked both.)
 //!
 //! Never block Claude Code: no screen connected, a session `mikkyd` runs
 //! itself (ACP asks it already), answers that do not fit the questions, or
@@ -49,11 +47,27 @@ use questions::{by_text, fits, questions_of};
 /// later (110 s) and Claude's own timeout is 120 s (`claude_settings.rs`).
 const WAIT: Duration = Duration::from_secs(105);
 
-/// A question: the relay waits 125 s, Claude 130 s.
-const QUESTION_WAIT: Duration = Duration::from_secs(120);
-
 /// Sessions whose origin is kept (the oldest go first).
 const ORIGINS: usize = 256;
+
+/// Requests ended without Mikky that are kept to be told.
+const SETTLED: usize = 32;
+
+/// How a request ended without an answer from Mikky.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+enum Settled {
+    Elsewhere,
+    Timeout,
+}
+
+impl Settled {
+    fn word(self) -> &'static str {
+        match self {
+            Settled::Elsewhere => "elsewhere",
+            Settled::Timeout => "timeout",
+        }
+    }
+}
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 enum Kind {
@@ -76,6 +90,9 @@ struct Pending {
 pub struct Hooks {
     pub messages: messages::Messages,
     pending: Mutex<Vec<Pending>>,
+    /// Requests that ended without an answer from Mikky, newest last
+    /// ([`Hooks::settled`]).
+    settled: Mutex<VecDeque<Value>>,
     origins: Mutex<(HashMap<String, Value>, VecDeque<String>)>,
     next: AtomicU64,
     screens: AtomicUsize,
@@ -87,6 +104,7 @@ impl Default for Hooks {
         Self {
             messages: messages::Messages::default(),
             pending: Mutex::new(Vec::new()),
+            settled: Mutex::new(VecDeque::new()),
             origins: Mutex::new((HashMap::new(), VecDeque::new())),
             next: AtomicU64::new(1),
             screens: AtomicUsize::new(0),
@@ -117,6 +135,22 @@ impl Hooks {
                 .map(|p| p.shown.clone())
                 .collect(),
         )
+    }
+
+    /// The requests that ended without an answer from Mikky, newest last
+    /// (the last [`SETTLED`]): `{id, sessionId, how}`, `how` being
+    /// `elsewhere` (answered where the session runs) or `timeout` (left to
+    /// it, which asks again). The screens say so (« Répondu dans VS Code »).
+    pub fn settled(&self) -> Value {
+        Value::Array(self.settled.lock().unwrap().iter().cloned().collect())
+    }
+
+    fn settle(&self, id: u64, session: &str, how: Settled) {
+        let mut settled = self.settled.lock().unwrap();
+        settled.push_back(json!({"id": id, "sessionId": session, "how": how.word()}));
+        while settled.len() > SETTLED {
+            settled.pop_front();
+        }
     }
 
     /// Where session `session` runs, as its hooks last told; null if no
@@ -186,8 +220,8 @@ impl Hooks {
             .to_owned();
         let tool = payload["tool_name"].as_str().unwrap_or_default();
         self.remember_origin(&session, payload);
-        let asks = event == "PreToolUse" && tool == "AskUserQuestion";
-        if event != "PermissionRequest" && !asks {
+        let asks = event == "PermissionRequest" && tool == "AskUserQuestion";
+        if event != "PermissionRequest" {
             // The session moved on: whatever it asked was answered there.
             self.drop_session(&session);
             if !session.is_empty()
@@ -200,16 +234,7 @@ impl Hooks {
             }
             return none;
         }
-        if session.is_empty()
-            // Asked by the PreToolUse hook already (or left to the terminal).
-            || (!asks && tool == "AskUserQuestion")
-            || own(&session)
-            || self.screens.load(Ordering::Relaxed) == 0
-            // Claude's app or VS Code shows its question only once the hook
-            // is done: holding it would block both. Mikky shows it from the
-            // session file and sends the user there.
-            || (asks && !in_terminal(payload))
-        {
+        if session.is_empty() || own(&session) || self.screens.load(Ordering::Relaxed) == 0 {
             return none;
         }
         let input = &payload["tool_input"];
@@ -265,15 +290,9 @@ impl Hooks {
             ));
         }
         shown["event"] = session_request::event(&shown);
-        // Claude's app or VS Code asks it itself once the hook is done: shown
-        // here, never held, until the session's next event.
-        let held = in_terminal(payload);
-        if !held {
-            shown["answerable"] = json!(false);
-        }
         self.pending.lock().unwrap().push(Pending {
             id,
-            session,
+            session: session.clone(),
             kind: if asks {
                 Kind::Question
             } else {
@@ -281,16 +300,14 @@ impl Hooks {
             },
             questions,
             shown,
-            answer: held.then_some(tx),
+            answer: Some(tx),
         });
         let _ = self.changes.send(());
-        if !held {
-            return none;
-        }
-        let reply = tokio::select! {
-            answer = rx => answer.ok().flatten(),
-            _ = tokio::time::sleep(if asks { QUESTION_WAIT } else { WAIT }) => None,
-            _ = closed => None,
+        let (reply, gone) = tokio::select! {
+            answer = rx => (answer.ok().flatten(), None),
+            _ = tokio::time::sleep(WAIT) => (None, Some(Settled::Timeout)),
+            // Claude ended the hook: answered where it runs.
+            _ = closed => (None, Some(Settled::Elsewhere)),
         };
         // Answered, timed out or abandoned: off the screens.
         let removed = {
@@ -300,6 +317,9 @@ impl Hooks {
             before != pending.len()
         };
         if removed {
+            if let Some(how) = gone {
+                self.settle(id, &session, how);
+            }
             let _ = self.changes.send(());
         }
         match reply {
@@ -363,23 +383,14 @@ impl Hooks {
             return;
         }
         for mut p in dropped {
+            // The session moved on: answered where it runs.
+            self.settle(p.id, &p.session, Settled::Elsewhere);
             if let Some(s) = p.answer.take() {
                 let _ = s.send(None);
             }
         }
         let _ = self.changes.send(());
     }
-}
-
-/// True when the session runs in a terminal (`claude` itself), the only
-/// place where Claude asks nothing until its hook is done. Its app, VS Code
-/// and the SDK hosts (`CLAUDE_CODE_ENTRYPOINT`, forwarded by the relay as
-/// `entrypoint`) wait on the hook before they show their own question.
-/// Older relays send nothing: a terminal, as before.
-fn in_terminal(payload: &Value) -> bool {
-    payload["entrypoint"]
-        .as_str()
-        .is_none_or(|e| e.is_empty() || e == "cli")
 }
 
 /// The command, as text: Claude gives a string, Codex may give its words.

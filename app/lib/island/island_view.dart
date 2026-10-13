@@ -837,7 +837,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                           _sync();
                         }
                       : null,
-                  answerable: _demo || widget.agents.source.canAnswerRequests(focus.id),
                   reveal: _demo
                       ? null
                       : () => widget.agents.revealOrOpen(focus.id, () {

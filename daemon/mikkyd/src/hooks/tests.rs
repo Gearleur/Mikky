@@ -25,10 +25,10 @@ fn ask(session: &str, command: &str) -> Value {
     })
 }
 
-/// Claude's AskUserQuestion, as its PreToolUse hook sends it.
+/// Claude's AskUserQuestion, as its PermissionRequest hook sends it.
 fn question(session: &str) -> Value {
     json!({
-        "hook_event_name": "PreToolUse",
+        "hook_event_name": "PermissionRequest",
         "session_id": session,
         "cwd": "C:/p",
         "tool_name": "AskUserQuestion",
@@ -95,23 +95,11 @@ async fn own_sessions_and_question_permissions_go_their_way() {
         .event(&question("mine"), |s| s == "mine", std::future::pending())
         .await;
     assert_eq!(r["decision"], Value::Null);
-    // The PermissionRequest Claude may send for its question: no card.
-    let mut q = ask("s", "");
-    q["tool_name"] = json!("AskUserQuestion");
-    let r = hooks.event(&q, |_| false, std::future::pending()).await;
-    assert_eq!(r["decision"], Value::Null);
     // A form Mikky cannot show: the terminal.
     let mut odd = question("s");
     odd["tool_input"] = json!({"questions": []});
     let r = hooks.event(&odd, |_| false, std::future::pending()).await;
     assert_eq!(r["decision"], Value::Null);
-    // Claude's app or VS Code: never held, they show it themselves.
-    for app in ["claude-desktop", "claude-vscode", "sdk-ts"] {
-        let mut q = question("s");
-        q["entrypoint"] = json!(app);
-        let r = hooks.event(&q, |_| false, std::future::pending()).await;
-        assert_eq!(r["decision"], Value::Null, "{app}");
-    }
     assert_eq!(hooks.list(), json!([]));
 }
 
@@ -273,20 +261,45 @@ fn questions_are_kept_only_when_mikky_can_show_them() {
 }
 
 #[tokio::test]
-async fn an_apps_permission_shows_without_waiting() {
-    let hooks = Hooks::default();
-    hooks.screen_joined();
-    let mut p = ask("s", "cargo test");
-    p["entrypoint"] = json!("claude-desktop");
-    // At once: Claude's app asks it itself.
-    let r = hooks.event(&p, |_| false, std::future::pending()).await;
-    assert_eq!(r["decision"], Value::Null);
-    let list = hooks.list();
-    assert_eq!(list[0]["answerable"], false);
-    assert_eq!(list[0]["command"], "cargo test");
-    // The session goes on: answered there.
+async fn vs_codes_question_is_held_until_answered_there() {
+    let (hooks, mut changes) = with_screen();
+    let mut q = question("s");
+    q["entrypoint"] = json!("claude-vscode");
+    let (close, closed) = tokio::sync::oneshot::channel::<()>();
+    let h = hooks.clone();
+    let call = tokio::spawn(async move {
+        h.event(&q, |_| false, async {
+            let _ = closed.await;
+        })
+        .await
+    });
+    changes.recv().await.unwrap();
+    assert_eq!(hooks.list()[0]["kind"], "question");
+    // Answered in VS Code: Claude ends the hook, the request goes.
+    drop(close);
+    assert_eq!(call.await.unwrap(), json!({"decision": null}));
+    assert_eq!(hooks.list(), json!([]));
+    assert_eq!(hooks.settled()[0]["how"], "elsewhere");
+    assert_eq!(hooks.settled()[0]["sessionId"], "s");
+}
+
+#[tokio::test]
+async fn answered_from_mikky_is_not_told_as_elsewhere() {
+    let (hooks, mut changes) = with_screen();
+    let call = waiting(&hooks, ask("s", "ls"));
+    changes.recv().await.unwrap();
+    let id = hooks.list()[0]["id"].as_u64().unwrap();
+    assert!(hooks.answer(id, Some("allow"), None));
+    call.await.unwrap();
+    assert_eq!(hooks.settled(), json!([]));
+    // The next request waits; the session moves on in its terminal.
+    let _call = waiting(&hooks, ask("s", "pwd"));
+    while hooks.list() == json!([]) {
+        changes.recv().await.unwrap();
+    }
     let mut next = ask("s", "");
-    next["hook_event_name"] = json!("PostToolUse");
+    next["hook_event_name"] = json!("PostToolUseFailure");
     hooks.event(&next, |_| false, std::future::pending()).await;
     assert_eq!(hooks.list(), json!([]));
+    assert_eq!(hooks.settled()[0]["how"], "elsewhere");
 }

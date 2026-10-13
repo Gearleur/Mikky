@@ -204,6 +204,7 @@ class AgentsService extends ChangeNotifier {
         }
         if (n.method == 'hooks.changed' && daemon == active && !_closing) {
           _hookAsks(n.params['requests']);
+          if (n.params['settled'] case final List<Object?> settled) source.requestsSettled(settled);
         }
         if (n.method == 'hooks.messages.changed' && daemon == active && !_closing) {
           _externalMessages(n.params['messages']);

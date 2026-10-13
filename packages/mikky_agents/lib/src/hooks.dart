@@ -5,9 +5,9 @@ import 'daemon/session_wire.dart';
 /// A request from a Claude Code or Codex session started outside Mikky,
 /// held by `mikkyd` (`daemon/mikkyd/src/hooks/mod.rs`): a permission or one
 /// of Claude's questions, already in the session events' format ([event]).
-/// `mikkyd` decides everything about it — whether it waits, for how long,
-/// whether it can be answered here, what answers fit — the app only shows
-/// it and passes the user's answer on (`hooks.answer`).
+/// `mikkyd` decides everything about it — how long it waits, what answers
+/// fit — the app only shows it and passes the user's answer on
+/// (`hooks.answer`). Claude shows it too meanwhile: the first answer wins.
 class HookAsk {
   const HookAsk({
     required this.id,
@@ -15,7 +15,6 @@ class HookAsk {
     required this.event,
     this.provider = AgentProvider.claude,
     this.cwd,
-    this.answerable = true,
   });
 
   /// What `mikkyd` lists; null without a request event.
@@ -30,7 +29,6 @@ class HookAsk {
       event: event!,
       provider: j['agent'] == 'codex' ? AgentProvider.codex : AgentProvider.claude,
       cwd: j['cwd'] is String ? j['cwd']! as String : null,
-      answerable: j['answerable'] != false,
     );
   }
 
@@ -44,10 +42,6 @@ class HookAsk {
   /// Claude Code or Codex.
   final AgentProvider provider;
   final String? cwd;
-
-  /// False when Claude's app or VS Code asks it itself (2026-10-13): shown
-  /// here, answered there; « Plus tard » only takes it off the screens.
-  final bool answerable;
 
   bool get isQuestion => event is QuestionAsked;
 

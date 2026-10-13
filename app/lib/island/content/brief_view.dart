@@ -17,7 +17,6 @@ class BriefActions {
     this.terminal,
     this.later,
     this.reveal,
-    this.answerable = true,
     this.finishLimit,
     this.enchant,
   });
@@ -40,12 +39,9 @@ class BriefActions {
   final VoidCallback? later;
 
   /// Brings forward the app the session runs in (Claude's app, VS Code, its
-  /// terminal): where to answer a question Mikky cannot answer itself.
+  /// terminal): where to answer a question Mikky cannot answer itself (its
+  /// hooks are not installed: Mikky only reads it in the session's file).
   final VoidCallback? reveal;
-
-  /// False when the request is answered in the app that asks it (Claude's
-  /// app, VS Code): Mikky shows it and takes you there ([reveal]).
-  final bool answerable;
 
   /// A limit: « Terminer » (no more waiting), « Relance auto ».
   final VoidCallback? finishLimit, enchant;
@@ -237,8 +233,8 @@ class BriefView extends StatelessWidget {
     );
   }
 
-  /// Answered in the app that asks it (2026-10-13): « Plus tard » (unless
-  /// among the links) and « Répondre dans Claude ».
+  /// A question Mikky only read (no hooks): « Plus tard » (unless among the
+  /// links) and « Répondre dans Claude ».
   List<(String, VoidCallback)> get _elsewhere => [
     if (actions.later == null) ('Plus tard', () => actions.answer(AgentAnswer.dismiss)),
     if (actions.reveal != null) ('Répondre dans ${brief.app?.label ?? 'son application'}', actions.reveal!),
@@ -301,28 +297,26 @@ class BriefView extends StatelessWidget {
                 ),
               ),
           ],
-          answers: !actions.answerable
-              ? _elsewhereBar
-              : _Keyed(
-                  keys: {
-                    RequestKey.yes: () => answer(AgentAnswer.allow),
-                    RequestKey.enter: () => answer(AgentAnswer.allow),
-                    RequestKey.no: () => answer(AgentAnswer.deny),
-                    if (canAlways) RequestKey.always: () => answer(AgentAnswer.allowAlways),
-                  },
-                  child: WaitActions(
-                    command: trial || diff == null ? b.request : '${b.request}  ${diff.label}',
-                    onYes: () => answer(AgentAnswer.allow),
-                    onNo: () => answer(AgentAnswer.deny),
-                    onAlways: canAlways ? () => answer(AgentAnswer.allowAlways) : null,
-                  ),
-                ),
+          answers: _Keyed(
+            keys: {
+              RequestKey.yes: () => answer(AgentAnswer.allow),
+              RequestKey.enter: () => answer(AgentAnswer.allow),
+              RequestKey.no: () => answer(AgentAnswer.deny),
+              if (canAlways) RequestKey.always: () => answer(AgentAnswer.allowAlways),
+            },
+            child: WaitActions(
+              command: trial || diff == null ? b.request : '${b.request}  ${diff.label}',
+              onYes: () => answer(AgentAnswer.allow),
+              onNo: () => answer(AgentAnswer.deny),
+              onAlways: canAlways ? () => answer(AgentAnswer.allowAlways) : null,
+            ),
+          ),
         );
       case BriefKind.question:
         final q = question;
         final onQuestion = actions.answerQuestion;
-        // Asked in Claude's app or VS Code (2026-10-13): they show it
-        // themselves; Mikky shows the same card and takes you there.
+        // Read in the session's file, its hooks not installed: the same
+        // card, and the way to where it is answered.
         final readOnly = q == null || onQuestion == null;
         final elsewhere = readOnly ? _elsewhere : const <(String, VoidCallback)>[];
         if (q != null) {

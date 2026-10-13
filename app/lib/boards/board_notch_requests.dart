@@ -44,12 +44,6 @@ List<BoardSection> notchRequestSections() => [
         width: 700,
         child: _request(FakeSessions.approval(), 'Met à jour le site', position: 2, total: 3),
       ),
-      BoardFrame(
-        label: 'Feu vert dans l’app Claude',
-        note: 'Claude (l’app) ou VS Code le demandent eux-mêmes : Mikky le montre sans le retenir et mène là-bas (Entrée aussi).',
-        width: 700,
-        child: _request(FakeSessions.approval()..app = AgentApp.claude, 'Met à jour le site', answerable: false),
-      ),
       BoardFrame(label: 'Erreur', width: 700, child: _request(FakeSessions.error(), 'Corrige la fermeture auto')),
       BoardFrame(
         label: 'Limite atteinte',
@@ -101,8 +95,8 @@ List<BoardSection> notchRequestSections() => [
         ),
       ),
       BoardFrame(
-        label: 'Posée dans l’app Claude',
-        note: 'Claude (l’app) ou VS Code la montrent eux-mêmes, une fois le hook fini : Mikky ne la retient pas (sinon les deux attendent). La même carte, ses choix non cliquables, et « Répondre dans Claude » (Entrée aussi).',
+        label: 'Hooks non activés',
+        note: 'Sans les hooks, Mikky lit la question dans le fichier de la session mais ne peut pas y répondre : la même carte, ses choix non cliquables (un clic mène à l’app), et « Répondre dans Claude » (Entrée aussi). Avec les hooks, elle se répond ici ou là-bas, la première réponse gagne.',
         width: 700,
         child: _request(FakeSessions.question()..app = AgentApp.claude, 'Prépare le stockage', answerable: false),
       ),
@@ -181,7 +175,6 @@ Widget _request(
               answer: (_) {},
               answerQuestion: answerable ? (_) {} : null,
               reveal: answerable ? null : none,
-              answerable: answerable,
               open: none,
               later: trial ? none : null,
               finishLimit: limited ? none : null,

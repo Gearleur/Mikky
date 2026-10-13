@@ -4,10 +4,10 @@
 //! Reads the hook's JSON on stdin and hands it to `mikkyd` (`hook.event`),
 //! found like the app finds it: port and token in the Windows credential
 //! store, WebSocket on 127.0.0.1 with the token. Only `PermissionRequest`
-//! waits for an answer, to print Claude's decision; and `--ask`, Claude's
-//! questions (`AskUserQuestion` in `PreToolUse`), to print the answers as
-//! the tool's input, in a terminal only: Claude's app and VS Code show
-//! their own question once the hook is done.
+//! waits for an answer, to print Claude's decision, or for Claude's
+//! questions (`AskUserQuestion`) the answers as the tool's input. Claude
+//! calls it while it shows the request itself (2026-10-13): whoever answers
+//! first, there or in Mikky, wins, and nobody waits on the other.
 //!
 //! Each event also says where the session runs: the window found among the
 //! relay's parent processes (a terminal, VS Code), so that Mikky can bring
@@ -17,8 +17,10 @@
 //! answer within the budget, anything unexpected — nothing printed, exit
 //! 0, and Claude asks in its terminal as if Mikky were not installed.
 //!
-//! Usage: `mikky-hook [--agent codex] [--ask] <EventName>` (the name is
-//! also read from the JSON).
+//! Usage: `mikky-hook [--agent codex] <EventName>` (the name is also read
+//! from the JSON). `--ask` was the questions' `PreToolUse` hook until
+//! 2026-10-13: it held them before Claude could show them, so it now does
+//! nothing until Mikky writes the hooks again.
 
 mod delivery;
 mod origin;
@@ -40,8 +42,6 @@ const DELIVERY: Duration = Duration::from_millis(300);
 /// A permission on the screens (mikkyd gives up at 105 s; Claude's own
 /// timeout for this hook is 120 s).
 const DECISION: Duration = Duration::from_secs(110);
-/// A question (mikkyd gives up at 120 s; Claude's timeout is 130 s).
-const ANSWERS: Duration = Duration::from_secs(125);
 /// Longest stdin read; longest string forwarded (Mikky shows far less).
 const MAX_INPUT: u64 = 4 << 20;
 const MAX_FIELD: usize = 2000;
@@ -52,7 +52,7 @@ const DROPPED: &[&str] = &["tool_response", "transcript_path"];
 struct Event {
     payload: Value,
     name: String,
-    /// `--ask`: Claude's question, whose input is kept whole here.
+    /// Claude's question (`AskUserQuestion`), whose input is kept whole.
     question: Option<Value>,
 }
 
@@ -69,16 +69,7 @@ fn main() {
         .unwrap_or_default()
         .to_owned();
     let injects = agent == "claude" && matches!(event.name.as_str(), "PostToolUse" | "Stop");
-    // Claude's app or VS Code shows its question or permission once this
-    // hook is done: say it and go.
-    let in_app = event.payload["entrypoint"]
-        .as_str()
-        .is_some_and(|e| !e.is_empty() && e != "cli");
-    let budget = if in_app && (event.question.is_some() || event.name == "PermissionRequest") {
-        FIRE_AND_FORGET
-    } else if event.question.is_some() {
-        ANSWERS
-    } else if event.name == "PermissionRequest" {
+    let budget = if event.name == "PermissionRequest" {
         DECISION
     } else if injects {
         DELIVERY
@@ -140,11 +131,11 @@ fn decision_json(decision: &str) -> Option<String> {
     )
 }
 
-/// The answers to Claude's questions, as its PreToolUse output: the tool
-/// runs with its own input plus `answers` (by question text: a string, or
-/// a list of labels for a multiple choice; see
+/// The answers to Claude's questions, as its PermissionRequest output: the
+/// tool is allowed with its own input plus `answers` (by question text: a
+/// string, or a list of labels for a multiple choice; see
 /// https://code.claude.com/docs/en/agent-sdk/user-input). Answers that do
-/// not answer each question print nothing: Claude asks in its terminal.
+/// not answer each question print nothing: Claude's own question stays.
 fn answers_json(input: &Value, answers: &Value) -> Option<String> {
     let questions = input["questions"].as_array()?;
     let answers = answers.as_object()?;
@@ -163,9 +154,8 @@ fn answers_json(input: &Value, answers: &Value) -> Option<String> {
     input.insert("answers".into(), Value::Object(answers.clone()));
     Some(
         json!({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse",
-            "permissionDecision": "allow",
-            "updatedInput": input,
+            "hookEventName": "PermissionRequest",
+            "decision": {"behavior": "allow", "updatedInput": input},
         }})
         .to_string(),
     )
@@ -199,17 +189,14 @@ fn read_event() -> Option<Event> {
         .filter(|s| !s.is_empty())
         .map(str::to_owned)
         .or(arg_event)?;
-    // The question hook only answers Claude's question tool.
-    let question = if ask {
-        if event != "PreToolUse"
-            || map.get("tool_name").and_then(Value::as_str) != Some("AskUserQuestion")
-        {
-            return None;
-        }
-        Some(map.get("tool_input").filter(|v| v.is_object())?.clone())
-    } else {
-        None
-    };
+    // The old question hook: Claude asks itself (see the top).
+    if ask {
+        return None;
+    }
+    let question = (event == "PermissionRequest"
+        && map.get("tool_name").and_then(Value::as_str) == Some("AskUserQuestion"))
+    .then(|| map.get("tool_input").filter(|v| v.is_object()).cloned())
+    .flatten();
     map.insert("hook_event_name".into(), json!(event));
     map.insert("mikky_agent".into(), json!(agent));
     for field in DROPPED {
@@ -228,9 +215,8 @@ fn read_event() -> Option<Event> {
         ("term_program", "TERM_PROGRAM"),
         ("wt_session", "WT_SESSION"),
         ("vscode_pid", "VSCODE_PID"),
-        // `cli` in a terminal; Claude's app, VS Code or an SDK host
-        // otherwise (they show their own questions: `mikkyd` never holds
-        // those).
+        // `cli` in a terminal, `claude-vscode`, `claude-desktop` (Claude's
+        // app: `mikkyd` never holds its requests).
         ("entrypoint", "CLAUDE_CODE_ENTRYPOINT"),
     ] {
         if let Ok(v) = std::env::var(var) {
@@ -385,11 +371,12 @@ mod tests {
             json!({"Quelle base ?": "SQLite", "Quels tests ?": ["Unitaires", "Bout en bout"]});
         let out: Value = serde_json::from_str(&answers_json(&input, &answers).unwrap()).unwrap();
         let o = &out["hookSpecificOutput"];
-        assert_eq!(o["hookEventName"], "PreToolUse");
-        assert_eq!(o["permissionDecision"], "allow");
-        assert_eq!(o["updatedInput"]["questions"], input["questions"]);
-        assert_eq!(o["updatedInput"]["metadata"], input["metadata"]);
-        assert_eq!(o["updatedInput"]["answers"], answers);
+        assert_eq!(o["hookEventName"], "PermissionRequest");
+        assert_eq!(o["decision"]["behavior"], "allow");
+        let updated = &o["decision"]["updatedInput"];
+        assert_eq!(updated["questions"], input["questions"]);
+        assert_eq!(updated["metadata"], input["metadata"]);
+        assert_eq!(updated["answers"], answers);
         // Nothing, or not every question: silence.
         for wrong in [
             Value::Null,

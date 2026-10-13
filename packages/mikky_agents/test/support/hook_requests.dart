@@ -1,34 +1,31 @@
 import 'package:mikky_agents/mikky_agents.dart';
 
 /// A permission as `mikkyd` lists it (`hooks.list`), its event made in Rust.
-HookAsk permissionAsk(int id, String session, String command, {String? cwd, bool answerable = true}) =>
-    HookAsk.fromJson({
-      'id': id,
-      'sessionId': session,
-      'cwd': ?cwd,
-      'agent': 'claude',
-      'answerable': answerable,
-      'event': {
-        'type': 'permission',
-        'id': 'hook:$id',
-        'title': 'Bash $command',
-        'command': command,
-        'toolCallId': 'toolu_$id',
-        'options': [
-          {'optionId': 'allow', 'name': 'Oui', 'kind': 'allow_once'},
-          {'optionId': 'deny', 'name': 'Non', 'kind': 'reject_once'},
-        ],
-      },
-    })!;
-
-/// Claude's question « Quelle base ? » (SQLite, Postgres) then « Quels
-/// tests ? » (several), as `mikkyd` lists it.
-HookAsk questionAsk(int id, String session, {String? cwd, bool answerable = true}) => HookAsk.fromJson({
+HookAsk permissionAsk(int id, String session, String command, {String? cwd}) => HookAsk.fromJson({
   'id': id,
   'sessionId': session,
   'cwd': ?cwd,
   'agent': 'claude',
-  'answerable': answerable,
+  'event': {
+    'type': 'permission',
+    'id': 'hook:$id',
+    'title': 'Bash $command',
+    'command': command,
+    'toolCallId': 'toolu_$id',
+    'options': [
+      {'optionId': 'allow', 'name': 'Oui', 'kind': 'allow_once'},
+      {'optionId': 'deny', 'name': 'Non', 'kind': 'reject_once'},
+    ],
+  },
+})!;
+
+/// Claude's question « Quelle base ? » (SQLite, Postgres) then « Quels
+/// tests ? » (several), as `mikkyd` lists it.
+HookAsk questionAsk(int id, String session, {String? cwd}) => HookAsk.fromJson({
+  'id': id,
+  'sessionId': session,
+  'cwd': ?cwd,
+  'agent': 'claude',
   'event': {
     'type': 'question',
     'id': 'hook:$id',
