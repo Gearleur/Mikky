@@ -338,8 +338,14 @@ class BriefView extends StatelessWidget {
                       fill: true,
                       barLeading: links,
                       elsewhere: elsewhere,
+                      onElsewhere: readOnly ? actions.reveal : null,
                     )
-                  : QuestionCard(question: q, onAnswer: onQuestion, elsewhere: elsewhere),
+                  : QuestionCard(
+                      question: q,
+                      onAnswer: onQuestion,
+                      elsewhere: elsewhere,
+                      onElsewhere: readOnly ? actions.reveal : null,
+                    ),
             ),
           );
         }

@@ -45,6 +45,24 @@ void main() {
     expect(got, {'db': 'Postgres'});
   });
 
+  testWidgets('read only: a choice leads where it is answered, « Autre… » is gone', (tester) async {
+    var there = 0;
+    await _pump(
+      tester,
+      QuestionCard(
+        question: _ask([_db]),
+        onAnswer: null,
+        elsewhere: [('Répondre dans Claude', () => there++)],
+        onElsewhere: () => there++,
+      ),
+    );
+    expect(find.text('Autre…'), findsNothing);
+    expect(find.text('Passer'), findsNothing);
+    await tester.tap(find.text('Postgres'));
+    await tester.tap(find.text('Répondre dans Claude'));
+    expect(there, 2);
+  });
+
   testWidgets('several choices: ticked, then sent; nothing ticked, nothing to send', (tester) async {
     Map<String, Object>? got;
     await _pump(tester, QuestionCard(question: _ask([_tests]), onAnswer: (a) => got = a));

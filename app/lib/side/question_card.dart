@@ -56,6 +56,7 @@ class QuestionCard extends StatefulWidget {
     this.fill = false,
     this.barLeading = const [],
     this.elsewhere = const [],
+    this.onElsewhere,
   });
 
   final QuestionAsked question;
@@ -80,6 +81,10 @@ class QuestionCard extends StatefulWidget {
   /// The bar's answers when it is not answered here: « Répondre dans
   /// Claude ».
   final List<(String, VoidCallback)> elsewhere;
+
+  /// A click on a choice when it is not answered here: where it is
+  /// (« Répondre dans Claude »), instead of going through to the island.
+  final VoidCallback? onElsewhere;
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -254,7 +259,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           description: q.choices[i].description,
           multiple: q.multiple,
           ticked: _ticked.contains(q.choices[i].label) || q.choices[i].label == _chosen,
-          onTap: _readOnly ? null : () => _pick(i),
+          onTap: _readOnly ? widget.onElsewhere : () => _pick(i),
         ),
       if (q.otherKey != null && !_readOnly)
         _ChoiceRow(
