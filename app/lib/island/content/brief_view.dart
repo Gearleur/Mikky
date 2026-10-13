@@ -70,6 +70,7 @@ class BriefView extends StatelessWidget {
     this.position = 1,
     this.questionTrial = const QuestionTrial(),
     this.trial = false,
+    this.pinned = false,
   });
 
   final Agent agent;
@@ -95,6 +96,11 @@ class BriefView extends StatelessWidget {
   /// counted beside its file. Off, the app's look: one column, the count
   /// after the command. The question card is the same in both.
   final bool trial;
+
+  /// Its height is fixed (the island): the request and its answers stay at
+  /// the bottom, in sight, what is above them scrolls; a question's card
+  /// fills it. Off, it grows with what it shows (in a scroll view).
+  final bool pinned;
 
   @override
   Widget build(BuildContext context) {
@@ -186,7 +192,7 @@ class BriefView extends StatelessWidget {
       ui,
       links: [...links, if (actions.open != null) _Link('Voir l’agent', actions.open!)],
     );
-    if (!trial) {
+    if (!trial && !pinned) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -202,9 +208,10 @@ class BriefView extends StatelessWidget {
       );
     }
 
-    // The trial (2026-10-12): who asks stays at the top, the request and
-    // its answers at the bottom, always in sight; the task between them
-    // scrolls. A question: its card fills it, the links in its bar.
+    // The trial (2026-10-12) and the island: who asks stays at the top, the
+    // request and its answers at the bottom, always in sight; the task
+    // between them scrolls. A question: its card fills it, the links in its
+    // bar.
     final asking = b.kind == BriefKind.question && question != null;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -323,7 +330,7 @@ class BriefView extends StatelessWidget {
             detail: const <Widget>[],
             answers: _Keyed(
               keys: {if (readOnly) RequestKey.enter: ?actions.reveal},
-              child: trial
+              child: trial || pinned
                   ? QuestionCard(
                       question: q,
                       onAnswer: onQuestion,

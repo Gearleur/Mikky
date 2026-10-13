@@ -814,40 +814,39 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
             child: SizedBox(
               width: width,
               height: open.height - 28,
-              child: SingleChildScrollView(
-                child: BriefView(
-                  key: ValueKey('${focus.id}:${focus.status.name}'),
-                  agent: focus,
-                  brief: brief,
-                  question: log?.question,
-                  canAlways: log != null && canAlways(log),
-                  queue: s.pendingAlerts,
-                  actions: BriefActions(
-                    answer: (a) => _answer(focus, a),
-                    answerQuestion: entry != null && widget.agents.source.canAnswerQuestion(focus.id)
-                        ? (answers) {
-                            widget.agents.source.answerQuestion(focus.id, answers);
-                            _react(reactionToAnswer(AgentAnswer.allow));
-                            _machine.click(_clock.now);
-                            _sync();
-                          }
-                        : null,
-                    answerable: _demo || widget.agents.source.canAnswerRequests(focus.id),
-                    reveal: _demo
-                        ? null
-                        : () => widget.agents.revealOrOpen(focus.id, () {
-                            if (mounted) _openAgentPage(focus.id);
-                          }),
-                    // Ctrl + click: its terminal or VS Code instead.
-                    open: _demo
-                        ? null
-                        : () => widget.agents.openOrReveal(focus.id, () {
-                            if (mounted) _openAgentPage(focus.id);
-                          }),
-                    terminal: !_demo && widget.agents.source.canLeaveInTerminal(focus.id)
-                        ? () => _answer(focus, AgentAnswer.dismiss)
-                        : null,
-                  ),
+              child: BriefView(
+                key: ValueKey('${focus.id}:${focus.status.name}'),
+                pinned: true,
+                agent: focus,
+                brief: brief,
+                question: log?.question,
+                canAlways: log != null && canAlways(log),
+                queue: s.pendingAlerts,
+                actions: BriefActions(
+                  answer: (a) => _answer(focus, a),
+                  answerQuestion: entry != null && widget.agents.source.canAnswerQuestion(focus.id)
+                      ? (answers) {
+                          widget.agents.source.answerQuestion(focus.id, answers);
+                          _react(reactionToAnswer(AgentAnswer.allow));
+                          _machine.click(_clock.now);
+                          _sync();
+                        }
+                      : null,
+                  answerable: _demo || widget.agents.source.canAnswerRequests(focus.id),
+                  reveal: _demo
+                      ? null
+                      : () => widget.agents.revealOrOpen(focus.id, () {
+                          if (mounted) _openAgentPage(focus.id);
+                        }),
+                  // Ctrl + click: its terminal or VS Code instead.
+                  open: _demo
+                      ? null
+                      : () => widget.agents.openOrReveal(focus.id, () {
+                          if (mounted) _openAgentPage(focus.id);
+                        }),
+                  terminal: !_demo && widget.agents.source.canLeaveInTerminal(focus.id)
+                      ? () => _answer(focus, AgentAnswer.dismiss)
+                      : null,
                 ),
               ),
             ),
