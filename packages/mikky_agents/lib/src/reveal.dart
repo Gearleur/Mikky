@@ -57,21 +57,26 @@ sealed class RevealStep {
 /// Brings this window forward (restored if minimized). Done by the app,
 /// which just got the click: Windows lets only it take the foreground.
 class BringWindow extends RevealStep {
-  const BringWindow(this.pid, this.handle);
+  const BringWindow(this.pid, this.handle, {this.title = ''});
 
   final int pid;
 
   /// The window as the hook saw it; 0: any window of [pid].
   final int handle;
 
-  @override
-  bool operator ==(Object other) => other is BringWindow && other.pid == pid && other.handle == handle;
+  /// When not empty, rather the window of [pid] whose title has this part
+  /// (VS Code: one process, a window per folder).
+  final String title;
 
   @override
-  int get hashCode => Object.hash(pid, handle);
+  bool operator ==(Object other) =>
+      other is BringWindow && other.pid == pid && other.handle == handle && other.title == title;
 
   @override
-  String toString() => 'BringWindow($pid, $handle)';
+  int get hashCode => Object.hash(pid, handle, title);
+
+  @override
+  String toString() => 'BringWindow($pid, $handle, $title)';
 }
 
 /// Opens VS Code with these arguments (a folder, or `--remote wsl+…` and
@@ -92,10 +97,11 @@ class OpenInVsCode extends RevealStep {
 }
 
 /// How to reveal a session (Ctrl + click on an agent, 2026-10-08): its
-/// window first, for a session started outside Mikky whose hooks found one;
-/// then VS Code on its folder — through WSL for a WSL session. An agent
-/// Mikky runs has no window of its own: VS Code on its folder. Nothing when
-/// there is neither window nor folder.
+/// window first, for a session started outside Mikky whose hooks found one
+/// (in VS Code, the window titled with its folder's name); then VS Code on
+/// its folder — through WSL for a WSL session. An agent Mikky runs has no
+/// window of its own: VS Code on its folder. Nothing when there is neither
+/// window nor folder.
 List<RevealStep> revealSteps({
   required AgentOrigin origin,
   AgentHost host = AgentHost.windows,
@@ -105,8 +111,12 @@ List<RevealStep> revealSteps({
 }) {
   final steps = <RevealStep>[];
   final pid = seen?.windowPid;
-  if (origin == AgentOrigin.external && pid != null && pid > 0) steps.add(BringWindow(pid, seen?.windowHandle ?? 0));
   final folder = (cwd != null && cwd.isNotEmpty) ? cwd : seen?.cwd;
+  if (origin == AgentOrigin.external && pid != null && pid > 0) {
+    final vsCode = _vsCodes.contains(seen?.windowExe?.toLowerCase());
+    final name = folder?.split(RegExp(r'[\\/]')).lastWhere((p) => p.isNotEmpty, orElse: () => '') ?? '';
+    steps.add(BringWindow(pid, seen?.windowHandle ?? 0, title: vsCode ? name : ''));
+  }
   if (folder != null && folder.isNotEmpty) {
     if (host == AgentHost.wsl || hostOfFolder(folder) == AgentHost.wsl) {
       final named = RegExp(r'^\\\\wsl(?:\.localhost|\$)\\([^\\]+)', caseSensitive: false).firstMatch(folder)?[1];
@@ -118,6 +128,10 @@ List<RevealStep> revealSteps({
   }
   return steps;
 }
+
+/// VS Code and its forks: one process for all the windows, each titled
+/// « file - folder - app ».
+const _vsCodes = {'code.exe', 'code - insiders.exe', 'cursor.exe', 'windsurf.exe'};
 
 /// VS Code's command line (`code.cmd` on Windows): on the PATH, else where
 /// its installers put it. Null when VS Code is not found.

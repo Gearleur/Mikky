@@ -6,6 +6,32 @@ import 'package:test/test.dart';
 SessionLog fold(List<Map<String, dynamic>> events) => SessionLog()..applyAll(events.map(sessionEventFromWire).nonNulls);
 
 void main() {
+  test('Claude quota reset is exact even when its text lacks a parseable date', () {
+    final log = fold([
+      {'type': 'start', 'at': '2026-10-08T11:24:01.503Z'},
+      {
+        'type': 'end',
+        'reason': 'rateLimited',
+        'message': 'Rate limit reached',
+        'resetsAt': 1791463800,
+        'at': '2026-10-08T11:24:02Z',
+      },
+    ]);
+    expect(log.statusAt(DateTime(2026, 10, 8)), AgentStatus.rateLimited);
+    expect(log.limitResetsAt!.toUtc(), DateTime.utc(2026, 10, 8, 12, 50));
+  });
+  test('an agent link updates the launch tool without replacing its title', () {
+    final log = fold([
+      {'type': 'start'},
+      {'type': 'tool', 'id': 'toolu_1', 'name': 'Agent', 'title': 'Front', 'status': 'running'},
+      {'type': 'tool', 'id': 'toolu_1', 'agent': 'a85', 'status': 'running'},
+      {'type': 'end', 'reason': 'endTurn'},
+    ]);
+    final tool = log.items.whereType<ToolItem>().single;
+    expect(tool.agent, 'a85');
+    expect(tool.title, 'Front');
+    expect(tool.active, isTrue);
+  });
   final now = DateTime(2026, 10, 12, 18);
 
   test('a Codex exec script is a live tool: running, still going, done', () {

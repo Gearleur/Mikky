@@ -96,7 +96,10 @@ class AgentEntry {
   /// Can take a message now: launched by Mikky and still running.
   bool get live => run?.alive ?? false;
 
-  DateTime get lastActivity => log.lastEventAt ?? watched?.modified ?? createdAt;
+  DateTime get lastActivity => log.descendants.fold(
+    log.lastEventAt ?? watched?.modified ?? createdAt,
+    (latest, child) => child.log.lastEventAt?.isAfter(latest) == true ? child.log.lastEventAt! : latest,
+  );
 
   String get name {
     final own = mark.name;

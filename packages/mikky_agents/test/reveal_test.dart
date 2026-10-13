@@ -27,6 +27,19 @@ void main() {
     ]);
   });
 
+  test('a session in VS Code: the window titled with its folder, then VS Code on it', () {
+    const vsCode = SessionOrigin(windowPid: 77, windowHandle: 88, windowExe: 'Code.exe');
+    expect(revealSteps(origin: AgentOrigin.external, cwd: r'C:\Users\a\projet\mikky\', seen: vsCode), [
+      const BringWindow(77, 88, title: 'mikky'),
+      const OpenInVsCode([r'C:\Users\a\projet\mikky\']),
+    ]);
+    // A terminal's title says nothing of the folder.
+    expect(
+      revealSteps(origin: AgentOrigin.external, cwd: r'C:\projet', seen: terminal).first,
+      const BringWindow(4242, 6553),
+    );
+  });
+
   test('no hooks seen: VS Code on the folder, or nothing', () {
     expect(revealSteps(origin: AgentOrigin.external, cwd: r'C:\projet'), [
       const OpenInVsCode([r'C:\projet']),

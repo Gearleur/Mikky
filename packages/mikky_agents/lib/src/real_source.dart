@@ -6,10 +6,15 @@ import 'package:mikky_engine/mikky_engine.dart';
 import 'acp/agent_run.dart';
 import 'agent_entry.dart';
 import 'daemon/daemon_run.dart';
+import 'external_messages.dart';
 import 'hooks.dart';
 import 'limits.dart';
 import 'store.dart';
 import 'watch/session_watcher.dart';
+import 'watch/sub_agent_sessions.dart';
+
+part 'real_source_watch.dart';
+part 'real_source_requests.dart';
 
 /// The real agents behind the island and the home (MVP spec §5.5): those
 /// Mikky launched through ACP, and the sessions found in Claude's and
@@ -60,10 +65,39 @@ class RealAgentSource implements AgentSource {
   final Duration staleAfter;
 
   final List<AgentEntry> _entries = [];
+  final _subAgents = SubAgentSessions();
+  DateTime? _followedAt;
+  void follow(SessionWatcher watcher) => _follow(watcher);
   final Map<String, StoredAgent> _stored = {};
 
   /// Permissions and questions asked through Claude's hooks, by session.
   final Map<String, HookAsk> _hookAsks = {};
+  final Map<SessionLog, HookAsk?> _requestLogs = {};
+
+  /// Absence means external injection is unavailable; a working external
+  /// session must never be resumed beside the existing process.
+  Future<ExternalMessage> Function(AgentEntry entry, String id, String text)? enqueueExternal;
+  final Map<String, ExternalMessage> _externalMessages = {};
+
+  List<ExternalMessage> messagesOf(String id) {
+    final session = entry(id)?.sessionId;
+    return _externalMessages.values.where((m) => m.sessionId == session).toList();
+  }
+
+  void externalMessages(List<ExternalMessage> messages, {bool snapshot = false}) {
+    if (snapshot) {
+      final ids = messages.map((m) => m.id).toSet();
+      _externalMessages.removeWhere((id, _) => !ids.contains(id));
+    }
+    for (final m in messages) {
+      if (_externalMessages[m.id]?.delivered == true && !m.delivered) continue;
+      _externalMessages[m.id] = m;
+    }
+    while (_externalMessages.length > 256) {
+      _externalMessages.remove(_externalMessages.keys.first);
+    }
+    _changed();
+  }
 
   /// Sends the answer to a hook permission (`hooks.answer`): `allow`,
   /// `deny`, or null to leave it to the terminal.
@@ -135,57 +169,13 @@ class RealAgentSource implements AgentSource {
     return e == null ? null : _agentOf(e);
   }
 
-  /// The permission agent [id] asks through Claude's hooks, if any (its
-  /// questions: [questionOf]).
-  HookAsk? hookAskOf(String id) {
-    final ask = _hookAskOf(id);
-    return ask == null || ask.isQuestion ? null : ask;
-  }
-
-  /// The question agent [id] asks through Claude's hooks, if any.
-  HookAsk? hookQuestionOf(String id) {
-    final ask = _hookAskOf(id);
-    return ask != null && ask.isQuestion ? ask : null;
-  }
-
-  HookAsk? _hookAskOf(String id) {
-    final sessionId = entry(id)?.sessionId;
-    return sessionId == null ? null : _hookAsks[sessionId];
-  }
-
-  /// The question agent [id] waits on, wherever it comes from: Claude's
-  /// hooks (a session in a terminal or VS Code) or ACP (an agent Mikky
-  /// runs). The same card answers both, through [answerQuestion].
-  QuestionAsked? questionOf(String id) => hookQuestionOf(id)?.question ?? entry(id)?.log.question;
-
-  /// True when [answerQuestion] can reach whoever asks [questionOf].
-  bool canAnswerQuestion(String id) {
-    if (hookQuestionOf(id) != null) return true;
-    final e = entry(id);
-    return e != null && e.live && e.log.question != null;
-  }
-
-  /// The requests waiting on `mikkyd` from Claude's hooks, all of them: each
-  /// goes to its session (a new one if Mikky did not see it yet).
-  void hookAsks(List<HookAsk> asks) {
-    _hookAsks
-      ..clear()
-      ..addAll({for (final a in asks) a.sessionId: a});
-    for (final a in asks) {
-      var e = _entries.where((x) => x.provider == a.provider && x.sessionId == a.sessionId).firstOrNull;
-      if (e == null) {
-        e = AgentEntry('h${a.sessionId}', a.provider, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
-          ..failure = (SessionLog()..apply(SessionStarted(a.sessionId, cwd: a.cwd)))
-          ..startedAt = clock()
-          ..statusSince = clock();
-        _entries.add(e);
-      }
-      e
-        ..changedLive = true
-        ..dismissed = false;
-    }
-    _changed();
-  }
+  HookAsk? hookAskOf(String id) => _permissionRequest(id);
+  HookAsk? hookQuestionOf(String id) => _questionRequest(id);
+  QuestionAsked? questionOf(String id) => entry(id)?.log.question;
+  bool canAnswerRequests(String id) => _hookAskOf(id) != null || (entry(id)?.live ?? false);
+  bool canLeaveInTerminal(String id) => _hookAskOf(id) != null;
+  bool canAnswerQuestion(String id) => _canAnswerQuestion(id);
+  void hookAsks(List<HookAsk> asks) => _receiveRequests(asks);
 
   Agent _agentOf(AgentEntry e) => Agent(
     id: e.id,
@@ -193,7 +183,7 @@ class RealAgentSource implements AgentSource {
     status: e.status,
     startedAt: e.startedAt,
     statusSince: e.statusSince,
-    detail: _hookAsks[e.sessionId]?.request ?? e.log.detail,
+    detail: e.log.detail,
     provider: e.provider,
     host: e.host,
     origin: e.origin,
@@ -326,6 +316,16 @@ class RealAgentSource implements AgentSource {
       throw StateError('Connexion interrompue. Attends la reconnexion avant de renvoyer un message.');
     }
     if (e.mark.pausedAt != null) _mark(id, (m) => m.copyWith(clearPaused: true));
+    if (!e.live && e.log.working) {
+      final enqueue = enqueueExternal;
+      if (e.provider != AgentProvider.claude || e.host != AgentHost.windows || e.sessionId == null || enqueue == null) {
+        throw StateError('Cette session extérieure ne peut pas encore recevoir de message pendant son travail.');
+      }
+      final messageId = ExternalMessage.newId();
+      final message = await enqueue(e, messageId, text);
+      externalMessages([message]);
+      return;
+    }
     if (!e.live) return resume(id, text);
     e.dismissed = false;
     if (e.log.working) {
@@ -373,61 +373,6 @@ class RealAgentSource implements AgentSource {
     await store?.saved;
   }
 
-  /// Follows the sessions [watcher] finds. Sessions Mikky runs itself
-  /// are shown once, from their live stream.
-  void follow(SessionWatcher watcher) {
-    _followedAt = _now();
-    for (final s in watcher.sessions.values) {
-      _onWatched(s, live: false);
-    }
-    _subs.add(watcher.updates.listen((s) => _onWatched(s, live: true)));
-    _changed();
-  }
-
-  /// When [follow] began: sessions not written since are the inventory
-  /// (Rust sends it as updates, and again after a reconnection), not news.
-  DateTime? _followedAt;
-
-  void _onWatched(WatchedSession s, {required bool live}) {
-    final since = _followedAt;
-    if (since != null && s.modified.isBefore(since)) live = false;
-    final sessionId = s.sessionId;
-    if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
-    AgentEntry? e;
-    for (final x in _entries) {
-      if (x.watched == s ||
-          (sessionId != null && x.provider == s.provider && x.host == s.host && x.sessionId == sessionId)) {
-        e = x;
-      }
-    }
-    if (e != null && e.run != null) return;
-    if (e == null) {
-      final stored = sessionId == null ? null : store?.bySession(sessionId);
-      e =
-          AgentEntry(
-              // Unique across runs: kept agents may carry an older one.
-              stored?.id ?? 'w${DateTime.now().microsecondsSinceEpoch}-${_ids++}',
-              s.provider,
-              s.host,
-              stored == null ? AgentOrigin.external : AgentOrigin.mikky,
-              stored?.cwd ?? s.log.cwd,
-              s.log.startedAt ?? s.modified,
-            )
-            ..permissions = stored?.permissions
-            ..storedTitle = stored?.title
-            ..startedAt = clock()
-            ..statusSince = clock();
-      if (stored != null) _entries.removeWhere((x) => x.id == stored.id);
-      _entries.add(e);
-    }
-    e.watched = s;
-    if (live) {
-      e.changedLive = true;
-      e.dismissed = false;
-    }
-    if (live) _changed();
-  }
-
   void _remember(AgentEntry e) {
     final s = store;
     if (s == null || e.origin != AgentOrigin.mikky) return;
@@ -457,6 +402,8 @@ class RealAgentSource implements AgentSource {
   /// Recomputes every state; a change starts [Agent.statusSince] again.
   void _refresh() {
     final now = _now();
+    _subAgents.attach(_entries);
+    _syncRequests();
     _linkForks();
     for (final e in _entries) {
       e.mark = store?.mark(e.key) ?? const SessionMark();
@@ -464,29 +411,15 @@ class RealAgentSource implements AgentSource {
       // Just launched: thinking until the agent says something.
       if (e.run != null && e.log.turns.isEmpty && e.status == AgentStatus.thinking) continue;
       var s = e.log.statusAt(now, staleAfter: watchedOnly ? staleAfter : null);
+      if (s == AgentStatus.finished || s == AgentStatus.idle) {
+        final busy = e.log.descendants
+            .where((a) => a.status == ToolStatus.running && a.log.statusAt(now, staleAfter: staleAfter).isBusy)
+            .firstOrNull;
+        if (busy != null) s = busy.log.statusAt(now, staleAfter: staleAfter);
+      }
       // Paused: once its stopped turn is over, until it is taken off hold.
       if (e.mark.pausedAt != null && !e.log.working && !s.needsYou) s = AgentStatus.paused;
-      // Asked through Claude's hooks: waits for the user.
-      if (_hookAsks[e.sessionId] case final ask?) s = ask.isQuestion ? AgentStatus.question : AgentStatus.approval;
       if (s != e.status) _setStatus(e, s);
-    }
-  }
-
-  /// Sessions sharing their first message are one conversation continued
-  /// (Claude's « fork »): the latest stands for all.
-  void _linkForks() {
-    final families = <String, List<AgentEntry>>{};
-    for (final e in _entries) {
-      e.supersededBy = null;
-      final first = e.watched?.firstMessage;
-      if (first != null) (families[first] ??= []).add(e);
-    }
-    for (final family in families.values) {
-      if (family.length < 2) continue;
-      family.sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
-      for (final e in family.skip(1)) {
-        e.supersededBy = family.first.id;
-      }
     }
   }
 

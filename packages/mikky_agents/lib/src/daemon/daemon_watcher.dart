@@ -89,6 +89,7 @@ class DaemonSessionWatcher implements SessionWatcher {
           }
         }
         session.firstMessage = meta['firstMessage'] as String?;
+        session.parent = SubAgentLink.fromWire(meta['parent']);
         session.modified = DateTime.fromMillisecondsSinceEpoch(meta['modified'] as int);
         _offsets[path] = page['next'] as int;
         more = page['more'] == true;

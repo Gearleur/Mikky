@@ -8,6 +8,7 @@ export 'src/auth.dart';
 export 'src/daemon/daemon_client.dart';
 export 'src/daemon/daemon_run.dart';
 export 'src/daemon/daemon_watcher.dart';
+export 'src/external_messages.dart';
 export 'src/hooks.dart';
 export 'src/paths.dart';
 export 'src/real_source.dart';

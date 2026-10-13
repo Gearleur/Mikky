@@ -1,5 +1,7 @@
 import 'package:mikky_engine/mikky_engine.dart';
 
+import 'daemon/session_wire.dart';
+
 /// What a hook request asks.
 enum HookKind {
   /// May the session use a tool (yes, no, or the terminal).
@@ -28,12 +30,14 @@ class HookAsk {
     this.description,
     this.questions = const [],
     this.at,
+    this.normalized,
   });
 
   /// What `mikkyd` lists; a field of an unexpected type is left out.
   factory HookAsk.fromJson(Map<String, Object?> j) {
     String? text(String key) => j[key] is String ? j[key]! as String : null;
     final kind = j['kind'] == 'question' ? HookKind.question : HookKind.permission;
+    final event = j['event'] is Map ? sessionEventFromWire((j['event'] as Map).cast<String, dynamic>()) : null;
     return HookAsk(
       id: (j['id'] as num).toInt(),
       sessionId: text('sessionId') ?? '',
@@ -45,8 +49,11 @@ class HookAsk {
       command: text('command'),
       path: text('path'),
       description: text('description'),
-      questions: kind == HookKind.question ? _questions(j['questions']) : const [],
+      questions: event is QuestionAsked
+          ? event.questions
+          : (kind == HookKind.question ? _questions(j['questions']) : const []),
       at: DateTime.tryParse(text('at') ?? ''),
+      normalized: event,
     );
   }
 
@@ -97,6 +104,25 @@ class HookAsk {
   /// A question's questions (1 to 4), each with its choices.
   final List<Question> questions;
   final DateTime? at;
+  final SessionEvent? normalized;
+
+  /// New backends normalize this in Rust; older ones use the same model.
+  SessionEvent? get event =>
+      normalized ??
+      (isQuestion
+          ? question
+          : PermissionAsked(
+              'hook:$id',
+              toolCallId: null,
+              title: title,
+              command: request,
+              description: description,
+              options: const [
+                PermissionOption('allow', 'Oui', 'allow_once'),
+                PermissionOption('deny', 'Non', 'reject_once'),
+              ],
+              at: at,
+            ));
 
   bool get isQuestion => kind == HookKind.question;
 

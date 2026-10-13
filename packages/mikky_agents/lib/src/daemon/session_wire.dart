@@ -39,6 +39,7 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
       toolCallId: e['toolCallId'] as String?,
       title: e['title'] as String,
       command: e['command'] as String?,
+      description: e['description'] as String?,
       options: [
         for (final o in e['options'] as List)
           PermissionOption(o['optionId'] as String, o['name'] as String? ?? '', o['kind'] as String? ?? ''),
@@ -66,7 +67,14 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
     ),
     'questionAnswered' => QuestionAnswered(e['id'] as Object, at: at),
     'start' => TurnStarted(at: at),
-    'end' => TurnEnded(StopReason.values.byName(e['reason'] as String), message: e['message'] as String?, at: at),
+    'end' => TurnEnded(
+      StopReason.values.byName(e['reason'] as String),
+      message: e['message'] as String?,
+      resetsAt: e['resetsAt'] is num
+          ? DateTime.fromMillisecondsSinceEpoch((e['resetsAt'] as num).toInt() * 1000)
+          : null,
+      at: at,
+    ),
     'title' => TitleChanged(e['title'] as String, at: at),
     'user' => UserMessage(e['text'] as String, messageId: e['id'] as String?, queued: e['queued'] == true, at: at),
     'message' => AgentMessage(
@@ -95,6 +103,7 @@ SessionEvent? sessionEventFromWire(Map<String, dynamic> e) {
       command: e['command'] as String?,
       path: e['path'] as String?,
       output: e['output'] as String?,
+      agent: e['agent'] as String?,
       diff: diff == null ? null : _diff(diff),
       diffs: e['diffs'] == null ? null : [for (final d in e['diffs'] as List) _diff(d as Map)],
       at: at,
