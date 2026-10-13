@@ -85,7 +85,7 @@ class _LimitBlockState extends State<LimitBlock> {
     final h = widget.hooks;
     final resets = widget.log.limitResetsAt;
     return LimitCard(
-      seen: widget.log.lastEventAt,
+      seen: widget.log.limitSeenAt ?? widget.log.lastEventAt,
       resetsAt: resets,
       message: widget.message,
       relaunchAt: h == null ? null : _spells.relaunchAt(h.id),
@@ -297,9 +297,10 @@ class AskCard extends StatelessWidget {
     status: UiStatus.approval,
     title: askLabel(log),
     who: '',
+    subtitle: log.pending.firstOrNull?.description,
     style: AgentCardStyle.waiting,
     actions: WaitActions(
-      command: log.detail,
+      command: log.requestText,
       onYes: () => onAnswer(AgentAnswer.allow),
       onNo: () => onAnswer(AgentAnswer.deny),
       onAlways: canAlways(log) ? () => onAnswer(AgentAnswer.allowAlways) : null,

@@ -29,7 +29,6 @@ class BriefPage extends StatelessWidget {
     final e = source.entry(id);
     final agent = source.agentOf(id);
     final waiting = source.agents.where((a) => a.status.needsYou).length;
-    final hook = source.hookAskOf(id);
     return Stack(
       children: [
         Positioned.fill(
@@ -40,18 +39,16 @@ class BriefPage extends StatelessWidget {
                 : BriefView(
                     key: ValueKey('$id:${agent.status.name}'),
                     agent: agent,
-                    brief: hook == null
-                        ? briefOf(e.log, agent.status)
-                        : briefOf(e.log, agent.status).withRequest(hook.request, title: hook.description),
-                    question: hook == null ? e.log.question : null,
-                    canAlways: hook == null && canAlways(e.log),
+                    brief: briefOf(e.log, agent.status),
+                    question: e.log.question,
+                    canAlways: canAlways(e.log),
                     queue: waiting,
                     actions: BriefActions(
                       answer: (a) {
                         host.answer(id, a);
                         back();
                       },
-                      answerQuestion: e.live
+                      answerQuestion: source.canAnswerQuestion(id)
                           ? (answers) {
                               source.answerQuestion(id, answers);
                               back();
@@ -59,7 +56,7 @@ class BriefPage extends StatelessWidget {
                           : null,
                       open: openAgent,
                       // Claude's own question in its terminal instead.
-                      terminal: hook == null
+                      terminal: !source.canLeaveInTerminal(id)
                           ? null
                           : () {
                               host.answer(id, AgentAnswer.dismiss);

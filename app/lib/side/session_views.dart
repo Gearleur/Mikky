@@ -81,13 +81,13 @@ PixelFxPalette? stepPalette(StepTone? tone, MikkyUi ui) => switch (tone) {
 
 /// A main step of a task: its dot and words; a tap shows its tools. The
 /// one at work shows the code it writes right under it.
-List<Widget> _step(MainStep s, MikkyUi ui) {
+List<Widget> _step(MainStep s, MikkyUi ui, {int depth = 0}) {
   final code = s.state == TaskStepState.now
       ? _code(s.tools.where((t) => t.active && t.diff != null).lastOrNull?.diff)
       : null;
   return [
     TaskStep(
-      label: s.label,
+      label: s.activity == null ? s.label : '${s.label} · ${s.activity}',
       tone: stepPalette(s.tone, ui),
       state: s.state,
       note: s.note,
@@ -95,7 +95,19 @@ List<Widget> _step(MainStep s, MikkyUi ui) {
           ? null
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [for (final t in s.tools) _toolLine(t, ui)],
+              children: s.agent == null || depth >= 8
+                  ? [for (final t in s.tools) _toolLine(t, ui)]
+                  : [
+                      for (final e in turnFlow(
+                        s.agent!.log.items.where((i) => i is! UserItem).toList(),
+                        const {},
+                        log: s.agent!.log,
+                      ))
+                        if (e is FlowStep)
+                          ..._step(e.step, ui, depth: depth + 1)
+                        else if (e is FlowWords)
+                          NoteLine(e.text, thought: e.thought),
+                    ],
             ),
     ),
     if (code != null) Padding(padding: const EdgeInsets.fromLTRB(19, 2, 0, 6), child: code),
@@ -119,7 +131,7 @@ List<Widget> _plan(TurnSpan turn, MikkyUi ui) {
 
 /// What happened in a task, in order: the agent's words, its main steps,
 /// the messages slipped in; while it works, the dots of what comes.
-List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer, MikkyUi ui) {
+List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer, MikkyUi ui, SessionLog log) {
   final out = <Widget>[];
   Object? previous;
   void add(Object kind, List<Widget> widgets) {
@@ -130,17 +142,17 @@ List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer
   }
 
   if (turn.plan.isNotEmpty) add(PlanEntry, _plan(turn, ui));
-  for (final e in turnFlow(items, answer)) {
+  for (final e in turnFlow(items, answer, log: log)) {
     switch (e) {
       case FlowWords(:final text, :final thought):
         add(FlowWords, [NoteLine(text, thought: thought)]);
       case FlowStep(:final step):
         add(FlowStep, _step(step, ui));
       case FlowMe(:final item):
-        add(FlowMe, [ChatMessage(me: true, text: item.text, meta: item.at == null ? null : clockTime(item.at!))]);
+        add(FlowMe, [ChatMessage(me: true, text: item.text, meta: _userMeta(item))]);
     }
   }
-  if (turn.running && !items.any((i) => i is ToolItem && i.active)) {
+  if (turn.running && log.limitSource == null && !items.any((i) => i is ToolItem && i.active)) {
     add(_Waiting, [const _Waiting()]);
   }
   return out;
@@ -159,7 +171,7 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
   for (final turn in log.turns) {
     final last = identical(turn, log.turns.last);
     // A finished turn, not the last, never changes: its widgets are kept.
-    final kept = !turn.running && !last;
+    final kept = !turn.running && !last && log.subAgents.isEmpty;
     final widgets = kept ? cache?._of(ui, turn) : null;
     if (widgets != null) {
       out.addAll(widgets);
@@ -178,11 +190,11 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
         TaskSection(
           // Folds once a newer task comes.
           key: ValueKey('task-${turn.start}-$last'),
-          status: taskStatus(turn),
-          title: taskTitle(turn),
+          status: taskStatus(turn, log: last ? log : null),
+          title: taskTitle(turn, log: last ? log : null),
           meta: taskMeta(turn, items, toolSteps(tools).length),
           initiallyOpen: last,
-          children: _flow(turn, items, answer.toSet(), ui),
+          children: _flow(turn, items, answer.toSet(), ui, log),
         ),
       );
       gap(6);
@@ -193,22 +205,34 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
           out.add(ChatMessage(me: false, text: text));
           gap(10);
         } else if (e case FlowMe(:final item)) {
-          out.add(ChatMessage(me: true, text: item.text));
+          out.add(
+            ChatMessage(
+              me: true,
+              text: item.text,
+              meta: item.messageId?.startsWith('mikky-') == true ? _userMeta(item) : null,
+            ),
+          );
           gap();
         }
       }
       out.add(const _Waiting());
     }
-    if (turn.running) continue;
+    if (turn.running && !(last && log.limitSource != null)) continue;
+    if (tools.isEmpty && turn.plan.isEmpty && !turn.running) {
+      for (final user in items.whereType<UserItem>().where((u) => u.queued)) {
+        out.add(ChatMessage(me: true, text: user.text, meta: _userMeta(user)));
+        gap();
+      }
+    }
     final text = answer.map((a) => a.text.trim()).join('\n\n');
-    if (turn.reason == StopReason.rateLimited && last) {
+    if (log.limitSource != null && last) {
       // The subscription's limit: when it lifts, not the raw message (user
       // request, 2026-09-30).
       if (text.isNotEmpty) {
         out.add(ChatMessage(me: false, text: text));
         gap(10);
       }
-      out.add(LimitBlock(log: log, message: turn.message, hooks: limit));
+      out.add(LimitBlock(log: log, message: log.limitMessage, hooks: limit));
       gap(14);
     } else if (text.isNotEmpty) {
       out.add(ChatMessage(me: false, text: text));
@@ -221,6 +245,12 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
   }
   return out;
 }
+
+String? _userMeta(UserItem item) => item.messageId?.startsWith('mikky-') == true
+    ? 'Transmis à Claude'
+    : item.at == null
+    ? null
+    : clockTime(item.at!);
 
 /// The widgets of a session's finished turns, kept from one build of its
 /// page to the next (2026-10-05): the same instances, so Flutter skips

@@ -9,6 +9,7 @@ import '../ui/foundation/motion.dart';
 import '../ui/foundation/tokens.dart';
 import 'board_brand.dart';
 import 'board_components.dart';
+import 'board_external_messages.dart';
 import 'board_island.dart';
 import 'board_mikky.dart';
 import 'board_notch.dart';
@@ -45,6 +46,7 @@ final boards = [
   notchTopBoard,
   notchRightBoard,
   messagesBoard,
+  externalMessagesBoard,
   technicalBoard,
 ];
 

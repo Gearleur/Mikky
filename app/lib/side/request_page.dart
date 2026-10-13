@@ -8,6 +8,7 @@ import '../ui/content/side.dart';
 import '../ui/controls/buttons.dart';
 import '../ui/foundation/tokens.dart';
 import 'question_card.dart';
+import 'session_steps.dart';
 
 /// How a request page lays itself out: in the notch, Mikky on its left
 /// (the island draws him there), the request beside him; at the right
@@ -106,7 +107,6 @@ class RequestHost {
     required this.answerQuestion,
     required this.later,
     required this.openAgent,
-    this.reveal,
     this.finishLimit,
     this.send,
   });
@@ -115,16 +115,15 @@ class RequestHost {
   final ValueListenable<List<Agent>> requests;
 
   /// The session of agent [id] (null in the demo).
-  final ({SessionLog log, bool canAlways, ({String request, String? description})? hook})? Function(String id) entry;
+  final ({SessionLog log, bool canAnswerRequests, bool canLeaveInTerminal})? Function(String id) entry;
   final void Function(String id, AgentAnswer answer) answer;
   final bool Function(String id, Map<String, Object>? answers) answerQuestion;
 
   /// Not now: back where the island was.
   final VoidCallback later;
-  final void Function(String id) openAgent;
 
-  /// A click on who asks (Ctrl: its terminal or VS Code).
-  final void Function(String id)? reveal;
+  /// A click on who asks: its page (Ctrl: its terminal or VS Code).
+  final void Function(String id) openAgent;
   final void Function(String id)? finishLimit;
   final Future<void> Function(String id, String text)? send;
 }
@@ -185,11 +184,9 @@ class _RequestPageState extends State<RequestPage> {
     final queue = _host.requests.value;
     final agent = queue.firstOrNull;
     final e = agent == null ? null : _host.entry(agent.id);
-    final hook = e?.hook;
     TaskBrief? brief;
     if (agent != null) {
       brief = e == null ? briefOfAgent(agent) : briefOf(e.log, agent.status);
-      if (hook != null) brief = brief.withRequest(hook.request, title: hook.description);
     }
     final id = agent?.id ?? '';
     final log = e?.log;
@@ -197,19 +194,20 @@ class _RequestPageState extends State<RequestPage> {
       place: widget.place,
       agent: agent,
       brief: brief,
-      question: hook == null ? log?.question : null,
-      canAlways: hook == null && (e?.canAlways ?? false),
+      question: log?.question,
+      canAlways: log != null && canAlways(log),
       position: _answered + 1,
       total: _answered + queue.length,
       close: _host.later,
       actions: BriefActions(
         answer: (a) => _did(() => _host.answer(id, a)),
-        answerQuestion: (answers) => _did(() => _host.answerQuestion(id, answers)),
+        answerQuestion: e?.canAnswerRequests == true
+            ? (answers) => _did(() => _host.answerQuestion(id, answers))
+            : null,
         open: () => _host.openAgent(id),
-        reveal: _host.reveal == null ? null : () => _host.reveal!(id),
         later: _host.later,
         // Claude's own question in its terminal instead.
-        terminal: hook == null ? null : () => _did(() => _host.answer(id, AgentAnswer.dismiss)),
+        terminal: e?.canLeaveInTerminal == true ? () => _did(() => _host.answer(id, AgentAnswer.dismiss)) : null,
         finishLimit: agent?.status == AgentStatus.rateLimited && _host.finishLimit != null
             ? () => _did(() => _host.finishLimit!(id))
             : null,

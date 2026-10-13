@@ -6,6 +6,34 @@ import 'package:mikky_engine/mikky_engine.dart';
 
 /// How a session becomes steps (`session_steps.dart`), without a screen.
 void main() {
+  test('child activity updates its own step after the parent turn ends', () {
+    final log = SessionLog()
+      ..applyAll([
+        const TurnStarted(),
+        const ToolCallEvent('call', name: 'agent', title: 'Lecteur', agent: 'child', status: ToolStatus.running),
+        const TurnEnded(StopReason.endTurn),
+      ]);
+    final child = SessionLog()
+      ..applyAll([
+        const TurnStarted(),
+        const ToolCallEvent('read', kind: ToolKind.read, title: 'Lit reader.rs', status: ToolStatus.running),
+      ]);
+    log.subAgents = [SubAgentLog(id: 'child', name: 'Lecteur', log: child)];
+    MainStep step() => turnFlow(turnItems(log, log.turns.single), const {}, log: log).whereType<FlowStep>().single.step;
+    expect(step().label, 'Sous-agent · Lecteur');
+    expect(step().state, TaskStepState.now);
+    expect(step().activity, 'Lit reader.rs');
+    expect(glanceSteps(log).single.agent!.log, same(child));
+    child.apply(const TurnEnded(StopReason.endTurn));
+    expect(step().state, TaskStepState.done);
+    child.apply(const TurnStarted());
+    child.apply(const TurnEnded(StopReason.rateLimited, message: 'Rate limit reached'));
+    expect(taskStatus(log.turns.single, log: log), UiStatus.limited);
+    expect(taskTitle(log.turns.single, log: log), 'Limite atteinte');
+    // Codex's guardian has no spawn tool: still appears once under the parent.
+    log.subAgents = [SubAgentLog(id: 'guardian', name: 'Relecteur', log: child)];
+    expect(turnItems(log, log.turns.single).whereType<ToolItem>(), hasLength(2));
+  });
   final t0 = DateTime.utc(2026, 9, 30, 12);
 
   group('main steps of a task', () {

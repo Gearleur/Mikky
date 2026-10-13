@@ -27,7 +27,15 @@ import '../pixels/pixel_fx.dart';
 /// 2026-10-01: « elle doit arriver beaucoup plus vite », not at the
 /// bottom).
 /// [width]: the panel's; narrower for a few short choices.
-Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rect? from, double width = 264}) {
+/// [anchored]: stays beside the button, opening with a small scale and
+/// fade instead of morphing from it. The button stays visible.
+Future<int?> showFloatingMenu(
+  BuildContext within,
+  List<MenuEntry> entries, {
+  Rect? from,
+  double width = 264,
+  bool anchored = false,
+}) {
   final done = Completer<int?>();
   if (FloatingMenu._chosen case final panel? when panel.mounted) {
     FloatingMenu._button = null;
@@ -45,6 +53,7 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
   FloatingMenu._button = null;
   final last = FloatingMenu.lastPress;
   final star =
+      !anchored &&
       pressed != null &&
       (from == null
           ? last == null || pressed.rect.inflate(2).contains(last)
@@ -64,6 +73,7 @@ Future<int?> showFloatingMenu(BuildContext within, List<MenuEntry> entries, {Rec
         entries: entries,
         star: star,
         width: width,
+        anchored: anchored,
         done: done,
         onGone: () {
           entry.remove();
@@ -136,6 +146,7 @@ class _MorphMenu extends StatefulWidget {
     required this.entries,
     required this.star,
     required this.width,
+    required this.anchored,
     required this.done,
     required this.onGone,
   });
@@ -147,6 +158,7 @@ class _MorphMenu extends StatefulWidget {
   /// Grows out of a menu button: its star shows at both ends.
   final bool star;
   final double width;
+  final bool anchored;
 
   /// Completed with the choice as soon as it is made.
   final Completer<int?> done;
@@ -243,7 +255,12 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
     final b = widget.bounds.deflate(8), o = widget.origin;
     var left = o.right - size.width;
     var top = o.top;
-    if (top + size.height > b.bottom) top = o.bottom - size.height;
+    if (widget.anchored) {
+      top = o.bottom + 6;
+      if (top + size.height > b.bottom) top = o.top - 6 - size.height;
+    } else if (top + size.height > b.bottom) {
+      top = o.bottom - size.height;
+    }
     left = left.clamp(b.left, math.max(b.left, b.right - size.width));
     top = top.clamp(b.top, math.max(b.top, b.bottom - size.height));
     return Rect.fromLTWH(left, top, size.width, size.height);
@@ -330,6 +347,23 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
   Widget _frame(MikkyUi ui, Rect target, Widget list) {
     final t = _t.value;
     final o = widget.origin;
+    if (widget.anchored) {
+      final shown = _from == null ? target : Rect.lerp(_from, target, _swap.value)!;
+      return Positioned.fromRect(
+        rect: shown,
+        child: IgnorePointer(
+          ignoring: t < .8 || _closing,
+          child: Opacity(
+            opacity: t.clamp(0.0, 1.0),
+            child: Transform.scale(
+              scale: .96 + .04 * t.clamp(0.0, 1.05),
+              alignment: target.top < o.top ? Alignment.bottomRight : Alignment.topRight,
+              child: _PanelBox(width: target.width, child: list),
+            ),
+          ),
+        ),
+      );
+    }
     // Past the button on the way back: the button itself, squeezed a
     // little, before it comes back to its size.
     if (t < 0) {
@@ -467,8 +501,10 @@ class _MenuList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
+    final hasSelection = entries.any((entry) => entry.checked);
     return SlidingHover(
       hairline: false,
+      followHover: !hasSelection,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -477,7 +513,7 @@ class _MenuList extends StatelessWidget {
             if (e.id == 0)
               Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), color: ui.line)
             else
-              _Item(entry: e, onTap: onChoose == null ? null : () => onChoose!(e.id)),
+              _Item(entry: e, selectionMenu: hasSelection, onTap: onChoose == null ? null : () => onChoose!(e.id)),
         ],
       ),
     );
@@ -485,9 +521,10 @@ class _MenuList extends StatelessWidget {
 }
 
 class _Item extends StatelessWidget {
-  const _Item({required this.entry, this.onTap});
+  const _Item({required this.entry, required this.selectionMenu, this.onTap});
 
   final MenuEntry entry;
+  final bool selectionMenu;
   final VoidCallback? onTap;
 
   @override
@@ -496,30 +533,43 @@ class _Item extends StatelessWidget {
     // What cannot be undone reads in red.
     final danger = entry.label.startsWith('Supprimer') || entry.label.startsWith('Arrêter tous');
     return HoverTarget(
-      child: MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(11, 8, 10, 8),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    entry.label,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: uiText(
-                      TextSize.label,
-                      weight: FontWeight.w500,
-                      color: danger ? ui.red : ui.text,
-                      height: 1.25,
-                    ),
-                  ),
+      selected: entry.checked,
+      child: HoverBuilder(
+        enabled: selectionMenu && !entry.checked,
+        builder: (context, hover) => Semantics(
+          button: true,
+          selected: selectionMenu ? entry.checked : null,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              child: AnimatedContainer(
+                duration: Motion.of(context, Motion.hover),
+                decoration: BoxDecoration(
+                  color: hover ? ui.hover : ui.hover.withValues(alpha: 0),
+                  borderRadius: BorderRadius.circular(Radii.md),
                 ),
-                if (entry.checked) ...[const SizedBox(width: 8), MikkyIcon('check', size: 15, color: ui.text)],
-              ],
+                padding: const EdgeInsets.fromLTRB(11, 8, 10, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        entry.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: uiText(
+                          TextSize.label,
+                          weight: FontWeight.w500,
+                          color: danger ? ui.red : ui.text,
+                          height: 1.25,
+                        ),
+                      ),
+                    ),
+                    if (entry.checked) ...[const SizedBox(width: 8), MikkyIcon('check', size: 15, color: ui.text)],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

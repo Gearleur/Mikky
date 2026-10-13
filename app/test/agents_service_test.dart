@@ -91,18 +91,20 @@ void main() {
     final brought = <(int, int)>[];
     final opened = <List<String>>[];
     var windowThere = false;
+    var control = false;
     final service = AgentsService(
       clock: () => 0,
       store: AgentStore(File('${dir.path}/agents.json')),
       connectBackend: () => DaemonClient.connect(DaemonEndpoint(server.port, 'test')),
-      bringForward: (pid, handle) async {
-        brought.add((pid, handle));
+      bringForward: (w) async {
+        brought.add((w.pid, w.handle));
         return windowThere;
       },
       openVsCode: (args) async {
         opened.add(args);
         return true;
       },
+      controlDown: () async => control,
     );
     try {
       await service.start();
@@ -133,6 +135,17 @@ void main() {
       windowThere = true;
       expect(await service.reveal('s-q'), isTrue);
       expect(opened, hasLength(1));
+
+      // A click on the agent: its page; with Ctrl, its window.
+      var pages = 0;
+      await service.openOrReveal(id, () => pages++);
+      expect((pages, brought.length), (1, 2));
+      control = true;
+      await service.openOrReveal(id, () => pages++);
+      expect((pages, brought.length), (1, 3));
+      // Not an agent (« + », a page): opened, whatever the keys.
+      await service.openOrReveal('new', () => pages++);
+      expect((pages, brought.length), (2, 3));
     } finally {
       await service.shutdown();
       service.dispose();

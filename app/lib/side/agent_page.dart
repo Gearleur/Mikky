@@ -2,13 +2,12 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
-import '../ui/content/cards.dart';
+import '../ui/content/messages.dart';
 import '../ui/content/side.dart';
 import '../ui/content/thread_page.dart';
 import '../ui/controls/buttons.dart';
 import '../ui/controls/field.dart';
 import '../ui/foundation/icons.dart';
-import '../ui/foundation/status.dart';
 import '../ui/foundation/tokens.dart';
 import 'question_card.dart';
 import 'session_cards.dart';
@@ -49,7 +48,6 @@ class AgentPage extends StatelessWidget {
         ],
       );
     }
-    final hook = _source.hookAskOf(e.id);
     return AgentPageView(
       key: ValueKey(e.id),
       mikky: mikky,
@@ -62,9 +60,11 @@ class AgentPage extends StatelessWidget {
         live: e.live,
         host: e.host,
         adapterPid: e.live && e.run is DaemonAgentRun ? (e.run as DaemonAgentRun).adapterPid : null,
-        hook: hook == null ? null : (description: hook.description, request: hook.request),
+        canAnswerRequests: _source.canAnswerRequests(e.id),
         limitFinished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
         canSend: host.service.canLaunch,
+        canQueueExternal: e.provider == AgentProvider.claude && e.host == AgentHost.windows,
+        messages: _source.messagesOf(e.id),
       ),
       actions: AgentPageActions(
         back: back,
@@ -92,9 +92,11 @@ class AgentPageModel {
     this.live = true,
     this.host = AgentHost.windows,
     this.adapterPid,
-    this.hook,
+    this.canAnswerRequests,
     this.limitFinished = false,
     this.canSend = true,
+    this.canQueueExternal = false,
+    this.messages = const [],
   });
 
   final String id;
@@ -111,14 +113,16 @@ class AgentPageModel {
   /// PID of the ACP adapter Mikky runs for it.
   final int? adapterPid;
 
-  /// A request through Claude's hooks (a session outside Mikky).
-  final ({String? description, String request})? hook;
+  /// Whether the backend can receive an answer; null uses [live].
+  final bool? canAnswerRequests;
 
   /// Stopped by its limit, and « Terminée » by the user.
   final bool limitFinished;
 
   /// A message can be sent (the engine is there).
   final bool canSend;
+  final bool canQueueExternal;
+  final List<ExternalMessage> messages;
 }
 
 /// What the user does on an agent's page.
@@ -200,11 +204,14 @@ class _AgentPageViewState extends State<AgentPageView> {
 
   /// Stays at the bottom as the conversation grows (unless the user
   /// scrolled up to read).
-  void _follow(SessionLog log) {
-    if (log.version == _lastVersion) return;
+  String _lastMessages = '';
+  void _follow(SessionLog log, List<ExternalMessage> messages) {
+    final key = messages.map((m) => '${m.id}:${m.delivered}').join('|');
+    if (log.version == _lastVersion && key == _lastMessages) return;
     // Opening the page: straight to the end of the conversation.
     final first = _lastVersion == -1;
     _lastVersion = log.version;
+    _lastMessages = key;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
       final p = _scroll.position;
@@ -233,10 +240,9 @@ class _AgentPageViewState extends State<AgentPageView> {
     final a = widget.actions;
     final log = m.log;
     final working = log.working;
-    _follow(log);
+    _follow(log, m.messages);
 
     final usage = usageLine(log);
-    final hook = m.hook;
     final content = <Widget>[
       if (_sendError != null) Text(_sendError!, style: uiText(12, color: ui.red)),
       if (m.adapterPid != null)
@@ -269,24 +275,7 @@ class _AgentPageViewState extends State<AgentPageView> {
           padding: const EdgeInsets.only(top: 12),
           child: PausedCard(onResume: a.resume ?? () {}),
         )
-      else if (hook != null)
-        // A session outside Mikky, asking through Claude's hooks.
-        Padding(
-          padding: const EdgeInsets.only(top: 12),
-          child: AgentCard(
-            status: UiStatus.approval,
-            title: 'Attend ton feu vert',
-            who: '',
-            subtitle: hook.description,
-            style: AgentCardStyle.waiting,
-            actions: WaitActions(
-              command: hook.request,
-              onYes: () => a.answer?.call(AgentAnswer.allow),
-              onNo: () => a.answer?.call(AgentAnswer.deny),
-            ),
-          ),
-        )
-      else if ((log.pending.isNotEmpty || log.question != null) && m.live)
+      else if ((log.pending.isNotEmpty || log.question != null) && (m.canAnswerRequests ?? m.live))
         Padding(
           padding: const EdgeInsets.only(top: 12),
           child: log.question != null
@@ -295,11 +284,23 @@ class _AgentPageViewState extends State<AgentPageView> {
         ),
     ];
 
-    final Widget? composer = m.external && working
+    final recorded = log.items.whereType<UserItem>().map((u) => u.messageId).toSet();
+    for (final message in m.messages.where((m) => !recorded.contains(m.id))) {
+      content.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: ChatMessage(key: ValueKey(message.id), me: true, text: message.text, meta: message.label),
+        ),
+      );
+    }
+
+    final Widget? composer = m.external && working && !m.canQueueExternal
         ? null
         : Composer(
             key: ValueKey('composer:${m.id}'),
-            placeholder: working
+            placeholder: m.external && working
+                ? 'Arrive à son prochain outil…'
+                : working
                 ? 'Écris à cet agent…'
                 : m.external
                 ? 'Continuer dans Mikky…'

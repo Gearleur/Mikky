@@ -16,7 +16,6 @@ class BriefActions {
     this.open,
     this.terminal,
     this.later,
-    this.reveal,
     this.finishLimit,
     this.enchant,
   });
@@ -27,7 +26,8 @@ class BriefActions {
   /// The answers to a question by key; null: skipped.
   final ValueChanged<Map<String, Object>?>? answerQuestion;
 
-  /// The agent's page.
+  /// The agent's page (Ctrl + click: its terminal or VS Code, see
+  /// `AgentsService.openOrReveal`).
   final VoidCallback? open;
 
   /// Leave the request to the terminal it came from (sessions followed
@@ -36,10 +36,6 @@ class BriefActions {
 
   /// Not now: back where the island was, the request still waiting.
   final VoidCallback? later;
-
-  /// A click on who asks: its page; with Ctrl, its terminal or VS Code
-  /// (2026-10-08). Defaults to [open].
-  final VoidCallback? reveal;
 
   /// A limit: « Terminer » (no more waiting), « Relance auto ».
   final VoidCallback? finishLimit, enchant;
@@ -144,12 +140,12 @@ class BriefView extends StatelessWidget {
         ],
       ],
     );
-    // Ctrl + click on who asks: its terminal or VS Code (2026-10-08); a
-    // plain click, its page.
-    final head = actions.reveal != null || actions.open != null
+    // A click on who asks: its page; Ctrl + click, its terminal or VS Code
+    // (2026-10-08, `AgentsService.openOrReveal`, behind [actions.open]).
+    final head = actions.open != null
         ? GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: actions.reveal ?? actions.open,
+            onTap: actions.open,
             child: MouseRegion(cursor: SystemMouseCursors.click, child: title),
           )
         : title;

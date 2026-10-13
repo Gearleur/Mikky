@@ -228,6 +228,42 @@ final notchTopBoard = BoardSpec(
         ),
       ],
     ),
+    BoardSection(
+      title: 'Sous-agents · essai fonctionnel',
+      note: 'Le sous-agent reste dans le fil du parent ; son état et ses actions viennent de sa propre session. Rendu à dessiner ensemble.',
+      frames: [
+        BoardFrame(
+          label: 'Sous-agent en direct',
+          kind: FrameKind.trial,
+          width: 700,
+          child: _page(AgentMock(title: 'Vérifie le moteur', log: FakeSessions.subAgents(), framed: false)),
+        ),
+        BoardFrame(
+          label: 'Limite dans le sous-agent',
+          kind: FrameKind.trial,
+          width: 700,
+          child: _page(AgentMock(title: 'Vérifie le moteur', log: FakeSessions.subAgentLimited(), framed: false)),
+        ),
+      ],
+    ),
+    BoardSection(
+      title: 'Demandes · modèle commun',
+      kind: FrameKind.trial,
+      note: 'Le même fil et les mêmes cartes pour un agent lancé par Mikky et pour Claude extérieur. Le canal de réponse est choisi par le client, pas par l’écran.',
+      frames: [
+        for (final (label, log, external) in [
+          ('Permission · Mikky', FakeSessions.approval(), false),
+          ('Permission · Claude extérieur', FakeSessions.externalApproval(), true),
+          ('Question · Mikky', FakeSessions.question(), false),
+          ('Question · Claude extérieur', FakeSessions.externalQuestion(), true),
+        ])
+          BoardFrame(
+            label: label,
+            width: 700,
+            child: _page(AgentMock(title: label, log: log, external: external, canAnswerRequests: true, framed: false)),
+          ),
+      ],
+    ),
     ...notchRequestSections(),
     const BoardSection(
       title: 'Fonctionnement',

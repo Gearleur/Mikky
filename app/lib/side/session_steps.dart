@@ -10,8 +10,13 @@ import 'session_text.dart';
 // `session_views.dart` draws it.
 
 /// The items of a turn.
-List<ThreadItem> turnItems(SessionLog log, TurnSpan turn) =>
-    log.items.sublist(turn.start, turn.end ?? log.items.length);
+List<ThreadItem> turnItems(SessionLog log, TurnSpan turn) => [
+  ...log.items.sublist(turn.start, turn.end ?? log.items.length),
+  if (identical(turn, log.turns.last))
+    for (final a in log.subAgents)
+      if (!log.items.whereType<ToolItem>().any((t) => log.subAgentOf(t) == a))
+        ToolItem('subagent:${a.id}', name: 'agent', agent: a.id, title: a.name, status: a.status),
+];
 
 /// The agent offers « always allow » for its pending request.
 bool canAlways(SessionLog log) => log.pending.firstOrNull?.options.any((o) => o.kind == 'allow_always') ?? false;
@@ -50,7 +55,19 @@ enum StepTone {
 /// A main step of a task: its plan's step, or tools of one kind in a row
 /// (« Lit 3 fichiers »).
 class MainStep {
-  const MainStep({required this.label, required this.state, this.tone, this.note, this.tools = const []});
+  const MainStep({
+    required this.label,
+    required this.state,
+    this.tone,
+    this.note,
+    this.tools = const [],
+    this.agent,
+    this.activity,
+  });
+
+  final String? activity;
+
+  final SubAgentLog? agent;
 
   final String label;
   final TaskStepState state;
@@ -64,20 +81,23 @@ class MainStep {
 /// What kind of main step a tool belongs to: tools of the same kind in a
 /// row make one step (« Lit 3 fichiers »). Null: not worth a step (the
 /// agent's own bookkeeping, like loading its tools or its to-do list).
-String? _groupOf(ToolItem t) => switch (t.kind) {
-  ToolKind.read || ToolKind.search => 'look',
-  ToolKind.edit => 'edit:${t.path ?? t.id}',
-  ToolKind.delete => 'delete:${t.id}',
-  ToolKind.move => 'move:${t.id}',
-  ToolKind.execute => 'run',
-  ToolKind.fetch => 'web',
-  ToolKind.think => null,
-  ToolKind.other => t.status == ToolStatus.failed ? 'other:${t.id}' : null,
-};
+String? _groupOf(ToolItem t) => t.launchesAgent
+    ? 'agent:${t.id}'
+    : switch (t.kind) {
+        ToolKind.read || ToolKind.search => 'look',
+        ToolKind.edit => 'edit:${t.path ?? t.id}',
+        ToolKind.delete => 'delete:${t.id}',
+        ToolKind.move => 'move:${t.id}',
+        ToolKind.execute => 'run',
+        ToolKind.fetch => 'web',
+        ToolKind.think => null,
+        ToolKind.other => t.status == ToolStatus.failed ? 'other:${t.id}' : null,
+      };
 
 /// A main step in a few words, for tools of one group.
 String stepLabel(List<ToolItem> tools) {
   final t = tools.first;
+  if (t.launchesAgent) return 'Sous-agent · ${toolTitle(t)}';
   final n = tools.length;
   String name(ToolItem t) => folderName(t.path ?? t.diff?.path);
   switch (t.kind) {
@@ -192,12 +212,33 @@ class FlowMe extends FlowEntry {
 
 /// The turn's [items] in order, without the user's opening messages and
 /// without [skip] (the answer, shown under the task).
-List<FlowEntry> turnFlow(List<ThreadItem> items, Set<ThreadItem> skip) {
+List<FlowEntry> turnFlow(List<ThreadItem> items, Set<ThreadItem> skip, {SessionLog? log}) {
   final out = <FlowEntry>[];
   String? group;
   var tools = <ToolItem>[];
   void flush() {
-    if (tools.isNotEmpty) out.add(FlowStep(_stepOf(tools)));
+    if (tools.isNotEmpty) {
+      final child = log?.subAgentOf(tools.first);
+      out.add(
+        FlowStep(
+          child == null
+              ? _stepOf(tools)
+              : MainStep(
+                  label: 'Sous-agent · ${child.name}',
+                  state: child.status == ToolStatus.running || child.status == ToolStatus.pending
+                      ? TaskStepState.now
+                      : child.status == ToolStatus.failed
+                      ? TaskStepState.failed
+                      : TaskStepState.done,
+                  activity: child.status == ToolStatus.completed
+                      ? 'fini'
+                      : (child.log.detail.isEmpty ? null : child.log.detail),
+                  agent: child,
+                  tools: tools,
+                ),
+        ),
+      );
+    }
     tools = [];
     group = null;
   }
@@ -246,7 +287,12 @@ List<MainStep> glanceSteps(SessionLog log, {int max = 4}) {
     orElse: () => const TurnSpan(-1),
   );
   if (turn.start < 0) return const [];
-  final steps = turn.plan.isNotEmpty ? planSteps(turn) : toolSteps(turnItems(log, turn).whereType<ToolItem>().toList());
+  final steps = turn.plan.isNotEmpty
+      ? planSteps(turn)
+      : [
+          for (final e in turnFlow(turnItems(log, turn), const {}, log: log))
+            if (e is FlowStep) e.step,
+        ];
   if (steps.length <= max) return steps;
   final now = steps.indexWhere((s) => s.state == TaskStepState.now);
   final anchor = now >= 0 ? now : steps.lastIndexWhere((s) => s.state != TaskStepState.todo);
@@ -256,7 +302,9 @@ List<MainStep> glanceSteps(SessionLog log, {int max = 4}) {
 }
 
 /// The state of a turn's task.
-UiStatus taskStatus(TurnSpan turn) => turn.running
+UiStatus taskStatus(TurnSpan turn, {SessionLog? log}) => log?.limitSource != null
+    ? UiStatus.limited
+    : turn.running
     ? UiStatus.working
     : switch (turn.reason) {
         StopReason.cancelled => UiStatus.paused,
@@ -266,7 +314,9 @@ UiStatus taskStatus(TurnSpan turn) => turn.running
       };
 
 /// The title of a turn's task: what it does now, or how it ended.
-String taskTitle(TurnSpan turn) => turn.running
+String taskTitle(TurnSpan turn, {SessionLog? log}) => log?.limitSource != null
+    ? 'Limite atteinte'
+    : turn.running
     ? 'Au travail'
     : switch (turn.reason) {
         StopReason.cancelled => 'Tâche arrêtée',

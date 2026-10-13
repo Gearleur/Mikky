@@ -38,12 +38,14 @@ class AgentsService extends ChangeNotifier {
     required double Function() clock,
     AgentStore? store,
     Future<DaemonClient?> Function()? connectBackend,
-    Future<bool> Function(int pid, int handle)? bringForward,
+    Future<bool> Function(BringWindow window)? bringForward,
     Future<bool> Function(List<String> args)? openVsCode,
+    Future<bool> Function()? controlDown,
   }) : store = store ?? AgentStore.standard(),
        _connectBackend = connectBackend ?? _defaultConnection,
        _bringForward = bringForward ?? _bringWindowForward,
-       _openVsCode = openVsCode ?? _startVsCode {
+       _openVsCode = openVsCode ?? _startVsCode,
+       _controlDown = controlDown ?? _controlHeld {
     source = RealAgentSource(
       clock: clock,
       store: this.store,
@@ -55,13 +57,24 @@ class AgentsService extends ChangeNotifier {
     _sub = source.changes.listen((_) => _changed());
     source
       ..answerHook = ((id, decision) => _answerHook({'id': id, 'decision': decision}))
-      ..answerHookQuestion = ((id, answers) => _answerHook({'id': id, 'answers': answers}));
+      ..answerHookQuestion = ((id, answers) => _answerHook({'id': id, 'answers': answers}))
+      ..enqueueExternal = ((entry, id, text) async {
+        final result = await _client.request('hooks.messages.send', {
+          'agent': entry.provider.name,
+          'host': entry.host.name,
+          'sessionId': entry.sessionId,
+          'id': id,
+          'text': text,
+        }) as Map;
+        return ExternalMessage.fromWire(result);
+      });
   }
 
   final AgentStore store;
   final Future<DaemonClient?> Function() _connectBackend;
-  final Future<bool> Function(int pid, int handle) _bringForward;
+  final Future<bool> Function(BringWindow window) _bringForward;
   final Future<bool> Function(List<String> args) _openVsCode;
+  final Future<bool> Function() _controlDown;
 
   /// `hooks.answer`: a permission's `decision`, or a question's `answers`
   /// (null for either: Claude asks in its terminal).
@@ -73,9 +86,16 @@ class AgentsService extends ChangeNotifier {
 
   /// The overlay's native side (`windows/runner/reveal.cpp`): only the
   /// app that got the click may take the foreground.
-  static Future<bool> _bringWindowForward(int pid, int handle) async {
+  static Future<bool> _bringWindowForward(BringWindow w) => _overlay('revealWindow', [w.pid, w.handle, w.title]);
+
+  /// Ctrl held: Flutter knows it when the overlay has the keyboard, which
+  /// the island rarely has; Windows always does (`overlay_methods.cpp`).
+  static Future<bool> _controlHeld() async =>
+      HardwareKeyboard.instance.isControlPressed || await _overlay('controlDown');
+
+  static Future<bool> _overlay(String method, [Object? arguments]) async {
     try {
-      return await const MethodChannel('mikky/overlay').invokeMethod<bool>('revealWindow', [pid, handle]) ?? false;
+      return await const MethodChannel('mikky/overlay').invokeMethod<bool>(method, arguments) ?? false;
     } on MissingPluginException {
       return false;
     } on PlatformException {
@@ -185,6 +205,9 @@ class AgentsService extends ChangeNotifier {
         if (n.method == 'hooks.changed' && daemon == active && !_closing) {
           _hookAsks(n.params['requests']);
         }
+        if (n.method == 'hooks.messages.changed' && daemon == active && !_closing) {
+          _externalMessages(n.params['messages']);
+        }
         if (n.method == 'machine.disconnected' && daemon == active && !_closing) {
           unawaited(active.close());
         }
@@ -198,6 +221,7 @@ class AgentsService extends ChangeNotifier {
       unawaited(watcher.start());
       await _syncRuns(client);
       unawaited(client.request('hooks.list').then(_hookAsks).catchError((Object _) {}));
+      unawaited(client.request('hooks.messages.list').then(_externalMessages).catchError((Object _) {}));
       backend = BackendState.online;
       for (final host in AgentHost.values) {
         unawaited(_remoteTarget(client, host));
@@ -278,6 +302,14 @@ class AgentsService extends ChangeNotifier {
       for (final r in list)
         if (r is Map) HookAsk.fromJson(r.cast<String, Object?>()),
     ]);
+  }
+
+  void _externalMessages(Object? list) {
+    if (list is! List) return;
+    source.externalMessages([
+      for (final m in list)
+        if (m is Map) ExternalMessage.fromWire(m),
+    ], snapshot: true);
   }
 
   /// The hooks of [tool] (Claude Code or Codex) for sessions started
@@ -433,12 +465,21 @@ class AgentsService extends ChangeNotifier {
     );
     for (final step in steps) {
       final done = switch (step) {
-        BringWindow(:final pid, :final handle) => await _bringForward(pid, handle),
+        final BringWindow window => await _bringForward(window),
         OpenInVsCode(:final args) => await _openVsCode(args),
       };
       if (done) return true;
     }
     return false;
+  }
+
+  /// A click on agent [id] (a tile, the task followed, a request, a row of
+  /// the history): with Ctrl, the application it runs in ([reveal]);
+  /// else, or with nowhere to go, [open] — its page.
+  Future<void> openOrReveal(String id, VoidCallback open) async {
+    final sessionId = source.entry(id)?.sessionId;
+    if (sessionId != null && await _controlDown() && await reveal(sessionId)) return;
+    open();
   }
 
   Future<void> stopAll() async => _client.request('runs.stopAll');

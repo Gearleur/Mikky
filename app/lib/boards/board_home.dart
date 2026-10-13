@@ -90,7 +90,9 @@ class PagerTry extends StatelessWidget {
 /// « Choisir l'environnement » in a little window of its own (with an
 /// Overlay, as the app's): the real menu opens in it.
 class SelectorTry extends StatefulWidget {
-  const SelectorTry({super.key});
+  const SelectorTry({super.key, this.small = false});
+
+  final bool small;
 
   @override
   State<SelectorTry> createState() => _SelectorTryState();
@@ -102,10 +104,12 @@ class _SelectorTryState extends State<SelectorTry> {
     builder: (inner) => Stack(
       children: [
         Positioned(
-          top: 18,
+          top: widget.small ? null : 18,
+          bottom: widget.small ? 18 : null,
           right: 18,
           child: EnvironmentSelector(
             selected: _environment,
+            small: widget.small,
             menuWithin: inner,
             onChanged: (e) {
               _environment = e;

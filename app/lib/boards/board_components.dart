@@ -291,9 +291,16 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
             const BoardFrame(
               label: 'Choisir l’environnement',
               kind: FrameKind.play,
-              note: 'Refait le 2 octobre. Le nom en noir et l’étoile grise des réglages, à plat ; gris au survol ; pressé ou menu ouvert, le relief d’une réponse, puis de nouveau à plat dès que le menu part (avant, un contour restait). Le menu sort du sélecteur entier, à sa largeur, et se déroule tout droit (vers le haut en bas de l’accueil). Le nouveau nom monte, l’ancien s’en va par le haut. Contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
+              note: 'Le nom et l’étoile gardent leurs couleurs. Le menu apparaît à côté du bouton avec un fondu et un léger zoom, sans se déplier verticalement. Le choix actif reste marqué, même au survol d’une autre ligne ; les noms et la coche ont leur place. Le nom change en fondu. Contour seulement au clavier. VPS et Cloud dessinés, pas branchés.',
               width: 300,
               child: SelectorTry(),
+            ),
+            const BoardFrame(
+              label: 'Environnement · notch',
+              kind: FrameKind.play,
+              note: 'Le vrai sélecteur compact de 24 px, en bas à droite. Le menu s’ouvre au-dessus avec assez de largeur pour conserver Local et sa coche.',
+              width: 300,
+              child: SelectorTry(small: true),
             ),
             BoardFrame(
               label: 'Sélecteurs',

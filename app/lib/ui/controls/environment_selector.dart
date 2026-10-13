@@ -31,11 +31,11 @@ List<MenuEntry> environmentMenuEntries(MikkyEnvironment selected) => [
 /// raised (pressed, or its menu open: the relief of an answer).
 enum _Look { rest, hover, raised }
 
-/// « Choisir l'environnement » (redone 2026-10-02): the name and the
+/// « Choisir l'environnement »: the name and the
 /// settings' grey star, flat; grey under the mouse; pressed or menu open,
 /// the relief of an answer, and back to flat as soon as the menu is gone.
-/// Both the name and the star open our floating menu out of the star. A
-/// new choice slides in from below, the old one out above. As wide as
+/// Both the name and the star open a roomy anchored menu. A
+/// new choice fades in without moving the label. As wide as
 /// the longest name: it never moves. The focus ring only after the
 /// keyboard. [menuWithin]: the enclosing window, below its Overlay, used
 /// as the menu's bounds.
@@ -95,18 +95,18 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
 
   Future<void> _openMenu() async {
     if (_open) return;
-    // The menu unfolds straight out of the whole selector, as wide as it:
-    // down, or up when there is no room below — never off to the side
-    // (user, 2026-10-02: at the right it went off to the left).
     final box = context.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
     final from = box.localToGlobal(Offset.zero) & box.size;
+    final menuStyle = uiText(TextSize.label, weight: FontWeight.w500);
+    final menuWidth = math.max(144.0, _widestLabel(menuStyle, MediaQuery.textScalerOf(context)) + 56);
     setState(() => _open = true);
     final id = await showFloatingMenu(
       widget.menuWithin,
       environmentMenuEntries(widget.selected),
       from: from,
-      width: from.width,
+      width: math.max(from.width, menuWidth),
+      anchored: true,
     );
     if (!mounted) return;
     // Back to flat, whatever happened while the menu was open (the mouse
@@ -226,8 +226,7 @@ class _EnvironmentSelectorState extends State<EnvironmentSelector> {
   }
 }
 
-/// The name: a new one slides in from below as the old one leaves above,
-/// both fading, clipped to the line.
+/// The current name changes with a short fade, without vertical travel.
 class _Name extends StatelessWidget {
   const _Name(this.text, {required this.style});
 
@@ -237,18 +236,11 @@ class _Name extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ClipRect(
     child: AnimatedSwitcher(
-      duration: Motion.of(context, Motion.slide),
+      duration: Motion.of(context, Motion.fade),
       switchInCurve: Motion.enter,
       switchOutCurve: Motion.leave,
       layoutBuilder: (current, previous) => Stack(alignment: Alignment.centerLeft, children: [...previous, ?current]),
-      transitionBuilder: (child, t) {
-        final incoming = child.key == ValueKey(text);
-        final slide = Tween(begin: Offset(0, incoming ? .9 : -.9), end: Offset.zero).animate(t);
-        return FadeTransition(
-          opacity: t,
-          child: SlideTransition(position: slide, child: child),
-        );
-      },
+      transitionBuilder: (child, t) => FadeTransition(opacity: t, child: child),
       child: Text(text, key: ValueKey(text), maxLines: 1, style: style),
     ),
   );

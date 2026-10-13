@@ -794,7 +794,6 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       [for (final a in s.agents) '${a.id}:${a.status.index}:${a.detail}'].join('|'),
       now.floor(),
       entry?.log.version,
-      _demo ? null : widget.agents.source.hookAskOf(focus?.id ?? '')?.id,
     );
     if (key != _openContentKey || _openContent == null) {
       _openContentKey = key;
@@ -808,9 +807,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       } else {
         // What Mikky brings: the request with its task (2026-10-04).
         final log = entry?.log;
-        final hook = _demo ? null : widget.agents.source.hookAskOf(focus.id);
-        var brief = log == null ? briefOfAgent(focus) : briefOf(log, focus.status);
-        if (hook != null) brief = brief.withRequest(hook.request, title: hook.description);
+        final brief = log == null ? briefOfAgent(focus) : briefOf(log, focus.status);
         _openContent = RepaintBoundary(
           child: MikkyUiScope(
             ui: theme.ui,
@@ -822,12 +819,12 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   key: ValueKey('${focus.id}:${focus.status.name}'),
                   agent: focus,
                   brief: brief,
-                  question: hook == null ? log?.question : null,
-                  canAlways: hook == null && log != null && canAlways(log),
+                  question: log?.question,
+                  canAlways: log != null && canAlways(log),
                   queue: s.pendingAlerts,
                   actions: BriefActions(
                     answer: (a) => _answer(focus, a),
-                    answerQuestion: entry != null && entry.live
+                    answerQuestion: entry != null && widget.agents.source.canAnswerQuestion(focus.id)
                         ? (answers) {
                             widget.agents.source.answerQuestion(focus.id, answers);
                             _react(reactionToAnswer(AgentAnswer.allow));
@@ -835,8 +832,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                             _sync();
                           }
                         : null,
-                    open: _demo ? null : () => _openAgentPage(focus.id),
-                    terminal: hook == null ? null : () => _answer(focus, AgentAnswer.dismiss),
+                    // Ctrl + click: its terminal or VS Code instead.
+                    open: _demo
+                        ? null
+                        : () => widget.agents.openOrReveal(focus.id, () {
+                            if (mounted) _openAgentPage(focus.id);
+                          }),
+                    terminal: !_demo && widget.agents.source.canLeaveInTerminal(focus.id)
+                        ? () => _answer(focus, AgentAnswer.dismiss)
+                        : null,
                   ),
                 ),
               ),

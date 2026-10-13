@@ -110,6 +110,7 @@ class FlutterWindow : public Win32Window {
   void OnPreloadSounds(const flutter::EncodableValue* arguments, MethodResult& result);
   void OnSetHotkeys(const flutter::EncodableValue* arguments, MethodResult& result);
   void OnRevealWindow(const flutter::EncodableValue* arguments, MethodResult& result);
+  void OnControlDown(const flutter::EncodableValue* arguments, MethodResult& result);
   void OnQuit(const flutter::EncodableValue* arguments, MethodResult& result);
 
   // When the sounds playing should be over: their voices are freed, and

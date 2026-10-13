@@ -87,7 +87,7 @@ class Enchantments extends ChangeNotifier {
       final log = e.log;
       Future<void> send(String t) => source.send(e.id, t);
       if (e.status == AgentStatus.rateLimited) {
-        final at = log.lastEventAt ?? now;
+        final at = log.limitSeenAt ?? log.lastEventAt ?? now;
         final resets = log.limitResetsAt;
         if (_sentAt.containsKey(e.id)) {
           limitedAgain(e.id, at, resets, send);

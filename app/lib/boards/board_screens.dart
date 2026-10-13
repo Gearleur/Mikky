@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../agents/enchant.dart';
@@ -24,6 +25,9 @@ class AgentMock extends StatefulWidget {
     required this.title,
     required this.log,
     this.external = false,
+    this.canAnswerRequests,
+    this.canQueueExternal = false,
+    this.messages = const [],
     this.adapterPid,
     this.scrolled = false,
     this.paused = false,
@@ -53,8 +57,11 @@ class AgentMock extends StatefulWidget {
   /// Scrolled down a little: the thread passes under the buttons.
   final bool scrolled;
 
-  /// Started in VS Code or a terminal: followed, read only.
+  /// Started in VS Code or a terminal: observed, with an optional hook queue.
   final bool external;
+  final bool? canAnswerRequests;
+  final bool canQueueExternal;
+  final List<ExternalMessage> messages;
 
   /// PID of a Mikky-controlled ACP adapter, on its own host.
   final int? adapterPid;
@@ -100,6 +107,9 @@ class _AgentMockState extends State<AgentMock> {
         log: log,
         status: widget.paused ? AgentStatus.paused : log.statusAt(log.lastEventAt ?? DateTime(2026)),
         external: widget.external,
+        canAnswerRequests: widget.canAnswerRequests,
+        canQueueExternal: widget.canQueueExternal,
+        messages: widget.messages,
         live: !widget.external,
         adapterPid: widget.adapterPid,
         limitFinished: widget.finished,

@@ -107,11 +107,11 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       layout: widget.layout,
       entries: host.service.source.homeEntries,
       canLaunch: host.service.canLaunch,
-      open: _open,
+      open: _click,
       recalled: _recalled,
       recall: (id) {
         setState(() => _recalled.add(id));
-        _open(id);
+        _click(id);
       },
       onMenu: _menu,
     ),
@@ -227,7 +227,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
           host: host,
           id: w.substring(6),
           back: back,
-          openAgent: () => _replaceTop(_agentPage(w.substring(6))),
+          openAgent: () => _click(w.substring(6), then: () => _replaceTop(_agentPage(w.substring(6)))),
         ),
       ),
     ),
@@ -241,6 +241,15 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     ),
     _ => _pushPage(_agentPage(what)),
   };
+
+  /// A click on [what] (an agent, « + »…): Ctrl + click on an agent, the
+  /// application it runs in (its terminal, VS Code); else [then], by
+  /// default its page.
+  void _click(String what, {VoidCallback? then}) => unawaited(
+    host.service.openOrReveal(what, () {
+      if (mounted) (then ?? () => _open(what))();
+    }),
+  );
 
   /// The diff of a file, from a click on its « +N −M » (2026-10-12).
   void _openDiff(String path, List<FileDiff> changes) =>

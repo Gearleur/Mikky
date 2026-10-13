@@ -26,6 +26,7 @@ void FlutterWindow::HandleMethodCall(
       {"preloadSounds", &FlutterWindow::OnPreloadSounds},
       {"setHotkeys", &FlutterWindow::OnSetHotkeys},
       {"revealWindow", &FlutterWindow::OnRevealWindow},
+      {"controlDown", &FlutterWindow::OnControlDown},
       {"quit", &FlutterWindow::OnQuit},
   };
   const auto handler = handlers.find(call.method_name());
@@ -223,19 +224,31 @@ void FlutterWindow::OnSetHotkeys(const flutter::EncodableValue* arguments,
 
 void FlutterWindow::OnRevealWindow(const flutter::EncodableValue* arguments,
                                    MethodResult& result) {
-  // [pid, handle]: the window an agent's session runs in (reveal.cpp).
+  // [pid, handle, title?]: the window an agent's session runs in
+  // (reveal.cpp).
   bool shown = false;
   const auto* args = std::get_if<flutter::EncodableList>(arguments);
-  if (args && args->size() == 2) {
+  if (args && (args->size() == 2 || args->size() == 3)) {
     const auto number = [](const flutter::EncodableValue& v) -> int64_t {
       if (const auto* i = std::get_if<int32_t>(&v)) return *i;
       if (const auto* l = std::get_if<int64_t>(&v)) return *l;
       return 0;
     };
+    const std::string* title =
+        args->size() == 3 ? std::get_if<std::string>(&(*args)[2]) : nullptr;
     shown = RevealWindow(static_cast<DWORD>(number((*args)[0])),
-                         number((*args)[1]));
+                         number((*args)[1]),
+                         title ? Utf16FromUtf8(*title) : std::wstring());
   }
   result.Success(flutter::EncodableValue(shown));
+}
+
+void FlutterWindow::OnControlDown(const flutter::EncodableValue* /*arguments*/,
+                                  MethodResult& result) {
+  // Ctrl + click on an agent: the island rarely has the keyboard focus, so
+  // Flutter may not know Ctrl is held; Windows does.
+  result.Success(
+      flutter::EncodableValue((GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0));
 }
 
 void FlutterWindow::OnQuit(const flutter::EncodableValue* /*arguments*/,

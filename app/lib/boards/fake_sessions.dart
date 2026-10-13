@@ -3,6 +3,54 @@ import 'package:mikky_engine/mikky_engine.dart';
 /// Made-up sessions for the boards: every state an agent's page can be
 /// in, built from the same events Claude and Codex send.
 abstract final class FakeSessions {
+  static SessionLog externalApproval() {
+    final log = approval();
+    final request = log.pending.single;
+    log.setExternalRequest(
+      PermissionAsked(
+        'hook:7',
+        toolCallId: request.toolCallId,
+        title: request.title,
+        command: request.command,
+        options: const [PermissionOption('allow', 'Oui', 'allow_once'), PermissionOption('deny', 'Non', 'reject_once')],
+        at: request.at,
+      ),
+    );
+    return log;
+  }
+
+  static SessionLog externalQuestion() {
+    final log = question();
+    final request = log.question!;
+    log.setExternalRequest(
+      QuestionAsked('hook:8', message: request.message, questions: request.questions, at: request.at),
+    );
+    return log;
+  }
+
+  /// Functional sub-agent trial; visual design is still to be decided.
+  static SessionLog subAgents() {
+    final log = _log([
+      ..._start('Vérifie le moteur et son interface.'),
+      const ToolCallEvent('spawn', name: 'agent', title: 'Lecteur', agent: 'child', status: ToolStatus.running),
+    ]);
+    log.subAgents = [SubAgentLog(id: 'child', name: 'Lecteur', tool: 'spawn', log: workingNoPlan())];
+    return log;
+  }
+
+  static SessionLog subAgentLimited() {
+    final log = subAgents();
+    log.subAgents.single.log.apply(
+      TurnEnded(
+        StopReason.rateLimited,
+        message: "You've hit your session limit · resets 5pm (Europe/Paris)",
+        resetsAt: _at(0).copyWith(hour: 17),
+        at: _at(60),
+      ),
+    );
+    return log;
+  }
+
   static final _t0 = DateTime(2026, 9, 30, 14);
   static const _dir = r'C:\Users\alexa\projet\mikky';
   static const _file = r'C:\Users\alexa\projet\mikky\packages\mikky_engine\lib\src\island\island_machine.dart';
