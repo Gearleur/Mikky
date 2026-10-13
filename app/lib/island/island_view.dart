@@ -425,10 +425,15 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   /// it do not close it.
   bool get _sideOpen => _snap.shape == IslandShape.open && (_edge == IslandEdge.right || _topHomeShown);
 
-  /// Any press on the open small window: activity (it stays open), and the
+  /// What Mikky brings is open at the top: a request to answer, which
+  /// clicks inside answer, never close.
+  bool get _briefOpen => _snap.shape == IslandShape.open && _snap.focus != null && _snap.content != IslandContent.empty;
+
+  /// Any press on the open small window or on a request: activity (it stays
+  /// open, a question of several is answered one after the other), and the
   /// keyboard for its field.
   void _onPointerDown(PointerDownEvent e) {
-    if (!_sideOpen || !_geo.hit.contains(e.localPosition)) return;
+    if (!(_sideOpen || _briefOpen) || !_geo.hit.contains(e.localPosition)) return;
     _machine.click(_clock.now);
     _overlay.activate();
     _apply();
@@ -444,8 +449,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       // A click on Mikky once open: a little slap (Mochi's rule).
       _mikky.slap();
       _machine.click(now);
-    } else if (_sideOpen) {
-      // A click in the small window: its widgets answer it.
+    } else if (_sideOpen || _briefOpen) {
+      // A click in the small window or on a request: its widgets answer it.
       return;
     } else {
       _machine.close(now);
