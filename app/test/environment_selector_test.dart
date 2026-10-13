@@ -16,7 +16,7 @@ void main() {
   setUpAll(loadAppFonts);
 
   for (final (theme, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
-    testWidgets('compact $theme selector keeps names and the active choice visible', (tester) async {
+    testWidgets('compact $theme selector keeps names and the active choice visible', tags: 'golden', (tester) async {
       const preview = Key('selector-preview');
       await tester.pumpWidget(
         MediaQuery(

@@ -65,7 +65,7 @@ void main() {
   setUpAll(loadAppFonts);
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
-    testWidgets('agent page views, $name', (tester) async {
+    testWidgets('agent page views, $name', tags: 'golden', (tester) async {
       const size = Size(740, 1100);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;

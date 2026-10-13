@@ -1,0 +1,4 @@
+# Golden tests compare with pictures kept on the PC only (app/test/goldens/,
+# out of git): Check.ps1 skips them when the pictures are not there.
+tags:
+  golden:

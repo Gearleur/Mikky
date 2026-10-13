@@ -85,7 +85,7 @@ function Test-Quality {
 }
 
 # A Dart package: format, analysis (infos fail too), tests.
-function Test-DartPackage([string]$dir, [string]$tool) {
+function Test-DartPackage([string]$dir, [string]$tool, [string[]]$testArgs = @()) {
     $dart = Join-Path $bin "dart$ext"
     $name = Split-Path $dir -Leaf
     $folders = @('lib', 'test', 'tool', 'bin') | Where-Object { Test-Path -LiteralPath (Join-Path $root "$dir/$_") }
@@ -96,7 +96,7 @@ function Test-DartPackage([string]$dir, [string]$tool) {
         Invoke-Step "${name}: format" $dir $dart (@('format', '--output=none', '--set-exit-if-changed') + $folders)
     }
     Invoke-Step "${name}: analyze" $dir $tool @('analyze', '--fatal-infos')
-    Invoke-Step "${name}: test" $dir $tool @('test')
+    Invoke-Step "${name}: test" $dir $tool (@('test') + $testArgs)
 }
 
 $all = @('quality', 'rust', 'engine', 'agents', 'app')
@@ -121,7 +121,15 @@ foreach ($section in $sections) {
             }
             Test-DartPackage 'packages/mikky_agents' (Join-Path $bin "dart$ext")
         }
-        'app' { Test-DartPackage 'app' (Join-Path $bin "flutter$ext") }
+        'app' {
+            # The golden pictures stay on the PC (out of git): without them, skip those tests.
+            $goldenArgs = @()
+            if (!(Test-Path -LiteralPath (Join-Path $root 'app/test/goldens'))) {
+                Write-Host 'app: no app/test/goldens, golden tests skipped' -ForegroundColor Yellow
+                $goldenArgs = @('--exclude-tags', 'golden')
+            }
+            Test-DartPackage 'app' (Join-Path $bin "flutter$ext") $goldenArgs
+        }
     }
 }
 

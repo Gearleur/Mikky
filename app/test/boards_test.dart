@@ -13,7 +13,7 @@ void main() {
 
   for (final spec in boards) {
     for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
-      testWidgets('board ${spec.name}, $name', (tester) async {
+      testWidgets('board ${spec.name}, $name', tags: 'golden', (tester) async {
         const key = Key('band');
         Widget page() => MediaQuery(
           data: const MediaQueryData(disableAnimations: true),

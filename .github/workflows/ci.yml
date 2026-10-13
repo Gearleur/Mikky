@@ -77,7 +77,7 @@ jobs:
       - run: pwsh scripts/Check.ps1 -Only agents
 
   app:
-    name: Flutter app (Windows, goldens)
+    name: Flutter app (Windows)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
@@ -85,14 +85,8 @@ jobs:
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           cache: true
-      # The goldens show recorded times in local time: Paris, as on the PC.
-      - name: Time zone of the goldens
+      # Recorded times are shown in local time: Paris, as on the PC.
+      - name: Time zone
         run: tzutil /s "Romance Standard Time"
+      # The golden pictures stay on the PC: Check.ps1 skips those tests here.
       - run: pwsh scripts/Check.ps1 -Only app
-      - name: Golden failures
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: golden-failures
-          path: app/test/**/failures/
-          if-no-files-found: ignore

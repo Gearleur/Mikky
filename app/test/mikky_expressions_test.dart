@@ -77,7 +77,7 @@ class _Cell extends StatelessWidget {
 void main() {
   setUpAll(_loadFonts);
 
-  testWidgets('Mikky forms over time', (tester) async {
+  testWidgets('Mikky forms over time', tags: 'golden', (tester) async {
     const times = [.12, .3, .9, 1.7];
     final forms = <(String, MikkyState?, MikkyEmote?, List<double>)>[
       ('amour → cœur', null, MikkyEmote.love, times),
@@ -115,7 +115,7 @@ void main() {
 
   for (final theme in [MikkyTheme.light, MikkyTheme.dark]) {
     final name = theme.isLight ? 'light' : 'dark';
-    testWidgets('Mikky expressions ($name)', (tester) async {
+    testWidgets('Mikky expressions ($name)', tags: 'golden', (tester) async {
       await tester.binding.setSurfaceSize(const Size(1070, 620));
       await tester.pumpWidget(
         Directionality(

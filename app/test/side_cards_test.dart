@@ -15,7 +15,7 @@ void main() {
   setUpAll(loadAppFonts);
 
   for (final (name, ui) in [('light', MikkyUi.light), ('dark', MikkyUi.dark)]) {
-    testWidgets('waiting cards, $name', (tester) async {
+    testWidgets('waiting cards, $name', tags: 'golden', (tester) async {
       const size = Size(340, 640);
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
