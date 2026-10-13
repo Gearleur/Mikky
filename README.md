@@ -1,158 +1,156 @@
 # Mikky
 
-**Mikky est un petit chat noir aux grands yeux qui vit en haut de ton écran et veille sur tes agents de code.** Il lance et suit Claude Code et Codex, te montre où en est chaque tâche, et t'apporte leurs demandes (« je peux lancer `npm run build` ? ») pour que tu répondes d'un clic, sans fouiller dans tes terminaux.
+[![CI](https://github.com/Gearleur/Mikky/actions/workflows/ci.yml/badge.svg)](https://github.com/Gearleur/Mikky/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-![Le notch de Mikky en thème sombre : Mikky à gauche regarde la tâche en cours, les autres applications à droite](docs/readme/notch-dark.png)
+**A small black cat that lives at the top of your screen and watches over your coding agents.**
+Mikky launches and follows Claude Code and Codex, shows where every task stands, and brings you their requests
+("can I run `npm run build`?") so you answer in one click instead of digging through terminals.
 
-> Projet personnel en cours, sous Windows aujourd'hui. Tout tourne **en local** : pas de compte, pas de serveur, pas de télémétrie.
+![Mikky's notch in the dark theme: Mikky on the left watching the current task, the other apps on the right](docs/readme/notch-dark.png)
 
----
+> **Status:** early, personal project. Windows only for now (Linux is planned). Everything runs **locally**:
+> no account, no server, no telemetry.
 
-## Ce que fait Mikky aujourd'hui
+## Features
 
-- **Il vit dans une île au bord de l'écran.** Fermée, c'est une petite pilule en haut au centre (ou un onglet sur le bord droit). Au survol, elle s'ouvre en **notch** : Mikky à gauche, et ce qui se passe.
-- **Il regarde la dernière tâche au travail.** À côté de lui : le logiciel où elle tourne (VS Code, un terminal, l'app Claude ou Codex), son titre, son état, sa progression et ses étapes. Quand rien ne tourne, il s'endort.
-- **Il montre toutes tes tâches comme des applications.** Chaque tuile donne le titre, ce que l'agent fait à l'instant et le logiciel. Les tâches qui attendent passent devant, les terminées restent un moment, le reste va dans l'historique.
-- **Il lance des agents.** Le mode Chat (ou « + ») ouvre un chat vide : un dossier, un modèle, une consigne, et l'agent démarre sous Windows ou dans WSL. Le chat devient alors la conversation de l'agent.
-- **Il suit aussi les sessions lancées ailleurs.** Une session Claude Code ouverte dans VS Code ou un terminal apparaît d'elle-même. Mikky lit son activité sans la toucher.
-- **Il t'apporte les demandes.** Quand un agent veut lancer une commande ou te pose une question, Mikky sort de l'île avec la demande et son contexte : la tâche, l'étape, ce que l'agent vient de dire et de faire. Tu réponds **Oui / Non / Toujours**. Pour les sessions extérieures, des *hooks* Claude Code et Codex optionnels font passer leurs demandes par Mikky ; leur installation montre toujours le changement avant de l'écrire.
-- **Il montre la conversation d'un agent.** Dans la page d'un agent, chaque tâche déroule dans l'ordre ce que l'agent a dit et fait (fichiers lus, modifiés, commandes, avec le code). Sa réponse se lit comme une note. On peut lui écrire pour continuer.
-- **Il suit les limites d'abonnement.** Quand Claude ou Codex atteint sa limite, Mikky dit quand elle se lève. Il peut relancer l'agent automatiquement à ce moment-là.
-- **Il réagit et fait du bruit, un peu.** Mikky change d'expression avec ses agents, joue des sons discrets (à fournir soi-même) et envoie des notifications Windows. Trois raccourcis globaux : **Ctrl + Alt + A** pour la demande en attente, **Ctrl + Alt + Espace** pour ouvrir ou fermer, **Ctrl + Alt + M** pour couper le son.
+- **Lives in an island at the edge of the screen.** Closed, it is a small pill at the top center (or a tab on the
+  right edge). On hover it opens into a **notch**: Mikky and what is going on.
+- **Watches the latest task.** Next to Mikky: the app it runs in (VS Code, a terminal, the Claude or Codex app), its
+  title, state, progress and steps. When nothing runs, Mikky falls asleep.
+- **Shows every task as an app tile.** Waiting tasks come first, finished ones stay for a while, the rest goes to the
+  history.
+- **Launches agents.** Pick a folder, a model and a prompt; the agent starts on Windows or in WSL.
+- **Follows sessions started elsewhere.** A Claude Code session opened in VS Code or a terminal shows up on its own.
+- **Brings you the requests.** When an agent wants to run a command or asks a question, Mikky comes out with the
+  request and its context (task, step, what the agent just said and did). Answer **Yes / No / Always**. Optional
+  Claude Code and Codex hooks route the requests of outside sessions through Mikky; installing them always shows the
+  change first.
+- **Shows an agent's conversation** in order: what it said, the files it read and changed, the commands it ran.
+  You can write to it to keep going, even while it works.
+- **Tracks plan limits.** When Claude or Codex hits its limit, Mikky tells you when it lifts and can restart the
+  agent then.
+- **Reacts, a little.** Mikky changes expression with his agents, plays discreet sounds (bring your own) and sends
+  Windows notifications. Global shortcuts: **Ctrl + Alt + A** (pending request), **Ctrl + Alt + Space** (open /
+  close), **Ctrl + Alt + M** (mute).
 
-Mikky n'est **pas** un agent ni un harnais d'agents : il n'a pas de modèle à lui. Il lance les outils officiels (Claude Code, Codex) avec **tes abonnements**, sans clé d'API, et il les suit.
+Mikky is **not** an agent or an agent harness: it has no model of its own. It runs the official tools (Claude Code,
+Codex) on **your subscriptions** and follows them.
 
-## En images
+## Screenshots
 
-Toutes les images viennent des **planches** de Mikky (voir plus bas) : ce sont les vrais écrans de l'app, nourris par des sessions inventées.
-
-| Le notch, une tâche au travail | Rien en cours : Mikky dort |
+| A task at work | Nothing running: Mikky sleeps |
 |---|---|
-| ![Notch en thème clair, une tâche au travail](docs/readme/notch-light.png) | ![Notch sans tâche : Mikky dort, une colonne d'applications de plus](docs/readme/notch-idle-light.png) |
+| ![Notch in the light theme, a task at work](docs/readme/notch-light.png) | ![Notch with no task: Mikky sleeps](docs/readme/notch-idle-light.png) |
 
-| Un nouveau chat | La page d'un agent au travail |
+| A new chat | An agent's page |
 |---|---|
-| ![Chat vide : « Qu'est-ce qu'on lance ? », le dossier et le modèle sous le champ](docs/readme/chat-light.png) | ![Page d'un agent : Mikky à gauche, le fil avec ce que l'agent dit et fait](docs/readme/agent-working-light.png) |
+| ![Empty chat with the folder and model under the field](docs/readme/chat-light.png) | ![Agent page: the thread of what the agent says and does](docs/readme/agent-working-light.png) |
 
-| Une demande à valider | À droite de l'écran |
+| A request to approve | On the right edge |
 |---|---|
-| ![Page d'un agent en thème sombre : l'agent veut lancer npm run build, Oui / Non / Toujours](docs/readme/agent-approval-dark.png) | ![L'île sur le bord droit : les applications en tuiles](docs/readme/right-home-light.png) |
+| ![The agent wants to run npm run build: Yes / No / Always](docs/readme/agent-approval-dark.png) | ![The island on the right edge, apps as tiles](docs/readme/right-home-light.png) |
 
-## Le but
-
-L'idée de départ : avoir près de soi un **compagnon simple**, un peu comme [Paperclip](https://github.com/paperclipai/paperclip), mais qui ne remplace aucun outil. On lance ses agents où on veut, et Mikky :
-
-1. **voit** tout ce qui tourne, d'un coup d'œil, sans changer de fenêtre ;
-2. **apporte** ce qui a besoin de toi, avec assez de contexte pour répondre sans aller voir ;
-3. **reste discret** le reste du temps : 0 % de processeur quand l'île est cachée.
-
-La suite prévue, dans l'ordre : de nouveaux outils, des agents qui se parlent par Mikky (au sein d'une équipe, avec ton accord au-delà), un VPS relié par un tunnel SSH, puis une app mobile. Le détail est dans la [feuille de route](docs/superpowers/reprise.md#prochaines-étapes-dans-lordre) et les [idées](docs/superpowers/idees.md).
-
-## Comment ça marche
+## How it works
 
 ```mermaid
 flowchart LR
-    subgraph ecran["L'app Mikky (Flutter, Windows)"]
-        ile["L'île : notch, pages, demandes"]
+    subgraph screen["Mikky app (Flutter, Windows)"]
+        island["Island: notch, pages, requests"]
     end
-    subgraph moteur["mikkyd (Rust), sur ton PC"]
-        api["API WebSocket<br/>127.0.0.1 + jeton"]
-        run["Lance les agents<br/>(adaptateurs ACP)"]
-        read["Lit les sessions<br/>Claude / Codex"]
+    subgraph daemon["mikkyd (Rust), on your PC"]
+        api["WebSocket API<br/>127.0.0.1 + token"]
+        run["Runs agents<br/>(ACP adapters)"]
+        read["Reads Claude / Codex<br/>session files"]
         db[("SQLite")]
     end
     subgraph agents["Agents"]
         cc["Claude Code"]
         cx["Codex"]
-        ext["Sessions ouvertes ailleurs<br/>(VS Code, terminal…)"]
+        ext["Sessions opened elsewhere<br/>(VS Code, terminal…)"]
     end
-    wsl["mikkyd dans WSL"]
-    ile <--> api
+    wsl["mikkyd in WSL"]
+    island <--> api
     api --- run & read & db
     run --> cc & cx
-    read -. lit .-> ext
-    ext -. hooks optionnels .-> api
+    read -. reads .-> ext
+    ext -. optional hooks .-> api
     api <--> wsl
 ```
 
-- **L'app Flutter n'est qu'un écran.** L'île est une fenêtre transparente au-dessus des autres, avec une forme dessinée par un *shader*, et les clics passent au travers là où il n'y a rien. Fermer l'app n'arrête aucun agent.
-- **`mikkyd`, le moteur en Rust, fait tout le travail d'agents.**
-  - Il lance Claude Code et Codex par leurs adaptateurs ACP (`claude-agent-acp`, `codex-acp`), sous Windows ou dans WSL, chacun dans un *job object* qui permet de tout arrêter proprement.
-  - Il garde les permissions et les questions même quand aucun écran n'est ouvert.
-  - Il lit les fichiers de session de Claude et de Codex pour suivre aussi les sessions lancées ailleurs, et repère le logiciel où elles tournent.
-  - Il range ses métadonnées dans SQLite.
-- **L'app et le moteur se parlent en local.** Le WebSocket n'écoute que sur `127.0.0.1`, protégé par un jeton rangé dans le coffre de Windows. WSL a son propre moteur, relié à celui de Windows.
-- **Les hooks restent optionnels.** `mikky-hook` est un petit relais que Claude Code et Codex appellent pour faire passer leurs demandes par Mikky. Il ne bloque jamais l'agent : sans réponse, il rend la main.
+- **The Flutter app is only a screen.** The island is a transparent, click-through window whose shape is drawn by a
+  shader. Closing the app stops no agent.
+- **`mikkyd`, the Rust daemon, does all the agent work.** It launches Claude Code and Codex through their ACP
+  adapters (`claude-agent-acp`, `codex-acp`), on Windows or in WSL, each in a job object so it can stop the whole
+  process tree. It holds permissions and questions even with no screen open, reads session files to follow outside
+  sessions, and keeps its metadata in SQLite.
+- **App and daemon talk locally.** The WebSocket only listens on `127.0.0.1`, behind a token kept in the Windows
+  credential store. WSL runs its own daemon, linked to the Windows one.
+- **Hooks are optional.** `mikky-hook` is a tiny relay that Claude Code and Codex call to route their requests
+  through Mikky. It never blocks the agent: without an answer, it hands control back.
 
-| Dossier | Contenu |
+| Folder | Contents |
 |---|---|
-| [`app/`](app/) | L'app Flutter : l'île, le notch, les pages, les planches (`lib/boards/`) |
-| [`daemon/`](daemon/) | Le moteur Rust : `mikkyd`, `mikky-acp`, `mikky-hook` |
-| [`packages/mikky_engine/`](packages/mikky_engine/) | Le cœur en Dart pur : Mikky, l'île, les sessions et leurs événements |
-| [`packages/mikky_agents/`](packages/mikky_agents/) | Le client de `mikkyd` : ce que l'île et l'accueil affichent |
-| [`docs/superpowers/`](docs/superpowers/) | Où on en est, le design, les idées, les specs et les plans |
+| [`app/`](app/) | Flutter app: the island, the notch, the pages, the design boards (`lib/boards/`) |
+| [`daemon/`](daemon/) | Rust workspace: `mikkyd`, `mikky-acp`, `mikky-hook` |
+| [`packages/mikky_engine/`](packages/mikky_engine/) | Pure Dart core: Mikky, the island rules, sessions and their events |
+| [`packages/mikky_agents/`](packages/mikky_agents/) | Dart client of `mikkyd`: what the island and the home show |
+| [`scripts/`](scripts/) | Build, checks and board pictures |
 
-## Les planches
+## Getting started
 
-Le design de Mikky se décide sur des **planches**, comme dans Figma, mais vivantes : ce sont les vrais composants et écrans de l'app, qu'on peut cliquer, dans chacun de leurs états, en clair et en sombre.
+**To build:** [Flutter](https://docs.flutter.dev/get-started/install/windows/desktop) for Windows, Visual Studio
+with the "Desktop development with C++" workload, and [Rust](https://rustup.rs) (the version is pinned in
+`daemon/rust-toolchain.toml`). For WSL agents, Rust inside WSL too.
 
-![La planche Notch Top : le notch dans ses états, avec leurs étiquettes](docs/readme/boards-notch.png)
-
-- Chaque cadre porte une étiquette : **Dans l'app** (le vrai écran), **Essai** (pas encore choisi) ou **À essayer** (une zone où cliquer et jouer). Un filtre permet de n'afficher que l'une d'elles.
-- Les planches : Marque, Composants, Petite île, Notch Top, Notch Right, Accueil Right, Agent, Messages, Technique (le fonctionnement du moteur expliqué).
-- Une image de chaque planche sert de test (`app/test/goldens/boards/`) : un changement visuel involontaire fait échouer les tests.
-
-![La planche Composants : boutons, navigation, sélecteurs](docs/readme/boards-components.png)
-
-## Installer et lancer
-
-**Pour compiler :** Flutter pour Windows, Visual Studio avec la charge C++, Cargo sous Windows, et Rust dans WSL `Ubuntu`.
-
-**Pour les agents :** Node.js 22 ou plus sous Windows, Claude Code et/ou Codex installés et connectés avec leur abonnement. Le moteur installe ses adaptateurs ACP au premier lancement d'un agent ; sous WSL, il prépare aussi son propre Node.
+**To run agents:** Node.js 22 or later on Windows, and Claude Code and/or Codex installed and signed in. The daemon
+installs its ACP adapters the first time it launches an agent; WSL is optional.
 
 ```powershell
-.\scripts\Build-Windows.ps1          # construit un bundle daté dans dist\
-.\Start-Mikky.ps1                    # l'île
-.\Start-Mikky.ps1 -Boards            # les planches
-.\Start-Mikky.ps1 -Boards -Live      # les planches en direct, rechargées à chaque fichier enregistré
-.\scripts\Update-Boards.ps1          # refait les images des planches, reconstruit et les rouvre
-.\Start-Mikky.ps1 -InstallStartup    # l'île et le moteur au démarrage de Windows
+.\scripts\Build-Windows.ps1 -FlutterRoot C:\path\to\flutter   # builds a dated bundle in dist\
+.\Start-Mikky.ps1                    # the island
+.\Start-Mikky.ps1 -Boards            # the design boards
+.\Start-Mikky.ps1 -InstallStartup    # island and daemon at Windows startup
 ```
 
-- **Le bundle :** il se trouve dans `dist/Mikky-<date>/`. Garder `data`, les DLL et les exécutables Rust à côté de `mikky.exe`.
-- **WSL est facultatif :** s'il n'est pas disponible, les agents Windows marchent quand même.
-- **Mises à jour du moteur :** un moteur en service n'est remplacé que s'il ne pilote aucun agent.
-- **Les sons ne sont pas fournis :** le dépôt est public et les sons utilisés ne sont pas à nous. Mettre ses propres `.mp3` dans `app/assets/sounds/` (voir son [README](app/assets/sounds/README.md)). Sans eux, Mikky reste silencieux.
+The island is hidden at start: move the mouse to the top center of the main screen (or the middle of the right
+edge) to bring it out. Right-click opens the settings menu.
 
-## Vérifier le code
+Sounds are not shipped: the ones used during development are not ours to publish. Put your own `.mp3` files in
+`app/assets/sounds/` (see its [README](app/assets/sounds/README.md)); without them, Mikky stays silent.
 
-| Où | Commandes |
-|---|---|
-| `daemon/` | `cargo build`, `cargo test --workspace` |
-| `packages/mikky_engine/`, `packages/mikky_agents/` | `dart analyze`, `dart test` |
-| `app/` | `flutter analyze`, `flutter test` (dont les images des planches) |
+## Development
 
-Les tests relisent de vraies sessions Claude et Codex enregistrées. Le scénario WSL s'active avec `MIKKY_TEST_WSL=1`.
+One script runs every check, locally and on CI: formatting, analysis, the no-repeated-code guard, and the tests of
+the daemon, the engine, the agents client and the app.
 
-## Confidentialité
+```powershell
+.\scripts\Check.ps1                  # everything
+.\scripts\Check.ps1 -Only app        # one section: quality, rust, engine, agents, app
+.\scripts\Check.ps1 -Fix             # format first
+```
 
-- Pas de télémétrie, pas de compte, pas de serveur : tout reste sur ta machine.
-- Les secrets (le jeton du moteur) sont dans le coffre de Windows, jamais sur le disque ni dans git.
-- Mikky lit les fichiers de session de Claude et de Codex sur ta machine, pour te les montrer ; rien ne part ailleurs.
-- Les permissions vont toujours à toi par défaut. Le mode automatique n'existe que si tu le choisis pour un lancement.
+- Dart is formatted at 120 columns; Rust uses `cargo fmt` and clippy with `-D warnings`.
+- The agents client tests start the `mikkyd` built in `daemon/target/debug`: `Check.ps1` builds it first.
+- Tests replay real recorded Claude and Codex sessions. The WSL scenario runs with `MIKKY_TEST_WSL=1`.
+- Golden tests (tagged `golden`) compare the boards with reference pictures kept out of git; they are skipped when
+  `app/test/goldens/` is missing.
+- The design boards (`mikky.exe --kit`) show the app's real screens in each of their states, light and dark; they are
+  where visual changes are tried first.
+- Commits follow [Conventional Commits](https://www.conventionalcommits.org) with the folder as scope, e.g.
+  `feat(daemon): …`, `fix(app): …`.
 
-## Mesures
+## Privacy and security
 
-Relevées au début du projet (fin septembre 2026), sur un écran 1920 × 1080 à 100 % et 12 cœurs :
+- No telemetry, no account, no server: everything stays on your machine.
+- Secrets (the daemon token) live in the Windows credential store, never on disk or in git.
+- Mikky reads Claude and Codex session files on your machine to show them to you; nothing leaves it.
+- Every permission goes to you by default. The automatic mode only exists when you pick it for a launch.
 
-| Jalon | Île cachée (CPU) | Île ouverte (CPU) | Mémoire |
-|---|---|---|---|
-| J0, 28 septembre | 0,03 % du total | — | 73 Mo |
-| Mikky animé + shader, 28 septembre | 0,013 % du total | 0,85 % du total (10 % d'un cœur) | 99 Mo (*working set*), 142 Mo privés |
+## License
 
-## Pour aller plus loin
-
-- [Où on en est](docs/superpowers/reprise.md) : l'état du projet, ce qui reste, les pièges connus.
-- [Le design](docs/superpowers/design.md) : la direction artistique et chaque décision, datée.
-- [La spec de `mikkyd`](docs/superpowers/specs/2026-09-30-mikkyd-design.md) : le moteur, la sécurité, les étapes.
-- [`CLAUDE.md`](CLAUDE.md) : le guide pour les agents qui travaillent sur ce dépôt.
+[MIT](LICENSE). Third-party assets keep their own licenses: tool icons from
+[Lobe Icons](https://github.com/lobehub/lobe-icons) and [Paperclip](https://github.com/paperclipai/paperclip)
+(MIT, `app/assets/brands/`) and fonts under the SIL Open Font
+License (`app/assets/fonts/OFL.txt`). Claude, Codex, OpenAI, Gemini and the other product names and logos are
+trademarks of their owners, used only to name the tools Mikky works with.
