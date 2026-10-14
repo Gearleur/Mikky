@@ -87,6 +87,9 @@ the file, and refuses to write a file changed since you saw it. Your own hooks a
 | `PostToolUse`, `UserPromptSubmit`, `Stop`, `SessionEnd` | 10 s | the session moved on: a request it waited on is settled |
 | `PostToolUseFailure` (Claude), `Interrupt` (Codex) | 10 s / 3 s | a tool was refused, failed or interrupted |
 
+Codex's `SessionEnd` timeout is 3 s. Newly installed or changed Codex hooks also need review and trust through
+`/hooks` before Codex runs them; writing the configuration alone does not grant that trust.
+
 The relay lives at a fixed place, `%LOCALAPPDATA%\Mikky\bin\mikky-hook.exe`, so a new build of Mikky does not leave
 Claude calling an old folder. `mikkyd` replaces it at start when the shipped one differs.
 
@@ -96,9 +99,20 @@ Claude calling an old folder. `mikkyd` replaces it at start when the shipped one
 
 ## Messages to a session started elsewhere
 
-A Claude session working in a terminal can receive a message from Mikky: it waits in `mikkyd`
-(`daemon/mikkyd/src/hooks/messages.rs`) and the relay hands it to Claude at the session's next `PostToolUse` or
-`Stop`, as context from the user. A session that is not working is resumed by Mikky itself (an ACP launch on the same
+A Claude or Codex session working on Windows can receive a message from Mikky when its Mikky hooks are installed:
+it waits in the bounded, in-memory queue in `mikkyd` (`daemon/mikkyd/src/hooks/messages.rs`). The relay returns
+`additionalContext` at the next `PostToolUse`, or a continuation reason at `Stop`. It acknowledges the messages
+after flushing stdout; a failed relay leaves them waiting. `stop_hook_active` prevents a continuation loop.
+Claude and Codex queues are filtered by provider. The file reader decodes Mikky message IDs and suppresses echoes.
+The Codex output contract is documented in [OpenAI's hooks guide](https://learn.chatgpt.com/docs/hooks).
+The Windows Codex path was installed and verified on 13 October 2026 with Codex 0.153.4:
+both PostToolUse and Stop messages reached the agent and appeared once in the thread. Codex's Windows hooks
+use PowerShell's `&` call operator. The trial covers both legacy and paginated history. Codex 0.153.4 still writes
+JSONL transcripts for paginated sessions, so the same incremental reader follows them while those transcripts are
+available. Reproduce with `packages/mikky_agents/tool/codex_hooks_smoke.dart` (paginated by default, or
+`--history-mode legacy`), with approval
+for its real subscription prompts.
+A session that is not working is resumed by Mikky itself (an ACP launch on the same
 session). That is how « Relance auto » takes a task up again once a subscription limit lifts.
 
 ## Not covered yet

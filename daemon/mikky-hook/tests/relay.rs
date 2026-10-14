@@ -26,8 +26,23 @@ fn relay(endpoint: &str, event: &Value) -> std::process::Child {
 }
 
 fn relay_with(endpoint: &str, event: &Value, args: &[&str]) -> std::process::Child {
-    let mut child = Command::new(env!("CARGO_BIN_EXE_mikky-hook"))
-        .args(args)
+    let mut command = if cfg!(windows) && args.starts_with(&["--agent", "codex"]) {
+        // Codex uses PowerShell: exercise the real shell invocation, not
+        // only launching the relay executable directly.
+        let mut shell = Command::new("powershell.exe");
+        let exe = env!("CARGO_BIN_EXE_mikky-hook").replace('\'', "''");
+        shell.args([
+            "-NoProfile",
+            "-Command",
+            &format!("& '{exe}' {}", args.join(" ")),
+        ]);
+        shell
+    } else {
+        let mut relay = Command::new(env!("CARGO_BIN_EXE_mikky-hook"));
+        relay.args(args);
+        relay
+    };
+    let mut child = command
         .env("MIKKY_HOOK_ENDPOINT", endpoint)
         // A terminal, even when the tests run inside Claude's app.
         .env_remove("CLAUDE_CODE_ENTRYPOINT")
@@ -224,16 +239,24 @@ fn a_screen_answers_the_terminal_session() {
 fn external_messages_are_printed_then_acknowledged_and_failures_are_silent() {
     let (mut daemon, endpoint, address) = start_daemon(mikkyd().expect("build mikkyd first"));
     let mut screen = connect_screen(&address);
-    for (i, event) in ["PostToolUse", "Stop"].into_iter().enumerate() {
+    for (i, (agent, event)) in [
+        ("claude", "PostToolUse"),
+        ("claude", "Stop"),
+        ("codex", "PostToolUse"),
+        ("codex", "Stop"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
         call(
             &mut screen,
             "hooks.messages.send",
-            json!({"agent":"claude","sessionId":"external","id":format!("mikky-{i}"),"text":"Prends aussi ce message"}),
+            json!({"agent":agent,"sessionId":"external","id":format!("mikky-{i}"),"text":"Prends aussi ce message"}),
         );
         let payload =
             json!({"hook_event_name":event,"session_id":"external","stop_hook_active":false});
         let start = Instant::now();
-        let out = relay_with(&endpoint, &payload, &[event])
+        let out = relay_with(&endpoint, &payload, &["--agent", agent, event])
             .wait_with_output()
             .unwrap();
         assert!(start.elapsed() < Duration::from_secs(2));
@@ -253,7 +276,7 @@ fn external_messages_are_printed_then_acknowledged_and_failures_are_silent() {
                 .all(|m| m["state"] == "delivered")
         );
         assert!(
-            relay_with(&endpoint, &payload, &[event])
+            relay_with(&endpoint, &payload, &["--agent", agent, event])
                 .wait_with_output()
                 .unwrap()
                 .stdout

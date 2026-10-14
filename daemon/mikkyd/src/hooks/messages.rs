@@ -1,4 +1,4 @@
-//! Bounded, in-memory user messages for external Claude sessions.
+//! Bounded, in-memory user messages for external Claude and Codex sessions.
 //! A hook leases a batch; only its acknowledgement after stdout is flushed
 //! removes it from the waiting queue. A failed relay leaves it available.
 use std::collections::HashMap;
@@ -40,9 +40,21 @@ impl Messages {
         json!(self.state.lock().unwrap().messages)
     }
 
+    #[cfg(test)]
     pub fn enqueue(&self, session: &str, id: &str, text: &str) -> Result<Value, RpcError> {
+        self.enqueue_for("claude", session, id, text)
+    }
+
+    pub fn enqueue_for(
+        &self,
+        agent: &str,
+        session: &str,
+        id: &str,
+        text: &str,
+    ) -> Result<Value, RpcError> {
         let invalid = |message| RpcError::new(-32602, message);
-        if session.is_empty()
+        if !matches!(agent, "claude" | "codex")
+            || session.is_empty()
             || session.len() > 128
             || id.is_empty()
             || id.len() > 96
@@ -58,7 +70,7 @@ impl Messages {
         }
         let mut state = self.state.lock().unwrap();
         if let Some(m) = state.messages.iter().find(|m| m["id"] == id) {
-            return if m["text"] == text && m["sessionId"] == session {
+            return if m["text"] == text && m["sessionId"] == session && m["agent"] == agent {
                 Ok(m.clone())
             } else {
                 Err(invalid("Cet identifiant désigne déjà un autre message"))
@@ -88,14 +100,19 @@ impl Messages {
             };
             state.messages.remove(i);
         }
-        let message = json!({"id":id,"sessionId":session,"text":text,"state":"waitingForTool","at":chrono::Utc::now().to_rfc3339()});
+        let message = json!({"id":id,"agent":agent,"sessionId":session,"text":text,"state":"waitingForTool","at":chrono::Utc::now().to_rfc3339()});
         state.messages.push(message.clone());
         drop(state);
         let _ = self.changes.send(());
         Ok(message)
     }
 
+    #[cfg(test)]
     pub fn offer(&self, session: &str) -> Value {
+        self.offer_for("claude", session)
+    }
+
+    pub fn offer_for(&self, agent: &str, session: &str) -> Value {
         let mut state = self.state.lock().unwrap();
         let now = Instant::now();
         state.leases.retain(|_, (_, _, until)| *until > now);
@@ -104,11 +121,9 @@ impl Messages {
         }
         let mut messages = vec![];
         let mut bytes = 0;
-        for m in state
-            .messages
-            .iter()
-            .filter(|m| m["sessionId"] == session && m["state"] == "waitingForTool")
-        {
+        for m in state.messages.iter().filter(|m| {
+            m["agent"] == agent && m["sessionId"] == session && m["state"] == "waitingForTool"
+        }) {
             bytes += json!({"id":m["id"],"text":m["text"]}).to_string().len() + 20;
             if bytes > 9000 {
                 break;
@@ -154,6 +169,19 @@ impl Messages {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn providers_cannot_drain_each_others_messages_or_reuse_ids() {
+        let q = Messages::default();
+        q.enqueue_for("codex", "s", "mikky-cx", "Codex seulement")
+            .unwrap();
+        assert!(q.offer_for("claude", "s").is_null());
+        assert!(q.enqueue("s", "mikky-cx", "Codex seulement").is_err());
+        let batch = q.offer_for("codex", "s");
+        assert_eq!(batch["messages"][0]["agent"], "codex");
+        assert!(q.acknowledge("s", batch["delivery"].as_str().unwrap()));
+        assert!(q.offer_for("codex", "s").is_null());
+    }
 
     #[test]
     fn batches_are_per_session_and_only_printed_messages_are_acknowledged() {

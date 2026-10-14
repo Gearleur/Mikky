@@ -62,7 +62,7 @@ void main() {
         .widgetList<ChatMessage>(find.byType(ChatMessage))
         .where((m) => m.me && m.text == message.text);
     expect(bubbles, hasLength(1));
-    expect(bubbles.single.meta, 'Transmis à Claude');
+    expect(bubbles.single.meta, 'Message transmis');
     expect(log.items.whereType<UserItem>(), hasLength(1));
   });
 }

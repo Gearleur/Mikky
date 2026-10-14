@@ -1,8 +1,8 @@
-//! Only explicit user messages may keep a Claude turn going.
+//! Only explicit user messages may keep a Claude or Codex turn going.
 use serde_json::{Value, json};
 
 pub fn output(event: &str, agent: &str, offer: &Value) -> Option<String> {
-    if agent != "claude" || !matches!(event, "PostToolUse" | "Stop") {
+    if !matches!(agent, "claude" | "codex") || !matches!(event, "PostToolUse" | "Stop") {
         return None;
     }
     let delivery = offer["delivery"].as_str()?;
@@ -46,9 +46,13 @@ mod tests {
     #[test]
     fn post_tool_context_and_stop_reason_carry_the_same_user_messages() {
         let batch = json!({"delivery":"d1","messages":[{"id":"m1","text":"Continue\navec é"}]});
-        for event in ["PostToolUse", "Stop"] {
-            let out: Value =
-                serde_json::from_str(&output(event, "claude", &batch).unwrap()).unwrap();
+        for (agent, event) in [
+            ("claude", "PostToolUse"),
+            ("claude", "Stop"),
+            ("codex", "PostToolUse"),
+            ("codex", "Stop"),
+        ] {
+            let out: Value = serde_json::from_str(&output(event, agent, &batch).unwrap()).unwrap();
             let context = if event == "Stop" {
                 assert_eq!(out["decision"], "block");
                 out["reason"].as_str().unwrap()
@@ -66,7 +70,7 @@ mod tests {
     #[test]
     fn doubt_wrong_agent_or_event_and_empty_batches_are_silent() {
         let batch = json!({"delivery":"d","messages":[{"id":"m","text":"x"}]});
-        assert!(output("Stop", "codex", &batch).is_none());
+        assert!(output("Stop", "unknown", &batch).is_none());
         assert!(output("PermissionRequest", "claude", &batch).is_none());
         for bad in [
             Value::Null,

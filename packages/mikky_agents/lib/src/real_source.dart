@@ -325,7 +325,7 @@ class RealAgentSource implements AgentSource {
     if (e.mark.pausedAt != null) _mark(id, (m) => m.copyWith(clearPaused: true));
     if (!e.live && e.log.working) {
       final enqueue = enqueueExternal;
-      if (e.provider != AgentProvider.claude || e.host != AgentHost.windows || e.sessionId == null || enqueue == null) {
+      if (e.host != AgentHost.windows || e.sessionId == null || enqueue == null) {
         throw StateError('Cette session extérieure ne peut pas encore recevoir de message pendant son travail.');
       }
       final messageId = ExternalMessage.newId();

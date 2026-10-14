@@ -12,10 +12,13 @@ pub(super) async fn dispatch(
     match method {
         "hooks.messages.list" => Ok(daemon.hooks.messages.list()),
         "hooks.messages.send" => {
-            if params["agent"] != "claude" {
+            let agent = str_param(params, "agent")?;
+            if !matches!(agent, "claude" | "codex")
+                || params["host"].as_str().is_some_and(|h| h != "windows")
+            {
                 return Err(RpcError::new(
                     -32602,
-                    "Seules les sessions Claude sont prises en charge par ce hook",
+                    "Seules les sessions Claude et Codex sous Windows sont prises en charge",
                 ));
             }
             let session = str_param(params, "sessionId")?;
@@ -25,7 +28,8 @@ pub(super) async fn dispatch(
                     "Cette session est pilotée par Mikky : utilise le steering",
                 ));
             }
-            daemon.hooks.messages.enqueue(
+            daemon.hooks.messages.enqueue_for(
+                agent,
                 session,
                 str_param(params, "id")?,
                 str_param(params, "text")?,

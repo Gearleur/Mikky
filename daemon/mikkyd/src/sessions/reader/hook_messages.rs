@@ -25,6 +25,14 @@ impl Messages {
         };
         let mut strings = vec![];
         contents(payload, &mut strings);
+        self.read_strings(strings)
+    }
+
+    pub fn read_text(&mut self, text: &str) -> Vec<Value> {
+        self.read_strings(vec![text])
+    }
+
+    fn read_strings(&mut self, strings: Vec<&str>) -> Vec<Value> {
         let mut out = vec![];
         for s in strings {
             for row in s.lines() {

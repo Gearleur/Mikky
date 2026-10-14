@@ -247,7 +247,7 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
 }
 
 String? _userMeta(UserItem item) => item.messageId?.startsWith('mikky-') == true
-    ? 'Transmis à Claude'
+    ? 'Message transmis'
     : item.at == null
     ? null
     : clockTime(item.at!);

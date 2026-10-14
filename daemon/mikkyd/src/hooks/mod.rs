@@ -226,11 +226,11 @@ impl Hooks {
             self.drop_session(&session);
             if !session.is_empty()
                 && !own(&session)
-                && payload["mikky_agent"] == "claude"
+                && matches!(payload["mikky_agent"].as_str(), Some("claude" | "codex"))
                 && (event == "PostToolUse"
                     || (event == "Stop" && payload["stop_hook_active"] != true))
             {
-                return json!({"decision":null,"delivery":self.messages.offer(&session)});
+                return json!({"decision":null,"delivery":self.messages.offer_for(payload["mikky_agent"].as_str().unwrap(), &session)});
             }
             return none;
         }

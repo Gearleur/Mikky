@@ -63,7 +63,7 @@ class AgentPage extends StatelessWidget {
         canAnswerRequests: _source.canAnswerRequests(e.id),
         limitFinished: e.status == AgentStatus.rateLimited && e.homeStatus == AgentStatus.finished,
         canSend: host.service.canLaunch,
-        canQueueExternal: e.provider == AgentProvider.claude && e.host == AgentHost.windows,
+        canQueueExternal: e.host == AgentHost.windows,
         messages: _source.messagesOf(e.id),
       ),
       actions: AgentPageActions(

@@ -38,24 +38,20 @@ void main() {
       source.enqueueExternal = (e, id, text) async =>
           ExternalMessage(id: id, sessionId: e.sessionId!, text: text, at: now);
       try {
-        if (provider == AgentProvider.claude) {
-          await source.send(entry.id, 'Et aussi ceci');
-          final message = source.messagesOf(entry.id).single;
-          expect(message.text, 'Et aussi ceci');
-          expect(message.delivered, isFalse);
-          source.externalMessages([
-            ExternalMessage(id: message.id, sessionId: 's', text: message.text, at: now, delivered: true),
-          ]);
-          source.externalMessages([message]);
-          expect(
-            source.messagesOf(entry.id).single.delivered,
-            isTrue,
-            reason: 'a late send response cannot undo delivery',
-          );
-          expect(entry.log.working, isTrue);
-        } else {
-          await expectLater(source.send(entry.id, 'Et aussi ceci'), throwsStateError);
-        }
+        await source.send(entry.id, 'Et aussi ceci');
+        final message = source.messagesOf(entry.id).single;
+        expect(message.text, 'Et aussi ceci');
+        expect(message.delivered, isFalse);
+        source.externalMessages([
+          ExternalMessage(id: message.id, sessionId: 's', text: message.text, at: now, delivered: true),
+        ]);
+        source.externalMessages([message]);
+        expect(
+          source.messagesOf(entry.id).single.delivered,
+          isTrue,
+          reason: 'a late send response cannot undo delivery',
+        );
+        expect(entry.log.working, isTrue);
         expect(spawned, 0);
       } finally {
         await source.detach();

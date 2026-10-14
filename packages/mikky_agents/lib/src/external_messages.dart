@@ -2,7 +2,7 @@ import 'dart:math';
 
 final _messageRandom = Random.secure();
 
-/// A user message queued in mikkyd for an external Claude session. Memory
+/// A user message queued in mikkyd for an external Claude or Codex session. Memory
 /// only: waiting until its next hook, delivered once the relay flushed stdout.
 class ExternalMessage {
   /// Unique across app windows; also used to deduplicate transcript echoes.
@@ -15,6 +15,7 @@ class ExternalMessage {
     required this.text,
     required this.at,
     this.delivered = false,
+    this.agent = 'claude',
   });
 
   factory ExternalMessage.fromWire(Map value) => ExternalMessage(
@@ -23,10 +24,13 @@ class ExternalMessage {
     text: value['text'] as String,
     at: DateTime.parse(value['at'] as String),
     delivered: value['state'] == 'delivered',
+    agent: value['agent'] as String? ?? 'claude',
   );
 
   final String id, sessionId, text;
   final DateTime at;
   final bool delivered;
-  String get label => delivered ? 'Transmis à Claude' : 'En attente du prochain outil';
+  final String agent;
+  String get label =>
+      delivered ? 'Transmis à ${agent == 'codex' ? 'Codex' : 'Claude'}' : 'En attente du prochain outil';
 }

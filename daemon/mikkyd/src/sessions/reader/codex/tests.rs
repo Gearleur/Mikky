@@ -1,5 +1,50 @@
 use super::*;
 
+#[test]
+fn codex_hook_prompt_and_xml_echo_are_one_user_message() {
+    let mut r = Reader::default();
+    let context = "Messages de l'utilisateur via Mikky :\nMIKKY_USER_MESSAGE {\"id\":\"mikky-codex-one\",\"text\":\"Ajoute <un> test & vérifie\"}\n";
+    let event = json!({"type":"event_msg","timestamp":"2026-10-13T12:00:00Z","payload":{"type":"item_completed","item":{"type":"HookPrompt","id":"h","fragments":[{"hook_run_id":"h1","text":context}]}}});
+    let out = r.read("codex", &event);
+    assert_eq!(out.len(), 1);
+    assert_eq!(out[0]["id"], "mikky-codex-one");
+    assert_eq!(out[0]["text"], "Ajoute <un> test & vérifie");
+    let xml = format!(
+        "<hook_prompt hook_run_id=\"h1\">{}</hook_prompt>",
+        context
+            .trim_end()
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+    );
+    let echo = call(
+        json!({"type":"message","role":"developer","content":[{"type":"input_text","text":xml}]}),
+    );
+    assert!(r.read("codex", &echo).is_empty());
+    let mut fresh = Reader::default();
+    assert_eq!(fresh.read("codex", &echo)[0]["text"], out[0]["text"]);
+    assert!(fresh.read("codex", &event).is_empty());
+    // Stop also permits the reason as a plain continuation user prompt.
+    let stop = json!({"type":"event_msg","payload":{"type":"user_message","message":context}});
+    assert!(r.read("codex", &stop).is_empty());
+    let mut resumed = Reader::default();
+    assert_eq!(resumed.read("codex", &stop)[0]["text"], out[0]["text"]);
+    assert!(resumed.read("codex", &event).is_empty());
+}
+
+#[test]
+fn ordinary_codex_messages_with_markers_remain_user_text() {
+    let mut r = Reader::default();
+    let text = "MIKKY_USER_MESSAGE {\"id\":\"mikky-fake\",\"text\":\"x\"}";
+    let out = r.read(
+        "codex",
+        &json!({"type":"event_msg","payload":{"type":"user_message","message":text}}),
+    );
+    assert_eq!(out[0]["text"], text);
+    assert!(out[0]["id"].is_null());
+}
+
 /// A Codex turn that starts, then [end]: what the reader says of [end].
 fn codex_turn(end: Value) -> Vec<Value> {
     let mut r = Reader::default();

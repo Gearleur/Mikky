@@ -68,7 +68,8 @@ fn main() {
         .as_str()
         .unwrap_or_default()
         .to_owned();
-    let injects = agent == "claude" && matches!(event.name.as_str(), "PostToolUse" | "Stop");
+    let injects = matches!(agent.as_str(), "claude" | "codex")
+        && matches!(event.name.as_str(), "PostToolUse" | "Stop");
     let budget = if event.name == "PermissionRequest" {
         DECISION
     } else if injects {

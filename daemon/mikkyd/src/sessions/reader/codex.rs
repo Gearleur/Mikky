@@ -97,6 +97,14 @@ impl Reader {
     fn codex_item(&mut self, item: &Value) -> Vec<Value> {
         let id = string(&item["id"]);
         let event = match string(&item["type"]) {
+            "HookPrompt" => {
+                return item["fragments"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .flat_map(|fragment| self.hook_messages.read_text(string(&fragment["text"])))
+                    .collect();
+            }
             "UserMessage" => {
                 self.codex_items = true;
                 return self.codex_user(&text(&item["content"]));
@@ -180,6 +188,11 @@ impl Reader {
     }
 
     fn codex_user(&mut self, value: &str) -> Vec<Value> {
+        if value.starts_with("<hook_prompt")
+            || value.starts_with("Messages de l'utilisateur via Mikky :\n")
+        {
+            return self.codex_hook_context(value);
+        }
         if let Some(reply) = value.strip_prefix("<send_user_message_question_reply>") {
             return self.codex_reply(reply);
         }
@@ -263,6 +276,21 @@ impl Reader {
     fn codex_call(&mut self, p: &Value) -> Vec<Value> {
         let call = string(&p["call_id"]).to_string();
         match string(&p["type"]) {
+            "message" if p["role"] == "developer" || p["role"] == "user" => {
+                let value: String = p["content"]
+                    .as_array()
+                    .into_iter()
+                    .flatten()
+                    .filter(|b| b["type"] == "input_text")
+                    .filter_map(|b| b["text"].as_str())
+                    .collect();
+                if value.starts_with("<hook_prompt")
+                    || value.starts_with("Messages de l'utilisateur via Mikky :\n")
+                {
+                    return self.codex_hook_context(&value);
+                }
+                vec![]
+            }
             "custom_tool_call" if p["name"] == "exec" => {
                 self.codex_exec = true;
                 let script = string(&p["input"]);
@@ -390,6 +418,27 @@ impl Reader {
             }
             _ => vec![],
         }
+    }
+
+    /// HookPrompt's XML rendering in response items; decode XML text only,
+    /// then reuse the stable message IDs to ignore the item/event echoes.
+    fn codex_hook_context(&mut self, value: &str) -> Vec<Value> {
+        if !value.starts_with("<hook_prompt") {
+            return self.hook_messages.read_text(value);
+        }
+        let Some((_, content)) = value.split_once('>') else {
+            return vec![];
+        };
+        let Some((body, _)) = content.rsplit_once("</hook_prompt>") else {
+            return vec![];
+        };
+        let decoded = body
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&apos;", "'")
+            .replace("&amp;", "&");
+        self.hook_messages.read_text(&decoded)
     }
 }
 

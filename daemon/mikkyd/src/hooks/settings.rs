@@ -139,6 +139,7 @@ fn command(hook: &Path, tool: Tool, event: &str) -> String {
     let exe = hook.to_string_lossy().replace('\\', "/");
     match tool {
         Tool::Claude => format!("\"{exe}\" {event}"),
+        Tool::Codex if cfg!(windows) => format!("& \"{exe}\" --agent codex {event}"),
         Tool::Codex => format!("\"{exe}\" --agent codex {event}"),
     }
 }
@@ -151,6 +152,11 @@ fn entries(hook: &Path, tool: Tool) -> Vec<(&'static str, Option<&'static str>, 
         .filter(|(t, ..)| *t == tool)
         .map(|(_, e, s)| (e, s));
     for (event, timeout) in EVENTS.iter().map(|(e, s)| (e, s)).chain(own) {
+        let timeout = if tool == Tool::Codex && *event == "SessionEnd" {
+            3
+        } else {
+            *timeout
+        };
         let mut entry =
             json!({"type": "command", "command": command(hook, tool, event), "timeout": timeout});
         if tool == Tool::Codex && *event == "PermissionRequest" {
@@ -491,7 +497,11 @@ mod tests {
         let ask = &with["hooks"]["PermissionRequest"][0]["hooks"][0];
         assert_eq!(
             ask["command"],
-            "\"C:/Mikky/mikky-hook.exe\" --agent codex PermissionRequest"
+            if cfg!(windows) {
+                "& \"C:/Mikky/mikky-hook.exe\" --agent codex PermissionRequest"
+            } else {
+                "\"C:/Mikky/mikky-hook.exe\" --agent codex PermissionRequest"
+            }
         );
         assert!(ask["statusMessage"].as_str().unwrap().contains("Mikky"));
         assert_eq!(without_ours(&with), json!({}));
