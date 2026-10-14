@@ -38,11 +38,12 @@ class Bubble extends StatelessWidget {
 /// is a bubble, 84 % wide at most; the agent's has no bubble and takes the
 /// whole width, as chat apps do (user request, 2026-09-30).
 class ChatMessage extends StatelessWidget {
-  const ChatMessage({super.key, required this.me, required this.text, this.meta});
+  const ChatMessage({super.key, required this.me, required this.text, this.meta, this.metaColor});
 
   final bool me;
   final String text;
   final String? meta;
+  final Color? metaColor;
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +52,7 @@ class ChatMessage extends StatelessWidget {
         ? null
         : Padding(
             padding: const EdgeInsets.fromLTRB(4, 4, 4, 2),
-            child: Text(meta!, style: uiText(TextSize.caption, color: ui.text3, height: 1.3)),
+            child: Text(meta!, style: uiText(TextSize.caption, color: metaColor ?? ui.text3, height: 1.3)),
           );
     if (!me) {
       return Column(

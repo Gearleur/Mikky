@@ -1,6 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:mikky_agents/mikky_agents.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../ui/content/message_delivery.dart';
+import '../ui/content/side.dart';
+import '../ui/controls/buttons.dart';
 import 'board_screens.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
@@ -65,5 +69,71 @@ final externalMessagesBoard = BoardSpec('Écrire pendant', 'Claude ou Codex lanc
         ),
       ],
     ),
+    BoardSection(
+      title: 'États des messages — proposition commune',
+      kind: FrameKind.trial,
+      note: 'La même bulle pour Claude et Codex. « Envoyé » confirme la transmission, pas la lecture. « Après ce tour » est réservé à un repli réellement annoncé. Une connexion rompue reste « Envoi non confirmé » ; seul un refus certain propose Réessayer. Ces états restent à valider avant leur branchement dans l’app.',
+      frames: [
+        for (final state in MessageDeliveryState.values)
+          BoardFrame(
+            label: state.label,
+            child: SideFrame(
+              height: 180,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: MessageDelivery(text: text, state: state, onRetry: () {}),
+              ),
+            ),
+          ),
+      ],
+    ),
+    const BoardSection(
+      title: 'Réessayer — parcours interactif',
+      kind: FrameKind.play,
+      note: 'Cliquer Réessayer : Envoi… puis Envoyé, dans la même bulle. L’action disparaît pendant l’envoi. Rejouer remet l’échec. Démonstration locale, aucun message envoyé à un agent.',
+      frames: [BoardFrame(label: 'Échec → Envoi… → Envoyé', child: MessageRetryTrial())],
+    ),
   ];
 });
+
+/// Local state for the retry trial; no transport or agent is involved.
+class MessageRetryTrial extends StatefulWidget {
+  const MessageRetryTrial({super.key});
+
+  @override
+  State<MessageRetryTrial> createState() => _MessageRetryTrialState();
+}
+
+class _MessageRetryTrialState extends State<MessageRetryTrial> {
+  var _state = MessageDeliveryState.failed;
+
+  Future<void> _retry() async {
+    if (_state != MessageDeliveryState.failed) return;
+    setState(() => _state = MessageDeliveryState.sending);
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (mounted) setState(() => _state = MessageDeliveryState.sent);
+  }
+
+  @override
+  Widget build(BuildContext context) => SideFrame(
+    height: 240,
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          MessageDelivery(text: 'Ajoute aussi un test pour ce cas.', state: _state, onRetry: _retry),
+          const Spacer(),
+          MButton(
+            'Rejouer l’échec',
+            small: true,
+            kind: ButtonKind.ghost,
+            onPressed: _state == MessageDeliveryState.sending
+                ? null
+                : () => setState(() => _state = MessageDeliveryState.failed),
+          ),
+        ],
+      ),
+    ),
+  );
+}
