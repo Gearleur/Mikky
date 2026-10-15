@@ -214,7 +214,7 @@ void main() {
     expect(sent, [AgentAnswer.deny]);
   });
 
-  testWidgets('the shared question answers by keyboard with two unchanged tiles beside it', (tester) async {
+  testWidgets('the shared question answers by keyboard with four unchanged tiles beside it', (tester) async {
     final sent = <Map<String, Object>?>[];
     await tester.pumpWidget(
       host(
@@ -226,6 +226,7 @@ void main() {
             entry('A'),
             entry('B'),
             entry('C'),
+            entry('D'),
           ],
           open: (_) {},
           canAnswerQuestion: (_) => true,
@@ -235,7 +236,7 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(QuestionCard), findsOneWidget);
-    expect(find.byType(HomeAppTile), findsNWidgets(2));
+    expect(find.byType(HomeAppTile), findsNWidgets(4));
     expect(tester.getSize(find.byType(AppTile).first), const Size(160, 42));
     await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
     expect(sent, [

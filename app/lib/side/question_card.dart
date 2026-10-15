@@ -91,7 +91,7 @@ class QuestionCard extends StatefulWidget {
   /// Defer without submitting or skipping the form (the home notch).
   final VoidCallback? onLater;
 
-  /// The 200 px home notch: two columns with smaller text. Longer
+  /// The 200 px home notch: one column with smaller text. Longer
   /// descriptions remain readable in the shared scrolling question.
   final bool compact;
 
@@ -309,11 +309,11 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
         ),
       SizedBox(height: widget.compact ? 3 : 6),
       SlidingHover(
-        child: widget.fill
-            // The notch is wide and short: two columns of choices.
+        child: widget.fill && !widget.compact
+            // Full request pages can use two columns; the home stays narrow.
             ? LayoutBuilder(
                 builder: (context, box) {
-                  if (box.maxWidth < (widget.compact ? 300 : 440)) {
+                  if (box.maxWidth < 440) {
                     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
                   }
                   final half = (box.maxWidth - 8) / 2;
@@ -346,7 +346,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
       answers: _readOnly
           ? widget.elsewhere
           : [
-              if (_at > 0) ('Précédente', () => _go(_at - 1)),
+              if (_at > 0) (widget.compact ? 'Retour' : 'Précédente', () => _go(_at - 1)),
               if (widget.onLater != null)
                 ('Plus tard', widget.onLater)
               else
@@ -355,7 +355,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
             ],
     );
     final bar = widget.barLeading.isEmpty
-        ? Align(alignment: Alignment.centerRight, child: answers)
+        ? Align(alignment: widget.compact ? Alignment.centerLeft : Alignment.centerRight, child: answers)
         : Row(
             children: [
               for (final (i, w) in widget.barLeading.indexed) ...[if (i > 0) const SizedBox(width: 14), w],

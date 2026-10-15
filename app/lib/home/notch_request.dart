@@ -29,8 +29,6 @@ class NotchRequest extends StatefulWidget {
   final ValueChanged<Map<String, Object>?>? onAnswerQuestion;
   final VoidCallback? onReveal;
 
-  bool get isQuestion => log.question != null;
-
   @override
   State<NotchRequest> createState() => _NotchRequestState();
 }
@@ -49,7 +47,7 @@ class _NotchRequestState extends State<NotchRequest> {
       widget.onLater();
       return KeyEventResult.handled;
     }
-    if (widget.isQuestion) {
+    if (widget.log.question != null) {
       final requestKey = switch (key) {
         LogicalKeyboardKey.digit1 => RequestKey.choice1,
         LogicalKeyboardKey.digit2 => RequestKey.choice2,
@@ -98,7 +96,7 @@ class _NotchRequestState extends State<NotchRequest> {
       fill: true,
       compact: true,
       actions: Align(
-        alignment: Alignment.centerRight,
+        alignment: Alignment.centerLeft,
         child: AnswerBar(
           compact: true,
           answers: [

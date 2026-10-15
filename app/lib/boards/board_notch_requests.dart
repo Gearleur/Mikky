@@ -18,7 +18,7 @@ BoardSection inlineRequestSection() => const BoardSection(
   kind: FrameKind.play,
   note:
       'La demande remplace le suivi à gauche, dans les couleurs du thème et à l’échelle des contrôles du notch. '
-      'Les applications gardent leur taille : quatre à droite d’un feu vert, deux à droite d’une question plus large. '
+      'Feux verts et questions occupent la même largeur, les choix sur une colonne et les boutons à gauche ; quatre applications restent à droite. '
       'Plus tard laisse la demande en attente ; un clic sur sa tuile la rouvre. O / N répondent, P remet à plus tard ; '
       '1 à 4 choisissent dans une question. Les réponses restent visibles dans les 120 px du suivi ; le contenu long défile.',
   frames: [

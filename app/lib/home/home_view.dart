@@ -58,8 +58,8 @@ class HomeView extends StatefulWidget {
   /// work, a third column of apps takes its place.
   final WatchedTask? watched;
 
-  /// A real pending request, in place of the watched task. Questions use
-  /// one extra column; the other tiles keep their size and remain paged.
+  /// A pending request, in the watched task's space. Permissions and
+  /// questions leave the same room for the app tiles.
   final NotchRequest? request;
 
   /// A tile pressed (the watched task too).
@@ -107,11 +107,7 @@ class _HomeViewState extends State<HomeView> {
   bool get _canStart => widget.onNew != null;
 
   /// The notch with nothing at work: at the top a third column of apps.
-  int get _columns => _l.isTop && widget.request?.isQuestion == true
-      ? 1
-      : _l.notch && widget.watched == null && widget.request == null
-      ? _l.idleColumns
-      : _l.columns;
+  int get _columns => _l.notch && widget.watched == null && widget.request == null ? _l.idleColumns : _l.columns;
   int get _perPage => _columns * _l.rows;
   double get _gridWidth => _columns * _l.tileWidth + (_columns - 1) * _l.gap;
   double get _gridHeight => _l.rows * _l.tile + (_l.rows - 1) * _l.rowGap;
