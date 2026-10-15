@@ -9,19 +9,30 @@ import '../ui/foundation/tokens.dart';
 import '../ui/pixels/dot_surface.dart';
 import '../ui/pixels/pixel_fx.dart';
 import 'board_components.dart';
+import 'board_notch_requests.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
 
-/// The Composants board's « Demandes » (2026-10-12): what the notch's
-/// requests are made of, chosen on Notch Top — not in the app yet.
+/// The shared request components, including the actual home notch.
 (String, List<Widget>) requestComponents() => (
   'Demandes',
   [
     BoardSection(
       title: 'Demandes',
-      kind: FrameKind.trial,
-      note: 'Ce dont sont faites les demandes du notch, choisies sur la planche Notch Top (le 12 octobre), pas encore dans l’app.',
+      note: 'Les composants de l’app : à l’échelle du notch en haut (700 × 200), puis dans la page d’un agent. Même liseré, mêmes réponses, couleurs adaptées au thème.',
       frames: [
+        const BoardFrame(label: 'Notch · feu vert', kind: FrameKind.play, width: 700, child: NotchRequestDemo()),
+        const BoardFrame(
+          label: 'Notch · question',
+          kind: FrameKind.play,
+          width: 700,
+          child: NotchRequestDemo(question: true),
+        ),
+        const BoardFrame(
+          label: 'Notch · répondre dans l’app',
+          width: 700,
+          child: NotchRequestDemo(question: true, readOnly: true),
+        ),
         BoardFrame(
           label: 'Une question',
           note: 'Le liseré, les onglets, les choix à plat ; « Précédente », « Tout passer », « Suivante » ou « Envoyer ».',

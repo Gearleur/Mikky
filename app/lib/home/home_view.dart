@@ -20,6 +20,7 @@ import 'home_app.dart';
 import 'home_app_tile.dart';
 import 'home_apps_background.dart';
 import 'home_layout.dart';
+import 'notch_request.dart';
 import 'task_glance.dart';
 import 'tools_rail.dart';
 
@@ -37,6 +38,7 @@ class HomeView extends StatefulWidget {
     this.layout = HomeLayout.top,
     this.apps = const [],
     this.watched,
+    this.request,
     this.onOpen,
     this.onMenu,
     this.onNew,
@@ -55,6 +57,10 @@ class HomeView extends StatefulWidget {
   /// The notch: the latest task at work, beside Mikky; null: nothing at
   /// work, a third column of apps takes its place.
   final WatchedTask? watched;
+
+  /// A real pending request, in place of the watched task. Questions use
+  /// one extra column; the other tiles keep their size and remain paged.
+  final NotchRequest? request;
 
   /// A tile pressed (the watched task too).
   final ValueChanged<HomeApp>? onOpen;
@@ -101,7 +107,11 @@ class _HomeViewState extends State<HomeView> {
   bool get _canStart => widget.onNew != null;
 
   /// The notch with nothing at work: at the top a third column of apps.
-  int get _columns => _l.notch && widget.watched == null ? _l.idleColumns : _l.columns;
+  int get _columns => _l.isTop && widget.request?.isQuestion == true
+      ? 1
+      : _l.notch && widget.watched == null && widget.request == null
+      ? _l.idleColumns
+      : _l.columns;
   int get _perPage => _columns * _l.rows;
   double get _gridWidth => _columns * _l.tileWidth + (_columns - 1) * _l.gap;
   double get _gridHeight => _l.rows * _l.tile + (_l.rows - 1) * _l.rowGap;
@@ -308,7 +318,7 @@ class _HomeViewState extends State<HomeView> {
 
   // ------------------------------------------------------------------ parts
 
-  bool get _idle => _l.notch && widget.watched == null;
+  bool get _idle => _l.notch && widget.watched == null && widget.request == null;
   double get _mikkySize => _idle ? _l.mikkyIdle : _l.mikky;
   Offset get _mikkyAt => _idle ? _l.mikkyIdleAt : _l.mikkyAt;
 
@@ -319,7 +329,7 @@ class _HomeViewState extends State<HomeView> {
           state: widget.mikky,
           badge: false,
           // In the notch he looks at his task, beside him.
-          look: _l.notch && widget.watched != null ? const Offset(1, .3) : null,
+          look: _l.notch && !_idle ? const Offset(1, .3) : null,
         )
       : SizedBox.square(dimension: _mikkySize);
 
@@ -399,17 +409,19 @@ class _HomeViewState extends State<HomeView> {
     final taskRight = l.stacked ? l.size.width - l.side : _areaLeft - HomeLayout.taskEnd;
     return Stack(
       children: [
-        if (l.notch && watched != null)
+        if (l.notch && (watched != null || widget.request != null))
           Positioned(
             left: taskLeft,
             top: HomeLayout.taskTop,
             width: taskRight - taskLeft,
             height: HomeLayout.taskHeight,
-            child: _Watched(
-              task: watched,
-              onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name)),
-              onMenu: widget.onMenu == null ? null : () => widget.onMenu!(watched.id),
-            ),
+            child:
+                widget.request ??
+                _Watched(
+                  task: watched!,
+                  onTap: () => widget.onOpen?.call(HomeApp(id: watched.id, name: watched.name)),
+                  onMenu: widget.onMenu == null ? null : () => widget.onMenu!(watched.id),
+                ),
           ),
         _pagerArea(),
       ],

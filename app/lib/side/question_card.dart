@@ -3,12 +3,12 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../ui/content/cards.dart';
+import '../ui/content/request_content.dart';
 import '../ui/controls/sliding_hover.dart';
 import '../ui/controls/step_tabs.dart';
 import '../ui/foundation/icons.dart';
 import '../ui/foundation/motion.dart';
 import '../ui/foundation/tokens.dart';
-import '../ui/pixels/pixel_fx.dart';
 import 'request_keys.dart';
 
 /// How a question card starts, on the boards; the app keeps the defaults.
@@ -57,6 +57,8 @@ class QuestionCard extends StatefulWidget {
     this.barLeading = const [],
     this.elsewhere = const [],
     this.onElsewhere,
+    this.onLater,
+    this.compact = false,
   });
 
   final QuestionAsked question;
@@ -85,6 +87,13 @@ class QuestionCard extends StatefulWidget {
   /// A click on a choice when it is not answered here: where it is
   /// (« Répondre dans Claude »), instead of going through to the island.
   final VoidCallback? onElsewhere;
+
+  /// Defer without submitting or skipping the form (the home notch).
+  final VoidCallback? onLater;
+
+  /// The 200 px home notch: two columns with smaller text. Longer
+  /// descriptions remain readable in the shared scrolling question.
+  final bool compact;
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -257,6 +266,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           index: i,
           label: q.choices[i].label,
           description: q.choices[i].description,
+          compact: widget.compact,
           multiple: q.multiple,
           ticked: _ticked.contains(q.choices[i].label) || q.choices[i].label == _chosen,
           onTap: _readOnly ? widget.onElsewhere : () => _pick(i),
@@ -265,7 +275,8 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
         _ChoiceRow(
           index: q.choices.length,
           label: 'Autre…',
-          description: _other ? null : 'Écrire ta réponse',
+          description: _other || widget.compact ? null : 'Écrire ta réponse',
+          compact: widget.compact,
           multiple: false,
           ticked: _other,
           onTap: _toggleOther,
@@ -284,20 +295,27 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
               ),
           ],
         ),
-        style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text, height: 1.4),
+        style: uiText(
+          widget.compact ? TextSize.small : TextSize.body,
+          weight: FontWeight.w600,
+          color: ui.text,
+          height: widget.compact ? 1.3 : 1.4,
+        ),
       ),
       if (q.multiple && !widget.fill)
         Padding(
           padding: const EdgeInsets.only(top: 1),
           child: Text('Plusieurs choix possibles', style: uiText(TextSize.caption, color: ui.text3)),
         ),
-      const SizedBox(height: 6),
+      SizedBox(height: widget.compact ? 3 : 6),
       SlidingHover(
         child: widget.fill
             // The notch is wide and short: two columns of choices.
             ? LayoutBuilder(
                 builder: (context, box) {
-                  if (box.maxWidth < 440) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+                  if (box.maxWidth < (widget.compact ? 300 : 440)) {
+                    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
+                  }
                   final half = (box.maxWidth - 8) / 2;
                   return Wrap(
                     spacing: 8,
@@ -309,26 +327,30 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
       ),
       if (_other)
         Padding(
-          padding: const EdgeInsets.fromLTRB(30, 4, 0, 0),
+          padding: EdgeInsets.fromLTRB(widget.compact ? 26 : 30, 4, 0, 0),
           child: _OtherField(
             controller: _otherText,
             focus: _otherFocus,
             onChanged: () => setState(() {}),
             onSubmitted: () => _send?.call(),
+            compact: widget.compact,
           ),
         ),
     ];
-    final top = <Widget>[if (_count > 1 || title != null) _series(ui, title), _edged(ui, question)];
     // The last one left: what goes on sends the form.
     final last = !Iterable<int>.generate(_count).any((i) => i != _at && !_answered(i));
     final goOn = q.multiple || _other || _answered(_at);
     final answers = AnswerBar(
       key: ValueKey('bar-${_at > 0}-$goOn-$last'),
+      compact: widget.compact,
       answers: _readOnly
           ? widget.elsewhere
           : [
               if (_at > 0) ('Précédente', () => _go(_at - 1)),
-              (_count > 1 ? 'Tout passer' : 'Passer', () => widget.onAnswer?.call(null)),
+              if (widget.onLater != null)
+                ('Plus tard', widget.onLater)
+              else
+                (_count > 1 ? 'Tout passer' : 'Passer', () => widget.onAnswer?.call(null)),
               if (goOn) (last ? 'Envoyer' : 'Suivante', _goOn),
             ],
     );
@@ -341,62 +363,37 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
               answers,
             ],
           );
-    return Column(
+    return RequestContent(
       key: ValueKey('question-$_at'),
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: widget.fill ? MainAxisSize.max : MainAxisSize.min,
-      children: [
-        if (widget.fill)
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: top),
-            ),
-          )
-        else
-          ...top,
-        const SizedBox(height: 8),
-        bar,
-      ],
+      fill: widget.fill,
+      compact: widget.compact,
+      heading: _count > 1 || title != null ? _series(ui, title) : null,
+      actions: bar,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: question),
     );
   }
 
   static String? _titleOf(Question q) => q.title != null && q.title!.isNotEmpty && q.title != q.text ? q.title : null;
 
-  /// The text past the edge of pixels.
-  static const _indent = 24.0;
-
   /// Above the question: with several, each one's title like a tab
   /// ([StepTabs]); with one, its title in grey.
-  Widget _series(MikkyUi ui, String? title) => Padding(
-    padding: const EdgeInsets.only(left: _indent, bottom: 3),
-    child: _count > 1
-        ? StepTabs(
-            labels: [for (final (i, q) in _questions.indexed) _titleOf(q) ?? 'Question ${i + 1}'],
-            at: _at,
-            done: {
-              for (var i = 0; i < _count; i++)
-                if (_answered(i)) i,
-            },
-            onSelect: _go,
-          )
-        : Text(
-            title!,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.text3),
-          ),
-  );
-
-  /// The mark of a question: [PixelEdge.waiting] along it and its choices.
-  Widget _edged(MikkyUi ui, List<Widget> children) => Stack(
-    children: [
-      Padding(
-        padding: const EdgeInsets.only(left: _indent),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children),
-      ),
-      Positioned(left: 0, top: 4, bottom: 4, child: PixelEdge.waiting(ui)),
-    ],
-  );
+  Widget _series(MikkyUi ui, String? title) => _count > 1
+      ? StepTabs(
+          compact: widget.compact,
+          labels: [for (final (i, q) in _questions.indexed) _titleOf(q) ?? 'Question ${i + 1}'],
+          at: _at,
+          done: {
+            for (var i = 0; i < _count; i++)
+              if (_answered(i)) i,
+          },
+          onSelect: _go,
+        )
+      : Text(
+          title!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: uiText(TextSize.caption, weight: FontWeight.w500, color: ui.text3),
+        );
 }
 
 /// One choice: its key (1 to 4) in a small square — a tick box when
@@ -409,12 +406,14 @@ class _ChoiceRow extends StatelessWidget {
     required this.ticked,
     this.onTap,
     this.description,
+    this.compact = false,
   });
 
   final int index;
   final String label;
   final String? description;
   final bool multiple, ticked;
+  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -423,12 +422,12 @@ class _ChoiceRow extends StatelessWidget {
     final on = ticked;
     final mark = AnimatedContainer(
       duration: Motion.of(context, Motion.hover),
-      width: 18,
-      height: 18,
+      width: compact ? 14 : 18,
+      height: compact ? 14 : 18,
       alignment: Alignment.center,
       decoration: BoxDecoration(color: on ? ui.ink : ui.track, borderRadius: BorderRadius.circular(multiple ? 5 : 6)),
       child: on && multiple
-          ? MikkyIcon('check', size: 13, color: ui.onInk, stroke: 2.4)
+          ? MikkyIcon('check', size: compact ? 10 : 13, color: ui.onInk, stroke: 2.4)
           : Text(
               index < 9 ? '${index + 1}' : '',
               style: uiText(
@@ -442,22 +441,34 @@ class _ChoiceRow extends StatelessWidget {
     );
     return HoverRow(
       onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+      padding: EdgeInsets.symmetric(horizontal: 6, vertical: compact ? 2 : 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(padding: const EdgeInsets.only(top: 1), child: mark),
-          const SizedBox(width: 10),
+          SizedBox(width: compact ? 7 : 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text),
+                  style: uiText(
+                    compact ? TextSize.small : TextSize.label,
+                    weight: FontWeight.w500,
+                    color: ui.text,
+                    height: compact ? 1.2 : 1.45,
+                  ),
                 ),
                 if (description != null && description!.isNotEmpty)
-                  Text(description!, style: uiText(TextSize.small, color: ui.text3, height: 1.35)),
+                  Text(
+                    description!,
+                    style: uiText(
+                      compact ? TextSize.caption : TextSize.small,
+                      color: ui.text3,
+                      height: compact ? 1.2 : 1.35,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -474,16 +485,18 @@ class _OtherField extends StatelessWidget {
     required this.focus,
     required this.onChanged,
     required this.onSubmitted,
+    this.compact = false,
   });
 
   final TextEditingController controller;
   final FocusNode focus;
   final VoidCallback onChanged, onSubmitted;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final style = uiText(TextSize.label, color: ui.text, height: 1.3);
+    final style = uiText(compact ? TextSize.small : TextSize.label, color: ui.text, height: 1.3);
     return GestureDetector(
       onTap: focus.requestFocus,
       child: MouseRegion(
@@ -492,8 +505,8 @@ class _OtherField extends StatelessWidget {
           listenable: focus,
           builder: (context, _) => AnimatedContainer(
             duration: Motion.of(context, Motion.hover),
-            height: 34,
-            padding: const EdgeInsets.symmetric(horizontal: 12),
+            height: compact ? 26 : 34,
+            padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
               color: focus.hasFocus ? ui.thumb : ui.track,

@@ -105,11 +105,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   );
   bool _sideHome = true;
 
-  /// At the top: the focus view for an agent that needs the user (Oui /
-  /// Non, as before). Else, both edges: the home, another size under a
-  /// page (an agent's; at the right, the agent that asks opens there).
+  /// Permissions and questions stay in the home notch with the apps.
+  /// Other alerts retain their existing focus view.
+  bool get _inlineRequest =>
+      !_demo && (_snap.focus?.status == AgentStatus.approval || _snap.focus?.status == AgentStatus.question);
+
   IslandLayout get _layoutWanted => switch (_edge) {
-    IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage => IslandLayout.focus,
+    IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage && !_inlineRequest => IslandLayout.focus,
     _ => _sideHome ? IslandLayout.list : IslandLayout.page,
   };
 
@@ -290,7 +292,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final prev = _snap;
     final s = _machine.snapshot;
     _snap = s;
-    if (_edge == IslandEdge.right &&
+    if ((_edge == IslandEdge.right || (_edge == IslandEdge.top && _inlineRequest)) &&
         s.openReason == OpenReason.alert &&
         (prev.shape != IslandShape.open || prev.focus?.id != s.focus?.id)) {
       final id = s.focus?.id;
@@ -509,7 +511,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // N / Y answer only when no field has the keyboard (typing « y » in a
     // message must never say yes).
     final focus = _snap.focus;
-    if (!typing && focus != null && focus.status == AgentStatus.approval) {
+    if (!_topHomeShown && !typing && focus != null && focus.status == AgentStatus.approval) {
       if (key == LogicalKeyboardKey.keyY) {
         _answer(focus, AgentAnswer.allow);
         return KeyEventResult.handled;

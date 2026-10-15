@@ -1,105 +1,126 @@
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../home/home_app.dart';
 import '../home/home_frame.dart';
 import '../home/home_layout.dart';
+import '../home/home_view.dart';
+import '../home/notch_request.dart';
 import '../island/content/brief_view.dart';
-import '../side/question_card.dart';
-import '../side/request_view.dart';
-import '../side/session_steps.dart';
 import '../ui/content/diff_view.dart';
 import '../ui/content/side.dart';
+import '../ui/foundation/status.dart';
 import 'canvas.dart';
 import 'fake_sessions.dart';
 
-/// What Mikky brings in the notch (2026-10-08), to validate on Notch Top
-/// before it goes into the app (user, 2026-10-12): a request with its
-/// task, a question card, the diff of a file.
+BoardSection inlineRequestSection() => const BoardSection(
+  title: 'Répondre dans le notch',
+  kind: FrameKind.play,
+  note:
+      'La demande remplace le suivi à gauche, dans les couleurs du thème et à l’échelle des contrôles du notch. '
+      'Les applications gardent leur taille : quatre à droite d’un feu vert, deux à droite d’une question plus large. '
+      'Plus tard laisse la demande en attente ; un clic sur sa tuile la rouvre. O / N répondent, P remet à plus tard ; '
+      '1 à 4 choisissent dans une question. Les réponses restent visibles dans les 120 px du suivi ; le contenu long défile.',
+  frames: [
+    BoardFrame(label: 'Oui / Non / Plus tard', width: 700, child: NotchRequestDemo()),
+    BoardFrame(label: 'Le composant Demande', width: 700, child: NotchRequestDemo(question: true)),
+  ],
+);
+
+class NotchRequestDemo extends StatefulWidget {
+  const NotchRequestDemo({super.key, this.question = false, this.readOnly = false});
+  final bool question, readOnly;
+  @override
+  State<NotchRequestDemo> createState() => NotchRequestDemoState();
+}
+
+class NotchRequestDemoState extends State<NotchRequestDemo> {
+  late SessionLog _log = widget.question ? FakeSessions.questions() : FakeSessions.approval();
+  bool _shown = true, _answered = false;
+
+  void _finish() => setState(() {
+    _shown = false;
+    _answered = true;
+  });
+  void _reopen() => setState(() {
+    if (_answered) _log = widget.question ? FakeSessions.questions() : FakeSessions.approval();
+    _answered = false;
+    _shown = true;
+  });
+
+  @override
+  Widget build(BuildContext context) => HomeFrame(
+    layout: HomeLayout.top,
+    child: HomeView(
+      animate: false,
+      mikky: _shown ? MikkyState.approval : MikkyState.working,
+      request: !_shown
+          ? null
+          : NotchRequest(
+              name: 'Met à jour le site',
+              log: _log,
+              onAnswer: widget.readOnly ? null : (_) => _finish(),
+              onAnswerQuestion: widget.readOnly ? null : (_) => _finish(),
+              onLater: () => setState(() => _shown = false),
+              onOpen: () {},
+            ),
+      apps: [
+        if (!_shown)
+          HomeApp(
+            id: 'request',
+            name: _answered ? 'Rejouer la demande' : 'Met à jour le site',
+            app: AgentApp.codex,
+            status: _answered ? UiStatus.working : UiStatus.approval,
+          ),
+        const HomeApp(
+          id: 'guide',
+          name: 'Rédige le guide',
+          line: 'Relit les exemples',
+          app: AgentApp.vscode,
+          status: UiStatus.working,
+        ),
+        const HomeApp(
+          id: 'tests',
+          name: 'Teste le moteur',
+          line: 'Lance les tests',
+          app: AgentApp.terminal,
+          status: UiStatus.working,
+        ),
+        const HomeApp(
+          id: 'notes',
+          name: 'Range les notes',
+          line: 'Classe les sources',
+          app: AgentApp.claude,
+          status: UiStatus.working,
+        ),
+        const HomeApp(
+          id: 'stars',
+          name: 'Anime les étoiles',
+          line: 'Vérifie le rendu',
+          app: AgentApp.mikky,
+          status: UiStatus.working,
+        ),
+      ],
+      onOpen: (app) {
+        if (app.id == 'request') _reopen();
+      },
+    ),
+  );
+}
+
+/// Alerts that still need their own page, and file changes.
 List<BoardSection> notchRequestSections() => [
   BoardSection(
-    title: 'Une demande · essai',
-    kind: FrameKind.trial,
-    note: 'Le notch va droit à ce qui t’attend, 700 × 260 : Mikky à gauche, dans l’état de l’agent ; à sa droite qui demande (un clic ouvre sa page ; Ctrl + clic, son terminal ou VS Code), ce que fait la tâche, puis la demande et ses réponses, plates. Le plus pressé d’abord — questions et feux verts, puis erreurs, puis limites ; les plus anciennes d’abord — « 2/3 » dans la série ; répondu, la suivante ; plus rien, l’île revient où elle était. « Plus tard » la laisse en attente. Touches : O / N / T (toujours), 1 à 4 pour les choix, Entrée.',
+    title: 'Les autres alertes',
+    note: 'Les erreurs, limites et tâches terminées gardent leur page avec le contexte et les actions de l’app.',
     frames: [
-      BoardFrame(
-        label: 'Aujourd’hui dans l’app',
-        kind: FrameKind.app,
-        note: 'Pour comparer : le compte des lignes est collé à la commande, rien ne s’ouvre.',
-        width: 700,
-        child: _request(FakeSessions.approvalEdit(), 'Corrige la fermeture auto', trial: false),
-      ),
-      BoardFrame(
-        label: 'Feu vert sur un fichier',
-        note: 'Le chemin du fichier, et « +3 −1 » à côté : un clic ouvre le diff.',
-        width: 700,
-        child: _request(FakeSessions.approvalEdit(), 'Corrige la fermeture auto'),
-      ),
-      BoardFrame(
-        label: 'Feu vert sur une commande',
-        width: 700,
-        child: _request(FakeSessions.approval(), 'Met à jour le site'),
-      ),
-      BoardFrame(
-        label: 'La deuxième de trois',
-        width: 700,
-        child: _request(FakeSessions.approval(), 'Met à jour le site', position: 2, total: 3),
-      ),
-      BoardFrame(label: 'Erreur', width: 700, child: _request(FakeSessions.error(), 'Corrige la fermeture auto')),
+      BoardFrame(label: 'Erreur', width: 700, child: _alert(FakeSessions.error(), 'Corrige la fermeture auto')),
       BoardFrame(
         label: 'Limite atteinte',
-        note: '« Terminer » : ne plus attendre ; « Relance auto » : l’agent reprend seul quand la limite passe.',
         width: 700,
-        child: _request(FakeSessions.limited(), 'Corrige la fermeture auto'),
+        child: _alert(FakeSessions.limited(), 'Corrige la fermeture auto'),
       ),
-      BoardFrame(
-        label: 'Terminée',
-        note: 'Ses fichiers, chacun avec son compte : un clic ouvre leur diff.',
-        width: 700,
-        child: _request(FakeSessions.doneFiles(), 'Corrige la fermeture auto'),
-      ),
-    ],
-  ),
-  BoardSection(
-    title: 'Une question · essai',
-    kind: FrameKind.trial,
-    note: 'La question d’un agent (son outil de questions, par ACP ou par ses hooks : la même carte). Plate comme la barre de réponses : chaque choix sur sa ligne, son numéro dans un petit carré, sa description en gris. « Ici, tu réponds » (choisi le 12 octobre) : un liseré de pixels sur trois colonnes le long de la question et de ses choix, à travers nos oranges point par point, plus clair vers la droite, plein à hauteur de la question, qui s’égrène vers le bas ; glitché en tranches. Plusieurs questions : leurs titres au-dessus, comme des onglets — celle où l’on est, un carré de pixels orange ; les répondues, une coche dans nos bleus (un clic y revient) ; les suivantes en gris. « Précédente » rouvre la question d’avant avec sa réponse : un autre choix la change, « Suivante » la garde ; « Envoyer » sur la dernière, « Tout passer » laisse tout le formulaire. « Autre… » ouvre une ligne pour écrire ; un second clic la referme et la vide.',
-    frames: [
-      BoardFrame(label: 'Un choix', width: 700, child: _request(FakeSessions.question(), 'Prépare le stockage')),
-      BoardFrame(
-        label: '« Autre… » ouvert',
-        width: 700,
-        child: _request(
-          FakeSessions.questionMultiple(),
-          'Ajoute des tests',
-          question: const QuestionTrial(other: true),
-        ),
-      ),
-      BoardFrame(
-        label: 'Trois questions',
-        note: 'La première répondue.',
-        width: 700,
-        child: _request(
-          FakeSessions.questions(),
-          'Prépare le stockage',
-          question: const QuestionTrial(answers: {'db': 'SQLite'}),
-        ),
-      ),
-      BoardFrame(
-        label: 'Revenue sur une question',
-        note: '« Précédente » (ou un clic sur une coche) : sa réponse est là, un autre choix la change.',
-        width: 700,
-        child: _request(
-          FakeSessions.questions(),
-          'Prépare le stockage',
-          question: const QuestionTrial(answers: {'db': 'SQLite', 'when': 'À l’heure dite'}, at: 1),
-        ),
-      ),
-      BoardFrame(
-        label: 'Hooks non activés',
-        note: 'Sans les hooks, Mikky lit la question dans le fichier de la session mais ne peut pas y répondre : la même carte, ses choix non cliquables (un clic mène à l’app), et « Répondre dans Claude » (Entrée aussi). Avec les hooks, elle se répond ici ou là-bas, la première réponse gagne.',
-        width: 700,
-        child: _request(FakeSessions.question()..app = AgentApp.claude, 'Prépare le stockage', answerable: false),
-      ),
+      BoardFrame(label: 'Terminée', width: 700, child: _alert(FakeSessions.doneFiles(), 'Corrige la fermeture auto')),
     ],
   ),
   BoardSection(
@@ -133,16 +154,8 @@ List<BoardSection> notchRequestSections() => [
 const _mikkySize = 96.0;
 const _mikkyAt = Offset(54 - _mikkySize / 2, 88 - _mikkySize * .54);
 
-/// A request in the notch, 700 × 260, as the island shows it.
-Widget _request(
-  SessionLog log,
-  String name, {
-  int position = 1,
-  int total = 1,
-  QuestionTrial question = const QuestionTrial(),
-  bool trial = true,
-  bool answerable = true,
-}) {
+/// The remaining focus alerts, using the app's pinned brief.
+Widget _alert(SessionLog log, String name) {
   final status = log.statusAt(log.lastEventAt ?? DateTime(2026));
   final agent = Agent(
     id: name,
@@ -161,24 +174,19 @@ Widget _request(
     child: Stack(
       children: [
         Positioned.fill(
-          child: RequestView(
-            place: RequestPlace.top,
-            agent: agent,
-            brief: briefOf(log, status),
-            question: log.question,
-            canAlways: canAlways(log),
-            position: position,
-            total: total,
-            questionTrial: question,
-            trial: trial,
-            actions: BriefActions(
-              answer: (_) {},
-              answerQuestion: answerable ? (_) {} : null,
-              reveal: answerable ? null : none,
-              open: none,
-              later: trial ? none : null,
-              finishLimit: limited ? none : null,
-              enchant: limited ? none : null,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(104, 16, 18, 10),
+            child: BriefView(
+              agent: agent,
+              brief: briefOf(log, status),
+              pinned: true,
+              actions: BriefActions(
+                answer: (_) {},
+                open: none,
+                later: none,
+                finishLimit: limited ? none : null,
+                enchant: limited ? none : null,
+              ),
             ),
           ),
         ),

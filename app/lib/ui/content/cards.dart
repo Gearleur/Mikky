@@ -13,10 +13,11 @@ import 'feedback.dart';
 
 /// `.code`: a command in mono, in a small hollow.
 class CodePill extends StatelessWidget {
-  const CodePill(this.code, {super.key, this.maxLines = 1});
+  const CodePill(this.code, {super.key, this.maxLines = 1, this.compact = false});
 
   final String code;
-  final int maxLines;
+  final int? maxLines;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -26,16 +27,16 @@ class CodePill extends StatelessWidget {
       radius: Radii.md,
       color: ui.track,
       shadows: ui.inset,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: compact ? 6 : 8, vertical: compact ? 4 : 6),
       child: Text(
         code,
         maxLines: maxLines,
         overflow: TextOverflow.ellipsis,
         style: uiText(
-          TextSize.small,
+          compact ? TextSize.caption : TextSize.small,
           weight: FontWeight.w500,
           mono: true,
-          height: maxLines > 1 ? 1.35 : 1,
+          height: maxLines == null || maxLines! > 1 ? 1.35 : 1,
           color: ui.text,
         ),
       ),
@@ -343,9 +344,10 @@ class WaitActions extends StatelessWidget {
 /// another slides the square to it, with the selectors' spring, then the
 /// answer goes on release (user request, 2026-09-30).
 class AnswerBar extends StatefulWidget {
-  const AnswerBar({super.key, required this.answers});
+  const AnswerBar({super.key, required this.answers, this.compact = false});
 
   final List<(String, VoidCallback?)> answers;
+  final bool compact;
 
   static const height = 28.0, padX = 13.0, gap = 2.0;
 
@@ -357,6 +359,8 @@ class _AnswerBarState extends State<AnswerBar> {
   late int _on = widget.answers.length - 1;
   int? _hover;
 
+  double get _height => widget.compact ? 24 : AnswerBar.height;
+
   @override
   void didUpdateWidget(AnswerBar old) {
     super.didUpdateWidget(old);
@@ -367,8 +371,9 @@ class _AnswerBarState extends State<AnswerBar> {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final scaler = MediaQuery.textScalerOf(context);
-    final style = uiText(TextSize.label, weight: FontWeight.w600, height: 1);
-    final widths = [for (final (label, _) in widget.answers) _textWidth(label, style, scaler) + AnswerBar.padX * 2];
+    final style = uiText(widget.compact ? TextSize.caption : TextSize.label, weight: FontWeight.w600, height: 1);
+    final pad = widget.compact ? 8.0 : AnswerBar.padX;
+    final widths = [for (final (label, _) in widget.answers) _textWidth(label, style, scaler) + pad * 2];
     final lefts = <double>[];
     var x = 0.0;
     for (final w in widths) {
@@ -378,7 +383,7 @@ class _AnswerBarState extends State<AnswerBar> {
     final n = widths.length;
     return SizedBox(
       width: x - AnswerBar.gap,
-      height: AnswerBar.height,
+      height: _height,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -454,7 +459,7 @@ class _AnswerBarState extends State<AnswerBar> {
             child: AnimatedContainer(
               duration: Motion.hover,
               width: width,
-              height: AnswerBar.height,
+              height: _height,
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: hovered ? ui.hover : ui.hover.withValues(alpha: 0),
@@ -473,9 +478,9 @@ class _AnswerBarState extends State<AnswerBar> {
   }
 }
 
-final Map<(String, double), double> _answerWidths = {};
+final Map<(String, TextStyle, TextScaler), double> _answerWidths = {};
 
-double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWidths[(text, scaler.scale(1))] ??= () {
+double _textWidth(String text, TextStyle style, TextScaler scaler) => _answerWidths[(text, style, scaler)] ??= () {
   final tp = TextPainter(
     text: TextSpan(text: text, style: style),
     textDirection: TextDirection.ltr,

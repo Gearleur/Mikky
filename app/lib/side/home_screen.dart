@@ -7,6 +7,7 @@ import '../home/history_sheet.dart';
 import '../home/home_app.dart';
 import '../home/home_layout.dart';
 import '../home/home_view.dart';
+import '../home/notch_request.dart';
 import '../home/task_glance.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/foundation/status.dart';
@@ -166,7 +167,7 @@ List<AgentEntry> _shown(List<AgentEntry> entries, DateTime now, Set<String> reca
 /// its agent's page; « + » and the tools' rail, the Chat ([chat], a new
 /// agent); the history button, the history over it. Mikky is the
 /// island's own, drawn over his place.
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.entries,
@@ -176,6 +177,11 @@ class HomeScreen extends StatelessWidget {
     this.recalled = const {},
     this.recall,
     this.onMenu,
+    this.canAnswer,
+    this.canAnswerQuestion,
+    this.answer,
+    this.answerQuestion,
+    this.reveal,
   });
 
   final List<AgentEntry> entries;
@@ -194,12 +200,93 @@ class HomeScreen extends StatelessWidget {
 
   /// An agent's menu: right click on its app/task, or ⋯ in the history.
   final ValueChanged<String>? onMenu;
+  final bool Function(String)? canAnswer, canAnswerQuestion;
+  final void Function(String, AgentAnswer)? answer;
+  final void Function(String, Map<String, Object>?)? answerQuestion;
+  final ValueChanged<String>? reveal;
+
+  @override
+  State<HomeScreen> createState() => HomeScreenState();
+}
+
+class HomeScreenState extends State<HomeScreen> {
+  final _deferred = <(String, Object)>{};
+  String? _selected;
+
+  static Object? _requestId(AgentEntry e) => e.log.question?.requestId ?? e.log.pending.firstOrNull?.requestId;
+
+  /// Only a waiting tile changes the home. Other tiles still open their
+  /// agent as before. Reopening a deferred request does not answer it.
+  void showRequest(String id) {
+    if (!widget.layout.isTop) return;
+    final entry = widget.entries.where((e) => e.id == id).firstOrNull;
+    final request = entry == null ? null : _requestId(entry);
+    if (request == null) return;
+    setState(() {
+      _deferred.remove((id, request));
+      _selected = id;
+    });
+  }
+
+  AgentEntry? _request() {
+    if (!widget.layout.isTop) return null;
+    final waiting =
+        widget.entries
+            .where(
+              (e) =>
+                  !e.mark.archived &&
+                  (e.status == AgentStatus.approval || e.status == AgentStatus.question) &&
+                  _requestId(e) != null,
+            )
+            .toList()
+          ..sort((a, b) => a.lastActivity.compareTo(b.lastActivity));
+    _deferred.removeWhere((key) => !waiting.any((e) => (e.id, _requestId(e)) == key));
+    final available = waiting.where((e) => !_deferred.contains((e.id, _requestId(e))));
+    return available.where((e) => e.id == _selected).firstOrNull ?? available.firstOrNull;
+  }
+
+  NotchRequest _requestView(AgentEntry entry) {
+    final id = entry.id, request = _requestId(entry)!;
+    // A replacement request must never receive a click meant for the old
+    // one during the service's short rendering debounce.
+    bool current() {
+      final latest = widget.entries.where((e) => e.id == id).firstOrNull;
+      return latest != null &&
+          !latest.mark.archived &&
+          _requestId(latest) == request &&
+          (latest.status == AgentStatus.approval || latest.status == AgentStatus.question);
+    }
+
+    return NotchRequest(
+      key: ValueKey((id, request)),
+      name: entry.name,
+      log: entry.log,
+      onLater: () => setState(() {
+        _deferred.add((id, request));
+        _selected = null;
+      }),
+      onOpen: () => widget.open(id),
+      onReveal: widget.reveal == null ? null : () => widget.reveal!(id),
+      onAnswer: widget.answer != null && (widget.canAnswer?.call(id) ?? false)
+          ? (answer) {
+              if (current()) widget.answer!(id, answer);
+            }
+          : null,
+      onAnswerQuestion: widget.answerQuestion != null && (widget.canAnswerQuestion?.call(id) ?? false)
+          ? (answers) {
+              if (current()) widget.answerQuestion!(id, answers);
+            }
+          : null,
+    );
+  }
 
   @override
   Widget build(BuildContext context) =>
       ListenableBuilder(listenable: Enchantments.instance, builder: (context, _) => _view(context));
 
   Widget _view(BuildContext context) {
+    final entries = widget.entries, layout = widget.layout;
+    final recalled = widget.recalled, onMenu = widget.onMenu;
     final now = DateTime.now();
     // The notch, at the top and (since 2026-10-08) at the right.
     final autoRelaunch = {
@@ -207,21 +294,37 @@ class HomeScreen extends StatelessWidget {
         if (Enchantments.instance.isOn(e.id)) e.id,
     };
     final attention = Enchantments.instance.attentionEntries(entries);
-    final watched = layout.notch ? watchedTask(attention, now) : null;
+    final request = _request();
+    final watched = request != null
+        ? WatchedTask(id: request.id, name: request.name, log: request.log, status: request.status, app: request.app)
+        : layout.notch
+        ? watchedTask(attention, now)
+        : null;
     return HomeView(
       key: ValueKey(layout.placement),
       layout: layout,
       watched: watched,
+      request: request == null ? null : _requestView(request),
       apps: homeApps(entries, now, recalled: recalled, except: watched?.id, autoRelaunch: autoRelaunch),
       drawMikky: false,
-      onOpen: (app) => open(app.id),
+      onOpen: (app) {
+        final entry = entries.where((e) => e.id == app.id).firstOrNull;
+        if (layout.isTop &&
+            entry != null &&
+            _requestId(entry) != null &&
+            (entry.status == AgentStatus.approval || entry.status == AgentStatus.question)) {
+          showRequest(app.id);
+        } else {
+          widget.open(app.id);
+        }
+      },
       onMenu: onMenu,
       // « + », the tools and the Chat mode: the new chat's page.
-      onNew: canLaunch ? () => open('new') : null,
+      onNew: widget.canLaunch ? () => widget.open('new') : null,
       onHistory: (within) => showHistory(
         within,
         rows: historyRows(entries, DateTime.now(), recalled: recalled),
-        onOpen: recall ?? open,
+        onOpen: widget.recall ?? widget.open,
         onMenu: onMenu,
       ),
     );

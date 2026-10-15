@@ -51,9 +51,6 @@ class BriefActions {
 /// asks and why, the task and its step, what the agent just said and did,
 /// then the request and its answers. In a request page, it hears the
 /// island's keys (2026-10-08): Y / N / T, 1 to 4, Entrée.
-///
-/// FUNCTIONAL ONLY: the plain components of the home, no design of its
-/// own yet (to draw with the user on the boards, plan of 2026-10-05).
 class BriefView extends StatelessWidget {
   const BriefView({
     super.key,
@@ -64,8 +61,6 @@ class BriefView extends StatelessWidget {
     this.canAlways = false,
     this.queue = 1,
     this.position = 1,
-    this.questionTrial = const QuestionTrial(),
-    this.trial = false,
     this.pinned = false,
   });
 
@@ -82,16 +77,6 @@ class BriefView extends StatelessWidget {
   /// Requests in this round, this one included, and which one this is
   /// (« 2/3 »).
   final int queue, position;
-
-  /// The question card's look and how it starts (the boards).
-  final QuestionTrial questionTrial;
-
-  /// The request page of 2026-10-08, shown on the boards (Notch Top) until
-  /// it goes into the island: who asks at the top, the request and its
-  /// answers at the bottom, the question card filling the room, the change
-  /// counted beside its file. Off, the app's look: one column, the count
-  /// after the command. The question card is the same in both.
-  final bool trial;
 
   /// Its height is fixed (the island): the request and its answers stay at
   /// the bottom, in sight, what is above them scrolls; a question's card
@@ -110,9 +95,7 @@ class BriefView extends StatelessWidget {
       if (agent.origin == AgentOrigin.external) 'session extérieure',
       if (agent.cwd != null) _folder(agent.cwd!),
     ].join(' · ');
-    // In the trial, what the agent asks to do is the request below: not
-    // twice.
-    final recent = trial && b.kind == BriefKind.approval ? b.recent.where((a) => !a.running).toList() : b.recent;
+    final recent = b.kind == BriefKind.approval ? b.recent.where((a) => !a.running).toList() : b.recent;
     final context_ = <Widget>[
       if (b.task != null) _Labeled('Tâche', b.task!, style: small),
       if (b.step != null) _Labeled('Étape', b.step!, style: small),
@@ -134,12 +117,6 @@ class BriefView extends StatelessWidget {
                   text: '  $line',
                   style: uiText(TextSize.small, color: ui.text2),
                 ),
-                // The trial: where it runs on the same line.
-                if (trial && where.isNotEmpty)
-                  TextSpan(
-                    text: '  ·  $where',
-                    style: uiText(TextSize.caption, color: ui.text3),
-                  ),
               ],
             ),
             maxLines: 2,
@@ -161,7 +138,7 @@ class BriefView extends StatelessWidget {
             child: MouseRegion(cursor: SystemMouseCursors.click, child: title),
           )
         : title;
-    final whereText = where.isEmpty || trial
+    final whereText = where.isEmpty
         ? null
         : Text(
             where,
@@ -188,7 +165,7 @@ class BriefView extends StatelessWidget {
       ui,
       links: [...links, if (actions.open != null) _Link('Voir l’agent', actions.open!)],
     );
-    if (!trial && !pinned) {
+    if (!pinned) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         mainAxisSize: MainAxisSize.min,
@@ -204,7 +181,7 @@ class BriefView extends StatelessWidget {
       );
     }
 
-    // The trial (2026-10-12) and the island: who asks stays at the top, the
+    // In the island, who asks stays at the top, the
     // request and its answers at the bottom, always in sight; the task
     // between them scrolls. A question: its card fills it, the links in its
     // bar.
@@ -217,10 +194,7 @@ class BriefView extends StatelessWidget {
         const SizedBox(height: 8),
         Expanded(
           child: asking
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [Expanded(child: answers!)],
-                )
+              ? answers!
               : SingleChildScrollView(
                   child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: context_),
                 ),
@@ -251,7 +225,7 @@ class BriefView extends StatelessWidget {
   /// The request: what it is ([detail]), then how to answer it
   /// ([answers]).
   ///
-  /// [links] go in the question card's bar, in the trial.
+  /// [links] go in the question card's bar when it fills the view.
   ({List<Widget> detail, Widget? answers}) _parts(MikkyUi ui, {List<Widget> links = const []}) {
     final b = brief;
     final answer = actions.answer;
@@ -261,7 +235,7 @@ class BriefView extends StatelessWidget {
         final change = b.requestChange;
         return (
           detail: [
-            if (trial && (b.requestTitle != null || diff != null))
+            if (b.requestTitle != null || diff != null)
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -285,16 +259,6 @@ class BriefView extends StatelessWidget {
                     ),
                   ],
                 ],
-              )
-            else if (b.requestTitle != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4),
-                child: Text(
-                  b.requestTitle!,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: uiText(TextSize.caption, color: ui.text2),
-                ),
               ),
           ],
           answers: _Keyed(
@@ -305,7 +269,7 @@ class BriefView extends StatelessWidget {
               if (canAlways) RequestKey.always: () => answer(AgentAnswer.allowAlways),
             },
             child: WaitActions(
-              command: trial || diff == null ? b.request : '${b.request}  ${diff.label}',
+              command: b.request,
               onYes: () => answer(AgentAnswer.allow),
               onNo: () => answer(AgentAnswer.deny),
               onAlways: canAlways ? () => answer(AgentAnswer.allowAlways) : null,
@@ -324,22 +288,14 @@ class BriefView extends StatelessWidget {
             detail: const <Widget>[],
             answers: _Keyed(
               keys: {if (readOnly) RequestKey.enter: ?actions.reveal},
-              child: trial || pinned
-                  ? QuestionCard(
-                      question: q,
-                      onAnswer: onQuestion,
-                      trial: questionTrial,
-                      fill: true,
-                      barLeading: links,
-                      elsewhere: elsewhere,
-                      onElsewhere: readOnly ? actions.reveal : null,
-                    )
-                  : QuestionCard(
-                      question: q,
-                      onAnswer: onQuestion,
-                      elsewhere: elsewhere,
-                      onElsewhere: readOnly ? actions.reveal : null,
-                    ),
+              child: QuestionCard(
+                question: q,
+                onAnswer: onQuestion,
+                fill: pinned,
+                barLeading: pinned ? links : const [],
+                elsewhere: elsewhere,
+                onElsewhere: readOnly ? actions.reveal : null,
+              ),
             ),
           );
         }

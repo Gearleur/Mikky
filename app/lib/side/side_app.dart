@@ -99,15 +99,22 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   /// Agents opened from the history: back among the apps.
   final _recalled = <String>{};
+  final _homeKey = GlobalKey<HomeScreenState>();
 
   /// The home keeps its own size under a taller page.
   Widget _home() => Align(
     alignment: Alignment.topLeft,
     child: HomeScreen(
+      key: _homeKey,
       layout: widget.layout,
       entries: host.service.source.homeEntries,
       canLaunch: host.service.canLaunch,
       open: _click,
+      canAnswer: host.service.source.canAnswerRequests,
+      canAnswerQuestion: host.service.source.canAnswerQuestion,
+      answer: host.answer,
+      answerQuestion: (id, answers) => host.service.source.answerQuestion(id, answers),
+      reveal: (id) => unawaited(host.service.revealOrOpen(id, () => _open(id))),
       recalled: _recalled,
       recall: (id) {
         setState(() => _recalled.add(id));
@@ -296,6 +303,14 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
   /// What agent [id] asks, with its context, from anywhere (an alert at
   /// the right edge).
   void openAlert(String id) {
+    final status = host.service.source.entry(id)?.status;
+    if (widget.layout.isTop && (status == AgentStatus.approval || status == AgentStatus.question)) {
+      home();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _homeKey.currentState?.showRequest(id);
+      });
+      return;
+    }
     if (_pages.last.key == 'alert:$id') return;
     setState(() => _pages.removeRange(1, _pages.length));
     _open('alert:$id');

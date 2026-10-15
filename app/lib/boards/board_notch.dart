@@ -139,6 +139,7 @@ final notchTopBoard = BoardSpec(
         ),
       ],
     ),
+    inlineRequestSection(),
     BoardSection(
       title: 'La tâche que Mikky regarde',
       note: 'La dernière au travail ou qui attend ; sinon celle qui a fini il y a moins de 10 min. Seulement ses étapes qui apparaissent, et la fin. Sans plan : pas de progression.',
