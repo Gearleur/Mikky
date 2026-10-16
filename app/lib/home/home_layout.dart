@@ -158,6 +158,12 @@ class HomeLayout {
   /// the bar's foot, this high.
   static const taskTop = 46.0, taskHeight = 120.0;
 
+  /// A question takes the focus size and Mikky's focus position.
+  static Size get questionSize => Size(IslandMetrics.top.focus.width, IslandMetrics.top.focus.height);
+  static const questionPadding = EdgeInsets.fromLTRB(104, 16, 18, 12);
+  static Offset get questionMikkyAt =>
+      Offset(IslandMetrics.top.mikkyOpen.x - top.mikky / 2, IslandMetrics.top.mikkyOpen.y - top.mikky * .54);
+
   /// The task, this far from Mikky; at the top it reaches to [taskEnd]
   /// from the apps' area (190 wide), at the right to the side's margin.
   static const taskGap = 8.0, taskEnd = 4.0;

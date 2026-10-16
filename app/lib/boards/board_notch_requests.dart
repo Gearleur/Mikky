@@ -14,28 +14,57 @@ import 'canvas.dart';
 import 'fake_sessions.dart';
 
 BoardSection inlineRequestSection() => const BoardSection(
-  title: 'Répondre dans le notch',
+  title: 'Oui / Non · les applications restent visibles',
   kind: FrameKind.play,
   note:
-      'La demande remplace le suivi à gauche, dans les couleurs du thème et à l’échelle des contrôles du notch. '
-      'Feux verts et questions occupent la même largeur, les choix sur une colonne et les boutons à gauche ; quatre applications restent à droite. '
-      'Plus tard laisse la demande en attente ; un clic sur sa tuile la rouvre. O / N répondent, P remet à plus tard ; '
-      '1 à 4 choisissent dans une question. Les réponses restent visibles dans les 120 px du suivi ; le contenu long défile.',
+      'Le feu vert remplace le suivi à gauche dans le notch de 700 × 200 ; quatre applications restent visibles à droite. '
+      'Oui / Non répondent, Plus tard garde la demande en attente. Les boutons restent à gauche et le contenu long défile.',
+  frames: [BoardFrame(label: 'Oui / Non / Plus tard', width: 700, child: NotchRequestDemo())],
+);
+
+BoardSection expandedQuestionSection() => const BoardSection(
+  title: 'Une question en grand',
+  kind: FrameKind.play,
+  note:
+      'Le notch s’agrandit à 700 × 260 pour la question : Mikky à gauche, les choix sur une colonne, '
+      'les boutons à gauche et aucune autre application. Répondre ramène l’accueil ; Plus tard laisse la question en attente.',
   frames: [
-    BoardFrame(label: 'Oui / Non / Plus tard', width: 700, child: NotchRequestDemo()),
-    BoardFrame(label: 'Le composant Demande', width: 700, child: NotchRequestDemo(question: true)),
+    BoardFrame(
+      label: 'Une question à la fois',
+      kind: FrameKind.play,
+      width: 700,
+      child: NotchRequestDemo(question: true),
+    ),
+    BoardFrame(
+      label: 'Plusieurs réponses possibles',
+      kind: FrameKind.play,
+      width: 700,
+      child: NotchRequestDemo(question: true, multiple: true),
+    ),
   ],
 );
 
 class NotchRequestDemo extends StatefulWidget {
-  const NotchRequestDemo({super.key, this.question = false, this.readOnly = false});
-  final bool question, readOnly;
+  const NotchRequestDemo({super.key, this.question = false, this.readOnly = false, this.multiple = false});
+  final bool question, readOnly, multiple;
   @override
   State<NotchRequestDemo> createState() => NotchRequestDemoState();
 }
 
 class NotchRequestDemoState extends State<NotchRequestDemo> {
-  late SessionLog _log = widget.question ? FakeSessions.questions() : FakeSessions.approval();
+  String get _name => widget.question
+      ? widget.multiple
+            ? 'Ajoute des tests'
+            : 'Prépare le stockage'
+      : 'Met à jour le site';
+
+  SessionLog _freshLog() => widget.question
+      ? widget.multiple
+            ? FakeSessions.questionMultiple()
+            : FakeSessions.questions()
+      : FakeSessions.approval();
+
+  late SessionLog _log = _freshLog();
   bool _shown = true, _answered = false;
 
   void _finish() => setState(() {
@@ -43,7 +72,7 @@ class NotchRequestDemoState extends State<NotchRequestDemo> {
     _answered = true;
   });
   void _reopen() => setState(() {
-    if (_answered) _log = widget.question ? FakeSessions.questions() : FakeSessions.approval();
+    if (_answered) _log = _freshLog();
     _answered = false;
     _shown = true;
   });
@@ -51,13 +80,14 @@ class NotchRequestDemoState extends State<NotchRequestDemo> {
   @override
   Widget build(BuildContext context) => HomeFrame(
     layout: HomeLayout.top,
+    size: _shown && widget.question ? HomeLayout.questionSize : null,
     child: HomeView(
       animate: false,
       mikky: _shown ? MikkyState.approval : MikkyState.working,
       request: !_shown
           ? null
           : NotchRequest(
-              name: 'Met à jour le site',
+              name: _name,
               log: _log,
               onAnswer: widget.readOnly ? null : (_) => _finish(),
               onAnswerQuestion: widget.readOnly ? null : (_) => _finish(),
@@ -68,7 +98,7 @@ class NotchRequestDemoState extends State<NotchRequestDemo> {
         if (!_shown)
           HomeApp(
             id: 'request',
-            name: _answered ? 'Rejouer la demande' : 'Met à jour le site',
+            name: _answered ? 'Rejouer la demande' : _name,
             app: AgentApp.codex,
             status: _answered ? UiStatus.working : UiStatus.approval,
           ),

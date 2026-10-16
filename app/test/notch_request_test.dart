@@ -214,7 +214,7 @@ void main() {
     expect(sent, [AgentAnswer.deny]);
   });
 
-  testWidgets('the shared question answers by keyboard with four unchanged tiles beside it', (tester) async {
+  testWidgets('a question fills the top notch and answers by keyboard with no app tiles', (tester) async {
     final sent = <Map<String, Object>?>[];
     await tester.pumpWidget(
       host(
@@ -236,8 +236,8 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(QuestionCard), findsOneWidget);
-    expect(find.byType(HomeAppTile), findsNWidgets(4));
-    expect(tester.getSize(find.byType(AppTile).first), const Size(160, 42));
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 260));
+    expect(find.byType(HomeAppTile), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
     expect(sent, [
       {'db': 'Postgres'},
@@ -247,6 +247,7 @@ void main() {
 
   testWidgets('question later does not skip or send the form', (tester) async {
     final sent = <Map<String, Object>?>[];
+    final layouts = <bool>[];
     final log = question();
     await tester.pumpWidget(
       host(
@@ -256,6 +257,7 @@ void main() {
           open: (_) {},
           canAnswerQuestion: (_) => true,
           answerQuestion: (_, a) => sent.add(a),
+          onQuestionChanged: layouts.add,
         ),
       ),
     );
@@ -264,6 +266,63 @@ void main() {
     expect(sent, isEmpty);
     expect(log.question, isNotNull);
     expect(frame, findsNothing);
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 200));
+    expect(layouts, [true, false]);
+    await tester.tap(find.byKey(const ValueKey('Base')));
+    await tester.pumpAndSettle();
+    expect(frame, findsOneWidget);
+    expect(find.byType(HomeAppTile), findsNothing);
+    expect(layouts, [true, false, true]);
+    expect(sent, isEmpty);
+  });
+
+  testWidgets('multiple choices stay in one column and submitting restores the apps', (tester) async {
+    final waiting = entry('Base', log: question(multiple: true));
+    final sent = <Map<String, Object>?>[];
+    final layouts = <bool>[];
+    await tester.pumpWidget(
+      host(
+        StatefulBuilder(
+          builder: (_, set) => HomeScreen(
+            layout: HomeLayout.top,
+            entries: [waiting, entry('Autre tâche')],
+            open: (_) {},
+            canAnswerQuestion: (_) => true,
+            onQuestionChanged: layouts.add,
+            answerQuestion: (_, answers) {
+              sent.add(answers);
+              set(() {
+                waiting.log.apply(const QuestionAnswered('q'));
+                waiting.status = AgentStatus.working;
+              });
+            },
+          ),
+        ),
+      ),
+    );
+    expect(find.byType(HomeAppTile), findsNothing);
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 260));
+    final first = tester.getTopLeft(find.text('SQLite'));
+    final second = tester.getTopLeft(find.text('Postgres'));
+    expect(second.dx, first.dx);
+    expect(second.dy, greaterThan(first.dy));
+    expect(tester.getRect(find.byType(AnswerBar)).left, tester.getRect(frame).left);
+    await tester.tap(find.text('SQLite'));
+    await tester.tap(find.text('Postgres'));
+    await tester.pumpAndSettle();
+    expect(sent, isEmpty);
+    await tester.tap(find.text('Envoyer'));
+    await tester.pumpAndSettle();
+    expect(sent, [
+      {
+        'db': ['SQLite', 'Postgres'],
+      },
+    ]);
+    expect(frame, findsNothing);
+    expect(find.byType(HomeAppTile), findsWidgets);
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 200));
+    expect(layouts, [true, false]);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('typing in Other never triggers request shortcuts', (tester) async {
@@ -415,7 +474,7 @@ void main() {
         ),
       ),
     );
-    expect(tester.getSize(frame).height, HomeLayout.taskHeight);
+    expect(tester.getSize(frame).height, HomeLayout.questionSize.height - HomeLayout.questionPadding.vertical);
     expect(tester.getRect(find.text('Plus tard')).bottom, lessThanOrEqualTo(tester.getRect(frame).bottom));
     expect(tester.takeException(), isNull);
   });
@@ -442,7 +501,7 @@ void main() {
     });
 
     testWidgets('flat notch requests $label', tags: 'golden', (tester) async {
-      final spec = BoardSpec('Demandes dans le notch', '', (_) => [inlineRequestSection()]);
+      final spec = BoardSpec('Demandes dans le notch', '', (_) => [inlineRequestSection(), expandedQuestionSection()]);
       const boundary = Key('request-board');
       Widget page() => MediaQuery(
         data: const MediaQueryData(disableAnimations: true),

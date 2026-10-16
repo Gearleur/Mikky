@@ -182,6 +182,7 @@ class HomeScreen extends StatefulWidget {
     this.answer,
     this.answerQuestion,
     this.reveal,
+    this.onQuestionChanged,
   });
 
   final List<AgentEntry> entries;
@@ -205,6 +206,9 @@ class HomeScreen extends StatefulWidget {
   final void Function(String, Map<String, Object>?)? answerQuestion;
   final ValueChanged<String>? reveal;
 
+  /// Keep the island's size in sync with the request currently shown.
+  final ValueChanged<bool>? onQuestionChanged;
+
   @override
   State<HomeScreen> createState() => HomeScreenState();
 }
@@ -212,6 +216,7 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   final _deferred = <(String, Object)>{};
   String? _selected;
+  bool? _question;
 
   static Object? _requestId(AgentEntry e) => e.log.question?.requestId ?? e.log.pending.firstOrNull?.requestId;
 
@@ -295,10 +300,17 @@ class HomeScreenState extends State<HomeScreen> {
     };
     final attention = Enchantments.instance.attentionEntries(entries);
     final request = _request();
+    final question = layout.isTop && request?.log.question != null;
+    if (_question != question) {
+      _question = question;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _question == question) widget.onQuestionChanged?.call(question);
+      });
+    }
     final watched = request != null
         ? WatchedTask(id: request.id, name: request.name, log: request.log, status: request.status, app: request.app)
         : layout.notch
-        ? watchedTask(attention, now)
+        ? watchedTask(attention.where((e) => !_deferred.contains((e.id, _requestId(e)))).toList(), now)
         : null;
     return HomeView(
       key: ValueKey(layout.placement),

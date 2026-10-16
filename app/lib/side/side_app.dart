@@ -53,13 +53,16 @@ class SideHost {
 /// drawing back a little; back, the other way. Under a page the island takes
 /// the page's size ([HomeLayout.pageSize]).
 class SideApp extends StatefulWidget {
-  const SideApp({super.key, required this.host, this.layout = HomeLayout.right, this.onHome});
+  const SideApp({super.key, required this.host, this.layout = HomeLayout.right, this.onHome, this.onQuestionChanged});
 
   final SideHost host;
   final HomeLayout layout;
 
   /// On the home or not: the island shows Mikky in the head only there.
   final ValueChanged<bool>? onHome;
+
+  /// The home switches between compact approvals and a full question.
+  final ValueChanged<bool>? onQuestionChanged;
 
   @override
   State<SideApp> createState() => SideAppState();
@@ -115,6 +118,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       answer: host.answer,
       answerQuestion: (id, answers) => host.service.source.answerQuestion(id, answers),
       reveal: (id) => unawaited(host.service.revealOrOpen(id, () => _open(id))),
+      onQuestionChanged: widget.onQuestionChanged,
       recalled: _recalled,
       recall: (id) {
         setState(() => _recalled.add(id));

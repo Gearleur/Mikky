@@ -19,11 +19,11 @@ import 'fake_sessions.dart';
   [
     BoardSection(
       title: 'Demandes',
-      note: 'Les composants de l’app : à l’échelle du notch en haut (700 × 200), puis dans la page d’un agent. Même liseré, mêmes réponses, couleurs adaptées au thème.',
+      note: 'Les composants de l’app : Oui / Non dans le notch de 700 × 200 avec les applications ; questions en grand dans un notch de 700 × 260, sans les applications. Même liseré, mêmes réponses, couleurs adaptées au thème.',
       frames: [
         const BoardFrame(label: 'Notch · feu vert', kind: FrameKind.play, width: 700, child: NotchRequestDemo()),
         const BoardFrame(
-          label: 'Notch · question',
+          label: 'Notch · question en grand',
           kind: FrameKind.play,
           width: 700,
           child: NotchRequestDemo(question: true),

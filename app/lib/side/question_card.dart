@@ -58,7 +58,7 @@ class QuestionCard extends StatefulWidget {
     this.elsewhere = const [],
     this.onElsewhere,
     this.onLater,
-    this.compact = false,
+    this.actionsAlignment = Alignment.centerRight,
   });
 
   final QuestionAsked question;
@@ -91,9 +91,7 @@ class QuestionCard extends StatefulWidget {
   /// Defer without submitting or skipping the form (the home notch).
   final VoidCallback? onLater;
 
-  /// The 200 px home notch: one column with smaller text. Longer
-  /// descriptions remain readable in the shared scrolling question.
-  final bool compact;
+  final Alignment actionsAlignment;
 
   @override
   State<QuestionCard> createState() => _QuestionCardState();
@@ -266,7 +264,6 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           index: i,
           label: q.choices[i].label,
           description: q.choices[i].description,
-          compact: widget.compact,
           multiple: q.multiple,
           ticked: _ticked.contains(q.choices[i].label) || q.choices[i].label == _chosen,
           onTap: _readOnly ? widget.onElsewhere : () => _pick(i),
@@ -275,8 +272,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
         _ChoiceRow(
           index: q.choices.length,
           label: 'Autre…',
-          description: _other || widget.compact ? null : 'Écrire ta réponse',
-          compact: widget.compact,
+          description: _other ? null : 'Écrire ta réponse',
           multiple: false,
           ticked: _other,
           onTap: _toggleOther,
@@ -295,45 +291,25 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
               ),
           ],
         ),
-        style: uiText(
-          widget.compact ? TextSize.small : TextSize.body,
-          weight: FontWeight.w600,
-          color: ui.text,
-          height: widget.compact ? 1.3 : 1.4,
-        ),
+        style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text, height: 1.4),
       ),
       if (q.multiple && !widget.fill)
         Padding(
           padding: const EdgeInsets.only(top: 1),
           child: Text('Plusieurs choix possibles', style: uiText(TextSize.caption, color: ui.text3)),
         ),
-      SizedBox(height: widget.compact ? 3 : 6),
+      const SizedBox(height: 6),
       SlidingHover(
-        child: widget.fill && !widget.compact
-            // Full request pages can use two columns; the home stays narrow.
-            ? LayoutBuilder(
-                builder: (context, box) {
-                  if (box.maxWidth < 440) {
-                    return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows);
-                  }
-                  final half = (box.maxWidth - 8) / 2;
-                  return Wrap(
-                    spacing: 8,
-                    children: [for (final r in rows) SizedBox(width: half, child: r)],
-                  );
-                },
-              )
-            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: rows),
       ),
       if (_other)
         Padding(
-          padding: EdgeInsets.fromLTRB(widget.compact ? 26 : 30, 4, 0, 0),
+          padding: const EdgeInsets.fromLTRB(30, 4, 0, 0),
           child: _OtherField(
             controller: _otherText,
             focus: _otherFocus,
             onChanged: () => setState(() {}),
             onSubmitted: () => _send?.call(),
-            compact: widget.compact,
           ),
         ),
     ];
@@ -342,11 +318,10 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     final goOn = q.multiple || _other || _answered(_at);
     final answers = AnswerBar(
       key: ValueKey('bar-${_at > 0}-$goOn-$last'),
-      compact: widget.compact,
       answers: _readOnly
           ? widget.elsewhere
           : [
-              if (_at > 0) (widget.compact ? 'Retour' : 'Précédente', () => _go(_at - 1)),
+              if (_at > 0) ('Précédente', () => _go(_at - 1)),
               if (widget.onLater != null)
                 ('Plus tard', widget.onLater)
               else
@@ -355,7 +330,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
             ],
     );
     final bar = widget.barLeading.isEmpty
-        ? Align(alignment: widget.compact ? Alignment.centerLeft : Alignment.centerRight, child: answers)
+        ? Align(alignment: widget.actionsAlignment, child: answers)
         : Row(
             children: [
               for (final (i, w) in widget.barLeading.indexed) ...[if (i > 0) const SizedBox(width: 14), w],
@@ -366,7 +341,6 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     return RequestContent(
       key: ValueKey('question-$_at'),
       fill: widget.fill,
-      compact: widget.compact,
       heading: _count > 1 || title != null ? _series(ui, title) : null,
       actions: bar,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: question),
@@ -379,7 +353,6 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   /// ([StepTabs]); with one, its title in grey.
   Widget _series(MikkyUi ui, String? title) => _count > 1
       ? StepTabs(
-          compact: widget.compact,
           labels: [for (final (i, q) in _questions.indexed) _titleOf(q) ?? 'Question ${i + 1}'],
           at: _at,
           done: {
@@ -406,14 +379,12 @@ class _ChoiceRow extends StatelessWidget {
     required this.ticked,
     this.onTap,
     this.description,
-    this.compact = false,
   });
 
   final int index;
   final String label;
   final String? description;
   final bool multiple, ticked;
-  final bool compact;
   final VoidCallback? onTap;
 
   @override
@@ -422,12 +393,12 @@ class _ChoiceRow extends StatelessWidget {
     final on = ticked;
     final mark = AnimatedContainer(
       duration: Motion.of(context, Motion.hover),
-      width: compact ? 14 : 18,
-      height: compact ? 14 : 18,
+      width: 18,
+      height: 18,
       alignment: Alignment.center,
       decoration: BoxDecoration(color: on ? ui.ink : ui.track, borderRadius: BorderRadius.circular(multiple ? 5 : 6)),
       child: on && multiple
-          ? MikkyIcon('check', size: compact ? 10 : 13, color: ui.onInk, stroke: 2.4)
+          ? MikkyIcon('check', size: 13, color: ui.onInk, stroke: 2.4)
           : Text(
               index < 9 ? '${index + 1}' : '',
               style: uiText(
@@ -441,34 +412,22 @@ class _ChoiceRow extends StatelessWidget {
     );
     return HoverRow(
       onTap: onTap,
-      padding: EdgeInsets.symmetric(horizontal: 6, vertical: compact ? 2 : 5),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(padding: const EdgeInsets.only(top: 1), child: mark),
-          SizedBox(width: compact ? 7 : 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   label,
-                  style: uiText(
-                    compact ? TextSize.small : TextSize.label,
-                    weight: FontWeight.w500,
-                    color: ui.text,
-                    height: compact ? 1.2 : 1.45,
-                  ),
+                  style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text),
                 ),
                 if (description != null && description!.isNotEmpty)
-                  Text(
-                    description!,
-                    style: uiText(
-                      compact ? TextSize.caption : TextSize.small,
-                      color: ui.text3,
-                      height: compact ? 1.2 : 1.35,
-                    ),
-                  ),
+                  Text(description!, style: uiText(TextSize.small, color: ui.text3, height: 1.35)),
               ],
             ),
           ),
@@ -485,18 +444,16 @@ class _OtherField extends StatelessWidget {
     required this.focus,
     required this.onChanged,
     required this.onSubmitted,
-    this.compact = false,
   });
 
   final TextEditingController controller;
   final FocusNode focus;
   final VoidCallback onChanged, onSubmitted;
-  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final style = uiText(compact ? TextSize.small : TextSize.label, color: ui.text, height: 1.3);
+    final style = uiText(TextSize.label, color: ui.text, height: 1.3);
     return GestureDetector(
       onTap: focus.requestFocus,
       child: MouseRegion(
@@ -505,8 +462,8 @@ class _OtherField extends StatelessWidget {
           listenable: focus,
           builder: (context, _) => AnimatedContainer(
             duration: Motion.of(context, Motion.hover),
-            height: compact ? 26 : 34,
-            padding: EdgeInsets.symmetric(horizontal: compact ? 8 : 12),
+            height: 34,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
             alignment: Alignment.centerLeft,
             decoration: BoxDecoration(
               color: focus.hasFocus ? ui.thumb : ui.track,

@@ -8,8 +8,8 @@ import '../ui/content/cards.dart';
 import '../ui/content/request_content.dart';
 import '../ui/foundation/tokens.dart';
 
-/// The request beside Mikky, using the shared request components at the
-/// same scale as the home controls.
+/// Approvals beside the apps, questions as a full form, sharing the same
+/// answer handling and keyboard shortcuts.
 class NotchRequest extends StatefulWidget {
   const NotchRequest({
     super.key,
@@ -78,19 +78,27 @@ class _NotchRequestState extends State<NotchRequest> {
   );
 
   Widget _body(BuildContext context) {
+    final ui = MikkyUi.of(context);
     final question = widget.log.question;
     if (question != null) {
-      return QuestionCard(
+      final card = QuestionCard(
         question: question,
         onAnswer: widget.onAnswerQuestion,
         onLater: widget.onLater,
         fill: true,
-        compact: true,
+        actionsAlignment: Alignment.centerLeft,
         elsewhere: [('Plus tard', widget.onLater), ('Ouvrir l’app', widget.onReveal ?? widget.onOpen)],
         onElsewhere: widget.onReveal ?? widget.onOpen,
       );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _title(ui, size: TextSize.body),
+          const SizedBox(height: 10),
+          Expanded(child: card),
+        ],
+      );
     }
-    final ui = MikkyUi.of(context);
     final request = widget.log.pending.firstOrNull;
     return RequestContent(
       fill: true,
@@ -112,16 +120,7 @@ class _NotchRequestState extends State<NotchRequest> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GestureDetector(
-            onTap: widget.onOpen,
-            child: MouseRegion(
-              cursor: SystemMouseCursors.click,
-              child: Text(
-                widget.name,
-                style: uiText(TextSize.small, color: ui.text, weight: FontWeight.w600),
-              ),
-            ),
-          ),
+          _title(ui),
           if (request?.description case final description? when description.isNotEmpty) ...[
             const SizedBox(height: 3),
             Text(description, style: uiText(TextSize.caption, color: ui.text2)),
@@ -132,4 +131,17 @@ class _NotchRequestState extends State<NotchRequest> {
       ),
     );
   }
+
+  Widget _title(MikkyUi ui, {double size = TextSize.small}) => GestureDetector(
+    onTap: widget.onOpen,
+    child: MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Text(
+        widget.name,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: uiText(size, color: ui.text, weight: FontWeight.w600),
+      ),
+    ),
+  );
 }

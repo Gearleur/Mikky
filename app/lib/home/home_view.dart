@@ -58,8 +58,7 @@ class HomeView extends StatefulWidget {
   /// work, a third column of apps takes its place.
   final WatchedTask? watched;
 
-  /// A pending request, in the watched task's space. Permissions and
-  /// questions leave the same room for the app tiles.
+  /// Permissions share the home with the apps; questions fill the notch.
   final NotchRequest? request;
 
   /// A tile pressed (the watched task too).
@@ -105,6 +104,7 @@ class _HomeViewState extends State<HomeView> {
 
   HomeLayout get _l => widget.layout;
   bool get _canStart => widget.onNew != null;
+  bool get _question => _l.isTop && widget.request?.log.question != null;
 
   /// The notch with nothing at work: at the top a third column of apps.
   int get _columns => _l.notch && widget.watched == null && widget.request == null ? _l.idleColumns : _l.columns;
@@ -157,7 +157,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   KeyEventResult _onKey(FocusNode _, KeyEvent e) {
-    if (e is! KeyDownEvent) return KeyEventResult.ignored;
+    if (e is! KeyDownEvent || _question) return KeyEventResult.ignored;
     if (e.logicalKey == LogicalKeyboardKey.arrowLeft) {
       _goTo(_page - 1);
       return KeyEventResult.handled;
@@ -189,7 +189,7 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) => SizedBox.fromSize(
-    size: _l.size,
+    size: _question ? HomeLayout.questionSize : _l.size,
     child: Focus(
       focusNode: _keys,
       onKeyEvent: _onKey,
@@ -209,6 +209,16 @@ class _HomeViewState extends State<HomeView> {
   /// watched task beside Mikky, the apps on the right); at the bottom, the
   /// history on the left, the pages' star, the environment on the right.
   Widget _window(BuildContext inner) {
+    if (_question) {
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: Padding(padding: HomeLayout.questionPadding, child: widget.request),
+          ),
+          Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
+        ],
+      );
+    }
     final l = _l;
     final notch = l.notch;
     final historyH = notch ? _smallButton : 34.0;
@@ -316,7 +326,7 @@ class _HomeViewState extends State<HomeView> {
 
   bool get _idle => _l.notch && widget.watched == null && widget.request == null;
   double get _mikkySize => _idle ? _l.mikkyIdle : _l.mikky;
-  Offset get _mikkyAt => _idle ? _l.mikkyIdleAt : _l.mikkyAt;
+  Offset get _mikkyAt => _question ? HomeLayout.questionMikkyAt : (_idle ? _l.mikkyIdleAt : _l.mikkyAt);
 
   Widget get _mikkyWidget => widget.drawMikky
       ? MiniMikky(

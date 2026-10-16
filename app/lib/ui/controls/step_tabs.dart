@@ -86,20 +86,12 @@ class _MarkPainter extends CustomPainter {
 /// pale. A click on a done one, or on the first to come, goes there.
 /// Still: nothing loops.
 class StepTabs extends StatelessWidget {
-  const StepTabs({
-    super.key,
-    required this.labels,
-    required this.at,
-    required this.done,
-    this.onSelect,
-    this.compact = false,
-  });
+  const StepTabs({super.key, required this.labels, required this.at, required this.done, this.onSelect});
 
   final List<String> labels;
   final int at;
   final Set<int> done;
   final ValueChanged<int>? onSelect;
-  final bool compact;
 
   int get count => labels.length;
 
@@ -125,7 +117,7 @@ class StepTabs extends StatelessWidget {
     return Semantics(
       label: '${at + 1} sur $count',
       child: Wrap(
-        spacing: compact ? 10 : 16,
+        spacing: 16,
         runSpacing: 2,
         children: [
           for (var i = 0; i < count; i++) ...[
@@ -145,8 +137,7 @@ class StepTabs extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: uiText(
-                          compact ? TextSize.caption : TextSize.small,
-                          height: compact ? 1.2 : 1.45,
+                          TextSize.small,
                           weight: state == StepState.current ? FontWeight.w600 : FontWeight.w500,
                           color: lit || state == StepState.current
                               ? ui.text
@@ -161,10 +152,7 @@ class StepTabs extends StatelessWidget {
                   onTap: _can(i) ? () => onSelect!(i) : null,
                   child: MouseRegion(
                     cursor: _can(i) ? SystemMouseCursors.click : MouseCursor.defer,
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(vertical: compact ? 1 : 3),
-                      child: mark,
-                    ),
+                    child: Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: mark),
                   ),
                 );
               },

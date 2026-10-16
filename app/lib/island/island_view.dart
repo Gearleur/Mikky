@@ -98,25 +98,32 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     key: _sideKey,
     host: _sideHost,
     layout: _edge == IslandEdge.top ? HomeLayout.top : HomeLayout.right,
+    onQuestionChanged: (question) {
+      if (_homeQuestion == question) return;
+      _homeQuestion = question;
+      _apply();
+    },
     onHome: (home) {
       _sideHome = home;
       _apply();
     },
   );
-  bool _sideHome = true;
+  bool _sideHome = true, _homeQuestion = false;
 
-  /// Permissions and questions stay in the home notch with the apps.
-  /// Other alerts retain their existing focus view.
-  bool get _inlineRequest =>
+  /// Home requests: approvals beside the apps, questions on their own.
+  /// Other alerts retain their focus view.
+  bool get _homeRequest =>
       !_demo && (_snap.focus?.status == AgentStatus.approval || _snap.focus?.status == AgentStatus.question);
+  bool get _questionHome => !_demo && _sideHome && _homeQuestion;
 
   IslandLayout get _layoutWanted => switch (_edge) {
-    IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage && !_inlineRequest => IslandLayout.focus,
+    IslandEdge.top when _questionHome => IslandLayout.focus,
+    IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage && !_homeRequest => IslandLayout.focus,
     _ => _sideHome ? IslandLayout.list : IslandLayout.page,
   };
 
   /// The window is what the open island shows at the top (not an alert).
-  bool get _topHomeShown => _edge == IslandEdge.top && _motion.layout != IslandLayout.focus;
+  bool get _topHomeShown => _edge == IslandEdge.top && (_motion.layout != IslandLayout.focus || _questionHome);
   late final IslandMachine _machine = IslandMachine(now: _clock.now);
   late IslandSnapshot _snap = _machine.snapshot;
 
@@ -292,7 +299,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     final prev = _snap;
     final s = _machine.snapshot;
     _snap = s;
-    if ((_edge == IslandEdge.right || (_edge == IslandEdge.top && _inlineRequest)) &&
+    if ((_edge == IslandEdge.right || (_edge == IslandEdge.top && _homeRequest)) &&
         s.openReason == OpenReason.alert &&
         (prev.shape != IslandShape.open || prev.focus?.id != s.focus?.id)) {
       final id = s.focus?.id;
