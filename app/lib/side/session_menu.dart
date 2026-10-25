@@ -29,25 +29,25 @@ Future<void> showSessionMenu(SideHost host, AgentEntry e, {required VoidCallback
   final folder = e.cwd ?? e.log.cwd;
   final paused = e.status == AgentStatus.paused;
   final chosen = await host.showMenu([
-    if (busy) const MenuEntry(_pause, 'Mettre en pause'),
-    if (paused) const MenuEntry(_unpause, 'Reprendre'),
-    if (e.live) const MenuEntry(_kill, 'Arrêter l’agent'),
+    if (busy) const MenuEntry(_pause, 'Mettre en pause', icon: 'pause'),
+    if (paused) const MenuEntry(_unpause, 'Reprendre', icon: 'play'),
+    if (e.live) const MenuEntry(_kill, 'Arrêter l’agent', icon: 'stop'),
     if (busy || paused || e.live) const MenuEntry.separator(),
     if (folder != null) ...[
-      const MenuEntry(_code, 'Ouvrir dans VS Code'),
-      const MenuEntry(_folder, 'Ouvrir le dossier'),
+      const MenuEntry(_code, 'Ouvrir dans VS Code', icon: 'code'),
+      const MenuEntry(_folder, 'Ouvrir le dossier', icon: 'folder'),
       const MenuEntry.separator(),
     ],
     if (Enchantments.instance.isOn(e.id))
       const MenuEntry(_unspell, 'Arrêter la relance auto')
     else if (e.status == AgentStatus.rateLimited)
       const MenuEntry(_spell, 'Relance auto'),
-    const MenuEntry(_rename, 'Renommer…'),
-    MenuEntry(_pin, m.pinned ? 'Désépingler' : 'Épingler'),
-    MenuEntry(_archive, m.archived ? 'Sortir des archives' : 'Archiver'),
-    if (e.homeStatus == AgentStatus.error) const MenuEntry(_settle, 'Marquer l’erreur comme réglée'),
+    const MenuEntry(_rename, 'Renommer…', icon: 'edit'),
+    MenuEntry(_pin, m.pinned ? 'Désépingler' : 'Épingler', icon: 'pin'),
+    MenuEntry(_archive, m.archived ? 'Sortir des archives' : 'Archiver', icon: 'archive'),
+    if (e.homeStatus == AgentStatus.error) const MenuEntry(_settle, 'Marquer l’erreur comme réglée', icon: 'check'),
     const MenuEntry.separator(),
-    const MenuEntry(_delete, 'Supprimer…'),
+    const MenuEntry(_delete, 'Supprimer…', icon: 'trash'),
   ]);
   switch (chosen) {
     case _pause:

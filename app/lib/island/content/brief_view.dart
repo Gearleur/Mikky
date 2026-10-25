@@ -186,6 +186,29 @@ class BriefView extends StatelessWidget {
     // between them scrolls. A question: its card fills it, the links in its
     // bar.
     final asking = b.kind == BriefKind.question && question != null;
+    if (b.kind == BriefKind.error) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          head,
+          ?whereText,
+          const SizedBox(height: 10),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ...detail,
+                  if (context_.isNotEmpty) ...[const SizedBox(height: 10), ...context_],
+                  ?answers,
+                  if (linkRow != null) ...[const SizedBox(height: 6), linkRow],
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

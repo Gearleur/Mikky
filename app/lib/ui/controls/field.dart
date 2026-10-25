@@ -72,10 +72,12 @@ class SearchField extends StatefulWidget {
     this.icon,
     this.onSubmitted,
     this.small = false,
+    this.autofocus = false,
   });
 
   /// 36 px instead of 44 (in a sheet, 2026-10-02).
   final bool small;
+  final bool autofocus;
 
   final TextEditingController? controller;
   final String placeholder;
@@ -94,6 +96,11 @@ class _SearchFieldState extends State<SearchField> {
   void initState() {
     super.initState();
     _focus.addListener(() => setState(() {}));
+    if (widget.autofocus) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _focus.requestFocus();
+      });
+    }
   }
 
   @override

@@ -381,61 +381,63 @@ class _AnswerBarState extends State<AnswerBar> {
       x += w + AnswerBar.gap;
     }
     final n = widths.length;
-    return SizedBox(
-      width: x - AnswerBar.gap,
-      height: _height,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          Positioned.fill(
-            child: RepaintBoundary(
-              child: SpringValue(
-                target: _on.toDouble(),
-                spring: Motion.thumb,
-                builder: (context, at, v) {
-                  // Between two answers: the square takes a bit of both.
-                  final i0 = at.floor().clamp(0, n - 1), i1 = (i0 + 1).clamp(0, n - 1);
-                  final f = (at - i0).clamp(0.0, 1.0);
-                  final left = lefts[i0] + (lefts[i1] - lefts[i0]) * f;
-                  final width = widths[i0] + (widths[i1] - widths[i0]) * f;
-                  // Stretched by its speed, like the selectors' thumb.
-                  final stretch = (v.abs() * 55 * Motion.thumbStretch).clamp(0.0, 8.0);
-                  return Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Positioned(
-                        left: left - (v < 0 ? stretch : 0),
-                        top: 0,
-                        bottom: 0,
-                        width: width + stretch,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: ui.thumb,
-                            borderRadius: BorderRadius.circular(Radii.md),
-                            // A hairline, so the white shows on the white window too.
-                            border: Border.all(color: ui.line, width: .8),
-                            boxShadow: [
-                              for (final s in ui.shThumb)
-                                if (!s.inset) s.box,
-                            ],
+    return SelectionContainer.disabled(
+      child: SizedBox(
+        width: x - AnswerBar.gap,
+        height: _height,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned.fill(
+              child: RepaintBoundary(
+                child: SpringValue(
+                  target: _on.toDouble(),
+                  spring: Motion.thumb,
+                  builder: (context, at, v) {
+                    // Between two answers: the square takes a bit of both.
+                    final i0 = at.floor().clamp(0, n - 1), i1 = (i0 + 1).clamp(0, n - 1);
+                    final f = (at - i0).clamp(0.0, 1.0);
+                    final left = lefts[i0] + (lefts[i1] - lefts[i0]) * f;
+                    final width = widths[i0] + (widths[i1] - widths[i0]) * f;
+                    // Stretched by its speed, like the selectors' thumb.
+                    final stretch = (v.abs() * 55 * Motion.thumbStretch).clamp(0.0, 8.0);
+                    return Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Positioned(
+                          left: left - (v < 0 ? stretch : 0),
+                          top: 0,
+                          bottom: 0,
+                          width: width + stretch,
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: ui.thumb,
+                              borderRadius: BorderRadius.circular(Radii.md),
+                              // A hairline, so the white shows on the white window too.
+                              border: Border.all(color: ui.line, width: .8),
+                              boxShadow: [
+                                for (final s in ui.shThumb)
+                                  if (!s.inset) s.box,
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  );
-                },
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
-          ),
-          Row(
-            children: [
-              for (var i = 0; i < n; i++) ...[
-                if (i > 0) const SizedBox(width: AnswerBar.gap),
-                _answer(ui, i, widths[i], style),
+            Row(
+              children: [
+                for (var i = 0; i < n; i++) ...[
+                  if (i > 0) const SizedBox(width: AnswerBar.gap),
+                  _answer(ui, i, widths[i], style),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -456,19 +458,21 @@ class _AnswerBarState extends State<AnswerBar> {
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: onTap,
-            child: AnimatedContainer(
-              duration: Motion.hover,
+            child: SizedBox(
               width: width,
               height: _height,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: hovered ? ui.hover : ui.hover.withValues(alpha: 0),
-                borderRadius: BorderRadius.circular(Radii.md),
-              ),
-              child: AnimatedDefaultTextStyle(
-                duration: Motion.fade,
-                style: style.copyWith(color: i == _on || hovered ? ui.text : ui.text2),
-                child: Text(label, maxLines: 1),
+              child: AnimatedContainer(
+                duration: Motion.hover,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: hovered ? ui.hover : ui.hover.withValues(alpha: 0),
+                  borderRadius: BorderRadius.circular(Radii.md),
+                ),
+                child: AnimatedDefaultTextStyle(
+                  duration: Motion.fade,
+                  style: style.copyWith(color: i == _on || hovered ? ui.text : ui.text2),
+                  child: Text(label, maxLines: 1),
+                ),
               ),
             ),
           ),

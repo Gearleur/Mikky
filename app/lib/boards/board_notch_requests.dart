@@ -17,17 +17,22 @@ BoardSection inlineRequestSection() => const BoardSection(
   title: 'Oui / Non · les applications restent visibles',
   kind: FrameKind.play,
   note:
-      'Le feu vert remplace le suivi à gauche dans le notch de 700 × 200 ; quatre applications restent visibles à droite. '
-      'Oui / Non répondent, Plus tard garde la demande en attente. Les boutons restent à gauche et le contenu long défile.',
+      'Le feu vert prend une zone plus large dans le notch de 700 × 200 ; une seule colonne de deux applications reste à droite. '
+      'Application et nom de la tâche restent visibles au-dessus de la commande. Oui / Non répondent, Plus tard garde la demande en attente. '
+      'Le contenu long défile sans barre permanente.',
   frames: [BoardFrame(label: 'Oui / Non / Plus tard', width: 700, child: NotchRequestDemo())],
 );
 
 BoardSection expandedQuestionSection() => const BoardSection(
-  title: 'Une question en grand',
+  title: 'Répondre dans la conversation de l’agent',
   kind: FrameKind.play,
   note:
-      'Le notch s’agrandit à 700 × 260 pour la question : Mikky à gauche, les choix sur une colonne, '
-      'les boutons à gauche et aucune autre application. Répondre ramène l’accueil ; Plus tard laisse la question en attente.',
+      'La page de conversation occupe toute la largeur, 700 × 380, sans applications ni colonne de mascotte. '
+      'L’application et le nom de la conversation restent visibles. Contexte remonte dans le vrai fil ; Question revient au formulaire. '
+      'Les indicateurs sont regroupés avec la question et ses choix, après le contexte ; la validation reste fixe. '
+      'Les choix non validés sont gardés entre questions ; le compteur confirme la sélection. '
+      'Une série se termine par Envoyer, même pour un choix simple. Entre agents, Répondre à cet agent laisse le temps de repérer la conversation. '
+      'Autre remplace les choix, comme le demande le protocole. Répondre ramène l’accueil ; Plus tard laisse la question en attente.',
   frames: [
     BoardFrame(
       label: 'Une question à la fois',
@@ -41,12 +46,28 @@ BoardSection expandedQuestionSection() => const BoardSection(
       width: 700,
       child: NotchRequestDemo(question: true, multiple: true),
     ),
+    BoardFrame(
+      label: 'Changement d’agent · repérer la conversation avant de répondre',
+      width: 700,
+      child: NotchRequestDemo(question: true, handoff: true),
+    ),
+    BoardFrame(
+      label: 'Session observée · répondre dans son application',
+      width: 700,
+      child: NotchRequestDemo(question: true, readOnly: true),
+    ),
   ],
 );
 
 class NotchRequestDemo extends StatefulWidget {
-  const NotchRequestDemo({super.key, this.question = false, this.readOnly = false, this.multiple = false});
-  final bool question, readOnly, multiple;
+  const NotchRequestDemo({
+    super.key,
+    this.question = false,
+    this.readOnly = false,
+    this.multiple = false,
+    this.handoff = false,
+  });
+  final bool question, readOnly, multiple, handoff;
   @override
   State<NotchRequestDemo> createState() => NotchRequestDemoState();
 }
@@ -66,6 +87,7 @@ class NotchRequestDemoState extends State<NotchRequestDemo> {
 
   late SessionLog _log = _freshLog();
   bool _shown = true, _answered = false;
+  late bool _intro = widget.handoff;
 
   void _finish() => setState(() {
     _shown = false;
@@ -89,6 +111,9 @@ class NotchRequestDemoState extends State<NotchRequestDemo> {
           : NotchRequest(
               name: _name,
               log: _log,
+              provider: widget.multiple ? AgentProvider.claude : AgentProvider.codex,
+              app: widget.multiple ? AgentApp.claude : AgentApp.codex,
+              onContinue: _intro ? () => setState(() => _intro = false) : null,
               onAnswer: widget.readOnly ? null : (_) => _finish(),
               onAnswerQuestion: widget.readOnly ? null : (_) => _finish(),
               onLater: () => setState(() => _shown = false),

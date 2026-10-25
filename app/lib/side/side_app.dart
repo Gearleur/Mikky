@@ -8,6 +8,9 @@ import '../agents/agents_service.dart';
 import '../agents/enchant.dart';
 import '../home/home_layout.dart';
 import '../overlay/overlay_channel.dart';
+import '../settings/settings_controller.dart';
+import '../settings/settings_diagnostics.dart';
+import '../settings/settings_sheet.dart';
 import '../ui/content/backend_status.dart';
 import '../ui/content/diff_view.dart';
 import '../ui/content/thread_page.dart';
@@ -29,6 +32,8 @@ class SideHost {
     required this.showMenu,
     required this.islandMenu,
     this.sound,
+    this.preferences,
+    this.activate,
   });
 
   final AgentsService service;
@@ -40,6 +45,8 @@ class SideHost {
 
   /// The island's own menu (theme, position, quit…).
   final VoidCallback islandMenu;
+  final SettingsController? preferences;
+  final VoidCallback? activate;
 
   /// Plays one of Mikky's sounds (pages that come and go).
   final void Function(MikkyCue cue)? sound;
@@ -102,7 +109,9 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
 
   /// Agents opened from the history: back among the apps.
   final _recalled = <String>{};
+  final _settingsArea = GlobalKey();
   final _homeKey = GlobalKey<HomeScreenState>();
+  bool _settingsShowing = false;
 
   /// The home keeps its own size under a taller page.
   Widget _home() => Align(
@@ -111,6 +120,8 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
       key: _homeKey,
       layout: widget.layout,
       entries: host.service.source.homeEntries,
+      historyChanges: host.service,
+      readHistoryEntries: () => host.service.source.homeEntries,
       canLaunch: host.service.canLaunch,
       open: _click,
       canAnswer: host.service.source.canAnswerRequests,
@@ -125,6 +136,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
         _click(id);
       },
       onMenu: _menu,
+      onSettings: host.preferences == null ? null : (within) => unawaited(openSettings(within)),
     ),
   );
 
@@ -327,6 +339,30 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     _open(what);
   }
 
+  Future<void> openSettings([BuildContext? within]) async {
+    final preferences = host.preferences;
+    final area = within ?? _settingsArea.currentContext;
+    if (preferences == null || area == null || _settingsShowing || !mounted) return;
+    host.activate?.call();
+    _settingsShowing = true;
+    try {
+      await showSettingsSheet(
+        area,
+        controller: preferences,
+        service: host.service,
+        top: widget.layout.isTop,
+        openHooks: (provider) {
+          if (mounted) _open(provider == AgentProvider.claude ? 'hooks' : 'hooks:codex');
+        },
+        diagnostics: () {
+          if (mounted) _pushPage(_Page('diagnostics', () => SettingsDiagnostics(service: host.service, back: back)));
+        },
+      );
+    } finally {
+      _settingsShowing = false;
+    }
+  }
+
   /// Back to the home without sliding (the island closed under a page
   /// that no longer applies).
   void home() {
@@ -379,6 +415,7 @@ class SideAppState extends State<SideApp> with SingleTickerProviderStateMixin {
     return DiffOpener(
       open: _openDiff,
       child: Column(
+        key: _settingsArea,
         children: [
           ?notice,
           Expanded(

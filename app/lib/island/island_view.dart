@@ -15,20 +15,24 @@ import '../mikky/mikky_painter.dart';
 import '../motion/intro.dart';
 import '../overlay/overlay_channel.dart';
 import '../settings.dart';
+import '../settings/settings_controller.dart';
 import '../side/home_screen.dart' show watchedTask;
 import '../side/session_steps.dart';
 import '../side/side_app.dart';
 import '../sound/sound_board.dart';
+import '../sound/sound_profile.dart';
 import '../theme.dart';
 import '../ui/foundation/motion.dart';
 import '../ui/foundation/tokens.dart';
 import '../ui/overlays/floating_menu.dart';
+import '../ui/overlays/sheet_host.dart';
 import 'compact_view.dart';
 import 'content/brief_view.dart';
 import 'content/focus_model.dart';
 import 'content/focus_views.dart';
 import 'deadline_timer.dart';
 import 'island_bench.dart';
+import 'island_clip.dart';
 import 'island_geometry.dart';
 import 'island_hotkeys.dart';
 import 'island_layers.dart';
@@ -46,6 +50,7 @@ class IslandView extends StatefulWidget {
     super.key,
     required this.overlay,
     required this.settings,
+    required this.soundProfile,
     required this.program,
     required this.tuning,
     required this.clock,
@@ -63,6 +68,7 @@ class IslandView extends StatefulWidget {
   /// Claude and Codex: the real agents, shown unless the demo plays.
   final AgentsService agents;
   final Settings settings;
+  final SoundProfile soundProfile;
   final ui.FragmentProgram? program;
 
   /// Mikky's proportions (from the tuning screen).
@@ -93,6 +99,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     showMenu: _menu,
     islandMenu: _showMenu,
     sound: (cue) => _sound.play(cue),
+    preferences: _preferences,
+    activate: _overlay.activate,
   );
   Widget get _side => SideApp(
     key: _sideKey,
@@ -117,7 +125,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   bool get _questionHome => !_demo && _sideHome && _homeQuestion;
 
   IslandLayout get _layoutWanted => switch (_edge) {
-    IslandEdge.top when _questionHome => IslandLayout.focus,
+    IslandEdge.top when _questionHome => IslandLayout.page,
     IslandEdge.top when _snap.openReason == OpenReason.alert && !_forcePage && !_homeRequest => IslandLayout.focus,
     _ => _sideHome ? IslandLayout.list : IslandLayout.page,
   };
@@ -156,7 +164,9 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   /// How Mikky reacts to the agents, and when he sleeps.
   final _director = MikkyDirector();
-  late final SoundBoard _sound = SoundBoard(_overlay, widget.settings);
+  late final SoundBoard _sound = SoundBoard(_overlay, widget.settings, profile: widget.soundProfile);
+  late final _preferences = SettingsController(widget.settings, apply: _applySettings);
+  bool _applyingRelaunch = false;
   final _keys = FocusNode(debugLabel: 'island');
   Duration _lastTick = Duration.zero;
 
@@ -196,6 +206,16 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   @override
   void initState() {
     super.initState();
+    _preferences.addListener(_onPreferences);
+    Enchantments.instance.watch(
+      widget.agents.source,
+      everywhere: widget.settings.autoRelaunch,
+      save: (on) {
+        if (!_applyingRelaunch && widget.settings.autoRelaunch != on) {
+          unawaited(_preferences.change((s) => s.autoRelaunch = on));
+        }
+      },
+    );
     _overlay.onCursor = _onCursor;
     _overlay.onOutsideClick = _onOutsideClick;
     _overlay.onTrayClick = _onTrayClick;
@@ -237,6 +257,8 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _preferences.removeListener(_onPreferences);
+    _preferences.dispose();
     _overlay.onCursor = null;
     _overlay.onOutsideClick = null;
     _overlay.onTrayClick = null;
@@ -317,9 +339,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
       FloatingMenu.dismissAll();
       _forcePage = false;
       if (_sideKey.currentState?.topKey.startsWith('alert:') ?? false) _sideKey.currentState?.home();
-      _sound.play(MikkyCue.close);
+      if (prev.openReason != OpenReason.alert || prev.focus?.announceChanges == true) _sound.play(MikkyCue.close);
     }
-    if (prev.shape != IslandShape.open && s.shape == IslandShape.open) _sound.play(MikkyCue.open);
+    if (prev.shape != IslandShape.open &&
+        s.shape == IslandShape.open &&
+        (s.openReason != OpenReason.alert || s.focus?.announceChanges == true)) {
+      _sound.play(MikkyCue.open);
+    }
     final layout = _layoutWanted;
     // The notch with nothing at work: Mikky takes his bigger place there,
     // as the home draws it (`HomeLayout.top`).
@@ -501,6 +527,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     // Typing in the small window counts as activity: it stays open.
     _machine.click(_clock.now);
     final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.comma && HardwareKeyboard.instance.isControlPressed) {
+      unawaited(_sideKey.currentState?.openSettings());
+      return KeyEventResult.handled;
+    }
     final typing = FocusManager.instance.primaryFocus != _keys;
     if (key == LogicalKeyboardKey.escape) {
       if (typing) {
@@ -560,6 +590,10 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
     switch (chosen) {
       case IslandMenuItem.quit:
         await _quit();
+      case IslandMenuItem.settings:
+        _openWindow();
+        await WidgetsBinding.instance.endOfFrame;
+        if (mounted) await _sideKey.currentState?.openSettings();
       case IslandMenuItem.autostart:
         try {
           await widget.agents.setAutostart(!autostart);
@@ -579,17 +613,13 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
           }
         }
       case IslandMenuItem.autoRelaunch:
-        Enchantments.instance.everywhere = !Enchantments.instance.everywhere;
+        await _preferences.change((s) => s.autoRelaunch = !s.autoRelaunch);
       case IslandMenuItem.themeAuto || IslandMenuItem.themeDark || IslandMenuItem.themeLight:
-        s.theme = IslandMenuItem.themes[chosen]!;
-        unawaited(s.save());
-        setState(() {});
+        await _preferences.change((s) => s.theme = IslandMenuItem.themes[chosen]!);
       case IslandMenuItem.edgeTop || IslandMenuItem.edgeRight:
         final edge = chosen == IslandMenuItem.edgeTop ? IslandEdge.top : IslandEdge.right;
         if (edge == s.edge) return;
-        s.edge = edge;
-        unawaited(s.save());
-        await _moveTo(edge);
+        await _preferences.change((s) => s.edge = edge);
       case IslandMenuItem.demoScenario:
         _demo = true;
         _demoSource.startScenario(now);
@@ -607,21 +637,17 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         _machine.setAgents(_attentionAgents, now);
         _apply();
       case IslandMenuItem.notifications:
-        s.notifications = !s.notifications;
-        unawaited(s.save());
+        await _preferences.change((s) => s.notifications = !s.notifications);
       case IslandMenuItem.sound:
         _toggleSound();
       case IslandMenuItem.volumeLow || IslandMenuItem.volumeMid || IslandMenuItem.volumeHigh:
-        s.volume = IslandMenuItem.volumes[chosen]!;
-        unawaited(s.save());
+        await _preferences.change((s) => s.volume = IslandMenuItem.volumes[chosen]!);
         _sound.play(MikkyCue.select);
       case IslandMenuItem.hooksClaude || IslandMenuItem.hooksCodex:
         _openWindow();
         _sideKey.currentState?.openPage(chosen == IslandMenuItem.hooksClaude ? 'hooks' : 'hooks:codex');
       case IslandMenuItem.hotkeys:
-        s.hotkeys = !s.hotkeys;
-        unawaited(s.save());
-        await IslandHotkey.register(_overlay, enabled: s.hotkeys);
+        await _preferences.change((s) => s.hotkeys = !s.hotkeys);
       case IslandMenuItem.tuning:
         // A normal window, in its own process (see windows/runner/main.cpp).
         unawaited(Process.start(Platform.resolvedExecutable, const ['--tuning'], mode: ProcessStartMode.detached));
@@ -629,10 +655,25 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   }
 
   void _toggleSound() {
-    final s = widget.settings;
-    s.sound = !s.sound;
-    unawaited(s.save());
-    if (s.sound) {
+    unawaited(_preferences.change((s) => s.sound = !s.sound));
+  }
+
+  void _onPreferences() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _applySettings(Settings before, Settings after) async {
+    if (before.edge != after.edge) await _moveTo(after.edge);
+    if (before.hotkeys != after.hotkeys) await IslandHotkey.register(_overlay, enabled: after.hotkeys);
+    if (before.autoRelaunch != after.autoRelaunch) {
+      _applyingRelaunch = true;
+      try {
+        Enchantments.instance.everywhere = after.autoRelaunch;
+      } finally {
+        _applyingRelaunch = false;
+      }
+    }
+    if (!before.sound && after.sound) {
       _sound.preload();
       _sound.play(MikkyCue.select);
     }
@@ -663,6 +704,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
 
   /// Closes Mikky; the agents keep running in `mikkyd`.
   Future<void> _quit() async {
+    await _preferences.flush();
     await widget.agents.shutdown();
     _overlay.quit();
   }
@@ -778,6 +820,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
         top.startsWith('alert:') || (_edge == IslandEdge.top && (top.startsWith('agent:') || top == 'new'));
     final mikkyTarget =
         _greeting ||
+            (_questionHome && _motion.openness > .3) ||
             ((_edge == IslandEdge.right || _topHomeShown) && _motion.openness > .3 && !_sideHome && !shownOnPage)
         ? 0.0
         : 1.0;
@@ -879,7 +922,14 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => SheetHost(
+    enabled: !_greeting && (_edge == IslandEdge.right || _topHomeShown) && _motion.openContentOpacity > 0,
+    clipper: IslandClip(_geo.shape, _motion.cornerRadius, _geo.corners),
+    roundClipper: IslandRoundClip(_geo.shape, _motion.cornerRadius),
+    child: _buildIsland(context),
+  );
+
+  Widget _buildIsland(BuildContext context) {
     if (_motion.isGone && _bubble.isAtRest() && _bubble.value == 0) {
       // Nothing to draw; the small window stays alive, asleep.
       return Stack(
@@ -922,7 +972,7 @@ class _IslandViewState extends State<IslandView> with SingleTickerProviderStateM
                   ),
                 ),
               ),
-              if (side != null && geo.bubbleOut > .3)
+              if (side != null && geo.bubbleOut > .3 && _snap.bubble)
                 bubbleContentLayer(
                   side,
                   geo.bubbleOut,

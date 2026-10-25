@@ -101,7 +101,10 @@ void main() {
         ),
       );
       expect(tester.getSize(find.byType(HomeView)), const Size(700, 200));
-      expect(find.byType(HomeAppTile), findsNWidgets(4));
+      expect(find.byType(HomeAppTile), findsNWidgets(2));
+      expect(find.text('Claude'), findsOneWidget);
+      expect(tester.getSize(frame).width, greaterThan(350));
+      expect(find.descendant(of: frame, matching: find.byType(RawScrollbar)), findsNothing);
       expect(tester.getSize(find.byType(AppTile).first), const Size(160, 42));
       expect(find.text('1 demande'), findsNothing);
       await tester.tap(find.text(answer == AgentAnswer.allow ? 'Oui' : 'Non'));
@@ -236,7 +239,7 @@ void main() {
     );
     await tester.pump();
     expect(find.byType(QuestionCard), findsOneWidget);
-    expect(tester.getSize(find.byType(HomeView)), const Size(700, 260));
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 380));
     expect(find.byType(HomeAppTile), findsNothing);
     await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
     expect(sent, [
@@ -301,12 +304,12 @@ void main() {
       ),
     );
     expect(find.byType(HomeAppTile), findsNothing);
-    expect(tester.getSize(find.byType(HomeView)), const Size(700, 260));
+    expect(tester.getSize(find.byType(HomeView)), const Size(700, 380));
     final first = tester.getTopLeft(find.text('SQLite'));
     final second = tester.getTopLeft(find.text('Postgres'));
     expect(second.dx, first.dx);
     expect(second.dy, greaterThan(first.dy));
-    expect(tester.getRect(find.byType(AnswerBar)).left, tester.getRect(frame).left);
+    expect(tester.getRect(find.byType(AnswerBar)).right, lessThanOrEqualTo(tester.getRect(frame).right));
     await tester.tap(find.text('SQLite'));
     await tester.tap(find.text('Postgres'));
     await tester.pumpAndSettle();
@@ -322,6 +325,48 @@ void main() {
     expect(find.byType(HomeAppTile), findsWidgets);
     expect(tester.getSize(find.byType(HomeView)), const Size(700, 200));
     expect(layouts, [true, false]);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('deferring a multiple question keeps its draft and a new request starts empty', (tester) async {
+    final sent = <Map<String, Object>?>[];
+    final waiting = entry('Base', log: question(multiple: true));
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      host(
+        StatefulBuilder(
+          builder: (_, set) {
+            rebuild = set;
+            return HomeScreen(
+              layout: HomeLayout.top,
+              entries: [waiting],
+              open: (_) {},
+              canAnswerQuestion: (_) => true,
+              answerQuestion: (_, answers) => sent.add(answers),
+            );
+          },
+        ),
+      ),
+    );
+    await tester.tap(find.text('SQLite'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Plus tard'));
+    await tester.pumpAndSettle();
+    expect(sent, isEmpty);
+    await tester.tap(find.byKey(const ValueKey('Base')));
+    await tester.pumpAndSettle();
+    expect(find.text('1 réponse sélectionnée'), findsOneWidget);
+    await tester.tap(find.text('Envoyer'));
+    expect(sent, [
+      {
+        'db': ['SQLite'],
+      },
+    ]);
+    rebuild(() => waiting.failure = question(id: 'replacement', multiple: true));
+    await tester.pumpAndSettle();
+    expect(find.text('1 réponse sélectionnée'), findsNothing);
+    await tester.tap(find.text('Envoyer'));
+    expect(sent.length, 1);
     expect(tester.takeException(), isNull);
   });
 
@@ -374,9 +419,80 @@ void main() {
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
     }
+    expect(sent, isEmpty);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
     expect(sent, [
       {'db': 'SQLite', 'when': 'À l’heure dite', 'log': 'Oui'},
     ]);
+  });
+
+  testWidgets('another conversation requires an explicit handoff before accepting an answer', (tester) async {
+    final first = entry('Claude · stockage', log: question(id: 'first'));
+    final second = entry('Codex · tests', log: question(id: 'second', multiple: true));
+    final sent = <String>[];
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      host(
+        StatefulBuilder(
+          builder: (context, set) {
+            rebuild = set;
+            return HomeScreen(
+              entries: [first, second],
+              layout: HomeLayout.top,
+              canLaunch: false,
+              open: (_) {},
+              canAnswerQuestion: (_) => true,
+              answerQuestion: (id, _) {
+                sent.add(id);
+                final answered = id == first.id ? first : second;
+                answered.log.apply(const TurnEnded(StopReason.endTurn));
+                answered.status = AgentStatus.finished;
+                rebuild(() {});
+              },
+            );
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SQLite'));
+    await tester.pumpAndSettle();
+    expect(sent, [first.id]);
+    expect(find.text(second.name), findsOneWidget);
+    expect(tester.widget<QuestionCard>(find.byType(QuestionCard)).onAnswer, isNull);
+    await tester.sendKeyEvent(LogicalKeyboardKey.digit1);
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    expect(sent, [first.id]);
+    await tester.tap(find.text('Répondre à cet agent'));
+    await tester.pumpAndSettle();
+    expect(find.byType(QuestionCard), findsOneWidget);
+    expect(find.text('Plusieurs choix possibles · sélectionne puis valide'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('background events cannot swap the question being answered', (tester) async {
+    final first = entry('Première question', log: question(id: 'first', multiple: true));
+    final second = entry('Deuxième question', log: question(id: 'second'));
+    Future<void> show() => tester.pumpWidget(
+      host(
+        HomeScreen(
+          entries: [first, second],
+          layout: HomeLayout.top,
+          open: (_) {},
+          canAnswerQuestion: (_) => true,
+          answerQuestion: (_, _) {},
+        ),
+      ),
+    );
+    await show();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('SQLite'));
+    first.log.apply(LimitsSeen(at: DateTime.now().add(const Duration(minutes: 1))));
+    await show();
+    await tester.pumpAndSettle();
+    expect(tester.widget<NotchRequest>(find.byType(NotchRequest)).name, first.name);
+    expect(find.text('1 réponse sélectionnée'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('modified keys do not approve, deny or defer a request', (tester) async {
@@ -437,7 +553,7 @@ void main() {
     expect(tester.widget<CodePill>(find.byType(CodePill)).maxLines, isNull);
     expect(tester.widget<CodePill>(find.byType(CodePill)).code, command);
     final yes = tester.getRect(find.text('Oui'));
-    await tester.drag(find.descendant(of: frame, matching: find.byType(SingleChildScrollView)), const Offset(0, -1000));
+    await tester.drag(find.descendant(of: frame, matching: find.byType(Scrollable)), const Offset(0, -1000));
     await tester.pumpAndSettle();
     expect(tester.getRect(find.text('Oui')), yes);
     expect(tester.takeException(), isNull);

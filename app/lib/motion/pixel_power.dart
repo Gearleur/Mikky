@@ -77,7 +77,7 @@ class PixelPowerScene extends StatelessWidget {
     return Container(
       width: size.width,
       height: size.height,
-      color: ui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
+      color: ui.island,
       child: CustomPaint(painter: _PixelPowerPainter(style, palette, radius, size, arms)),
     );
   }

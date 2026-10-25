@@ -30,6 +30,9 @@ const _icons = <String, String>{
   'pause': '<path d="M9 7v10M15 7v10"/>',
   'play': '<path d="M8.5 6.5v11l9-5.5z"/>',
   'pin': '<path d="M12 16.5V21M8.5 3.5h7M9.5 3.5v5.2l-2.8 3.3a1 1 0 0 0 .8 1.5h9a1 1 0 0 0 .8-1.5l-2.8-3.3V3.5"/>',
+  'edit': '<path d="m14.5 5.5 4 4M4.5 19.5l4.5-1 10-10a2.8 2.8 0 0 0-4-4l-10 10z"/>',
+  'archive': '<rect x="3.5" y="4" width="17" height="4.5" rx="1.2"/><path d="M5 8.5v10A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5v-10M9.5 12h5"/>',
+  'trash': '<path d="M4.5 7h15M9 7V4.5h6V7M6.5 7l1 12.5h9L17.5 7M10 10.5v6M14 10.5v6"/>',
   // The history (2026-10-02): « refresh » turned the other way, a clock's hands.
   'history': '<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3M4.5 4.5v4h4"/><path d="M12 8.5V12l2.5 1.8"/>',
   // The home's two modes (2026-10-02): the agents' tiles, the chat.

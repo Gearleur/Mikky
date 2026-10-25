@@ -161,7 +161,76 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Quand ?'), findsOneWidget);
     await tester.tap(find.text('Maintenant'));
+    await tester.pumpAndSettle();
+    expect(got, isNull, reason: 'the final choice is kept until explicit submission');
+    await tester.tap(find.text('Envoyer'));
     expect(got, {'db': 'SQLite', 'when': 'Maintenant'});
+  });
+
+  testWidgets('editing an answered series never submits before the explicit final button', (tester) async {
+    final sent = <Map<String, Object>?>[];
+    await _pump(tester, QuestionCard(question: _ask([_db, _tests]), onAnswer: sent.add));
+    await tester.tap(find.text('SQLite'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unitaires'));
+    await tester.tap(find.text('Précédente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Postgres'));
+    await tester.pumpAndSettle();
+    expect(sent, isEmpty);
+    expect(find.text('1 réponse sélectionnée'), findsOneWidget);
+    await tester.tap(find.text('Envoyer'));
+    await tester.tap(find.text('Envoyer'));
+    expect(sent, [
+      {
+        'db': 'Postgres',
+        'tests': ['Unitaires'],
+      },
+    ]);
+  });
+
+  testWidgets('final submission includes edits left through tabs, and rejects a cleared older answer', (tester) async {
+    final sent = <Map<String, Object>?>[];
+    Future<void> prepare(Object id) async {
+      await _pump(
+        tester,
+        QuestionCard(
+          question: _ask([_tests, _db], id: id),
+          onAnswer: sent.add,
+        ),
+      );
+      await tester.tap(find.text('Unitaires'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Suivante'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('SQLite'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Précédente'));
+      await tester.pumpAndSettle();
+    }
+
+    Future<void> finalTab() async {
+      await tester.tapAt(tester.getTopLeft(find.byType(StepMark).last) + const Offset(5, 5));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Envoyer'));
+      await tester.pumpAndSettle();
+    }
+
+    await prepare('edited');
+    await tester.tap(find.text('Bout en bout'));
+    await finalTab();
+    expect(sent, [
+      {
+        'tests': ['Unitaires', 'Bout en bout'],
+        'db': 'SQLite',
+      },
+    ]);
+    await prepare('cleared');
+    await tester.tap(find.text('Unitaires'));
+    await finalTab();
+    expect(sent, hasLength(1));
+    expect(find.text('Quels tests ?'), findsOneWidget);
+    expect(find.text('Plusieurs choix possibles · sélectionne puis valide'), findsOneWidget);
   });
 
   testWidgets('« Passer » skips the whole form', (tester) async {
@@ -200,6 +269,70 @@ void main() {
     await tester.tap(find.text('Envoyer'));
     expect(got, {
       'tests': ['Unitaires'],
+    });
+  });
+
+  testWidgets('previous keeps unsubmitted multiple choices', (tester) async {
+    Map<String, Object>? got;
+    await _pump(tester, QuestionCard(question: _ask([_db, _tests]), onAnswer: (a) => got = a));
+    await tester.tap(find.text('SQLite'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unitaires'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Précédente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Suivante'));
+    await tester.pumpAndSettle();
+    expect(find.text('1 réponse sélectionnée'), findsOneWidget);
+    await tester.tap(find.text('Envoyer'));
+    expect(got, {
+      'db': 'SQLite',
+      'tests': ['Unitaires'],
+    });
+  });
+
+  testWidgets('clearing a saved multiple answer cannot silently advance with the old values', (tester) async {
+    final keys = RequestKeys();
+    await _pump(
+      tester,
+      QuestionCard(question: _ask([_tests, _db]), onAnswer: (_) {}),
+      keys: keys,
+    );
+    await tester.tap(find.text('Unitaires'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Suivante'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Précédente'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Unitaires'));
+    await tester.pumpAndSettle();
+    expect(keys.send(RequestKey.enter), isFalse);
+    expect(find.text('Quels tests ?'), findsOneWidget);
+  });
+
+  testWidgets('Other visibly replaces multiple picks and cannot silently discard selected answers', (tester) async {
+    const q = Question(
+      'tests',
+      text: 'Quels tests ?',
+      multiple: true,
+      otherKey: 'custom',
+      choices: [QuestionChoice('Unitaires'), QuestionChoice('Bout en bout')],
+    );
+    Map<String, Object>? got;
+    await _pump(tester, QuestionCard(question: _ask([q]), onAnswer: (a) => got = a));
+    await tester.tap(find.text('Unitaires'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Autre…'));
+    await tester.pumpAndSettle();
+    expect(find.text('Réponse libre · remplace les choix'), findsOneWidget);
+    await tester.enterText(find.byType(EditableText), 'Intégration');
+    await tester.tap(find.text('Bout en bout'));
+    await tester.pumpAndSettle();
+    expect(find.byType(EditableText), findsNothing);
+    expect(find.text('1 réponse sélectionnée'), findsOneWidget);
+    await tester.tap(find.text('Envoyer'));
+    expect(got, {
+      'tests': ['Bout en bout'],
     });
   });
 

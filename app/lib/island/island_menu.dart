@@ -27,7 +27,8 @@ enum IslandMenuItem {
   hooksCodex,
   autostart,
   stopAll,
-  quit;
+  quit,
+  settings;
 
   /// Its id in a [MenuEntry] (never 0: the separator's).
   int get id => index + 1;
@@ -50,6 +51,8 @@ List<MenuEntry> islandMenuEntries({
   MenuEntry entry(IslandMenuItem item, String label, {bool checked = false}) =>
       MenuEntry(item.id, label, checked: checked);
   return [
+    entry(IslandMenuItem.settings, 'Paramètres…'),
+    const MenuEntry.separator(),
     entry(IslandMenuItem.themeAuto, 'Thème : automatique', checked: s.theme == ThemeChoice.auto),
     entry(IslandMenuItem.themeDark, 'Thème : noir', checked: s.theme == ThemeChoice.dark),
     entry(IslandMenuItem.themeLight, 'Thème : blanc', checked: s.theme == ThemeChoice.light),

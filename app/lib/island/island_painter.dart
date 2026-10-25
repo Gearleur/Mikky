@@ -54,8 +54,7 @@ class IslandPainter extends CustomPainter {
     final shader = this.shader;
     final side = this.side;
     if (shader == null) {
-      final fill = Paint()
-        ..color = (theme.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708)).withValues(alpha: visibility);
+      final fill = Paint()..color = theme.ui.island.withValues(alpha: visibility);
       canvas.drawRRect(RRect.fromRectAndRadius(shape, Radius.circular(radius)), fill);
       // The bubble, plain too: not fused, but there.
       if (side != null) canvas.drawCircle(side.center, side.radius, fill);
@@ -72,6 +71,7 @@ class IslandPainter extends CustomPainter {
       1 / devicePixelRatio, // uPx
       visibility, // uVis
       corners, // uN
+      theme.ui.island.r, theme.ui.island.g, theme.ui.island.b, // uFill
     ];
     for (var i = 0; i < values.length; i++) {
       shader.setFloat(i, values[i]);

@@ -2,7 +2,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../home/home_app_tile.dart';
-import '../home/home_layout.dart';
 import '../home/tools_rail.dart';
 import '../overlay/overlay_channel.dart';
 import '../ui/brand/app_tile.dart';
@@ -22,8 +21,10 @@ import '../ui/foundation/tokens.dart';
 import '../ui/overlays/floating_menu.dart';
 import '../ui/trials/claude_spinner.dart';
 import 'board_brand.dart';
+import 'board_components_history.dart';
 import 'board_components_requests.dart';
 import 'board_home.dart';
+import 'board_theme.dart';
 import 'canvas.dart';
 
 /// A bit of state of its own, so a click rebuilds only its widget.
@@ -296,9 +297,9 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
               child: SelectorTry(),
             ),
             const BoardFrame(
-              label: 'Environnement · notch',
+              label: 'Environnement · composant réservé',
               kind: FrameKind.play,
-              note: 'Le vrai sélecteur compact de 24 px, en bas à droite. Le menu s’ouvre au-dessus avec assez de largeur pour conserver Local et sa coche.',
+              note: 'Sélecteur compact de 24 px conservé pour un autre usage ; retiré de l’accueil. Le menu s’ouvre au-dessus avec assez de largeur pour conserver Local et sa coche.',
               width: 300,
               child: SelectorTry(small: true),
             ),
@@ -491,36 +492,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
         ),
       ],
     ),
-    (
-      'Historique',
-      [
-        const BoardSection(
-          title: 'Historique',
-          note: 'Un composant : `showHistory`, sur notre feuille par-dessus (`showSheet`). Le bouton Historique, en bas à gauche, l’ouvre : l’accueil derrière s’assombrit et se floute un peu ; la feuille monte au milieu sur un ressort doux — 316 de large au plus, les deux tiers de la fenêtre à droite, presque toute la hauteur du notch en haut. En-tête léger (titre, nombre, petit ×), une barre de recherche (elle ne regarde pour l’instant que les titres), puis l’historique comme avant : les lignes, la petite étoile grise. Un clic ferme la feuille et ouvre l’agent, qui revient parmi les applications ; un clic dans le sombre, Échap ou × la referme.',
-          frames: [
-            BoardFrame(
-              kind: FrameKind.play,
-              label: 'À droite · à essayer',
-              note: 'Le bouton en bas à gauche.',
-              width: 290,
-              child: HistoryTry(),
-            ),
-            BoardFrame(label: 'À droite · ouvert', width: 290, child: HistoryOpen()),
-            BoardFrame(
-              kind: FrameKind.play,
-              label: 'Notch · à essayer',
-              width: 700,
-              child: HistoryTry(layout: HomeLayout.top),
-            ),
-            BoardFrame(
-              label: 'Notch · ouvert',
-              width: 700,
-              child: HistoryOpen(layout: HomeLayout.top),
-            ),
-          ],
-        ),
-      ],
-    ),
+    historyComponents(),
     (
       'Menus',
       [
@@ -644,7 +616,7 @@ List<(String, List<Widget>)> _categories(BuildContext context) {
       ],
     ),
     requestComponents(),
-    ('Couleurs', [interfaceColorsSection(ui)]),
+    ('Couleurs', [appliedThemeSection(ui), interfaceColorsSection(ui)]),
     (
       'Essais',
       [

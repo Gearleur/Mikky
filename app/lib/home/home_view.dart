@@ -6,11 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
+import '../settings/settings_button.dart';
+
 import '../ui/brand/app_tile.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/content/side.dart';
 import '../ui/controls/buttons.dart';
-import '../ui/controls/environment_selector.dart';
 import '../ui/controls/page_dots.dart';
 import '../ui/controls/tabs.dart';
 import '../ui/foundation/motion.dart';
@@ -27,8 +28,8 @@ import 'tools_rail.dart';
 /// The home, one widget for both placements: Mikky alive, the two modes
 /// (apps; chat opens a new chat's page, as an agent's opens — 2026-10-05),
 /// the tools on a rail out of the screen's edge, pages of apps (an app:
-/// one or more agents doing a task), the history and « Choisir
-/// l'environnement ». In the notch at the top, the task Mikky
+/// one or more agents doing a task), and history at the bottom right.
+/// In the notch at the top, the task Mikky
 /// looks at beside him ([watched]). The pages slide sideways: drag
 /// (mouse, touchpad), wheel, arrows, dots or ← →. Its own Overlay keeps
 /// the menus inside it.
@@ -43,9 +44,9 @@ class HomeView extends StatefulWidget {
     this.onMenu,
     this.onNew,
     this.onHistory,
+    this.onSettings,
     this.drawMikky = true,
     this.tools = const [Brand.claude, Brand.codex],
-    this.environment = MikkyEnvironment.local,
     this.mikky = MikkyState.idle,
     this.animate = true,
   });
@@ -71,15 +72,15 @@ class HomeView extends StatefulWidget {
   /// chat's page. Null: cannot launch.
   final VoidCallback? onNew;
 
-  /// The history button, bottom left, given the home's window to open its
+  /// The history button, bottom right, given the home's window to open its
   /// sheet in; null: no button.
   final ValueChanged<BuildContext>? onHistory;
+  final ValueChanged<BuildContext>? onSettings;
 
   /// False: the island draws its own Mikky in his place (the app: he comes
   /// from the closed island to this spot, in the state of his agent).
   final bool drawMikky;
   final List<Brand> tools;
-  final MikkyEnvironment environment;
 
   /// Mikky's state: the agent he follows.
   final MikkyState mikky;
@@ -92,7 +93,6 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  late MikkyEnvironment _environment = widget.environment;
   int _page = 0;
   final _pages = PageController();
   final _keys = FocusNode(debugLabel: 'home');
@@ -107,7 +107,11 @@ class _HomeViewState extends State<HomeView> {
   bool get _question => _l.isTop && widget.request?.log.question != null;
 
   /// The notch with nothing at work: at the top a third column of apps.
-  int get _columns => _l.notch && widget.watched == null && widget.request == null ? _l.idleColumns : _l.columns;
+  int get _columns => _l.isTop && widget.request != null
+      ? 1
+      : _l.notch && widget.watched == null && widget.request == null
+      ? _l.idleColumns
+      : _l.columns;
   int get _perPage => _columns * _l.rows;
   double get _gridWidth => _columns * _l.tileWidth + (_columns - 1) * _l.gap;
   double get _gridHeight => _l.rows * _l.tile + (_l.rows - 1) * _l.rowGap;
@@ -207,7 +211,7 @@ class _HomeViewState extends State<HomeView> {
   /// Both placements alike: at the top, Mikky, the modes in the middle,
   /// the tools out of the edge; the pages of tiles (in the notch, the
   /// watched task beside Mikky, the apps on the right); at the bottom, the
-  /// history on the left, the pages' star, the environment on the right.
+  /// pages' star and history on the right.
   Widget _window(BuildContext inner) {
     if (_question) {
       return Stack(
@@ -215,14 +219,13 @@ class _HomeViewState extends State<HomeView> {
           Positioned.fill(
             child: Padding(padding: HomeLayout.questionPadding, child: widget.request),
           ),
-          Positioned(left: _mikkyAt.dx, top: _mikkyAt.dy, child: _mikkyWidget),
         ],
       );
     }
     final l = _l;
     final notch = l.notch;
     final historyH = notch ? _smallButton : 34.0;
-    final selectorH = notch ? EnvironmentSelector.smallHeight : EnvironmentSelector.height;
+    final footerH = notch ? _smallButton : 36.0;
     return Stack(
       clipBehavior: Clip.none,
       children: [
@@ -269,26 +272,31 @@ class _HomeViewState extends State<HomeView> {
           child: Center(child: _modes()),
         ),
         Positioned(top: l.barTop, right: 0, child: _tools()),
-        // The star under the apps, on the selector's middle line.
+        // The star under the apps, on the footer's middle line.
         Positioned(
           left: notch ? _gridLeft : 0,
           width: notch ? _gridWidth : l.size.width,
-          bottom: l.foot + (selectorH - PageDots.height) / 2,
+          bottom: l.foot + (footerH - PageDots.height) / 2,
           child: Center(child: _halo(_dots())),
         ),
-        Positioned(
-          right: notch ? l.side - _haloPad.horizontal / 2 : l.side,
-          bottom: notch ? l.foot - _haloPad.vertical / 2 : l.foot,
-          child: _halo(_environmentSelector(inner)),
-        ),
         if (widget.onHistory != null)
-          Positioned(left: l.side, bottom: l.foot + (selectorH - historyH) / 2, child: _history(inner)),
+          Positioned(
+            right: notch ? l.side - _haloPad.horizontal / 2 : l.side,
+            bottom: l.foot + (footerH - historyH) / 2 - (notch ? _haloPad.vertical / 2 : 0),
+            child: _halo(_history(inner)),
+          ),
+        if (widget.onSettings != null)
+          Positioned(
+            left: l.side,
+            bottom: l.foot + (footerH - historyH) / 2,
+            child: SettingsButton(size: historyH, onPressed: () => widget.onSettings!(inner)),
+          ),
       ],
     );
   }
 
   /// In the notch, a light blur around the pages' dots and the
-  /// environment, over the dots behind the apps (2026-10-05: « un petit
+  /// history, over the dots behind the apps (2026-10-05: « un petit
   /// effet de flou, vraiment léger, juste autour de ces éléments »).
   static const _haloPad = EdgeInsets.symmetric(horizontal: 6, vertical: 3);
 
@@ -326,7 +334,7 @@ class _HomeViewState extends State<HomeView> {
 
   bool get _idle => _l.notch && widget.watched == null && widget.request == null;
   double get _mikkySize => _idle ? _l.mikkyIdle : _l.mikky;
-  Offset get _mikkyAt => _question ? HomeLayout.questionMikkyAt : (_idle ? _l.mikkyIdleAt : _l.mikkyAt);
+  Offset get _mikkyAt => _idle ? _l.mikkyIdleAt : _l.mikkyAt;
 
   Widget get _mikkyWidget => widget.drawMikky
       ? MiniMikky(
@@ -365,13 +373,6 @@ class _HomeViewState extends State<HomeView> {
           onPressed: () => widget.onHistory!(inner),
         )
       : RoundButton('history', size: 34, tooltip: 'Historique', onPressed: () => widget.onHistory!(inner));
-
-  Widget _environmentSelector(BuildContext inner) => EnvironmentSelector(
-    selected: _environment,
-    menuWithin: inner,
-    small: _l.notch,
-    onChanged: (e) => _set(() => _environment = e),
-  );
 
   /// Page [p], always full: its apps, then « + » in the first free
   /// place, then small tokens where apps will come (2026-10-02; in the

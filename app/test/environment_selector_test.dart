@@ -123,7 +123,7 @@ void main() {
     expect(tester.getRect(find.byType(EnvironmentSelector)), resting);
     // Back to flat after a mouse choice: no fill, no ring (2026-10-02).
     final box = tester.widget<AnimatedContainer>(
-      find.descendant(of: find.byType(EnvironmentSelector), matching: find.byType(AnimatedContainer)),
+      find.ancestor(of: find.text('VPS'), matching: find.byType(AnimatedContainer)),
     );
     final look = box.decoration! as BoxDecoration;
     expect(look.color!.a, 0);

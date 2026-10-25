@@ -122,7 +122,7 @@ class DotWaveScene extends StatelessWidget {
     return Container(
       width: cols * step + 16,
       height: rows * step + 16,
-      color: ui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
+      color: ui.island,
       padding: const EdgeInsets.all(8),
       child: CustomPaint(painter: _DotWavePainter(wave, t, palette, cols, rows, step, ui.isLight)),
     );

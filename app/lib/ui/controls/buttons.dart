@@ -134,32 +134,51 @@ class RoundButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final fg = ink ? ui.onInk : (ghost ? ui.text2 : ui.text);
+    final hoverColor = ghost ? ui.hover.withValues(alpha: ui.isLight ? .10 : .13) : ui.hover;
     return Semantics(
       button: true,
       label: tooltip,
-      child: Pressable(
-        onTap: icon == 'menu-star' && onPressed != null
-            ? () {
-                FloatingMenu.pressed(context);
-                onPressed!();
-              }
-            : onPressed,
-        pressedScale: .9,
-        child: Surface(
-          width: size,
-          height: size,
-          color: ink ? ui.ink : null,
-          gradient: ink || ghost ? null : ui.control,
-          shadows: ink ? ui.shInk : (ghost ? const [] : [ui.highlight, ...ui.shCtl]),
-          child: Center(
-            child: icon == 'menu-star'
-                // Hidden while its menu is open: the menu draws it.
-                ? ValueListenableBuilder<Object?>(
-                    valueListenable: FloatingMenu.covering,
-                    builder: (_, owner, star) => Opacity(opacity: identical(owner, context) ? 0 : 1, child: star),
-                    child: const PixelStar(PixelFxPalette.grey, size: 14),
-                  )
-                : MikkyIcon(icon, size: iconSize ?? iconFor(size), color: fg),
+      child: HoverBuilder(
+        enabled: onPressed != null,
+        builder: (_, hover) => Pressable(
+          onTap: icon == 'menu-star' && onPressed != null
+              ? () {
+                  FloatingMenu.pressed(context);
+                  onPressed!();
+                }
+              : onPressed,
+          // The morph already animates menu buttons. Keep their star and
+          // anchor still while handing the drawing over to the overlay.
+          pressedScale: icon == 'menu-star' ? 1 : .96,
+          child: Surface(
+            width: size,
+            height: size,
+            color: ink ? ui.ink : null,
+            gradient: ink || ghost ? null : ui.control,
+            shadows: ink ? ui.shInk : (ghost ? const [] : [ui.highlight, ...ui.shCtl]),
+            child: AnimatedContainer(
+              duration: Motion.of(context, Motion.hover),
+              curve: Curves.easeOut,
+              decoration: BoxDecoration(
+                color: hover ? hoverColor : hoverColor.withValues(alpha: 0),
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: icon == 'menu-star'
+                    // Hidden while its menu is open: the menu draws it.
+                    ? ValueListenableBuilder<Object?>(
+                        valueListenable: FloatingMenu.covering,
+                        builder: (_, owner, star) => Opacity(opacity: identical(owner, context) ? 0 : 1, child: star),
+                        child: const PixelStar(PixelFxPalette.grey, size: 14),
+                      )
+                    : TweenAnimationBuilder<Color?>(
+                        tween: ColorTween(end: hover && ghost && !ink ? ui.text : fg),
+                        duration: Motion.of(context, Motion.hover),
+                        curve: Curves.easeOut,
+                        builder: (_, color, _) => MikkyIcon(icon, size: iconSize ?? iconFor(size), color: color),
+                      ),
+              ),
+            ),
           ),
         ),
       ),

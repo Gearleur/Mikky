@@ -175,7 +175,7 @@ class MikkyUi {
   static const dark = MikkyUi._(
     isLight: false,
     board: Color(0xFF111113),
-    island: Color(0xFF070708),
+    island: Color(0xFF171717),
     well: Color(0xFF17171A),
     raise: Color(0xD618181B),
     track: Color(0xFF212125),
@@ -229,22 +229,26 @@ class MikkyUi {
   /// Raised control: `linear-gradient(--ctl-a, --ctl-b)`.
   Gradient get control => LinearGradient(begin: Alignment.topCenter, end: Alignment.bottomCenter, colors: [ctlA, ctlB]);
 
-  /// Opaque pure white in both themes, at rest and on hover.
-  Color get tileColor => const Color(0xFFFFFFFF);
+  /// Applications share the selected control surface in dark mode.
+  Color get tileColor => isLight ? const Color(0xFFFFFFFF) : thumb;
 
-  Color get tileText => const Color(0xFF151519);
-  Color get tileText2 => const Color(0xFF666975);
+  bool get _darkApplications => !isLight;
+
+  /// Reuse the existing dark content colors when an app surface is dark.
+  MikkyUi get tilePalette => _darkApplications ? this : light;
+  Color get tileText => _darkApplications ? text : const Color(0xFF151519);
+  Color get tileText2 => _darkApplications ? text2 : const Color(0xFF666975);
 
   /// A fine edge and a quiet contact shadow, unchanged on hover.
   List<CssShadow> get tileShadows => [
     CssShadow(0, 1, 2, Color(isLight ? 0x13000000 : 0x66000000)),
     CssShadow(0, 3, 8, Color(isLight ? 0x12000000 : 0x40000000)),
-    const CssShadow(0, 0, 0, Color(0x15000000), spread: .65, inset: true),
-    const CssShadow(0, 1, 0, Color(0xC0FFFFFF), inset: true),
+    CssShadow(0, 0, 0, _darkApplications ? line : const Color(0x15000000), spread: .65, inset: true),
+    CssShadow(0, 1, 0, _darkApplications ? hl : const Color(0xC0FFFFFF), inset: true),
   ];
 
-  /// Half the grey wash used in the trials: a quiet background for white apps.
-  Color get appsBackground => Color.lerp(island, isLight ? const Color(0xFFF0F0F3) : const Color(0xFF101114), .5)!;
+  /// Keep the approved dark background continuous behind the app tiles.
+  Color get appsBackground => isLight ? Color.lerp(island, const Color(0xFFF0F0F3), .5)! : island;
 
   /// `inset 0 1px 0 var(--hl)`: the light edge on top of raised controls.
   CssShadow get highlight => CssShadow(0, 1, 0, hl, inset: true);

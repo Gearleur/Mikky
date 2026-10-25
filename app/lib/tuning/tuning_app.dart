@@ -172,7 +172,7 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
         onTap: _mikky.boop,
         child: ColoredBox(
           key: _bigKey,
-          color: _dark ? const Color(0xFF070708) : const Color(0xFFEEE9E1),
+          color: _dark ? island.ui.island : const Color(0xFFEEE9E1),
           child: LayoutBuilder(
             builder: (context, c) => CustomPaint(
               size: Size(c.maxWidth, c.maxHeight),
@@ -198,7 +198,7 @@ class _TuningPageState extends State<_TuningPage> with SingleTickerProviderState
         padding: const EdgeInsets.symmetric(horizontal: 4),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: t.isLight ? Colors.white : const Color(0xFF070708),
+            color: t.ui.island,
             borderRadius: BorderRadius.circular(radius < 20 ? 18 : 24),
             border: Border.all(color: const Color(0x1F000000), width: .5),
           ),

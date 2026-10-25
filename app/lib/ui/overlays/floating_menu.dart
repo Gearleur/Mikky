@@ -17,8 +17,8 @@ import '../pixels/pixel_fx.dart';
 /// Our own floating menu, in place of Windows' (user requests, 2026-09-30:
 /// « notre menu flottant, avec les paramètres et tout »; « le bouton étoile
 /// qui se transforme en menu, smooth, rapide, efficace, un peu gluant »).
-/// The grey star stretches into the panel on a slightly soft spring —
-/// wider first, then taller — and the items come in once it is open; on
+/// The grey star stretches into the panel: a soft spring in roomy windows,
+/// a brief curve without overshoot in the notch. Items fade in as it opens; on
 /// a choice, a click outside or Échap it shrinks back into the button.
 /// [from]: the button, in global coordinates (else a round button around
 /// the last press). It stays inside [within] (the small window). Null:
@@ -169,17 +169,46 @@ class _MorphMenu extends StatefulWidget {
 }
 
 class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
-  late final _t = AnimationController.unbounded(vsync: this)..addListener(() => setState(() {}));
+  late final _t = AnimationController.unbounded(vsync: this);
 
   /// From [_from] to [_target] when a follow-up menu takes the panel over
   /// (1: settled).
-  late final _swap = AnimationController.unbounded(vsync: this, value: 1)..addListener(() => setState(() {}));
+  late final _swap = AnimationController.unbounded(vsync: this, value: 1);
   final _measure = GlobalKey();
   final _focus = FocusNode();
   late List<MenuEntry> _entries = widget.entries;
   late Completer<int?> _done = widget.done;
   Rect? _target, _from;
   bool _closing = false, _measuring = true;
+
+  bool get _compact => widget.bounds.height < 300;
+  double get _margin => _compact ? 12 : 8;
+  double get _radius => Radii.xl;
+  double get _padding => _compact ? 5 : 6;
+
+  double _panelWidth(BuildContext context) {
+    final available = math.min(widget.width, math.max(0.0, widget.bounds.width - 2 * _margin));
+    if (!_compact) return available;
+    final ui = MikkyUi.of(context);
+    final icons = _entries.any((entry) => entry.icon != null);
+    final checked = _entries.any((entry) => entry.checked);
+    var widest = 0.0;
+    for (final entry in _entries.where((entry) => entry.id != 0)) {
+      final text = TextPainter(
+        text: TextSpan(
+          text: entry.label,
+          style: uiText(TextSize.label, weight: FontWeight.w500, height: 1.25, color: ui.text),
+        ),
+        textDirection: Directionality.of(context),
+        textScaler: MediaQuery.textScalerOf(context),
+        maxLines: 1,
+      )..layout();
+      widest = math.max(widest, text.width);
+      text.dispose();
+    }
+    final needed = widest + 2 * _padding + 18 + (icons ? 22 : 0) + (checked ? 23 : 0);
+    return math.min(available, math.max(200.0, needed.ceilToDouble()));
+  }
 
   /// Bumped when a follow-up menu stops the folding.
   int _run = 0;
@@ -199,6 +228,8 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
       _focus.requestFocus();
       if (Motion.reduced(context)) {
         _t.value = 1;
+      } else if (_compact) {
+        _t.animateTo(1, duration: const Duration(milliseconds: 210), curve: Motion.enter);
       } else {
         _t.animateWith(SpringSimulation(FloatingMenu.spring, 0, 1, 0));
       }
@@ -242,6 +273,9 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
       if (Motion.reduced(context)) {
         _t.value = 1;
         _swap.value = 1;
+      } else if (_compact) {
+        _t.animateTo(1, duration: const Duration(milliseconds: 210), curve: Motion.enter);
+        _swap.animateTo(1, duration: const Duration(milliseconds: 210), curve: Motion.enter);
       } else {
         _t.animateWith(SpringSimulation(FloatingMenu.spring, _t.value, 1, 0));
         _swap.animateWith(SpringSimulation(FloatingMenu.spring, 0, 1, 0));
@@ -252,8 +286,12 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
   /// Down and to the left from the button, its top right corner on the
   /// button's; up when there is no room below; inside the window.
   Rect _place(Size size) {
-    final b = widget.bounds.deflate(8), o = widget.origin;
+    final b = widget.bounds.deflate(_margin), o = widget.origin;
     var left = o.right - size.width;
+    // Row actions near the edge share the history panel's right margin.
+    if (_compact && !widget.anchored && b.right - o.right >= 0 && b.right - o.right <= 32) {
+      left = b.right - size.width;
+    }
     var top = o.top;
     if (widget.anchored) {
       top = o.bottom + 6;
@@ -287,15 +325,19 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
     await Future<void>.delayed(Duration.zero);
     if (run != _run || !mounted) return;
     if (!Motion.reduced(context)) {
-      await _t.animateWith(
-        SpringSimulation(
-          FloatingMenu.closeSpring,
-          _t.value,
-          0,
-          0,
-          tolerance: const Tolerance(distance: .002, velocity: .02),
-        ),
-      );
+      if (_compact) {
+        await _t.animateTo(0, duration: const Duration(milliseconds: 150), curve: Motion.leave);
+      } else {
+        await _t.animateWith(
+          SpringSimulation(
+            FloatingMenu.closeSpring,
+            _t.value,
+            0,
+            0,
+            tolerance: const Tolerance(distance: .002, velocity: .02),
+          ),
+        );
+      }
       if (run != _run || !mounted) return;
     }
     if (identical(FloatingMenu._chosen, this)) FloatingMenu._chosen = null;
@@ -306,7 +348,10 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final target = _target;
-    final list = _MenuList(entries: _entries, onChoose: _close);
+    final list = SingleChildScrollView(
+      primary: false,
+      child: _MenuList(entries: _entries, compact: _compact, onChoose: _close),
+    );
     return Focus(
       focusNode: _focus,
       onKeyEvent: (_, e) {
@@ -323,7 +368,12 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
             rect: widget.bounds,
             child: GestureDetector(behavior: HitTestBehavior.opaque, onTapDown: (_) => _close(null)),
           ),
-          if (target != null) _frame(ui, target, list),
+          if (target != null)
+            AnimatedBuilder(
+              animation: Listenable.merge([_t, _swap]),
+              child: RepaintBoundary(child: list),
+              builder: (_, content) => _frame(ui, target, content!),
+            ),
           if (_measuring)
             Positioned(
               left: 0,
@@ -332,8 +382,13 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
                 child: KeyedSubtree(
                   key: _measure,
                   child: _PanelBox(
-                    width: widget.width,
-                    child: _MenuList(entries: _entries),
+                    width: _panelWidth(context),
+                    maxHeight: math.max(0, widget.bounds.height - 2 * _margin),
+                    compact: _compact,
+                    child: SingleChildScrollView(
+                      primary: false,
+                      child: _MenuList(entries: _entries, compact: _compact),
+                    ),
                   ),
                 ),
               ),
@@ -358,7 +413,7 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
             child: Transform.scale(
               scale: .96 + .04 * t.clamp(0.0, 1.05),
               alignment: target.top < o.top ? Alignment.bottomRight : Alignment.topRight,
-              child: _PanelBox(width: target.width, child: list),
+              child: _PanelBox(width: target.width, compact: _compact, child: list),
             ),
           ),
         ),
@@ -376,27 +431,37 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
         ),
       );
     }
-    // Gluey: the width leads, the height follows a little behind.
+    // The notch grows as one shape. Roomy menus keep the delayed height.
     final w = t;
-    final h = t < 1 ? math.pow(t.clamp(0.0, 1.0), 1.2).toDouble() : t;
+    final h = _compact || t >= 1 ? t : math.pow(t.clamp(0.0, 1.0), 1.2).toDouble();
     double lerp(double a, double b, double f) => a + (b - a) * f;
     // It opens upwards when there was no room below.
     final growsUp = target.top < o.top;
     // Taking a follow-up's size, from the panel it was.
     final shown = _from == null ? target : Rect.lerp(_from, target, _swap.value)!;
-    final rect = Rect.fromLTRB(
+    final growing = Rect.fromLTRB(
       lerp(o.left, shown.left, w),
       lerp(o.top, shown.top, h),
       lerp(o.right, shown.right, w),
       lerp(o.bottom, shown.bottom, h),
     );
+    // A full-height notch menu has no room for the spring's overshoot.
+    // Keep every animation frame inside the window, not just its landing.
+    final safe = widget.bounds.deflate(_margin).expandToInclude(o);
+    final rect = growing.intersect(safe);
     final f = t.clamp(0.0, 1.0);
-    final radius = lerp(o.shortestSide / 2, Radii.xl, f);
-    final color = Color.lerp(ui.well.withValues(alpha: 0), ui.well, (f * 1.8).clamp(0.0, 1.0))!;
+    final radius = lerp(o.shortestSide / 2, _radius, f);
+    final fill = _compact ? Color.lerp(ui.island, ui.well, .4)! : ui.well;
+    final color = Color.lerp(fill.withValues(alpha: 0), fill, (f * 1.8).clamp(0.0, 1.0))!;
     // A follow-up's items come in as the panel takes its size.
     final content = _measuring
         ? 0.0
-        : math.min(((t - .45) / .4).clamp(0.0, 1.0), ((_swap.value - .3) / .5).clamp(0.0, 1.0));
+        : math.min(
+            // Let the compact frame clear the labels before fading them in.
+            // Their icons and first line should not appear half-clipped.
+            ((t - (_compact ? .88 : .45)) / (_compact ? .12 : .4)).clamp(0.0, 1.0),
+            ((_swap.value - (_compact ? .08 : .3)) / .5).clamp(0.0, 1.0),
+          );
     final star = widget.star ? (1 - t / .25).clamp(0.0, 1.0) : 0.0;
     return Positioned.fromRect(
       rect: rect,
@@ -416,9 +481,8 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
               // The grey star fades out and returns as the menu folds back.
               if (star > 0)
                 Positioned(
-                  right: 0,
-                  top: growsUp ? null : 0,
-                  bottom: growsUp ? 0 : null,
+                  left: o.left - rect.left,
+                  top: o.top - rect.top,
                   width: o.width,
                   height: o.height,
                   child: Opacity(
@@ -438,8 +502,8 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
                   child: Opacity(
                     opacity: content,
                     child: Transform.translate(
-                      offset: Offset(0, (1 - content) * -4),
-                      child: Padding(padding: const EdgeInsets.all(5), child: list),
+                      offset: Offset(0, _compact ? 0 : (1 - content) * -4),
+                      child: Padding(padding: EdgeInsets.all(_padding), child: list),
                     ),
                   ),
                 ),
@@ -454,19 +518,22 @@ class _MorphMenuState extends State<_MorphMenu> with TickerProviderStateMixin {
 
 /// The panel's look, for measuring and for the boards.
 class _PanelBox extends StatelessWidget {
-  const _PanelBox({required this.child, this.width = 264});
+  const _PanelBox({required this.child, this.width = 264, this.maxHeight, this.compact = false});
 
   final Widget child;
   final double width;
+  final double? maxHeight;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     return Container(
       width: width,
-      padding: const EdgeInsets.all(5),
+      constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
+      padding: EdgeInsets.all(compact ? 4 : 5),
       decoration: BoxDecoration(
-        color: ui.well,
+        color: compact ? Color.lerp(ui.island, ui.well, .4) : ui.well,
         borderRadius: BorderRadius.circular(Radii.xl),
         border: Border.all(color: ui.line),
         boxShadow: [for (final s in ui.shMenu) s.box],
@@ -493,16 +560,21 @@ class FloatingMenuPanel extends StatelessWidget {
 
 /// The items, the white square sliding under the one under the mouse.
 class _MenuList extends StatelessWidget {
-  const _MenuList({required this.entries, this.onChoose});
+  const _MenuList({required this.entries, this.onChoose, this.compact = false});
 
   final List<MenuEntry> entries;
   final ValueChanged<int>? onChoose;
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final hasSelection = entries.any((entry) => entry.checked);
+    final hasIcons = compact && entries.any((entry) => entry.icon != null);
     return SlidingHover(
+      radius: compact ? Radii.sm : Radii.md,
+      color: compact ? ui.hover.withValues(alpha: ui.isLight ? .055 : .09) : null,
+      shadows: compact ? const [] : null,
       hairline: false,
       followHover: !hasSelection,
       child: Column(
@@ -511,9 +583,19 @@ class _MenuList extends StatelessWidget {
         children: [
           for (final e in entries)
             if (e.id == 0)
-              Container(height: 1, margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), color: ui.line)
+              Container(
+                height: 1,
+                margin: EdgeInsets.symmetric(horizontal: 10, vertical: compact ? 2 : 4),
+                color: ui.line,
+              )
             else
-              _Item(entry: e, selectionMenu: hasSelection, onTap: onChoose == null ? null : () => onChoose!(e.id)),
+              _Item(
+                entry: e,
+                selectionMenu: hasSelection,
+                compact: compact,
+                leading: hasIcons,
+                onTap: onChoose == null ? null : () => onChoose!(e.id),
+              ),
         ],
       ),
     );
@@ -521,10 +603,18 @@ class _MenuList extends StatelessWidget {
 }
 
 class _Item extends StatelessWidget {
-  const _Item({required this.entry, required this.selectionMenu, this.onTap});
+  const _Item({
+    required this.entry,
+    required this.selectionMenu,
+    required this.compact,
+    required this.leading,
+    this.onTap,
+  });
 
   final MenuEntry entry;
   final bool selectionMenu;
+  final bool compact;
+  final bool leading;
   final VoidCallback? onTap;
 
   @override
@@ -546,18 +636,28 @@ class _Item extends StatelessWidget {
               onTap: onTap,
               child: AnimatedContainer(
                 duration: Motion.of(context, Motion.hover),
+                constraints: compact ? const BoxConstraints(minHeight: 26) : null,
                 decoration: BoxDecoration(
                   color: hover ? ui.hover : ui.hover.withValues(alpha: 0),
-                  borderRadius: BorderRadius.circular(Radii.md),
+                  borderRadius: BorderRadius.circular(compact ? Radii.sm : Radii.md),
                 ),
-                padding: const EdgeInsets.fromLTRB(11, 8, 10, 8),
+                padding: EdgeInsets.fromLTRB(compact ? 9 : 11, compact ? 4 : 8, compact ? 9 : 10, compact ? 4 : 8),
                 child: Row(
                   children: [
+                    if (leading) ...[
+                      SizedBox.square(
+                        dimension: 14,
+                        child: entry.icon == null
+                            ? null
+                            : MikkyIcon(entry.icon!, size: 14, color: danger ? ui.red : ui.text2),
+                      ),
+                      const SizedBox(width: 8),
+                    ],
                     Expanded(
                       child: Text(
                         entry.label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        maxLines: compact ? null : 1,
+                        overflow: compact ? TextOverflow.visible : TextOverflow.ellipsis,
                         style: uiText(
                           TextSize.label,
                           weight: FontWeight.w500,

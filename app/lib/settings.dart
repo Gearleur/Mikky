@@ -38,6 +38,38 @@ class Settings {
   /// The global shortcuts (Ctrl + Alt + A, Espace, M).
   bool hotkeys;
 
+  Settings copy() => Settings.fromJson(toJson());
+
+  void restore(Settings previous) {
+    theme = previous.theme;
+    edge = previous.edge;
+    notifications = previous.notifications;
+    autoRelaunch = previous.autoRelaunch;
+    sound = previous.sound;
+    volume = previous.volume;
+    hotkeys = previous.hotkeys;
+  }
+
+  factory Settings.fromJson(Map<String, Object?> json) => Settings(
+    theme: ThemeChoice.values.asNameMap()[json['theme']] ?? ThemeChoice.auto,
+    edge: IslandEdge.values.asNameMap()[json['edge']] ?? IslandEdge.top,
+    notifications: json['notifications'] as bool? ?? true,
+    autoRelaunch: json['autoRelaunch'] as bool? ?? false,
+    sound: json['sound'] as bool? ?? true,
+    volume: ((json['volume'] as num?)?.toDouble() ?? .5).clamp(0.0, 1.0),
+    hotkeys: json['hotkeys'] as bool? ?? true,
+  );
+
+  Map<String, Object?> toJson() => {
+    'theme': theme.name,
+    'edge': edge.name,
+    'notifications': notifications,
+    'autoRelaunch': autoRelaunch,
+    'sound': sound,
+    'volume': volume,
+    'hotkeys': hotkeys,
+  };
+
   static File? get _file {
     final appData = Platform.environment['APPDATA'];
     return appData == null ? null : File('$appData\\Mikky\\settings.json');
@@ -48,15 +80,7 @@ class Settings {
       final file = _file;
       if (file == null || !await file.exists()) return Settings();
       final json = jsonDecode(await file.readAsString()) as Map<String, Object?>;
-      return Settings(
-        theme: ThemeChoice.values.asNameMap()[json['theme']] ?? ThemeChoice.auto,
-        edge: IslandEdge.values.asNameMap()[json['edge']] ?? IslandEdge.top,
-        notifications: json['notifications'] as bool? ?? true,
-        autoRelaunch: json['autoRelaunch'] as bool? ?? false,
-        sound: json['sound'] as bool? ?? true,
-        volume: ((json['volume'] as num?)?.toDouble() ?? .5).clamp(0.0, 1.0),
-        hotkeys: json['hotkeys'] as bool? ?? true,
-      );
+      return Settings.fromJson(json);
     } catch (e) {
       debugPrint('mikky: settings unreadable, using defaults ($e)');
       return Settings();
@@ -87,24 +111,28 @@ class Settings {
     await file.writeAsString(const JsonEncoder.withIndent('  ').convert(tuning.toJson()));
   }
 
-  Future<void> save() async {
+  Future<void> save({bool reportErrors = false}) async {
     try {
       final file = _file;
-      if (file == null) return;
-      await file.parent.create(recursive: true);
-      await file.writeAsString(
-        jsonEncode({
-          'theme': theme.name,
-          'edge': edge.name,
-          'notifications': notifications,
-          'autoRelaunch': autoRelaunch,
-          'sound': sound,
-          'volume': volume,
-          'hotkeys': hotkeys,
-        }),
-      );
+      if (file == null) throw StateError('Le dossier des paramètres est indisponible.');
+      await write(file);
     } catch (e) {
+      if (reportErrors) rethrow;
       debugPrint('mikky: settings not saved ($e)');
+    }
+  }
+
+  /// Replace only after the complete JSON has reached disk. A failed write
+  /// leaves the previous settings intact; temporary files are never shared.
+  Future<void> write(File file) async {
+    final content = jsonEncode(toJson());
+    await file.parent.create(recursive: true);
+    final temporary = File('${file.path}.$pid-${DateTime.now().microsecondsSinceEpoch}.tmp');
+    try {
+      await temporary.writeAsString(content, flush: true);
+      await temporary.rename(file.path);
+    } finally {
+      if (await temporary.exists()) await temporary.delete();
     }
   }
 }

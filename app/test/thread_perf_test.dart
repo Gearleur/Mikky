@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mikky/side/session_views.dart';
+import 'package:mikky/ui/content/tasks.dart';
 import 'package:mikky/ui/content/thread_page.dart';
 import 'package:mikky/ui/foundation/tokens.dart';
 import 'package:mikky_engine/mikky_engine.dart';
@@ -45,6 +46,32 @@ void main() {
     );
     // About a screen of them, not 400.
     expect(built, lessThan(30));
+  });
+
+  testWidgets('work starts folded with its last activity and expands only on request', (tester) async {
+    final log = SessionLog()
+      ..applyAll([
+        const TurnStarted(),
+        const UserMessage('Vérifie les tests'),
+        const ToolCallEvent('one', kind: ToolKind.execute, title: 'Première action', status: ToolStatus.completed),
+        const ToolCallEvent('two', kind: ToolKind.read, title: 'Dernière action', status: ToolStatus.running),
+      ]);
+    await tester.pumpWidget(
+      host(
+        Builder(
+          builder: (context) => SingleChildScrollView(child: Column(children: threadOf(context, log))),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskStep), findsNothing);
+    final task = tester.widget<TaskSection>(find.byType(TaskSection));
+    expect(task.activity, isNotEmpty);
+    expect(find.text(task.activity!), findsOneWidget);
+    await tester.tap(find.byType(TaskSection));
+    await tester.pumpAndSettle();
+    expect(find.byType(TaskStep), findsWidgets);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('finished turns are kept: the same widgets while the last goes on', (tester) async {

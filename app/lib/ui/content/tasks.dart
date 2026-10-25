@@ -19,6 +19,7 @@ class TaskSection extends StatefulWidget {
     required this.status,
     required this.title,
     this.meta,
+    this.activity,
     this.children = const [],
     this.initiallyOpen = false,
     this.shown = 40,
@@ -27,6 +28,7 @@ class TaskSection extends StatefulWidget {
   final UiStatus status;
   final String title;
   final String? meta;
+  final String? activity;
   final List<Widget> children;
   final bool initiallyOpen;
   final int shown;
@@ -94,6 +96,16 @@ class _TaskSectionState extends State<TaskSection> {
               child: head,
             ),
           ),
+          if (!_open && widget.activity != null)
+            Padding(
+              padding: const EdgeInsets.only(left: 21, bottom: 6),
+              child: Text(
+                widget.activity!,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: uiText(TextSize.caption, color: ui.text3),
+              ),
+            ),
           AnimatedSize(
             duration: Motion.of(context, Motion.fold),
             curve: Motion.enter,
@@ -292,8 +304,6 @@ class _ToolLineState extends State<ToolLine> {
                   padding: const EdgeInsets.only(top: 1),
                   child: Text(
                     widget.detail!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                     style: uiText(TextSize.caption, mono: true, color: ui.text3, height: 1.4),
                   ),
                 ),

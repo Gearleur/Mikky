@@ -31,6 +31,20 @@ void main() {
   int page(WidgetTester tester) => tester.widget<PageDots>(find.byType(PageDots)).page;
 
   for (final layout in [HomeLayout.top, HomeLayout.rightNotch, HomeLayout.rightTiles]) {
+    testWidgets('history replaces the environment at the bottom right (${layout.placement}, ${layout.notch})', (
+      tester,
+    ) async {
+      var opened = 0;
+      await tester.pumpWidget(host(HomeView(layout: layout, animate: false, onHistory: (_) => opened++)));
+      expect(find.byType(EnvironmentSelector), findsNothing);
+      expect(find.text('Local'), findsNothing);
+      expect(find.bySemanticsLabel('Historique'), findsOneWidget);
+      final history = tester.getRect(find.bySemanticsLabel('Historique'));
+      expect(history.right, closeTo(layout.size.width - layout.side, .01));
+      expect(history.bottom, lessThanOrEqualTo(layout.size.height));
+      await tester.tap(find.bySemanticsLabel('Historique'));
+      expect(opened, 1);
+    });
     testWidgets('right click on an app opens its menu, not the island menu (${layout.placement})', (tester) async {
       String? menu, opened;
       var islandMenus = 0;
@@ -258,9 +272,7 @@ void main() {
     expect(Size(m.page.width, m.page.height), l.pageSize);
   });
 
-  testWidgets('right: the top upright, eight tiles a page in 2 × 4, sideways pages, and the environment menu', (
-    tester,
-  ) async {
+  testWidgets('right: the top upright, eight tiles a page in 2 × 4 and sideways pages', (tester) async {
     await tester.pumpWidget(
       host(HomeView(layout: HomeLayout.rightTiles, apps: HomeApp.placeholders(20), animate: false)),
     );
@@ -291,13 +303,6 @@ void main() {
     await tester.sendEventToBinding(PointerScrollEvent(position: a.center, scrollDelta: const Offset(0, 100)));
     await tester.pumpAndSettle();
     expect(page(tester), 2);
-
-    await tester.tap(find.text('Local'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('WSL'));
-    await tester.pumpAndSettle();
-    expect(find.text('WSL'), findsOneWidget);
-    expect(tester.widget<EnvironmentSelector>(find.byType(EnvironmentSelector)).selected, MikkyEnvironment.wsl);
   });
 
   testWidgets('a tile opens its app, the tools and « + » a new task; empty places keep a token', (tester) async {

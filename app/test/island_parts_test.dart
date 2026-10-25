@@ -48,6 +48,19 @@ void main() {
   });
 
   group('notifications', () {
+    test('restoring history and recalling the same finished conversation never notify', () {
+      final shown = <String>[];
+      final notifier = IslandNotifier((title, _) => shown.add(title));
+      final restored = _agent('old', AgentStatus.finished).copyWith(announceChanges: false);
+      notifier.update([restored], enabled: true, windowOpen: false);
+      expect(shown, isEmpty);
+      notifier.update([], enabled: true, windowOpen: false);
+      notifier.update([restored.copyWith(announceChanges: true)], enabled: true, windowOpen: false);
+      expect(shown, isEmpty);
+      notifier.update([_agent('old', AgentStatus.working)], enabled: true, windowOpen: false);
+      notifier.update([_agent('old', AgentStatus.finished)], enabled: true, windowOpen: false);
+      expect(shown, ['Agent old']);
+    });
     test('once per agent and state, never while the window is open, again after a change', () {
       final shown = <String>[];
       final notifier = IslandNotifier((title, body) => shown.add('$title: $body'));

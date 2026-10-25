@@ -11,6 +11,7 @@ import '../home/notch_request.dart';
 import '../home/task_glance.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/foundation/status.dart';
+import 'question_card.dart';
 import 'session_text.dart';
 
 /// More finished agents than this go to the history.
@@ -121,20 +122,20 @@ UiStatus? appStatus(AgentStatus status, AgentStatus home) {
   };
 }
 
-/// The history (2026-10-02): every agent the home does not show, but the
-/// archives — the most recent first, with when and where it last ran.
+/// Every conversation, including the home's active agents and archives;
+/// only deleted entries and older copies of a continued conversation hide.
 List<HistoryRow> historyRows(List<AgentEntry> entries, DateTime now, {Set<String> recalled = const {}}) {
-  final shown = {for (final e in _shown(entries, now, recalled)) e.id};
   final rest = [
     for (final e in entries)
-      if (!e.mark.archived && !shown.contains(e.id)) e,
+      if (!e.mark.forgotten && e.supersededBy == null) e,
   ]..sort((a, b) => b.lastActivity.compareTo(a.lastActivity));
   return [
     for (final e in rest)
-      (
+      HistoryRow(
         id: e.id,
         title: e.name,
         brand: Brand.of(e.provider),
+        status: appStatus(e.status, e.homeStatus),
         when: '${ago(e.lastActivity, now)}${e.host == AgentHost.wsl ? ' · WSL' : ''}',
       ),
   ];
@@ -177,6 +178,9 @@ class HomeScreen extends StatefulWidget {
     this.recalled = const {},
     this.recall,
     this.onMenu,
+    this.onSettings,
+    this.historyChanges,
+    this.readHistoryEntries,
     this.canAnswer,
     this.canAnswerQuestion,
     this.answer,
@@ -201,6 +205,9 @@ class HomeScreen extends StatefulWidget {
 
   /// An agent's menu: right click on its app/task, or ⋯ in the history.
   final ValueChanged<String>? onMenu;
+  final ValueChanged<BuildContext>? onSettings;
+  final Listenable? historyChanges;
+  final List<AgentEntry> Function()? readHistoryEntries;
   final bool Function(String)? canAnswer, canAnswerQuestion;
   final void Function(String, AgentAnswer)? answer;
   final void Function(String, Map<String, Object>?)? answerQuestion;
@@ -215,8 +222,10 @@ class HomeScreen extends StatefulWidget {
 
 class HomeScreenState extends State<HomeScreen> {
   final _deferred = <(String, Object)>{};
+  final _questionDrafts = <(String, Object), QuestionDraft>{};
   String? _selected;
   bool? _question;
+  (String, Object)? _handoffFrom;
 
   static Object? _requestId(AgentEntry e) => e.log.question?.requestId ?? e.log.pending.firstOrNull?.requestId;
 
@@ -230,6 +239,7 @@ class HomeScreenState extends State<HomeScreen> {
     setState(() {
       _deferred.remove((id, request));
       _selected = id;
+      _handoffFrom = null;
     });
   }
 
@@ -246,8 +256,13 @@ class HomeScreenState extends State<HomeScreen> {
             .toList()
           ..sort((a, b) => a.lastActivity.compareTo(b.lastActivity));
     _deferred.removeWhere((key) => !waiting.any((e) => (e.id, _requestId(e)) == key));
+    _questionDrafts.removeWhere((key, _) => !waiting.any((e) => (e.id, _requestId(e)) == key));
     final available = waiting.where((e) => !_deferred.contains((e.id, _requestId(e))));
-    return available.where((e) => e.id == _selected).firstOrNull ?? available.firstOrNull;
+    final next = available.where((e) => e.id == _selected).firstOrNull ?? available.firstOrNull;
+    // Background activity must not replace the conversation being answered.
+    _selected = next?.id;
+    if (next == null) _handoffFrom = null;
+    return next;
   }
 
   NotchRequest _requestView(AgentEntry entry) {
@@ -266,6 +281,12 @@ class HomeScreenState extends State<HomeScreen> {
       key: ValueKey((id, request)),
       name: entry.name,
       log: entry.log,
+      provider: entry.provider,
+      app: entry.app,
+      onContinue: _handoffFrom != null && _handoffFrom != (id, request)
+          ? () => setState(() => _handoffFrom = null)
+          : null,
+      questionDraft: entry.log.question == null ? null : _questionDrafts.putIfAbsent((id, request), QuestionDraft.new),
       onLater: () => setState(() {
         _deferred.add((id, request));
         _selected = null;
@@ -274,15 +295,36 @@ class HomeScreenState extends State<HomeScreen> {
       onReveal: widget.reveal == null ? null : () => widget.reveal!(id),
       onAnswer: widget.answer != null && (widget.canAnswer?.call(id) ?? false)
           ? (answer) {
-              if (current()) widget.answer!(id, answer);
+              if (current()) {
+                _prepareHandoff(id);
+                widget.answer!(id, answer);
+              }
             }
           : null,
       onAnswerQuestion: widget.answerQuestion != null && (widget.canAnswerQuestion?.call(id) ?? false)
           ? (answers) {
-              if (current()) widget.answerQuestion!(id, answers);
+              if (current()) {
+                _prepareHandoff(id);
+                widget.answerQuestion!(id, answers);
+              }
             }
           : null,
     );
+  }
+
+  void _prepareHandoff(String answered) {
+    if (widget.entries.any(
+      (e) =>
+          e.id != answered &&
+          !e.mark.archived &&
+          !_deferred.contains((e.id, _requestId(e))) &&
+          _requestId(e) != null &&
+          (e.status == AgentStatus.question || e.status == AgentStatus.approval),
+    )) {
+      // No rebuild until the service has removed the answered request.
+      final entry = widget.entries.firstWhere((e) => e.id == answered);
+      _handoffFrom = (answered, _requestId(entry)!);
+    }
   }
 
   @override
@@ -331,13 +373,18 @@ class HomeScreenState extends State<HomeScreen> {
         }
       },
       onMenu: onMenu,
+      onSettings: widget.onSettings,
       // « + », the tools and the Chat mode: the new chat's page.
       onNew: widget.canLaunch ? () => widget.open('new') : null,
       onHistory: (within) => showHistory(
         within,
         rows: historyRows(entries, DateTime.now(), recalled: recalled),
+        updates: widget.historyChanges,
+        readRows: widget.readHistoryEntries == null
+            ? null
+            : () => historyRows(widget.readHistoryEntries!(), DateTime.now()),
         onOpen: widget.recall ?? widget.open,
-        onMenu: onMenu,
+        onMenu: onMenu == null ? null : (_, id) => onMenu(id),
       ),
     );
   }

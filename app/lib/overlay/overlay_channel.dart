@@ -106,10 +106,11 @@ class OverlayChannel {
 
 /// One line of a native menu. Id 0 is a separator.
 class MenuEntry {
-  const MenuEntry(this.id, this.label, {this.checked = false}) : assert(id > 0);
-  const MenuEntry.separator() : id = 0, label = '', checked = false;
+  const MenuEntry(this.id, this.label, {this.checked = false, this.icon}) : assert(id > 0);
+  const MenuEntry.separator() : id = 0, label = '', checked = false, icon = null;
 
   final int id;
   final String label;
   final bool checked;
+  final String? icon;
 }

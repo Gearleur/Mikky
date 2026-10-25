@@ -20,6 +20,7 @@ import '../ui/controls/tabs.dart';
 import '../ui/foundation/status.dart';
 import '../ui/foundation/tokens.dart';
 import 'board_home.dart' show sampleApps;
+import 'board_notch_journeys.dart';
 import 'board_notch_requests.dart';
 import 'board_screens.dart';
 import 'canvas.dart';
@@ -115,6 +116,8 @@ final notchTopBoard = BoardSpec(
   'Notch Top',
   'L’accueil dans l’île en haut de l’écran : le notch',
   (context) => [
+    notchJourneysSection(),
+    notchInteractionMap(),
     BoardSection(
       title: 'Notch Top',
       note: 'L’accueil du haut depuis le 5 octobre (« Côte à côte »), 700 × 200, collé au bord de l’écran. À gauche, Mikky (96) et la dernière tâche au travail, qui s’étend jusqu’aux applications : le logiciel où elle tourne, son titre, son état en petit et gris avec sa progression (un segment par étape du plan), ses étapes un peu en retrait, sans les messages ; un clic l’ouvre. À droite, les autres applications en tuiles larges 160 × 42, 2 × 2 : titre, ligne qui change, logiciel ; les flèches de chaque côté quand il y en a d’autres. Modes et outils à 32 px, historique et environnement en petit. Derrière les applications, de petits points gris glitchés (grands et petits carrés, 1,2 px tous les 8 px), fondus vers Mikky, en haut, en bas, et un peu à droite.',
@@ -295,7 +298,7 @@ final notchTopBoard = BoardSpec(
             ),
             (
               'Pied',
-              'Historique en petit bouton de 24 à gauche ; les points sous les applications ; « Local » en petit (24 px) à droite.',
+              'Historique en petit bouton de 24 à droite, à la place de « Local » ; les points sous les applications. Le sélecteur d’environnement est conservé dans les composants.',
             ),
             ('Plus tard', 'Ctrl + clic ouvre l’agent dans son logiciel. La vraie icône de VS Code, prise sur le PC.'),
           ]),
@@ -598,6 +601,7 @@ Widget _notchIn(HomeLayout layout, {WatchedTask? watched, List<HomeApp> apps = s
     mikky: watched == null ? MikkyState.sleeping : mikkyStateOf(watched.status),
     onNew: () {},
     onHistory: (_) {},
+    onSettings: (_) {},
   ),
 );
 
@@ -801,7 +805,7 @@ final notchRightBoard = BoardSpec(
             ),
             (
               'Pied',
-              'Historique en petit bouton de 24 à gauche ; les points des pages au milieu ; « Local » en petit (24 px) à droite, dans un halo de flou léger.',
+              'Historique en petit bouton de 24 à droite, dans un halo de flou léger ; les points des pages au milieu. Le sélecteur d’environnement est conservé dans les composants.',
             ),
             (
               'Revenir',

@@ -3,9 +3,12 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import '../side/question_card.dart';
+import '../side/question_conversation.dart';
 import '../side/request_keys.dart';
+import '../ui/brand/brand_logo.dart';
 import '../ui/content/cards.dart';
 import '../ui/content/request_content.dart';
+import '../ui/controls/buttons.dart';
 import '../ui/foundation/tokens.dart';
 
 /// Approvals beside the apps, questions as a full form, sharing the same
@@ -20,6 +23,10 @@ class NotchRequest extends StatefulWidget {
     this.onAnswer,
     this.onAnswerQuestion,
     this.onReveal,
+    this.questionDraft,
+    this.provider,
+    this.app,
+    this.onContinue,
   });
 
   final String name;
@@ -28,6 +35,12 @@ class NotchRequest extends StatefulWidget {
   final ValueChanged<AgentAnswer>? onAnswer;
   final ValueChanged<Map<String, Object>?>? onAnswerQuestion;
   final VoidCallback? onReveal;
+  final QuestionDraft? questionDraft;
+  final AgentProvider? provider;
+  final AgentApp? app;
+
+  /// Explicit handoff between two conversations, avoiding an instant switch.
+  final VoidCallback? onContinue;
 
   @override
   State<NotchRequest> createState() => _NotchRequestState();
@@ -38,6 +51,7 @@ class _NotchRequestState extends State<NotchRequest> {
 
   KeyEventResult _key(FocusNode node, KeyEvent event) {
     if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    if (widget.onContinue != null) return KeyEventResult.ignored;
     final keyboard = HardwareKeyboard.instance;
     if (keyboard.isControlPressed || keyboard.isAltPressed || keyboard.isMetaPressed) return KeyEventResult.ignored;
     final primary = FocusManager.instance.primaryFocus?.context;
@@ -79,23 +93,32 @@ class _NotchRequestState extends State<NotchRequest> {
 
   Widget _body(BuildContext context) {
     final ui = MikkyUi.of(context);
-    final question = widget.log.question;
-    if (question != null) {
-      final card = QuestionCard(
-        question: question,
-        onAnswer: widget.onAnswerQuestion,
+    if (widget.log.question != null) {
+      return QuestionConversation(
+        name: widget.name,
+        log: widget.log,
+        provider: widget.provider,
+        app: widget.app,
+        draft: widget.questionDraft,
+        onAnswer: widget.onContinue == null ? widget.onAnswerQuestion : null,
+        onContinue: widget.onContinue,
         onLater: widget.onLater,
-        fill: true,
-        actionsAlignment: Alignment.centerLeft,
-        elsewhere: [('Plus tard', widget.onLater), ('Ouvrir l’app', widget.onReveal ?? widget.onOpen)],
-        onElsewhere: widget.onReveal ?? widget.onOpen,
+        onOpen: widget.onOpen,
+        onReveal: widget.onReveal,
       );
+    }
+    if (widget.onContinue != null) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _title(ui, size: TextSize.body),
-          const SizedBox(height: 10),
-          Expanded(child: card),
+          _approvalHeading(ui),
+          const SizedBox(height: 16),
+          Text('Une autre conversation attend ta réponse.', style: uiText(TextSize.body, color: ui.text2)),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: MButton('Lire la demande', onPressed: widget.onContinue),
+          ),
         ],
       );
     }
@@ -103,6 +126,7 @@ class _NotchRequestState extends State<NotchRequest> {
     return RequestContent(
       fill: true,
       compact: true,
+      heading: _approvalHeading(ui),
       actions: Align(
         alignment: Alignment.centerLeft,
         child: AnswerBar(
@@ -120,15 +144,41 @@ class _NotchRequestState extends State<NotchRequest> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _title(ui),
           if (request?.description case final description? when description.isNotEmpty) ...[
             const SizedBox(height: 3),
-            Text(description, style: uiText(TextSize.caption, color: ui.text2)),
+            Text(
+              description,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: uiText(TextSize.caption, color: ui.text2),
+            ),
           ],
           const SizedBox(height: 4),
           CodePill(widget.log.requestText, maxLines: null, compact: true),
         ],
       ),
+    );
+  }
+
+  Widget _approvalHeading(MikkyUi ui) {
+    final provider = widget.provider;
+    final app = widget.app ?? widget.log.app;
+    final name = provider == null ? null : Brand.of(provider).label;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          children: [
+            if (provider != null) ...[BrandLogo(Brand.of(provider), size: 12), const SizedBox(width: 5)],
+            Text(
+              [?name, if (app != null && app.label != name) app.label].join(' · '),
+              style: uiText(TextSize.caption, color: ui.text2),
+            ),
+          ],
+        ),
+        const SizedBox(height: 2),
+        _title(ui),
+      ],
     );
   }
 
@@ -138,7 +188,7 @@ class _NotchRequestState extends State<NotchRequest> {
       cursor: SystemMouseCursors.click,
       child: Text(
         widget.name,
-        maxLines: 2,
+        maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: uiText(size, color: ui.text, weight: FontWeight.w600),
       ),

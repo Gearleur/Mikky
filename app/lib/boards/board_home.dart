@@ -1,18 +1,12 @@
 import 'package:flutter/widgets.dart';
 
-import '../home/history_sheet.dart';
 import '../home/home_app.dart';
-import '../home/home_frame.dart';
-import '../home/home_layout.dart';
-import '../home/home_view.dart';
 import '../ui/brand/brand_logo.dart';
 import '../ui/controls/buttons.dart';
 import '../ui/controls/environment_selector.dart';
 import '../ui/controls/page_dots.dart';
 import '../ui/foundation/status.dart';
 import '../ui/foundation/tokens.dart';
-import '../ui/overlays/sheet.dart';
-import 'board_notch.dart' show sampleNotchApps;
 
 // The home at the right (2026-10-02); the one at the top is the notch
 // (`board_notch.dart`). Its components are on the Composants board. The
@@ -159,74 +153,3 @@ const sampleApps = [
   HomeApp(id: 'a7', name: 'Nettoie les imports', brand: Brand.codex, status: UiStatus.working),
   HomeApp(id: 'a8', name: 'Corrige le clic en dehors', brand: Brand.claude, status: UiStatus.finished),
 ];
-
-// ---------------------------------------------------------------- history
-
-/// The history's rows, as sample data.
-const sampleHistory = <HistoryRow>[
-  (id: 'h1', title: 'Ajoute la position à droite', brand: Brand.claude, when: 'Hier'),
-  (id: 'h2', title: 'Traduis le README', brand: Brand.codex, when: 'Hier · WSL'),
-  (id: 'h3', title: 'Corrige le hook souris', brand: Brand.claude, when: 'Lundi'),
-  (id: 'h4', title: 'Prépare la démo de l’île', brand: Brand.claude, when: 'Lundi'),
-  (id: 'h5', title: 'Nettoie les imports du moteur', brand: Brand.codex, when: '28 sept.'),
-  (id: 'h6', title: 'Écris les tests du lecteur Codex', brand: Brand.codex, when: '28 sept. · WSL'),
-  (id: 'h7', title: 'Résume la spec de mikkyd', brand: Brand.claude, when: '27 sept.'),
-  (id: 'h8', title: 'Ajoute le menu flottant', brand: Brand.claude, when: '26 sept.'),
-  (id: 'h9', title: 'Mesure le CPU de l’île', brand: Brand.codex, when: '25 sept.'),
-];
-
-void _noId(String _) {}
-
-/// A home with its history button: the history opens over it, for real,
-/// at the right or in the notch.
-class HistoryTry extends StatelessWidget {
-  const HistoryTry({super.key, this.layout = HomeLayout.right});
-
-  final HomeLayout layout;
-
-  @override
-  Widget build(BuildContext context) => HomeFrame(
-    layout: layout,
-    child: HomeView(
-      layout: layout,
-      apps: layout.notch ? sampleNotchApps : sampleApps,
-      animate: false,
-      onNew: () {},
-      onHistory: (within) => showHistory(within, rows: sampleHistory, onMenu: _noId),
-    ),
-  );
-}
-
-/// The same, the history open and still (for the pictures).
-class HistoryOpen extends StatelessWidget {
-  const HistoryOpen({super.key, this.layout = HomeLayout.right});
-
-  final HomeLayout layout;
-
-  @override
-  Widget build(BuildContext context) => HomeFrame(
-    layout: layout,
-    child: Stack(
-      children: [
-        HomeView(
-          layout: layout,
-          apps: layout.notch ? sampleNotchApps : sampleApps,
-          animate: false,
-          onNew: () {},
-          onHistory: (_) {},
-        ),
-        Positioned.fill(
-          child: SheetScene(
-            t: 1,
-            panel: SheetPanel(
-              title: 'Historique',
-              caption: '${sampleHistory.length}',
-              onClose: () {},
-              child: const HistoryBody(rows: sampleHistory, onMenu: _noId),
-            ),
-          ),
-        ),
-      ],
-    ),
-  );
-}

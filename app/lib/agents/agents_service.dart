@@ -221,7 +221,7 @@ class AgentsService extends ChangeNotifier {
       source.follow(watcher);
       unawaited(watcher.start());
       await _syncRuns(client);
-      unawaited(client.request('hooks.list').then(_hookAsks).catchError((Object _) {}));
+      unawaited(client.request('hooks.list').then((list) => _hookAsks(list, replay: true)).catchError((Object _) {}));
       unawaited(client.request('hooks.messages.list').then(_externalMessages).catchError((Object _) {}));
       backend = BackendState.online;
       for (final host in AgentHost.values) {
@@ -297,12 +297,12 @@ class AgentsService extends ChangeNotifier {
 
   /// The permissions and questions asked through Claude's hooks, as
   /// `mikkyd` lists them.
-  void _hookAsks(Object? list) {
+  void _hookAsks(Object? list, {bool replay = false}) {
     if (list is! List) return;
     source.hookAsks([
       for (final r in list)
         if (r is Map) ?HookAsk.fromJson(r.cast<String, Object?>()),
-    ]);
+    ], replay: replay);
   }
 
   void _externalMessages(Object? list) {

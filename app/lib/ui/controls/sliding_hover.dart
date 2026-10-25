@@ -19,6 +19,8 @@ class SlidingHover extends StatefulWidget {
     this.radius = Radii.md,
     this.followHover = true,
     this.hairline = true,
+    this.color,
+    this.shadows,
   });
 
   final Widget child;
@@ -33,6 +35,8 @@ class SlidingHover extends StatefulWidget {
   /// A thin line around the square, for a white square on a white
   /// window; none on a grey background, like the Oui / Non picture.
   final bool hairline;
+  final Color? color;
+  final List<CssShadow>? shadows;
 
   static SlidingHoverState? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<_Scope>()?.state;
@@ -159,12 +163,12 @@ class SlidingHoverState extends State<SlidingHover> with SingleTickerProviderSta
                   duration: Duration(milliseconds: _shown ? 90 : 160),
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      color: ui.thumb,
+                      color: widget.color ?? ui.thumb,
                       borderRadius: BorderRadius.circular(widget.radius),
                       // A hairline, so the white shows on the white window.
                       border: widget.hairline ? Border.all(color: ui.line, width: .8) : null,
                       boxShadow: [
-                        for (final s in ui.shThumb)
+                        for (final s in widget.shadows ?? ui.shThumb)
                           if (!s.inset) s.box,
                       ],
                     ),

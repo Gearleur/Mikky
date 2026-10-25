@@ -158,11 +158,9 @@ class HomeLayout {
   /// the bar's foot, this high.
   static const taskTop = 46.0, taskHeight = 120.0;
 
-  /// A question takes the focus size and Mikky's focus position.
-  static Size get questionSize => Size(IslandMetrics.top.focus.width, IslandMetrics.top.focus.height);
-  static const questionPadding = EdgeInsets.fromLTRB(104, 16, 18, 12);
-  static Offset get questionMikkyAt =>
-      Offset(IslandMetrics.top.mikkyOpen.x - top.mikky / 2, IslandMetrics.top.mikkyOpen.y - top.mikky * .54);
+  /// Questions use the conversation's whole page, without the apps or a mascot column.
+  static Size get questionSize => top.pageSize;
+  static const questionPadding = EdgeInsets.fromLTRB(18, 14, 18, 16);
 
   /// The task, this far from Mikky; at the top it reaches to [taskEnd]
   /// from the apps' area (190 wide), at the right to the side's margin.
@@ -196,7 +194,7 @@ class HomeLayout {
   /// The bar (modes, tools): from the top, its height.
   final double barTop, bar;
 
-  /// The foot (history, the pages' star, the environment): from the
+  /// The foot (history and the pages' star): from the
   /// bottom, from the sides.
   final double foot, side;
 

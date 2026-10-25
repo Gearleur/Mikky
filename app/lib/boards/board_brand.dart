@@ -236,7 +236,7 @@ class _Logo extends StatelessWidget {
       child: Builder(
         builder: (context) => _Tile(
           // Dark: charcoal, so the black cat stands out.
-          color: dark ? const Color(0xFF2A2A2E) : const Color(0xFFFFFFFF),
+          color: dark ? MikkyUi.dark.tileColor : MikkyUi.light.island,
           size: t,
           radius: t * .23,
           line: !dark,
@@ -353,7 +353,7 @@ class _FxTile extends StatelessWidget {
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => _Tile(color: const Color(0xFF0B0B0C), size: 140, radius: 30, child: child);
+  Widget build(BuildContext context) => _Tile(color: MikkyUi.dark.island, size: 140, radius: 30, child: child);
 }
 
 String _fxNote(SignatureFxKind k) => switch (k) {
@@ -583,8 +583,16 @@ final brandBoard = BoardSpec('Marque', 'Logo, couleurs, pixels, lettres, ce qui 
     ),
     BoardSection(
       title: 'Couleurs signature',
-      note: 'L’orange de ta capture, et le même en bleu (mêmes teintes, mêmes écarts). Pour plus tard.',
+      note: 'Base neutre appliquée : noir doux et gris sélecteur. L’orange et le bleu signature restent les accents de marque.',
       frames: [
+        BoardFrame(
+          label: 'Base de marque',
+          width: 330,
+          child: _grid([
+            _Swatch('Noir doux', MikkyUi.dark.island, use: 'fonds et panneaux'),
+            _Swatch('Gris sélecteur', MikkyUi.dark.tileColor, use: 'applications et contrôles'),
+          ], width: 330),
+        ),
         BoardFrame(
           label: 'Orange et bleu',
           width: 330,
@@ -778,14 +786,16 @@ String _px(double v) => (v == v.roundToDouble() ? v.toStringAsFixed(0) : '$v').r
 /// The window's colors, by role (shown on the Composants board, « Couleurs »).
 BoardSection interfaceColorsSection(MikkyUi ui) => BoardSection(
   title: 'Couleurs de l’interface',
-  note: 'Noir, blanc, gris (d’après boutons-lanceur.png). Mêmes noms en clair et en sombre : passe d’un thème à l’autre en bas à gauche.',
+  note: 'Thème sombre validé : noir doux #171717 et applications gris sélecteur #2C2C30. Même fond pour les pages, l’historique et les paramètres.',
   frames: [
     BoardFrame(
       label: 'Fonds',
       width: 640,
       child: _grid([
         _Swatch('board', ui.board, use: 'fond du bureau'),
-        _Swatch('island', ui.island, use: 'la fenêtre'),
+        _Swatch('island', ui.island, use: 'fenêtre, historique, réglages'),
+        _Swatch('tileColor', ui.tileColor, use: 'applications'),
+        _Swatch('appsBackground', ui.appsBackground, use: 'fond des applications'),
         _Swatch('well', ui.well, use: 'creux, bulles'),
         _Swatch('track', ui.track, use: 'pistes, code'),
         _Swatch('thumb', ui.thumb, use: 'curseur, Oui'),
@@ -802,6 +812,8 @@ BoardSection interfaceColorsSection(MikkyUi ui) => BoardSection(
         _Swatch('text', ui.text, use: 'titres, texte'),
         _Swatch('text2', ui.text2, use: 'second plan'),
         _Swatch('text3', ui.text3, use: 'légendes'),
+        _Swatch('tileText', ui.tileText, use: 'texte des applications'),
+        _Swatch('tileText2', ui.tileText2, use: 'activité des applications'),
       ], width: 480),
     ),
     BoardFrame(

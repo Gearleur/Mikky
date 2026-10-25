@@ -1,130 +1,56 @@
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/widgets.dart';
 
-import '../ui/brand/brand_logo.dart';
-import '../ui/content/cards.dart';
-import '../ui/controls/field.dart';
-import '../ui/controls/sliding_hover.dart';
-import '../ui/foundation/status.dart';
-import '../ui/foundation/tokens.dart';
+import '../ui/content/history_row.dart';
+import '../ui/content/history_view.dart';
 import '../ui/overlays/sheet.dart';
 
-/// One agent of the history: its tool, its title, when and where it ran.
-typedef HistoryRow = ({String id, String title, Brand brand, String when});
+export '../ui/content/history_row.dart';
 
-/// The history, as a sheet over the home's window [within] (2026-10-02):
-/// centered, « Historique » and the count, a search field, then the rows.
-/// A row closes it and opens its agent ([onOpen]); it comes back among the
-/// apps.
+/// A menu action receives the sheet's context, for an anchored menu.
+typedef HistoryMenu = void Function(BuildContext within, String id);
+
+/// The selected history page, shared by the app and board previews.
+/// Its query and scroll survive live updates; subscriptions end with it.
 Future<void> showHistory(
   BuildContext within, {
   required List<HistoryRow> rows,
+  Listenable? updates,
+  List<HistoryRow> Function()? readRows,
   ValueChanged<String>? onOpen,
-  ValueChanged<String>? onMenu,
-}) => showSheet(
-  within,
-  title: 'Historique',
-  caption: '${rows.length}',
-  builder: (_) => HistoryBody(rows: rows, onOpen: onOpen, onMenu: onMenu),
-);
-
-/// What the history sheet holds: a small search field, then the list. The
-/// search only looks in the titles shown for now (2026-10-02: « pas
-/// fonctionnelle pour le moment, mais penses-y »); later it asks `mikkyd`
-/// (titles, folders, what was said).
-class HistoryBody extends StatefulWidget {
-  const HistoryBody({super.key, required this.rows, this.onOpen, this.onMenu});
-
-  final List<HistoryRow> rows;
-  final ValueChanged<String>? onOpen;
-  final ValueChanged<String>? onMenu;
-
-  @override
-  State<HistoryBody> createState() => _HistoryBodyState();
-}
-
-class _HistoryBodyState extends State<HistoryBody> {
-  final _search = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _search.addListener(() => setState(() {}));
+  HistoryMenu? onMenu,
+  HistorySearchMode searchMode = HistorySearchMode.dedicated,
+  int columns = 1,
+  bool initiallySearching = false,
+}) async {
+  final current = ValueNotifier(readRows?.call() ?? rows);
+  void refresh() {
+    final next = readRows?.call() ?? rows;
+    if (!listEquals(current.value, next)) current.value = next;
   }
 
-  @override
-  void dispose() {
-    _search.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final ui = MikkyUi.of(context);
-    final q = _search.text.trim().toLowerCase();
-    final rows = q.isEmpty
-        ? widget.rows
-        : [
-            for (final r in widget.rows)
-              if (r.title.toLowerCase().contains(q)) r,
-          ];
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(12, 6, 12, 4),
-          child: SearchField(
-            small: true,
-            icon: 'search',
-            placeholder: 'Chercher dans l’historique',
-            controller: _search,
-          ),
+  updates?.addListener(refresh);
+  try {
+    await showSheetPage(
+      within,
+      builder: (context) => ValueListenableBuilder<List<HistoryRow>>(
+        valueListenable: current,
+        builder: (context, rows, _) => HistoryView(
+          rows: rows,
+          searchMode: searchMode,
+          columns: columns,
+          initiallySearching: initiallySearching,
+          onClose: () => Sheet.close(context),
+          onOpen: (id) {
+            Sheet.close(context);
+            onOpen?.call(id);
+          },
+          onMenu: onMenu == null ? null : (id) => onMenu(context, id),
         ),
-        Expanded(
-          child: rows.isEmpty
-              ? Center(
-                  child: Text('Rien trouvé', style: uiText(TextSize.small, color: ui.text3)),
-                )
-              : HistoryList(rows: rows, onOpen: widget.onOpen, onMenu: widget.onMenu),
-        ),
-      ],
-    );
-  }
-}
-
-/// The history's rows — the old home's: the tool's logo, the title, when
-/// — the white square sliding under the mouse, the grey star (its menu)
-/// on the right. A click closes the sheet and opens the agent.
-class HistoryList extends StatelessWidget {
-  const HistoryList({super.key, required this.rows, this.onOpen, this.onMenu});
-
-  final List<HistoryRow> rows;
-  final ValueChanged<String>? onOpen;
-  final ValueChanged<String>? onMenu;
-
-  @override
-  Widget build(BuildContext context) => SingleChildScrollView(
-    padding: const EdgeInsets.fromLTRB(8, 4, 8, 12),
-    child: SlidingHover(
-      radius: 14,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (final r in rows)
-            AgentCard(
-              key: ValueKey(r.id),
-              status: UiStatus.finished,
-              title: r.title,
-              who: r.when,
-              brand: r.brand,
-              style: AgentCardStyle.old,
-              onTap: () {
-                Sheet.close(context);
-                onOpen?.call(r.id);
-              },
-              onMenu: onMenu == null ? null : () => onMenu!(r.id),
-            ),
-        ],
       ),
-    ),
-  );
+    );
+  } finally {
+    updates?.removeListener(refresh);
+    current.dispose();
+  }
 }

@@ -25,14 +25,25 @@ class QuestionTrial {
   final int? at;
 }
 
+typedef _QuestionEdit = ({Set<String> ticked, String? chosen, bool other, String text});
+
+/// Kept by the request's owner while its card is deferred or replaced.
+/// Contains no transport state and is discarded when the request settles.
+class QuestionDraft {
+  Object? _request;
+  int? _at;
+  final _answers = <String, Object>{};
+  final _edits = <String, _QuestionEdit>{};
+}
+
 /// A question with choices (Claude's question tool, through ACP or its
 /// hooks — the same card for both, 2026-10-08): flat, like the answer
 /// bar, never capsule buttons. An edge of pixels in our oranges along the
 /// question and its choices says « ici, tu réponds » (2026-10-12, chosen:
 /// « orange seul », glitched « en tranches », on three columns).
 ///
-/// - One choice: a click on it answers, and goes to the next question
-///   left.
+/// - One choice: a click keeps it and goes to the next question. A series
+///   is sent only with its final Envoyer button; a standalone choice sends.
 /// - Several choices: tick them, then « Suivante » (« Envoyer » on the
 ///   last one left).
 /// - « Autre… »: a line of its own (when the agent takes one); a second
@@ -59,9 +70,17 @@ class QuestionCard extends StatefulWidget {
     this.onElsewhere,
     this.onLater,
     this.actionsAlignment = Alignment.centerRight,
+    this.draft,
+    this.before = const [],
+    this.scroll,
+    this.contentAnchor,
   });
 
   final QuestionAsked question;
+  final QuestionDraft? draft;
+  final List<Widget> before;
+  final ScrollController? scroll;
+  final GlobalKey? contentAnchor;
 
   /// The answers by question key; null: skipped. Itself null: shown, not
   /// answered here (2026-10-13: asked in Claude's app or VS Code, which
@@ -100,15 +119,19 @@ class QuestionCard extends StatefulWidget {
 class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   /// What is answered so far, by key: the label chosen, the labels ticked,
   /// or the text written under the question's [Question.otherKey].
-  late final Map<String, Object> _answers = {...widget.trial.answers};
+  late QuestionDraft _draft;
+  Map<String, Object> get _answers => _draft._answers;
 
   /// Which question shows (one at a time).
-  late int _at = widget.trial.at ?? _firstLeft ?? 0;
+  int get _at => _draft._at!;
+  set _at(int value) => _draft._at = value;
   final Set<String> _ticked = {};
+  Map<String, _QuestionEdit> get _drafts => _draft._edits;
 
   /// The choice made before, on a question opened again.
   String? _chosen;
   bool _other = false;
+  bool _submitted = false;
   final _otherText = TextEditingController();
   final _otherFocus = FocusNode();
 
@@ -119,8 +142,26 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   @override
   void initState() {
     super.initState();
+    _loadDraft();
     _restore();
     if (widget.trial.other && _question.otherKey != null) _other = true;
+  }
+
+  void _loadDraft() {
+    _draft = widget.draft ?? QuestionDraft();
+    if (_draft._request != widget.question.requestId) {
+      _draft._request = widget.question.requestId;
+      _answers
+        ..clear()
+        ..addAll(widget.trial.answers);
+      _drafts.clear();
+      _draft._at = null;
+    }
+    _draft._at ??= widget.trial.at ?? _firstLeft ?? 0;
+  }
+
+  void _saveDraft() {
+    _drafts[_question.key] = (ticked: Set.of(_ticked), chosen: _chosen, other: _other, text: _otherText.text);
   }
 
   @override
@@ -128,15 +169,17 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     super.didUpdateWidget(old);
     // Another request, not the same one rebuilt: what was being answered
     // goes.
-    if (old.question.requestId != widget.question.requestId) {
-      _answers.clear();
-      _at = 0;
+    if (old.question.requestId != widget.question.requestId || old.draft != widget.draft) {
+      if (old.question.requestId == widget.question.requestId) _saveDraft();
+      _loadDraft();
       _restore();
+      _submitted = false;
     }
   }
 
   @override
   void dispose() {
+    _saveDraft();
     _otherText.dispose();
     _otherFocus.dispose();
     super.dispose();
@@ -154,6 +197,16 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   /// The question shown as it was answered (nothing, the first time).
   void _restore() {
     final q = _question;
+    final draft = _drafts[q.key];
+    if (draft != null) {
+      _ticked
+        ..clear()
+        ..addAll(draft.ticked);
+      _chosen = draft.chosen;
+      _other = draft.other;
+      _otherText.text = draft.text;
+      return;
+    }
     final given = _answers[q.key], written = _answers[q.otherKey];
     _ticked
       ..clear()
@@ -163,28 +216,68 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     _otherText.text = written is String ? written : '';
   }
 
-  void _go(int i) => setState(() {
-    _at = i;
-    _restore();
-  });
+  void _go(int i, {bool save = true}) {
+    setState(() {
+      if (save) _saveDraft();
+      _at = i;
+      _restore();
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && widget.contentAnchor != null && widget.scroll != null) {
+        revealRequest(widget.contentAnchor!, widget.scroll!);
+      }
+    });
+  }
 
-  /// This question is answered with [value] (under [key]): the first one
-  /// left, or all of them go.
-  void _answer(String key, Object value) {
+  /// Keep the answer and advance in reading order. Only an explicit final
+  /// action (or a standalone choice) sends the form.
+  void _answer(String key, Object value, {bool submit = false}) {
+    if (_submitted) return;
     final q = _question;
+    _drafts.remove(q.key);
     _answers
       ..remove(q.key)
       ..remove(q.otherKey)
       ..[key] = value;
-    final next = _firstLeft;
-    if (next != null) {
-      _go(next);
+    if (_count == 1 || submit) {
+      _submit();
     } else {
-      widget.onAnswer?.call(Map.of(_answers));
+      _go((_at + 1).clamp(0, _count - 1), save: false);
     }
   }
 
+  void _submit() {
+    if (_submitted) return;
+    // Tabs can leave a changed answer without pressing Suivante. The final
+    // confirmation must use those edits, never an older validated value.
+    for (final q in _questions) {
+      final edit = _drafts[q.key];
+      if (edit == null) continue;
+      _answers
+        ..remove(q.key)
+        ..remove(q.otherKey);
+      if (edit.other) {
+        if (q.otherKey != null && edit.text.trim().isNotEmpty) _answers[q.otherKey!] = edit.text.trim();
+      } else if (q.multiple) {
+        final values = [
+          for (final c in q.choices)
+            if (edit.ticked.contains(c.label)) c.label,
+        ];
+        if (values.isNotEmpty) _answers[q.key] = values;
+      } else if (edit.chosen != null) {
+        _answers[q.key] = edit.chosen!;
+      }
+    }
+    if (_firstLeft case final left?) {
+      _go(left, save: false);
+      return;
+    }
+    _submitted = true;
+    widget.onAnswer?.call(Map.of(_answers));
+  }
+
   void _pick(int i) {
+    if (_submitted) return;
     final q = _question;
     if (i >= q.choices.length) {
       if (i == q.choices.length && q.otherKey != null) _toggleOther();
@@ -192,7 +285,11 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
     }
     final label = q.choices[i].label;
     if (q.multiple) {
-      setState(() => _ticked.contains(label) ? _ticked.remove(label) : _ticked.add(label));
+      setState(() {
+        _other = false;
+        _otherText.clear();
+        _ticked.contains(label) ? _ticked.remove(label) : _ticked.add(label);
+      });
     } else {
       _answer(q.key, label);
     }
@@ -208,7 +305,11 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
       });
       return;
     }
-    setState(() => _other = true);
+    setState(() {
+      _other = true;
+      _ticked.clear();
+      _chosen = null;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _otherFocus.requestFocus();
     });
@@ -218,19 +319,23 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
   VoidCallback? get _send {
     final q = _question;
     final text = _otherText.text.trim();
-    if (_other && text.isNotEmpty && q.otherKey != null) return () => _answer(q.otherKey!, text);
+    if (_other && text.isNotEmpty && q.otherKey != null) {
+      return () => _answer(q.otherKey!, text, submit: _at == _count - 1);
+    }
     if (q.multiple && _ticked.isNotEmpty) {
       return () => _answer(q.key, [
         for (final c in q.choices)
           if (_ticked.contains(c.label)) c.label,
-      ]);
+      ], submit: _at == _count - 1);
     }
     return null;
   }
 
   /// « Suivante » / « Envoyer »: what is ticked or written; on a question
   /// opened again, its answer kept, the next one.
-  VoidCallback? get _goOn => _send ?? (_answered(_at) && _at + 1 < _count ? () => _go(_at + 1) : null);
+  VoidCallback? get _goOn =>
+      _send ??
+      (!_question.multiple && !_other && _answered(_at) ? (_at + 1 < _count ? () => _go(_at + 1) : _submit) : null);
 
   bool get _readOnly => widget.onAnswer == null;
 
@@ -265,6 +370,7 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           label: q.choices[i].label,
           description: q.choices[i].description,
           multiple: q.multiple,
+          compact: widget.fill,
           ticked: _ticked.contains(q.choices[i].label) || q.choices[i].label == _chosen,
           onTap: _readOnly ? widget.onElsewhere : () => _pick(i),
         ),
@@ -272,31 +378,29 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
         _ChoiceRow(
           index: q.choices.length,
           label: 'Autre…',
-          description: _other ? null : 'Écrire ta réponse',
+          description: _other ? null : 'Écrire une réponse à la place des choix',
           multiple: false,
+          compact: widget.fill,
           ticked: _other,
           onTap: _toggleOther,
         ),
     ];
     final question = <Widget>[
-      Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(text: text),
-            // In the notch, every line counts: on the question's line.
-            if (q.multiple && widget.fill)
-              TextSpan(
-                text: '   Plusieurs choix possibles',
-                style: uiText(TextSize.caption, color: ui.text3),
-              ),
-          ],
-        ),
+      Text(
+        text,
         style: uiText(TextSize.body, weight: FontWeight.w600, color: ui.text, height: 1.4),
       ),
-      if (q.multiple && !widget.fill)
+      if (q.multiple)
         Padding(
           padding: const EdgeInsets.only(top: 1),
-          child: Text('Plusieurs choix possibles', style: uiText(TextSize.caption, color: ui.text3)),
+          child: Text(
+            _other
+                ? 'Réponse libre · remplace les choix'
+                : _ticked.isEmpty
+                ? 'Plusieurs choix possibles · sélectionne puis valide'
+                : '${_ticked.length} ${_ticked.length == 1 ? 'réponse sélectionnée' : 'réponses sélectionnées'}',
+            style: uiText(TextSize.caption, color: _ticked.isEmpty ? ui.text3 : ui.blue),
+          ),
         ),
       const SizedBox(height: 6),
       SlidingHover(
@@ -313,8 +417,8 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
           ),
         ),
     ];
-    // The last one left: what goes on sends the form.
-    final last = !Iterable<int>.generate(_count).any((i) => i != _at && !_answered(i));
+    // Reading order is stable even when previous answers are edited.
+    final last = _at == _count - 1;
     final goOn = q.multiple || _other || _answered(_at);
     final answers = AnswerBar(
       key: ValueKey('bar-${_at > 0}-$goOn-$last'),
@@ -339,8 +443,10 @@ class _QuestionCardState extends State<QuestionCard> with RequestKeysListener {
             ],
           );
     return RequestContent(
-      key: ValueKey('question-$_at'),
       fill: widget.fill,
+      before: widget.before,
+      scroll: widget.scroll,
+      contentAnchor: widget.contentAnchor,
       heading: _count > 1 || title != null ? _series(ui, title) : null,
       actions: bar,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: question),
@@ -377,6 +483,7 @@ class _ChoiceRow extends StatelessWidget {
     required this.label,
     required this.multiple,
     required this.ticked,
+    this.compact = false,
     this.onTap,
     this.description,
   });
@@ -384,13 +491,21 @@ class _ChoiceRow extends StatelessWidget {
   final int index;
   final String label;
   final String? description;
-  final bool multiple, ticked;
+  final bool multiple, ticked, compact;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final ui = MikkyUi.of(context);
     final on = ticked;
+    final words = [
+      Text(
+        label,
+        style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text),
+      ),
+      if (description != null && description!.isNotEmpty)
+        Text(description!, style: uiText(TextSize.small, color: ui.text3, height: 1.35)),
+    ];
     final mark = AnimatedContainer(
       duration: Motion.of(context, Motion.hover),
       width: 18,
@@ -410,28 +525,25 @@ class _ChoiceRow extends StatelessWidget {
               ),
             ),
     );
-    return HoverRow(
-      onTap: onTap,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Padding(padding: const EdgeInsets.only(top: 1), child: mark),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: uiText(TextSize.label, weight: FontWeight.w500, color: ui.text),
-                ),
-                if (description != null && description!.isNotEmpty)
-                  Text(description!, style: uiText(TextSize.small, color: ui.text3, height: 1.35)),
-              ],
+    return Semantics(
+      checked: multiple ? ticked : null,
+      selected: multiple ? null : ticked,
+      button: true,
+      child: HoverRow(
+        onTap: onTap,
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(padding: const EdgeInsets.only(top: 1), child: mark),
+            const SizedBox(width: 10),
+            Expanded(
+              child: compact
+                  ? Wrap(spacing: 10, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: words)
+                  : Column(crossAxisAlignment: CrossAxisAlignment.start, children: words),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

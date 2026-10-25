@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "sounds": {
+    "hello": "launch",
+    "open": "discord_open",
+    "close": "discord_close",
+    "peek": "navigate",
+    "navigate": "navigate",
+    "back": "back",
+    "select": "select",
+    "launch": "navigate",
+    "send": "select",
+    "approval": "folder_open",
+    "question": "folder_open",
+    "error": "back",
+    "rateLimited": "back",
+    "finished": "retroachievements",
+    "approve": "select",
+    "deny": "back",
+    "love": "navigate",
+    "slap": "back",
+    "dizzy": "back",
+    "sleep": "folder_close",
+    "wake": "folder_open",
+    "spell": "spell"
+  }
+}

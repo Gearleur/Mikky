@@ -4,7 +4,6 @@ import 'package:flutter/widgets.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'agents/agents_service.dart';
-import 'agents/enchant.dart';
 import 'boards/boards_app.dart';
 import 'island/island_bench.dart';
 import 'island/island_geometry.dart';
@@ -12,6 +11,7 @@ import 'island/island_painter.dart';
 import 'island/island_view.dart';
 import 'overlay/overlay_channel.dart';
 import 'settings.dart';
+import 'sound/sound_profile_loader.dart';
 import 'tuning/tuning_app.dart';
 
 Future<void> main(List<String> args) async {
@@ -21,7 +21,8 @@ Future<void> main(List<String> args) async {
   // The design boards (brand, components, every screen): a normal window,
   // in its own process.
   if (args.contains('--kit')) {
-    runApp(BoardsApp(performance: args.contains('--perf')));
+    final boardArg = args.where((arg) => arg.startsWith('--board=')).firstOrNull;
+    runApp(BoardsApp(performance: args.contains('--perf'), initialBoard: boardArg?.substring(8)));
     return;
   }
 
@@ -36,17 +37,8 @@ Future<void> main(List<String> args) async {
   // Claude and Codex: found and followed in the background, never blocking
   // the island's first frame.
   final agents = AgentsService(clock: () => clock.now);
-  final (settings, program) = await (Settings.load(), loadIslandProgram()).wait;
+  final (settings, program, soundProfile) = await (Settings.load(), loadIslandProgram(), loadSoundProfile()).wait;
   unawaited(agents.start());
-  // The spells: agents stopped by a limit relaunched when it lifts.
-  Enchantments.instance.watch(
-    agents.source,
-    everywhere: settings.autoRelaunch,
-    save: (on) {
-      settings.autoRelaunch = on;
-      unawaited(settings.save());
-    },
-  );
   // Before the first frame: the window only shows up once it is in place.
   await overlay.setPlacement(settings.edge, windowSizeFor(settings.edge));
   // A bare WidgetsApp: no background (everything outside the island must
@@ -63,6 +55,7 @@ Future<void> main(List<String> args) async {
             builder: (context) => IslandView(
               overlay: overlay,
               settings: settings,
+              soundProfile: soundProfile,
               program: program,
               tuning: tuning,
               clock: clock,

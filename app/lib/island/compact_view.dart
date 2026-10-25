@@ -105,28 +105,36 @@ class BubbleAlert extends StatelessWidget {
   final int waiting;
 
   @override
-  Widget build(BuildContext context) => MikkyUiTheme(
-    ui: theme.ui,
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // The « ! » is three pixels wide in the middle of its box.
-        SizedBox(
-          width: 10,
-          height: 20,
-          child: OverflowBox(maxWidth: 20, child: StatusFx(UiStatus.of(status), size: 20)),
-        ),
-        if (waiting > 1)
-          Padding(
-            padding: const EdgeInsets.only(left: 1, top: 1),
-            child: Text(
-              '$waiting',
-              style: uiText(TextSize.badge, color: theme.ui.text2, mono: true, height: 1, weight: FontWeight.w600),
-            ),
+  Widget build(BuildContext context) => !status.needsYou
+      ? const SizedBox.shrink()
+      : MikkyUiTheme(
+          ui: theme.ui,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // The « ! » is three pixels wide in the middle of its box.
+              SizedBox(
+                width: 10,
+                height: 20,
+                child: OverflowBox(maxWidth: 20, child: StatusFx(UiStatus.of(status), size: 20)),
+              ),
+              if (waiting > 1)
+                Padding(
+                  padding: const EdgeInsets.only(left: 1, top: 1),
+                  child: Text(
+                    '$waiting',
+                    style: uiText(
+                      TextSize.badge,
+                      color: theme.ui.text2,
+                      mono: true,
+                      height: 1,
+                      weight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
           ),
-      ],
-    ),
-  );
+        );
 }
 
 /// Where the bubble leaves the closed island, from its top left corner: out

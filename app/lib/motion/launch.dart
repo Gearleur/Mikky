@@ -84,7 +84,7 @@ class PoseScene extends StatelessWidget {
     return Container(
       width: size.width,
       height: size.height,
-      color: mui.isLight ? const Color(0xFFFFFFFF) : const Color(0xFF070708),
+      color: mui.island,
       child: CustomPaint(painter: _PosePainter(choreography, t, theme, radius)),
     );
   }

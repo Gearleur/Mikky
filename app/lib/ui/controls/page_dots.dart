@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 
 import '../foundation/motion.dart';
 import '../foundation/tokens.dart';
+import '../pixels/pixel_cursor.dart';
 import '../pixels/pixel_fx.dart';
 
 /// Where we are among pages (the home's apps, redone 2026-10-02): small
@@ -147,29 +148,7 @@ class _DotsPainter extends CustomPainter {
       canvas.drawRect(Rect.fromCenter(center: Offset(x, cy), width: _pixel, height: _pixel), paint);
     }
 
-    // The trail: blue pixels behind it, fainter and smaller further back,
-    // as long as it moves fast.
-    final length = trail.abs();
-    if (length > .5) {
-      final dir = trail.sign;
-      for (var k = 1; k <= 4; k++) {
-        final back = PageDots.star / 2 - 1 + k * length.clamp(0.0, 9.0) / 2.2;
-        final fade = (1 - k / 5) * (length / 6).clamp(0.0, 1.0);
-        paint.color = star.levels[k < 3 ? 1 : 2].withValues(alpha: fade);
-        final side = k < 3 ? 2.0 : 1.5;
-        canvas.drawRect(Rect.fromCenter(center: Offset(starX - dir * back, cy), width: side, height: side), paint);
-      }
-    }
-
-    // The star, its middle size.
-    const s = PageDots.star;
-    canvas.save();
-    canvas.translate(starX - s / 2, cy - s / 2);
-    paintPixelGrid(canvas, const Size.square(s), 7, gap: .02, (x, y) {
-      final level = pixelLevel(CalmFirework.frame(1, x - 3, y - 3));
-      return level == null ? null : star.levels[level];
-    });
-    canvas.restore();
+    paintPixelCursor(canvas, center: Offset(starX, cy), size: PageDots.star, palette: star, trail: trail);
   }
 
   @override

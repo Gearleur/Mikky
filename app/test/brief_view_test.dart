@@ -1,10 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mikky/island/compact_view.dart';
 import 'package:mikky/island/content/brief_view.dart';
 import 'package:mikky/overlay/overlay_channel.dart';
 import 'package:mikky/settings.dart';
 import 'package:mikky/sound/sound_board.dart';
+import 'package:mikky/sound/sound_profile.dart';
+import 'package:mikky/theme.dart';
 import 'package:mikky/ui/foundation/tokens.dart';
+import 'package:mikky/ui/pixels/pixel_fx.dart';
 import 'package:mikky_engine/mikky_engine.dart';
 
 import 'load_fonts.dart';
@@ -74,6 +80,18 @@ class _FakeOverlay extends OverlayChannel {
 void main() {
   setUpAll(loadAppFonts);
 
+  testWidgets('a closing alert bubble cannot turn into a working star after resume', (tester) async {
+    for (final status in [AgentStatus.error, AgentStatus.working, AgentStatus.finished]) {
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: BubbleAlert(theme: MikkyTheme.light, status: status),
+        ),
+      );
+      expect(find.byType(StatusFx), status.needsYou ? findsOneWidget : findsNothing);
+    }
+  });
+
   Widget host(Widget child, {double width = 328}) => MediaQuery(
     data: const MediaQueryData(disableAnimations: true),
     child: Directionality(
@@ -90,6 +108,37 @@ void main() {
       ),
     ),
   );
+
+  testWidgets('a pinned error keeps its explanation and actions together near the heading', (tester) async {
+    final agent = _agent(AgentStatus.error).copyWith(detail: 'Erreur simulée à résoudre');
+    await tester.pumpWidget(
+      Directionality(
+        textDirection: TextDirection.ltr,
+        child: MikkyUiScope(
+          ui: MikkyUi.light,
+          child: Align(
+            alignment: Alignment.topLeft,
+            child: SizedBox(
+              width: 580,
+              height: 240,
+              child: BriefView(
+                agent: agent,
+                brief: briefOfAgent(agent),
+                pinned: true,
+                actions: BriefActions(answer: (_) {}),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    final message = tester.getRect(find.text('Erreur simulée à résoudre'));
+    final action = tester.getRect(find.text('Relancer'));
+    expect(message.top, lessThan(80));
+    expect(action.top - message.bottom, lessThan(50));
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('an approval: task, step, last words, command, Oui / Non / Toujours', (tester) async {
     final answers = <AgentAnswer>[];
@@ -163,6 +212,10 @@ void main() {
   });
 
   group('SoundBoard', () {
+    late SoundProfile profile;
+    setUp(() async {
+      profile = SoundProfile.decode(await File('assets/config/sounds.json').readAsString());
+    });
     test('every cue has a known file or none', () {
       // The files of app/assets/sounds (README.md).
       const files = {
@@ -178,8 +231,8 @@ void main() {
         'spell',
       };
       for (final cue in MikkyCue.values) {
-        expect(soundFiles.containsKey(cue), isTrue, reason: '$cue');
-        final f = soundFiles[cue];
+        expect(profile.files.containsKey(cue), isTrue, reason: '$cue');
+        final f = profile[cue];
         if (f != null) expect(files, contains(f));
       }
     });
@@ -188,7 +241,7 @@ void main() {
       final overlay = _FakeOverlay();
       var now = DateTime(2026);
       final settings = Settings(sound: false);
-      final board = SoundBoard(overlay, settings, now: () => now);
+      final board = SoundBoard(overlay, settings, profile: profile, now: () => now);
       board.play(MikkyCue.finished);
       expect(overlay.played, isEmpty);
 

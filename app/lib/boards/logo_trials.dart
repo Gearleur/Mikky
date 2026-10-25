@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/widgets.dart';
 
+import '../ui/foundation/tokens.dart';
 import 'canvas.dart';
 
 /// Simple logos (2026-10-06, after SFEIR's: a mascot, a symbol and a
@@ -32,14 +33,14 @@ class MarkTile extends StatelessWidget {
     width: size,
     height: size,
     decoration: BoxDecoration(
-      color: dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
+      color: dark ? MikkyUi.dark.island : MikkyUi.light.island,
       border: dark ? null : Border.all(color: const Color(0x1F000000)),
     ),
     child: CustomPaint(
       painter: _MarkPainter(
         symbol,
         dark ? const Color(0xFFFFFFFF) : const Color(0xFF0C0C0E),
-        dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
+        dark ? MikkyUi.dark.island : MikkyUi.light.island,
       ),
     ),
   );
@@ -179,7 +180,7 @@ class MarkName extends StatelessWidget {
       height: h,
       padding: EdgeInsets.symmetric(horizontal: h * .45),
       decoration: BoxDecoration(
-        color: dark ? const Color(0xFF0C0C0E) : const Color(0xFFFFFFFF),
+        color: dark ? MikkyUi.dark.island : MikkyUi.light.island,
         border: dark ? null : Border.all(color: const Color(0x1F000000)),
       ),
       alignment: Alignment.center,

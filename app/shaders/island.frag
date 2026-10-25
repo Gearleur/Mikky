@@ -23,26 +23,14 @@ uniform float uLight; // 0: dark "A", 1: light "pur"
 uniform float uPx;    // one physical pixel, in logical pixels
 uniform float uVis;   // global visibility, 0 when hidden
 uniform float uN;     // the corners' power: 4 continuous, 2 round
+uniform vec3 uFill;   // resolved island surface from the UI palette
 
 out vec4 fragColor;
 
-// |v| in the uN norm, for v >= 0.
-float lenN(vec2 v) {
-  return pow(pow(v.x, uN) + pow(v.y, uN), 1. / uN);
-}
-
-float sdBox(vec2 p, vec2 b, float r) {
-  vec2 q = abs(p) - b + r;
-  return lenN(max(q, 0.)) + min(max(q.x, q.y), 0.) - r;
-}
-
-float smin(float a, float b, float k) {
-  float h = clamp(.5 + .5 * (b - a) / k, 0., 1.);
-  return mix(b, a, h) - k * h * (1. - h);
-}
+#include "island_shape.glsl"
 
 float scene(vec2 p) {
-  float d = sdBox(p - uBox.xy, uBox.zw, uR);
+  float d = sdRoundedBox(p - uBox.xy, uBox.zw, uR, uN);
   d = smin(d, length(p - uDrop.xy) - uDrop.z, uK);
   d = smin(d, length(p - uSide.xy) - uSide.z, uKs);
   return d;
@@ -67,10 +55,10 @@ void main() {
   if (uLight < .5) {
     // Near-black, 1.3 px inner rim (brighter at the bottom), faint inner glow.
     float rim = 1. - smoothstep(0., 1.3, -d);
-    fill = vec3(.028, .028, .032) + rim * (.13 + .10 * max(0., n.y)) + .025 * (1. - smoothstep(0., 40., -d));
+    fill = uFill + rim * (.13 + .10 * max(0., n.y)) + .025 * (1. - smoothstep(0., 40., -d));
   } else {
     // Opaque white with a half-point edge.
-    fill = vec3(1.) - .085 * (1. - smoothstep(0., .9, -d));
+    fill = uFill - .085 * (1. - smoothstep(0., .9, -d));
   }
 
   float a = clamp(.5 - d / uPx, 0., 1.);

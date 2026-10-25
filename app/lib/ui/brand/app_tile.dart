@@ -8,7 +8,7 @@ import '../foundation/surface.dart';
 import '../foundation/tokens.dart';
 import '../pixels/pixel_fx.dart';
 
-/// Readable text on the opaque white application tile, in either UI theme.
+/// Readable text resolved for the application's surface.
 class AppTileInk extends InheritedWidget {
   const AppTileInk({super.key, required this.text, required this.secondary, required super.child});
 
@@ -20,7 +20,7 @@ class AppTileInk extends InheritedWidget {
   bool updateShouldNotify(AppTileInk old) => text != old.text || secondary != old.secondary;
 }
 
-/// An opaque pure-white tile with a quiet edge and short shadow.
+/// An application tile with a quiet edge and short shadow.
 /// Corners use 27 % of its height; it grows 5 % on hover and shrinks
 /// when pressed. Shared by the app and the boards.
 class AppTile extends StatefulWidget {
@@ -85,7 +85,7 @@ class _AppTileState extends State<AppTile> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(r),
               child: MikkyUiTheme(
-                ui: MikkyUi.light,
+                ui: ui.tilePalette,
                 child: AppTileInk(
                   text: ui.tileText,
                   secondary: ui.tileText2,

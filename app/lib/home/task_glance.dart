@@ -80,7 +80,18 @@ class TaskGlance extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (app != null) ...[AppLine(app), const SizedBox(height: 3)],
+        if (app != null) ...[
+          Row(
+            children: [
+              Flexible(child: AppLine(app)),
+              if (task.status.isBusy) ...[
+                const SizedBox(width: 7),
+                Semantics(label: 'Agent au travail', child: const StatusFx(UiStatus.working, size: 10)),
+              ],
+            ],
+          ),
+          const SizedBox(height: 3),
+        ],
         Text(
           task.name,
           maxLines: 1,

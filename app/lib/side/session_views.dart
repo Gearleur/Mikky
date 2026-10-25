@@ -163,7 +163,7 @@ List<Widget> _flow(TurnSpan turn, List<ThreadItem> items, Set<ThreadItem> answer
 /// instead of Suivi and Chat). Your messages in bubbles; each turn with
 /// work in it is a task, part of the page, that unfolds what the agent
 /// did and said in order; then its answer, the whole width. The last task
-/// is open, older ones folded.
+/// stays folded until the user unfolds it.
 List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, ThreadCache? cache}) {
   final ui = MikkyUi.of(context);
   final out = <Widget>[];
@@ -188,12 +188,13 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
     if (tools.isNotEmpty || turn.plan.isNotEmpty) {
       out.add(
         TaskSection(
-          // Folds once a newer task comes.
-          key: ValueKey('task-${turn.start}-$last'),
+          key: ValueKey('task-${turn.start}'),
           status: taskStatus(turn, log: last ? log : null),
           title: taskTitle(turn, log: last ? log : null),
           meta: taskMeta(turn, items, toolSteps(tools).length),
-          initiallyOpen: last,
+          activity: last && turn.running && tools.isNotEmpty
+              ? [toolTitle(tools.last), ?toolDetail(tools.last)].join(' · ')
+              : null,
           children: _flow(turn, items, answer.toSet(), ui, log),
         ),
       );
@@ -215,7 +216,7 @@ List<Widget> threadOf(BuildContext context, SessionLog log, {LimitHooks? limit, 
           gap();
         }
       }
-      out.add(const _Waiting());
+      if (log.question == null && log.pending.isEmpty) out.add(const _Waiting());
     }
     if (turn.running && !(last && log.limitSource != null)) continue;
     if (tools.isEmpty && turn.plan.isEmpty && !turn.running) {

@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import '../foundation/motion.dart';
+import '../foundation/tokens.dart';
 import 'pixel_fx.dart';
 
 /// Mikky's sky (2026-10-12, from an image of the user: « un ciel étoilé
@@ -91,10 +92,10 @@ class _Look {
   /// The clouds' dots, from their top to their foot.
   final (double, double) cloudAlpha;
 
-  static const night = _Look(
-    sky: Color(0xFF04050A),
-    cloud: Color(0xFFA0A0A8),
-    star: Color(0xFFFFFFFF),
+  static final night = _Look(
+    sky: MikkyUi.dark.island,
+    cloud: const Color(0xFFA0A0A8),
+    star: const Color(0xFFFFFFFF),
     cloudAlpha: (.85, .35),
   );
   static const day = _Look(

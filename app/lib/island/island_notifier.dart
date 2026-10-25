@@ -19,9 +19,6 @@ class IslandNotifier {
   /// off; nothing either while [windowOpen] (the user is looking at it),
   /// though the state is still remembered.
   void update(List<Agent> agents, {required bool enabled, required bool windowOpen}) {
-    final ids = {for (final a in agents) a.id};
-    _notified.removeWhere((id, _) => !ids.contains(id));
-    if (!enabled) return;
     for (final a in agents) {
       final body = bodyOf(a);
       if (body == null) {
@@ -30,9 +27,12 @@ class IslandNotifier {
       }
       if (_notified[a.id] == a.status) continue;
       _notified[a.id] = a.status;
-      if (windowOpen) continue;
+      if (!enabled || windowOpen || !a.announceChanges) continue;
       _lastAgent = a.id;
       _show(a.name, body);
+    }
+    while (_notified.length > 1024) {
+      _notified.remove(_notified.keys.first);
     }
   }
 

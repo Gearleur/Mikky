@@ -14,6 +14,7 @@ import 'board_island.dart';
 import 'board_mikky.dart';
 import 'board_notch.dart';
 import 'board_screens.dart';
+import 'board_settings.dart';
 import 'board_technical.dart';
 import 'canvas.dart';
 
@@ -23,10 +24,11 @@ import 'canvas.dart';
 /// clicked). Light, dark, or both. Development tool, like the tuning
 /// screen.
 class BoardsApp extends StatelessWidget {
-  const BoardsApp({super.key, this.performance = false});
+  const BoardsApp({super.key, this.performance = false, this.initialBoard});
 
   /// `--perf`: Flutter's frame graphs on top.
   final bool performance;
+  final String? initialBoard;
 
   @override
   Widget build(BuildContext context) => WidgetsApp(
@@ -34,7 +36,10 @@ class BoardsApp extends StatelessWidget {
     color: MikkyUi.light.board,
     debugShowCheckedModeBanner: false,
     showPerformanceOverlay: performance,
-    builder: (context, _) => const Boards(),
+    builder: (context, _) {
+      final initial = boards.indexWhere((board) => board.name.toLowerCase() == initialBoard?.toLowerCase());
+      return Boards(initial: initial < 0 ? 0 : initial);
+    },
   );
 }
 
@@ -47,6 +52,7 @@ final boards = [
   notchRightBoard,
   messagesBoard,
   externalMessagesBoard,
+  settingsBoard,
   technicalBoard,
 ];
 
@@ -185,10 +191,7 @@ class BoardBand extends StatelessWidget {
                     style: uiText(30, weight: FontWeight.w700, color: ui.text, tracking: -.02),
                   ),
                   const SizedBox(width: 14),
-                  Text(
-                    ui.isLight ? 'Clair · île blanc pur' : 'Sombre · île noir A',
-                    style: uiText(14, color: ui.text3),
-                  ),
+                  Text(ui.isLight ? 'Clair · île blanc pur' : 'Sombre · noir doux', style: uiText(14, color: ui.text3)),
                 ],
               ),
               const SizedBox(height: 36),
