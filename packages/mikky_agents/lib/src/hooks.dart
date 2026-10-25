@@ -14,6 +14,7 @@ class HookAsk {
     required this.sessionId,
     required this.event,
     this.provider = AgentProvider.claude,
+    this.host = AgentHost.windows,
     this.cwd,
   });
 
@@ -28,6 +29,7 @@ class HookAsk {
       sessionId: j['sessionId'] is String ? j['sessionId']! as String : '',
       event: event!,
       provider: j['agent'] == 'codex' ? AgentProvider.codex : AgentProvider.claude,
+      host: j['host'] == 'wsl' ? AgentHost.wsl : AgentHost.windows,
       cwd: j['cwd'] is String ? j['cwd']! as String : null,
     );
   }
@@ -41,6 +43,10 @@ class HookAsk {
 
   /// Claude Code or Codex.
   final AgentProvider provider;
+
+  /// Where the session runs: Windows, or WSL (its hooks call the Windows
+  /// relay through WSL's interop).
+  final AgentHost host;
   final String? cwd;
 
   bool get isQuestion => event is QuestionAsked;

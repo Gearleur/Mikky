@@ -253,7 +253,9 @@ async fn dispatch(
     params: &Value,
     out: &mpsc::UnboundedSender<String>,
 ) -> Result<Value, RpcError> {
-    if wsl::targets_wsl(daemon, params) {
+    // The relay of a session in WSL is the Windows one (`mikky-hook.exe`
+    // through WSL's interop): its messages wait here.
+    if wsl::targets_wsl(daemon, params) && !method.starts_with("hooks.messages.") {
         return wsl::forward(daemon, method, params, out).await;
     }
     match method.split('.').next().unwrap_or_default() {

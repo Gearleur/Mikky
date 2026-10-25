@@ -348,3 +348,77 @@ fn a_connected_but_unresponsive_daemon_cannot_hold_claude() {
     assert!(out.status.success());
     server.join().unwrap();
 }
+
+/// Claude in WSL calls the Windows relay through WSL's interop (its hooks
+/// in WSL point at `/mnt/c/…/mikky-hook.exe`): the request reaches the
+/// Windows `mikkyd`, marked as WSL's, and the answer goes back.
+#[cfg(windows)]
+#[test]
+fn a_session_in_wsl_goes_through_the_windows_relay() {
+    let Some(exe) = mikkyd() else {
+        eprintln!("skipped: build mikkyd first (cargo build -p mikkyd)");
+        return;
+    };
+    let ubuntu = Command::new("wsl.exe")
+        .args(["-d", "Ubuntu", "--", "true"])
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status();
+    if !ubuntu.is_ok_and(|s| s.success()) {
+        eprintln!("skipped: no WSL Ubuntu");
+        return;
+    }
+    let (mut daemon, endpoint_text, endpoint) = start_daemon(exe);
+    let relay = std::path::absolute(env!("CARGO_BIN_EXE_mikky-hook")).unwrap();
+    let text = relay.to_string_lossy();
+    let linux = format!(
+        "/mnt/{}{}",
+        text[..1].to_ascii_lowercase(),
+        text[2..].replace('\\', "/")
+    );
+    let mut screen = connect_screen(&endpoint);
+    screen
+        .send(Message::text(
+            json!({"jsonrpc": "2.0", "id": 1, "method": "hello"}).to_string(),
+        ))
+        .unwrap();
+    let ask = json!({
+        "hook_event_name": "PermissionRequest",
+        "session_id": "s-wsl",
+        "cwd": "/home/mikky/projet",
+        "transcript_path": "/home/mikky/.claude/projects/-home-mikky-projet/s-wsl.jsonl",
+        "tool_name": "Bash",
+        "tool_input": {"command": "ls"},
+    });
+    let mut child = Command::new("wsl.exe")
+        .args(["-d", "Ubuntu", "--", &linux, "PermissionRequest"])
+        .env("MIKKY_HOOK_ENDPOINT", &endpoint_text)
+        .env("WSLENV", "MIKKY_HOOK_ENDPOINT")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .unwrap();
+    child
+        .stdin
+        .take()
+        .unwrap()
+        .write_all(ask.to_string().as_bytes())
+        .unwrap();
+    let first = next_request(&mut screen);
+    assert_eq!(first["sessionId"], "s-wsl");
+    assert_eq!(first["host"], "wsl");
+    let id = first["id"].as_u64().unwrap();
+    call(
+        &mut screen,
+        "hooks.answer",
+        json!({"id": id, "decision": "allow"}),
+    );
+    let out = child.wait_with_output().unwrap();
+    let printed: Value = serde_json::from_slice(&out.stdout).unwrap();
+    assert_eq!(
+        printed["hookSpecificOutput"]["decision"]["behavior"],
+        "allow"
+    );
+    drop(daemon.stdin.take());
+    let _ = daemon.wait();
+}

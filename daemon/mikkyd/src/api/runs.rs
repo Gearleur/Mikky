@@ -58,6 +58,27 @@ impl Daemon {
     }
 }
 
+impl Daemon {
+    /// [session] is one of the agents WSL's engine runs. Asks it only if
+    /// it is up: it runs no agent otherwise.
+    pub(super) async fn wsl_owns_session(&self, session: &str) -> bool {
+        if session.is_empty() || !self.allow_wsl {
+            return false;
+        }
+        let proxy = self.wsl.lock().await.clone();
+        let Some(proxy) = proxy.filter(|p| p.alive()) else {
+            return false;
+        };
+        let list = tokio::time::timeout(
+            Duration::from_secs(2),
+            proxy.request("runs.list", json!({})),
+        )
+        .await;
+        matches!(list, Ok(Ok(Value::Array(runs)))
+            if runs.iter().any(|r| r["sessionId"] == session))
+    }
+}
+
 pub(super) async fn dispatch(
     daemon: &Arc<Daemon>,
     method: &str,

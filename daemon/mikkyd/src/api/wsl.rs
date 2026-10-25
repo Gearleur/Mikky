@@ -41,6 +41,18 @@ pub(super) async fn forward(
     {
         remote["path"] = json!(path.replace('\\', "/"));
     }
+    if matches!(method, "hooks.status" | "hooks.preview" | "hooks.write") {
+        // Claude or Codex in WSL calls the Windows relay, which finds this
+        // engine: no endpoint to publish in WSL.
+        let hook = if method == "hooks.write" && params["install"] != false {
+            crate::hooks::settings::place_hook().map_err(|e| RpcError::new(-32000, e))?
+        } else {
+            crate::hooks::settings::hook_path()
+        };
+        let seen = crate::system::wsl::linux_path(&hook)
+            .ok_or_else(|| RpcError::new(-32000, "relais hors d’un disque Windows"))?;
+        remote["hook"] = json!(seen);
+    }
     let proxy = daemon.wsl(out).await?;
     if method == "tools.login" {
         proxy.login_sink(str_param(params, "login")?, out);

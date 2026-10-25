@@ -200,6 +200,20 @@ impl Proxy {
     }
 }
 
+/// Where WSL sees Windows file [path]: `C:\a\b` is `/mnt/c/a/b`
+/// (WSL's default mount). None for a path not on a drive.
+pub fn linux_path(path: &std::path::Path) -> Option<String> {
+    let text = path.to_string_lossy();
+    let mut chars = text.chars();
+    let drive = chars.next().filter(char::is_ascii_alphabetic)?;
+    let rest = chars.as_str().strip_prefix(':')?;
+    Some(format!(
+        "/mnt/{}{}",
+        drive.to_ascii_lowercase(),
+        rest.replace('\\', "/")
+    ))
+}
+
 pub fn prefix(value: &mut Value) {
     if let Some(run) = value["run"].as_str() {
         value["run"] = json!(format!("wsl:{run}"));

@@ -1,10 +1,11 @@
 import 'package:mikky_agents/mikky_agents.dart';
 
 /// A permission as `mikkyd` lists it (`hooks.list`), its event made in Rust.
-HookAsk permissionAsk(int id, String session, String command, {String? cwd}) => HookAsk.fromJson({
+HookAsk permissionAsk(int id, String session, String command, {String? cwd, String? host}) => HookAsk.fromJson({
   'id': id,
   'sessionId': session,
   'cwd': ?cwd,
+  'host': ?host,
   'agent': 'claude',
   'event': {
     'type': 'permission',

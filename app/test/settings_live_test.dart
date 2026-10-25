@@ -26,7 +26,7 @@ class _Service extends AgentsService {
   Completer<void>? startup;
 
   @override
-  Future<Map<String, Object?>> hooksStatus(AgentProvider tool) async => {
+  Future<Map<String, Object?>> hooksStatus(AgentProvider tool, {AgentHost host = AgentHost.windows}) async => {
     'installed': tool == AgentProvider.claude,
     'upToDate': true,
   };

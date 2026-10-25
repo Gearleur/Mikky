@@ -36,7 +36,7 @@ extension _SessionRequests on RealAgentSource {
     for (final a in asks) {
       var e = _entries.where((x) => x.provider == a.provider && x.sessionId == a.sessionId).firstOrNull;
       if (e == null) {
-        e = AgentEntry('h${a.sessionId}', a.provider, AgentHost.windows, AgentOrigin.external, a.cwd, _now())
+        e = AgentEntry('h${a.sessionId}', a.provider, a.host, AgentOrigin.external, a.cwd, _now())
           ..failure = (SessionLog()..apply(SessionStarted(a.sessionId, cwd: a.cwd)))
           ..startedAt = clock()
           ..statusSince = clock();

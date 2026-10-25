@@ -41,7 +41,12 @@ pub(super) async fn dispatch(
         ))),
         "hook.event" => {
             let payload = params.get("payload").cloned().unwrap_or(Value::Null);
-            let own = |session: &str| daemon.owns_session(session);
+            // An agent Mikky runs in WSL calls the same hooks there.
+            let in_wsl = crate::hooks::from_wsl(&payload)
+                && daemon
+                    .wsl_owns_session(payload["session_id"].as_str().unwrap_or_default())
+                    .await;
+            let own = |session: &str| in_wsl || daemon.owns_session(session);
             let out = out.clone();
             Ok(daemon
                 .hooks
@@ -61,20 +66,31 @@ pub(super) async fn dispatch(
             )))
         }
         "hooks.origin" => Ok(daemon.hooks.origin(str_param(params, "sessionId")?)),
-        "hooks.status" => Ok(crate::hooks::settings::status(hook_tool(params)?)),
+        "hooks.status" => Ok(crate::hooks::settings::status(
+            hook_tool(params)?,
+            given_hook(params),
+        )),
         "hooks.preview" => crate::hooks::settings::preview(
             hook_tool(params)?,
             params["install"].as_bool().unwrap_or(true),
+            given_hook(params),
         )
         .map_err(|e| RpcError::new(-32000, e)),
         "hooks.write" => crate::hooks::settings::write(
             hook_tool(params)?,
             params["install"].as_bool().unwrap_or(true),
             str_param(params, "fingerprint")?,
+            given_hook(params),
         )
         .map_err(|e| RpcError::new(-32000, e)),
         _ => Err(not_found(method)),
     }
+}
+
+/// The relay the hooks call when it is not this engine's: `hook` (the
+/// Windows one, for Claude or Codex in WSL).
+fn given_hook(params: &Value) -> Option<std::path::PathBuf> {
+    params["hook"].as_str().map(std::path::PathBuf::from)
 }
 
 /// Whose hooks: `tool` is `claude` (the default) or `codex`.

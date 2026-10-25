@@ -110,7 +110,7 @@ pub fn refresh_hook() {
 
 /// Copies the shipped relay to [hook_path] (beside it, then renamed over
 /// it). A relay in use (a hook running) stays: it is replaced next time.
-fn place_hook() -> Result<PathBuf, String> {
+pub fn place_hook() -> Result<PathBuf, String> {
     let from = shipped_hook();
     let to = hook_path();
     if !from.exists() {
@@ -272,10 +272,12 @@ fn fingerprint(bytes: &[u8]) -> String {
     format!("{hash:016x}")
 }
 
-/// Installed or not, where.
-pub fn status(tool: Tool) -> Value {
+/// Installed or not, where. [given]: the relay the hooks call, when it is
+/// not this engine's (WSL's hooks call the Windows one).
+pub fn status(tool: Tool, given: Option<PathBuf>) -> Value {
     let path = tool.file();
-    let hook = hook_path();
+    let shipped = given.is_none() && shipped_hook().exists();
+    let hook = given.unwrap_or_else(hook_path);
     let (current, _) = read(&path).unwrap_or((json!({}), Vec::new()));
     json!({
         "installed": installed(&current),
@@ -284,13 +286,18 @@ pub fn status(tool: Tool) -> Value {
         "upToDate": installed(&current) && merged(&current, &hook, tool) == current,
         "settingsPath": path.to_string_lossy(),
         "hookPath": hook.to_string_lossy(),
-        "hookReady": hook.exists() || shipped_hook().exists(),
+        "hookReady": hook.exists() || shipped,
     })
 }
 
 /// What installing (or uninstalling) would change.
-pub fn preview(tool: Tool, install: bool) -> Result<Value, String> {
-    preview_at(&tool.file(), &hook_path(), tool, install)
+pub fn preview(tool: Tool, install: bool, given: Option<PathBuf>) -> Result<Value, String> {
+    preview_at(
+        &tool.file(),
+        &given.unwrap_or_else(hook_path),
+        tool,
+        install,
+    )
 }
 
 fn preview_at(path: &Path, hook: &Path, tool: Tool, install: bool) -> Result<Value, String> {
@@ -309,8 +316,17 @@ fn preview_at(path: &Path, hook: &Path, tool: Tool, install: bool) -> Result<Val
 }
 
 /// Writes it, if the file is still the one previewed. Returns the backup.
-pub fn write(tool: Tool, install: bool, seen: &str) -> Result<Value, String> {
-    let hook = if install { place_hook()? } else { hook_path() };
+pub fn write(
+    tool: Tool,
+    install: bool,
+    seen: &str,
+    given: Option<PathBuf>,
+) -> Result<Value, String> {
+    let hook = match given {
+        Some(hook) => hook,
+        None if install => place_hook()?,
+        None => hook_path(),
+    };
     write_at(&tool.file(), &hook, tool, install, seen)
 }
 
@@ -433,6 +449,35 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    #[test]
+    fn hooks_in_wsl_call_the_windows_relay() {
+        let windows = Path::new(r"C:\Users\a\AppData\Local\Mikky\bin\mikky-hook.exe");
+        let seen = crate::system::wsl::linux_path(windows).unwrap();
+        assert_eq!(
+            seen,
+            "/mnt/c/Users/a/AppData/Local/Mikky/bin/mikky-hook.exe"
+        );
+        assert!(crate::system::wsl::linux_path(Path::new("/home/a")).is_none());
+        let with = merged(&json!({}), Path::new(&seen), Tool::Claude);
+        assert_eq!(
+            with["hooks"]["PostToolUse"][0]["hooks"][0]["command"],
+            format!("\"{seen}\" PostToolUse")
+        );
+        assert!(installed(&with));
+
+        let dir = temp_dir("given");
+        let relay = dir.join("relay.exe");
+        std::fs::write(&relay, b"").unwrap();
+        let settings = dir.join("settings.json");
+        let preview = preview_at(&settings, &relay, Tool::Claude, true).unwrap();
+        let seen = preview["fingerprint"].as_str().unwrap();
+        write_at(&settings, &relay, Tool::Claude, true, seen).unwrap();
+        let written: Value = serde_json::from_slice(&std::fs::read(&settings).unwrap()).unwrap();
+        let stop = written["hooks"]["Stop"][0]["hooks"][0]["command"].as_str();
+        assert!(stop.unwrap().contains("relay.exe"));
+        let _ = std::fs::remove_dir_all(&dir);
     }
 
     #[test]

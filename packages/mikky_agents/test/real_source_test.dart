@@ -381,6 +381,13 @@ void main() {
     expect(source.agentOf(agent.id)?.detail, 'cargo test');
   });
 
+  test('a request from a session in WSL makes a WSL agent', () {
+    source.hookAsks([permissionAsk(3, 's-wsl', 'ls', cwd: '/home/a/p', host: 'wsl')]);
+    final e = source.entries.single;
+    expect(e.host, AgentHost.wsl);
+    expect(source.agents.single.status, AgentStatus.approval);
+  });
+
   test('a request without its event is not shown', () {
     expect(HookAsk.fromJson({'id': 1, 'sessionId': 's', 'kind': 'question'}), isNull);
   });

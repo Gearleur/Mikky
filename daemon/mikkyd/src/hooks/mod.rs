@@ -258,6 +258,7 @@ impl Hooks {
             "toolCallId": payload["tool_use_id"],
             "agent": payload["mikky_agent"].as_str().unwrap_or("claude"),
             "terminal": payload["term_program"],
+            "host": if from_wsl(payload) { "wsl" } else { "windows" },
             "at": chrono::Utc::now().to_rfc3339(),
         });
         if asks {
@@ -425,3 +426,12 @@ fn summary(tool: &str, text: Option<&str>) -> String {
 
 #[cfg(test)]
 mod tests;
+
+/// A hook of a session in WSL: Claude or Codex there calls the Windows
+/// relay through WSL's interop, with Linux paths.
+pub fn from_wsl(payload: &Value) -> bool {
+    cfg!(windows)
+        && ["cwd", "transcript_path"]
+            .iter()
+            .any(|k| payload[*k].as_str().is_some_and(|p| p.starts_with('/')))
+}

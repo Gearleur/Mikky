@@ -4,6 +4,7 @@ import 'package:mikky_engine/mikky_engine.dart';
 import '../ui/content/cards.dart';
 import '../ui/content/side.dart';
 import '../ui/controls/buttons.dart';
+import '../ui/controls/environment_selector.dart';
 import '../ui/foundation/tokens.dart';
 import 'side_app.dart';
 
@@ -32,6 +33,9 @@ class _HooksPageState extends State<HooksPage> {
   String? _message;
   bool _busy = false;
 
+  /// Windows, or WSL (its hooks call the Windows relay).
+  AgentHost _host = AgentHost.windows;
+
   @override
   void initState() {
     super.initState();
@@ -49,13 +53,13 @@ class _HooksPageState extends State<HooksPage> {
   }
 
   Future<void> _load() => _run(() async {
-    _status = await widget.host.service.hooksStatus(widget.tool);
+    _status = await widget.host.service.hooksStatus(widget.tool, host: _host);
   });
 
   Future<void> _show(bool install) => _run(() async {
     _message = null;
     _installing = install;
-    _preview = await widget.host.service.hooksPreview(widget.tool, install: install);
+    _preview = await widget.host.service.hooksPreview(widget.tool, install: install, host: _host);
   });
 
   Future<void> _write() => _run(() async {
@@ -64,6 +68,7 @@ class _HooksPageState extends State<HooksPage> {
       widget.tool,
       install: _installing!,
       fingerprint: p['fingerprint']! as String,
+      host: _host,
     );
     _message = _installing!
         ? 'Installé. Les prochaines demandes de $_name passent aussi par Mikky.'
@@ -73,10 +78,27 @@ class _HooksPageState extends State<HooksPage> {
     }
     if (backup != null) _message = '$_message\nCopie de l’ancien fichier : $backup';
     _preview = null;
-    _status = await widget.host.service.hooksStatus(widget.tool);
+    _status = await widget.host.service.hooksStatus(widget.tool, host: _host);
   });
 
-  String get _name => widget.tool == AgentProvider.codex ? 'Codex' : 'Claude';
+  String get _name =>
+      '${widget.tool == AgentProvider.codex ? 'Codex' : 'Claude'}${_host == AgentHost.wsl ? ' dans WSL' : ''}';
+
+  void _pick(MikkyEnvironment environment) {
+    final host = switch (environment) {
+      MikkyEnvironment.local => AgentHost.windows,
+      MikkyEnvironment.wsl => AgentHost.wsl,
+      _ => null,
+    };
+    if (host == null || host == _host) return;
+    setState(() {
+      _host = host;
+      _status = null;
+      _preview = null;
+      _message = null;
+    });
+    _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -99,6 +121,16 @@ class _HooksPageState extends State<HooksPage> {
                   'Avec les hooks, une session $_name lancée ailleurs (terminal, VS Code, app Claude) montre aussi ses permissions et ses questions ici. '
                   'Tu réponds dans Mikky ou là-bas : la première réponse gagne, rien n’attend.',
                   style: text,
+                ),
+                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: EnvironmentSelector(
+                    selected: _host == AgentHost.wsl ? MikkyEnvironment.wsl : MikkyEnvironment.local,
+                    onChanged: _pick,
+                    menuWithin: context,
+                    small: true,
+                  ),
                 ),
                 const SizedBox(height: 10),
                 if (status != null)

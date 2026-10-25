@@ -303,3 +303,11 @@ async fn answered_from_mikky_is_not_told_as_elsewhere() {
     assert_eq!(hooks.list(), json!([]));
     assert_eq!(hooks.settled()[0]["how"], "elsewhere");
 }
+
+#[test]
+fn a_session_in_wsl_is_told_by_its_linux_paths() {
+    let wsl = json!({"cwd": "/home/a/p", "transcript_path": "/home/a/.claude/projects/x.jsonl"});
+    let windows = json!({"cwd": r"C:\p", "transcript_path": r"C:\Users\a\x.jsonl"});
+    assert_eq!(from_wsl(&wsl), cfg!(windows));
+    assert!(!from_wsl(&windows));
+}
