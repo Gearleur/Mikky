@@ -165,7 +165,8 @@ class DaemonClient {
   }
 
   void _onMessage(Object? data) {
-    if (data is! String) return;
+    // A socket can still deliver buffered frames after close completed.
+    if (isClosed || data is! String) return;
     final Map<String, dynamic> msg;
     try {
       msg = (jsonDecode(data) as Map).cast<String, dynamic>();

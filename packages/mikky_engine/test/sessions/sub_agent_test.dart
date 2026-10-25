@@ -2,6 +2,25 @@ import 'package:mikky_engine/mikky_engine.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('late counters cannot reactivate a child limit after the parent resumes', () {
+    final at = DateTime(2026, 10, 16, 10);
+    final child = SessionLog()
+      ..applyAll([TurnStarted(at: at), TurnEnded(StopReason.rateLimited, message: 'Try again in 2 hours', at: at)]);
+    final parent = SessionLog()
+      ..applyAll([TurnStarted(at: at), UserMessage('Vérifie', at: at)])
+      ..subAgents = [SubAgentLog(id: 'child', name: 'Lecteur', log: child)];
+    expect(parent.statusAt(at), AgentStatus.rateLimited);
+    parent.applyAll([
+      TurnStarted(at: at.add(const Duration(hours: 2))),
+      UserMessage('Reprends', at: at.add(const Duration(hours: 2))),
+    ]);
+    child.apply(TokensUsed(input: 12, at: at.add(const Duration(hours: 3))));
+    expect(child.limitSeenAt, at);
+    expect(child.limitResetsAt, at.add(const Duration(hours: 2)));
+    expect(parent.limitSource, isNull);
+    expect(parent.statusAt(at.add(const Duration(hours: 3))).isBusy, isTrue);
+  });
+
   test('a child limit blocks the parent until the user resumes the task', () {
     final at = DateTime(2026, 10, 8, 13, 24);
     final parent = SessionLog()..applyAll([TurnStarted(at: at), UserMessage('Vérifie', at: at)]);

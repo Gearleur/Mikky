@@ -13,22 +13,36 @@ extension _WatchedAgents on RealAgentSource {
   }
 
   void _onWatched(WatchedSession s, {required bool live}) {
+    final previous = _watchedActivity[s.path];
+    final activityChanged = previous == null || !identical(previous.$1, s.log) || previous.$2 != s.log.activityVersion;
+    _watchedActivity[s.path] = (s.log, s.log.activityVersion);
+    final since = _followedAt;
+    final activityAt = s.log.lastActivityAt ?? s.log.lastEventAt ?? s.modified;
+    live =
+        live &&
+        !s.replaying &&
+        activityChanged &&
+        s.log.activityVersion > 0 &&
+        (since == null || !activityAt.isBefore(since));
     if (s.parent != null) {
       _subAgents.sessions[s.path] = s;
       _entries.removeWhere((e) => e.watched?.path == s.path);
-      _changed();
-      if (_followedAt != null && !s.modified.isBefore(_followedAt!)) {
-        for (final e in _entries.where((e) => e.log.descendants.any((a) => identical(a.log, s.log)))) {
+      for (final e in _entries.where(
+        (e) =>
+            e.log.descendants.any((a) => identical(a.log, s.log)) ||
+            (e.provider == s.provider && e.host == s.host && e.sessionId == s.parent?.session),
+      )) {
+        e.announceChanges = live;
+        if (live) {
           e
             ..changedLive = true
             ..dismissed = false;
         }
       }
+      _changed();
       return;
     }
     _subAgents.sessions.remove(s.path);
-    final since = _followedAt;
-    if (since != null && s.modified.isBefore(since)) live = false;
     final sessionId = s.sessionId;
     if (sessionId != null && (store?.mark('${s.provider.name}:$sessionId').forgotten ?? false)) return;
     AgentEntry? e;
@@ -60,6 +74,7 @@ extension _WatchedAgents on RealAgentSource {
     }
     e
       ..watched = s
+      ..announceChanges = live
       ..failure = null;
     if (live) {
       e.changedLive = true;

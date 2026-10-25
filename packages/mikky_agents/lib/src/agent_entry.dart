@@ -58,6 +58,7 @@ class AgentEntry {
   /// The status changed while Mikky watched (not just read at start):
   /// only then does a finished agent show on the island for a moment.
   bool changedLive = false;
+  bool announceChanges = true;
 
   /// Seen by the user (Ignorer): off the island until something new.
   bool dismissed = false;
@@ -97,8 +98,8 @@ class AgentEntry {
   bool get live => run?.alive ?? false;
 
   DateTime get lastActivity => log.descendants.fold(
-    log.lastEventAt ?? watched?.modified ?? createdAt,
-    (latest, child) => child.log.lastEventAt?.isAfter(latest) == true ? child.log.lastEventAt! : latest,
+    log.lastActivityAt ?? log.lastEventAt ?? watched?.modified ?? createdAt,
+    (latest, child) => child.log.lastActivityAt?.isAfter(latest) == true ? child.log.lastActivityAt! : latest,
   );
 
   String get name {

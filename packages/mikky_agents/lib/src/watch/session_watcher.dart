@@ -15,6 +15,9 @@ class WatchedSession {
   /// Last write seen on the file.
   DateTime modified = DateTime.fromMillisecondsSinceEpoch(0);
 
+  /// The last update restored history, rather than announcing fresh work.
+  bool replaying = false;
+
   /// Id of the first user message (Claude). A resumed session (« fork »)
   /// copies the history with the same ids: sessions sharing it are one
   /// conversation.

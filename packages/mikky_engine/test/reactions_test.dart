@@ -39,6 +39,26 @@ void main() {
   });
 
   group('MikkyDirector', () {
+    test('history arriving after an empty screen and a silent restore never make sounds', () {
+      final d = MikkyDirector(sleepAfter: 10)..agents([], null, 0);
+      d.advance(10);
+      final restored = agent('old', AgentStatus.thinking).copyWith(announceChanges: false);
+      expect(d.agents([restored], restored, 11), isEmpty);
+      expect(d.state, MikkyState.working);
+      expect(d.agents([restored.copyWith(status: AgentStatus.finished, announceChanges: false)], null, 12), isEmpty);
+      final fresh = restored.copyWith(status: AgentStatus.working, announceChanges: true);
+      expect(d.agents([fresh], fresh, 13).single.reaction.cue, MikkyCue.launch);
+    });
+
+    test('a conversation leaving the island and returning does not repeat its last sound', () {
+      final d = MikkyDirector()..agents([agent('a', AgentStatus.working)], null, 0);
+      expect(d.agents([agent('a', AgentStatus.finished)], null, 1).single.reaction.cue, MikkyCue.finished);
+      d.agents([], null, 2);
+      expect(d.agents([agent('a', AgentStatus.finished)], null, 3), isEmpty);
+      d.agents([], null, 4);
+      expect(d.nextDeadline, 601);
+    });
+
     test('agents already there are not news', () {
       final d = MikkyDirector();
       expect(d.agents([agent('a', AgentStatus.approval)], null, 0), isEmpty);
@@ -77,7 +97,7 @@ void main() {
       expect(d.advance(599).isEmpty, isTrue);
       final r = d.advance(600);
       expect(r.emote, MikkyEmote.yawn);
-      expect(r.cue, MikkyCue.sleep);
+      expect(r.cue, isNull, reason: 'automatic idle sleep must not produce background audio');
       expect(d.state, MikkyState.sleeping);
       expect(d.nextDeadline, isNull);
       final out = d.agents([agent('a', AgentStatus.working)], agent('a', AgentStatus.working), 700);

@@ -150,6 +150,7 @@ class MikkyDirector {
   double _lastActivity = 0;
   bool _sleeping = false;
   bool _started = false;
+  bool _active = false;
 
   MikkyState _shown = MikkyState.idle;
 
@@ -165,19 +166,22 @@ class MikkyDirector {
   List<AgentReaction> agents(List<Agent> agents, Agent? focus, double now) {
     if (!_started) _lastActivity = now;
     final out = <AgentReaction>[];
-    final seen = <String>{};
     for (final a in agents) {
-      seen.add(a.id);
-      final before = _last[a.id];
+      final before = _last.remove(a.id);
       _last[a.id] = a.status;
-      if (!_started) continue;
+      if (!_started || !a.announceChanges) continue;
       final r = reactionTo(before, a.status);
       if (!r.isEmpty) out.add((agentId: a.id, reaction: r));
     }
-    _last.removeWhere((id, _) => !seen.contains(id));
+    // Leaving the visible island is not deletion. Recalling a finished
+    // conversation must not replay its completion sound.
+    while (_last.length > 1024) {
+      _last.remove(_last.keys.first);
+    }
     _started = true;
     final lively = agents.any((a) => a.status.isBusy || a.status.needsYou);
-    if (lively || out.isNotEmpty) _touch(now, out);
+    _active = lively;
+    if (lively || out.isNotEmpty) _touch(now, out, announce: out.isNotEmpty);
     _shown = mikkyStateOf(focus?.status);
     return out;
   }
@@ -191,25 +195,27 @@ class MikkyDirector {
     return woke ? const MikkyReaction(gesture: MikkyGesture.blink, cue: MikkyCue.wake) : MikkyReaction.none;
   }
 
-  void _touch(double now, List<AgentReaction> out) {
+  void _touch(double now, List<AgentReaction> out, {required bool announce}) {
     _lastActivity = now;
     if (_sleeping) {
       _sleeping = false;
-      out.insert(0, (agentId: '', reaction: const MikkyReaction(gesture: MikkyGesture.blink, cue: MikkyCue.wake)));
+      if (announce) {
+        out.insert(0, (agentId: '', reaction: const MikkyReaction(gesture: MikkyGesture.blink, cue: MikkyCue.wake)));
+      }
     }
   }
 
   /// When Mikky falls asleep, unless something happens before.
   double? get nextDeadline => _sleeping || _lively ? null : _lastActivity + sleepAfter;
 
-  bool get _lively => _last.values.any((s) => s.isBusy || s.needsYou);
+  bool get _lively => _active;
 
   /// Applies what is due at [now]. Returns Mikky falling asleep (a yawn
   /// first), if he does.
   MikkyReaction advance(double now) {
     if (!_sleeping && !_lively && now - _lastActivity >= sleepAfter) {
       _sleeping = true;
-      return const MikkyReaction(emote: MikkyEmote.yawn, cue: MikkyCue.sleep);
+      return const MikkyReaction(emote: MikkyEmote.yawn);
     }
     return MikkyReaction.none;
   }

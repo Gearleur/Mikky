@@ -17,6 +17,7 @@ class DaemonSessionWatcher implements SessionWatcher {
   final _updates = StreamController<WatchedSession>.broadcast();
   final _queues = <String, Future<void>>{};
   final _dirty = <String>{};
+  final _replay = <String, bool>{};
   StreamSubscription<DaemonNotification>? _sub;
   bool _stopped = false;
 
@@ -42,7 +43,7 @@ class DaemonSessionWatcher implements SessionWatcher {
     try {
       final list = await client.request('sessions.list') as List;
       for (final s in list) {
-        if (!_stopped) await changed((s as Map)['path'] as String);
+        if (!_stopped) await changed((s as Map)['path'] as String, replay: true);
       }
     } on DaemonError {
       /* Reconnection obtains a fresh inventory. */
@@ -50,13 +51,14 @@ class DaemonSessionWatcher implements SessionWatcher {
   }
 
   @override
-  Future<void> changed(String path) {
+  Future<void> changed(String path, {bool replay = false}) {
     _dirty.add(path);
+    _replay[path] = (_replay[path] ?? true) && replay;
     if (_queues[path] case final active?) return active;
     final future =
         Future<void>(() async {
           while (_dirty.remove(path) && !_stopped) {
-            await _read(path);
+            await _read(path, replay: _replay.remove(path) ?? false);
           }
         }).whenComplete(() {
           _queues.remove(path);
@@ -65,9 +67,10 @@ class DaemonSessionWatcher implements SessionWatcher {
     return future;
   }
 
-  Future<void> _read(String path) async {
+  Future<void> _read(String path, {required bool replay}) async {
     try {
       var more = true;
+      WatchedSession? updated;
       while (more && !_stopped) {
         final page = await client.request('sessions.read', {
           'path': path,
@@ -78,10 +81,12 @@ class DaemonSessionWatcher implements SessionWatcher {
         final generation = meta['generation'] as int;
         final provider = AgentProvider.values.byName(meta['provider'] as String);
         if (!_sessions.containsKey(path) || _generations[path] != generation) {
+          if (_sessions.containsKey(path)) replay = true;
           _sessions[path] = WatchedSession(path, provider, meta['host'] == 'wsl' ? AgentHost.wsl : AgentHost.windows);
           _generations[path] = generation;
         }
         final session = _sessions[path]!;
+        session.replaying = replay;
         for (final value in page['lines'] as List) {
           final line = (value as Map).cast<String, dynamic>();
           if (sessionEventFromWire(line) case final event?) {
@@ -93,8 +98,10 @@ class DaemonSessionWatcher implements SessionWatcher {
         session.modified = DateTime.fromMillisecondsSinceEpoch(meta['modified'] as int);
         _offsets[path] = page['next'] as int;
         more = page['more'] == true;
-        if (!_stopped) _updates.add(session);
+        updated = session;
       }
+      // One complete fold, never transient states from the middle of history.
+      if (!_stopped && updated != null) _updates.add(updated);
     } on DaemonError {
       /* A disconnected screen does not stop watching in Rust. */
     }

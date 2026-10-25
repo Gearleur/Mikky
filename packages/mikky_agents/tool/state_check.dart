@@ -23,6 +23,7 @@ Future<void> main(List<String> args) async {
   final client = await DaemonClient.connect(endpoint);
   final watcher = DaemonSessionWatcher(client);
   final store = AgentStore.standard();
+  StreamSubscription<void>? audioProbe;
   try {
     await store.attach(client);
     final watch = Stopwatch()..start();
@@ -32,6 +33,18 @@ Future<void> main(List<String> args) async {
       store: store,
       spawn: (_, _, _) => throw StateError('Read-only diagnostic'),
     );
+    final audible = <Map<String, Object>>[];
+    if (args.contains('--audit-sounds')) {
+      final director = MikkyDirector()..agents([], null, clock());
+      audioProbe = source.changes.listen((_) {
+        final agents = source.agents;
+        for (final event in director.agents(agents, null, clock())) {
+          if (event.reaction.cue case final cue?) {
+            audible.add({'cue': cue.name, 'atSeconds': clock()});
+          }
+        }
+      });
+    }
     source.follow(watcher);
     await watcher.start();
     await Future<void>.delayed(const Duration(seconds: 2));
@@ -42,6 +55,7 @@ Future<void> main(List<String> args) async {
     print(
       jsonEncode({
         'sessions': source.homeEntries.length,
+        if (args.contains('--audit-sounds')) 'audibleDuringLoad': audible,
         'subAgents': watcher.sessions.values.where((s) => s.parent != null).length,
         'childrenByProvider': {
           for (final p in AgentProvider.values)
@@ -85,6 +99,7 @@ Future<void> main(List<String> args) async {
       }),
     );
   } finally {
+    await audioProbe?.cancel();
     await watcher.stop();
     await client.close();
     if (probe != null) {

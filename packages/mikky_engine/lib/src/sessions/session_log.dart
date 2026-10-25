@@ -167,6 +167,10 @@ class SessionLog {
   DateTime? startedAt;
   DateTime? lastEventAt;
 
+  /// Actual conversation work, excluding titles, usage and account counters.
+  DateTime? lastActivityAt;
+  int activityVersion = 0;
+
   /// Grows by one at each change: a cheap way to know when to redraw.
   int version = 0;
 
@@ -187,6 +191,7 @@ class SessionLog {
   }
 
   DateTime? _lastUserAt;
+  DateTime? _limitedAt;
 
   /// The actual limit, including a child stopped on this task. A new user
   /// request clears old child limits; automated notifications do not.
@@ -202,15 +207,15 @@ class SessionLog {
             .where(
               (log) =>
                   log.turns.lastOrNull?.reason == StopReason.rateLimited &&
-                  (_lastUserAt == null || log.lastEventAt == null || !log.lastEventAt!.isBefore(_lastUserAt!)),
+                  (_lastUserAt == null || log.limitSeenAt == null || !log.limitSeenAt!.isBefore(_lastUserAt!)),
             )
             .toList()
-          ..sort((a, b) => (b.lastEventAt ?? DateTime(0)).compareTo(a.lastEventAt ?? DateTime(0)));
+          ..sort((a, b) => (b.limitSeenAt ?? DateTime(0)).compareTo(a.limitSeenAt ?? DateTime(0)));
     return blocked.firstOrNull;
   }
 
   String? get limitMessage => limitSource?.turns.last.message;
-  DateTime? get limitSeenAt => limitSource?.lastEventAt;
+  DateTime? get limitSeenAt => limitSource?._limitedAt;
 
   List<ThreadItem> get items => List.unmodifiable(_items);
   List<TurnSpan> get turns => List.unmodifiable(_turns);
@@ -240,6 +245,23 @@ class SessionLog {
   void apply(SessionEvent e) {
     version++;
     final at = e.at;
+    final activity = switch (e) {
+      TurnStarted() ||
+      TurnEnded() ||
+      AgentMessage() ||
+      ToolCallEvent() ||
+      PlanChanged() ||
+      PermissionAsked() ||
+      PermissionAnswered() ||
+      QuestionAsked() ||
+      QuestionAnswered() => true,
+      UserMessage(:final queued) => !queued,
+      _ => false,
+    };
+    if (activity) {
+      activityVersion++;
+      if (at != null && (lastActivityAt == null || at.isAfter(lastActivityAt!))) lastActivityAt = at;
+    }
     if (at != null) {
       startedAt ??= at;
       lastEventAt = at;
@@ -264,6 +286,7 @@ class SessionLog {
         _closeTurn(StopReason.cancelled, null);
         _turns.add(TurnSpan(_items.length));
       case TurnEnded():
+        if (working && e.reason == StopReason.rateLimited) _limitedAt = e.at ?? lastEventAt;
         _closeTurn(e.reason, e.message, resetsAt: e.resetsAt);
         _pending.clear();
         _question = null;
@@ -352,8 +375,8 @@ class SessionLog {
     if (_turns.isEmpty) return AgentStatus.idle;
     final turn = _turns.last;
     if (turn.running) {
-      final last = lastEventAt;
-      if (staleAfter != null && last != null && now.difference(last) > staleAfter) return AgentStatus.idle;
+      final last = lastActivityAt ?? lastEventAt;
+      if (staleAfter != null && last != null && now.difference(last) >= staleAfter) return AgentStatus.idle;
       return _busy(turn);
     }
     return switch (turn.reason!) {
@@ -399,7 +422,6 @@ class SessionLog {
     if (limitSource != null) return limitLine(limitResetsAt, seen: limitSeenAt);
     if (_turns.isEmpty) return '';
     final turn = _turns.last;
-    if (!turn.running && turn.reason == StopReason.rateLimited) return limitLine(limitResetsAt, seen: lastEventAt);
     if (!turn.running && turn.message != null) return _line(turn.message!);
     if (turn.reason == StopReason.cancelled) return '';
     for (var i = _items.length - 1; i >= turn.start; i--) {
@@ -440,7 +462,7 @@ class SessionLog {
     if (source == null) return null;
     final turn = source.turns.last;
     return turn.resetsAt ??
-        (turn.message == null ? null : limitResetOf(turn.message!, source.lastEventAt ?? DateTime.now()));
+        (turn.message == null ? null : limitResetOf(turn.message!, source.limitSeenAt ?? DateTime.now()));
   }
 
   static String _line(String s) {

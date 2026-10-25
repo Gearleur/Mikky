@@ -28,7 +28,8 @@ extension _SessionRequests on RealAgentSource {
 
   /// The requests waiting on `mikkyd` from Claude's hooks, all of them: each
   /// goes to its session (a new one if Mikky did not see it yet).
-  void _receiveRequests(List<HookAsk> asks) {
+  void _receiveRequests(List<HookAsk> asks, {required bool replay}) {
+    final previous = Map.of(_hookAsks);
     _hookAsks
       ..clear()
       ..addAll({for (final a in asks) a.sessionId: a});
@@ -41,9 +42,12 @@ extension _SessionRequests on RealAgentSource {
           ..statusSince = clock();
         _entries.add(e);
       }
-      e
-        ..changedLive = true
-        ..dismissed = false;
+      if (previous[a.sessionId]?.id != a.id) {
+        e
+          ..announceChanges = !replay
+          ..changedLive = true
+          ..dismissed = false;
+      }
     }
     _changed();
   }

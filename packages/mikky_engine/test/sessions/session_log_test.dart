@@ -10,6 +10,22 @@ SessionLog started() => SessionLog()
   ..apply(UserMessage('Corrige les tests', at: _at(0)));
 
 void main() {
+  test('metadata and account counters never keep an abandoned turn alive', () {
+    final log = started();
+    final version = log.activityVersion;
+    log.applyAll([
+      TitleChanged('Un autre titre', at: _at(1200)),
+      ContextUsed(10, 100, at: _at(1201)),
+      TokensUsed(input: 5, at: _at(1202)),
+      LimitsSeen(at: _at(1203)),
+    ]);
+    expect(log.lastEventAt, _at(1203));
+    expect(log.lastActivityAt, _at(0));
+    expect(log.activityVersion, version);
+    expect(log.statusAt(_at(1204), staleAfter: const Duration(minutes: 15)), AgentStatus.idle);
+    log.apply(TurnStarted(at: _at(1205)));
+    expect(log.statusAt(_at(1206), staleAfter: const Duration(minutes: 15)), AgentStatus.thinking);
+  });
   test('Mikky hook messages deduplicate by id; ordinary user chunks keep their content', () {
     final log = started();
     log.apply(const UserMessage('suite', queued: true, messageId: 'mikky-one'));

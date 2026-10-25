@@ -67,6 +67,7 @@ class RealAgentSource implements AgentSource {
   final List<AgentEntry> _entries = [];
   final _subAgents = SubAgentSessions();
   DateTime? _followedAt;
+  final Map<String, (SessionLog, int)> _watchedActivity = {};
   void follow(SessionWatcher watcher) => _follow(watcher);
   final Map<String, StoredAgent> _stored = {};
 
@@ -181,7 +182,7 @@ class RealAgentSource implements AgentSource {
   bool canAnswerRequests(String id) => _hookAskOf(id) != null || (entry(id)?.live ?? false);
   bool canLeaveInTerminal(String id) => _hookAskOf(id) != null;
   bool canAnswerQuestion(String id) => _canAnswerQuestion(id);
-  void hookAsks(List<HookAsk> asks) => _receiveRequests(asks);
+  void hookAsks(List<HookAsk> asks, {bool replay = false}) => _receiveRequests(asks, replay: replay);
   void requestsSettled(List<Object?> settled) => _receiveSettled(settled);
 
   Agent _agentOf(AgentEntry e) => Agent(
@@ -197,6 +198,7 @@ class RealAgentSource implements AgentSource {
     cwd: e.cwd,
     sessionId: e.sessionId,
     permissions: e.permissions,
+    announceChanges: e.announceChanges,
   );
 
   /// Launches an agent and sends its first message. Returns its id at
@@ -250,6 +252,7 @@ class RealAgentSource implements AgentSource {
     String? model,
   }) async {
     try {
+      e.announceChanges = true;
       final run = await spawn(e.provider, e.host, cwd);
       e.run = run;
       _subs.add(
@@ -302,10 +305,14 @@ class RealAgentSource implements AgentSource {
     final entry = e
       ..origin = AgentOrigin.mikky
       ..run = run
+      ..announceChanges = false
       ..startedAt = clock()
       ..statusSince = clock();
     _subs.add(
       run.changes.listen((_) {
+        entry
+          ..announceChanges = true
+          ..changedLive = true;
         _remember(entry);
         _changed();
       }),
@@ -426,7 +433,13 @@ class RealAgentSource implements AgentSource {
       }
       // Paused: once its stopped turn is over, until it is taken off hold.
       if (e.mark.pausedAt != null && !e.log.working && !s.needsYou) s = AgentStatus.paused;
-      if (s != e.status) _setStatus(e, s);
+      if (s != e.status) {
+        if (watchedOnly && e.status.isBusy && !s.isBusy && now.difference(e.lastActivity) >= staleAfter) {
+          // Inactivity is not evidence of a newly completed task.
+          e.announceChanges = false;
+        }
+        _setStatus(e, s);
+      }
     }
   }
 
@@ -571,10 +584,14 @@ class RealAgentSource implements AgentSource {
         final t = now + e.lastActivity.add(homeErrorWaitsFor).difference(wall).inMilliseconds / 1000;
         if (t > now) consider(t);
       }
-      final last = e.log.lastEventAt;
-      if (e.run == null && e.log.working && last != null) {
-        final t = now + last.add(staleAfter).difference(wall).inMilliseconds / 1000;
-        if (t > now) consider(t);
+      if (e.run == null) {
+        for (final log in [e.log, ...e.log.descendants.map((child) => child.log)]) {
+          final last = log.lastActivityAt ?? log.lastEventAt;
+          if (log.working && last != null) {
+            final t = now + last.add(staleAfter).difference(wall).inMilliseconds / 1000;
+            if (t > now) consider(t);
+          }
+        }
       }
     }
     return next;

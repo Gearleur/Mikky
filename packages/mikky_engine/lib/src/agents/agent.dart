@@ -69,6 +69,7 @@ class Agent {
     this.cwd,
     this.sessionId,
     this.permissions,
+    this.announceChanges = true,
   });
 
   final String id;
@@ -94,6 +95,10 @@ class Agent {
   final String? sessionId;
   final PermissionMode? permissions;
 
+  /// False for restored history and inventory: display it without treating
+  /// its state as a new event to announce.
+  final bool announceChanges;
+
   /// Progress at [now]; never reaches 1 before the agent is done.
   double? progressAt(double now) {
     final p = progress;
@@ -112,6 +117,7 @@ class Agent {
     bool clearProgress = false,
     String? name,
     String? sessionId,
+    bool? announceChanges,
   }) => Agent(
     id: id,
     name: name ?? this.name,
@@ -127,6 +133,7 @@ class Agent {
     cwd: cwd,
     sessionId: sessionId ?? this.sessionId,
     permissions: permissions,
+    announceChanges: announceChanges ?? this.announceChanges,
   );
 
   @override

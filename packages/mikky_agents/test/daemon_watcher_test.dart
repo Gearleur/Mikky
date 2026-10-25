@@ -136,6 +136,24 @@ void main() {
     });
   }
 
+  test('database keeps absent transcripts; explicit deletion purges only a known conversation', () async {
+    final file = File('${home.path}/.claude/projects/p/durable.jsonl');
+    final imported = watcher.updates.firstWhere((s) => s.sessionId == 'durable' && s.log.items.isNotEmpty);
+    await file.writeAsString('{"type":"user","sessionId":"durable","message":{"content":"Conserve ce fil"}}\n');
+    final session = await imported.timeout(const Duration(seconds: 5));
+    await file.delete();
+    final page = await client.request('sessions.read', {'path': session.path}) as Map;
+    expect((page['lines'] as List).any((e) => (e as Map)['text'] == 'Conserve ce fil'), isTrue);
+    expect((await client.request('sessions.list') as List).any((s) => (s as Map)['path'] == session.path), isTrue);
+    final unrelated = File('${home.path}/untouched.txt');
+    await unrelated.writeAsString('garde');
+    await expectLater(client.request('sessions.delete', {'path': unrelated.path}), throwsA(isA<DaemonError>()));
+    expect(await unrelated.readAsString(), 'garde');
+    await client.request('sessions.delete', {'path': session.path});
+    expect((await client.request('sessions.list') as List).any((s) => (s as Map)['path'] == session.path), isFalse);
+    await expectLater(client.request('sessions.read', {'path': session.path}), throwsA(isA<DaemonError>()));
+  });
+
   test('partial UTF-8 lines wait; appended events are not duplicated; truncation resets', () async {
     final file = File('${home.path}/.claude/projects/p/partial.jsonl');
     const record = '{"type":"user","sessionId":"partial","message":{"content":"été"}}\n';
@@ -153,5 +171,43 @@ void main() {
     await file.writeAsString('{"type":"ai-title","aiTitle":"Fin"}\n');
     final replaced = await reset.timeout(const Duration(seconds: 5));
     expect(replaced.log.items, isEmpty);
+  });
+
+  test('a paginated inventory emits one final, explicitly silent snapshot per conversation', () async {
+    final file = File('${home.path}/.codex/sessions/rollout-pages.jsonl');
+    Map<String, Object> event(String type, Map<String, Object> payload) => {
+      'timestamp': DateTime.now().toUtc().toIso8601String(),
+      'type': 'event_msg',
+      'payload': {'type': type, ...payload},
+    };
+    final rows = [
+      {
+        'type': 'session_meta',
+        'payload': {'id': 'pages', 'cwd': home.path},
+      },
+      event('task_started', {}),
+      for (var i = 0; i < 1200; i++) event('agent_message', {'message': 'ligne $i'}),
+      event('task_complete', {}),
+    ];
+    final imported = watcher.updates.firstWhere((s) => s.sessionId == 'pages' && !s.log.working);
+    await file.writeAsString('${rows.map(jsonEncode).join('\n')}\n');
+    await imported.timeout(const Duration(seconds: 10));
+    await watcher.stop();
+    watcher = DaemonSessionWatcher(client);
+    final states = <AgentStatus>[];
+    final replays = <bool>[];
+    final observed = Completer<void>();
+    final subscription = watcher.updates.listen((s) {
+      if (s.sessionId == 'pages') {
+        states.add(s.log.statusAt(DateTime.now()));
+        replays.add(s.replaying);
+        if (!observed.isCompleted) observed.complete();
+      }
+    });
+    await watcher.start();
+    await observed.future.timeout(const Duration(seconds: 5));
+    expect(states, [AgentStatus.finished]);
+    expect(replays, [true]);
+    await subscription.cancel();
   });
 }
