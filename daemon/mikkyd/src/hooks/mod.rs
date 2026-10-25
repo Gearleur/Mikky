@@ -31,6 +31,7 @@ pub mod messages;
 pub(crate) mod questions;
 mod session_request;
 pub mod settings;
+pub mod usage;
 
 use std::collections::{HashMap, VecDeque};
 use std::future::Future;
@@ -89,6 +90,7 @@ struct Pending {
 
 pub struct Hooks {
     pub messages: messages::Messages,
+    pub usage: usage::Usage,
     pending: Mutex<Vec<Pending>>,
     /// Requests that ended without an answer from Mikky, newest last
     /// ([`Hooks::settled`]).
@@ -103,6 +105,7 @@ impl Default for Hooks {
     fn default() -> Self {
         Self {
             messages: messages::Messages::default(),
+            usage: usage::Usage::default(),
             pending: Mutex::new(Vec::new()),
             settled: Mutex::new(VecDeque::new()),
             origins: Mutex::new((HashMap::new(), VecDeque::new())),

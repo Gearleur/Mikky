@@ -216,6 +216,9 @@ class AgentsService extends ChangeNotifier {
           _hookAsks(n.params['requests']);
           if (n.params['settled'] case final List<Object?> settled) source.requestsSettled(settled);
         }
+        if (n.method == 'usage.changed' && daemon == active && !_closing) {
+          source.usageReported(n.params['usage']);
+        }
         if (n.method == 'hooks.messages.changed' && daemon == active && !_closing) {
           _externalMessages(n.params['messages']);
         }
@@ -233,6 +236,7 @@ class AgentsService extends ChangeNotifier {
       await _syncRuns(client);
       unawaited(client.request('hooks.list').then((list) => _hookAsks(list, replay: true)).catchError((Object _) {}));
       unawaited(client.request('hooks.messages.list').then(_externalMessages).catchError((Object _) {}));
+      unawaited(client.request('usage.get').then(source.usageReported).catchError((Object _) {}));
       backend = BackendState.online;
       for (final host in AgentHost.values) {
         unawaited(_remoteTarget(client, host));
@@ -332,13 +336,18 @@ class AgentsService extends ChangeNotifier {
 
   /// What installing ([install]) or uninstalling would change in the
   /// tool's file: `diff`, `changes`, `settingsPath`, `fingerprint`.
+  /// [statusLine]: Claude's status line instead (its usage for Mikky).
   Future<Map<String, Object?>> hooksPreview(
     AgentProvider tool, {
     required bool install,
     AgentHost host = AgentHost.windows,
-  }) async =>
-      ((await _client.request('hooks.preview', {'tool': tool.name, 'install': install, 'host': host.name})) as Map)
-          .cast();
+    bool statusLine = false,
+  }) async => ((await _client.request('hooks.preview', {
+    'tool': tool.name,
+    'install': install,
+    'host': host.name,
+    if (statusLine) 'part': 'statusLine',
+  })) as Map).cast();
 
   /// Writes it, only if the file is still the one of [fingerprint].
   /// Returns where the old one was saved.
@@ -347,12 +356,14 @@ class AgentsService extends ChangeNotifier {
     required bool install,
     required String fingerprint,
     AgentHost host = AgentHost.windows,
+    bool statusLine = false,
   }) async {
     final r = (await _client.request('hooks.write', {
       'tool': tool.name,
       'install': install,
       'fingerprint': fingerprint,
       'host': host.name,
+      if (statusLine) 'part': 'statusLine',
     })) as Map;
     return r['backup'] as String?;
   }

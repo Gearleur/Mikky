@@ -272,6 +272,62 @@ fn fingerprint(bytes: &[u8]) -> String {
     format!("{hash:016x}")
 }
 
+/// Claude's status line (`mikky-hook StatusLine`, `statusline.rs` of the
+/// relay): the subscription's usage for Mikky. Installed apart from the
+/// hooks, only when asked, and never over a status line of the user's.
+fn with_line(current: &Value, hook: &Path) -> Value {
+    let mut next = current.clone();
+    if current["statusLine"].is_null() || line_is_ours(current) {
+        let exe = hook.to_string_lossy().replace('\\', "/");
+        next["statusLine"] =
+            json!({"type": "command", "command": format!("\"{exe}\" StatusLine"), "padding": 0});
+    }
+    next
+}
+
+fn without_line(current: &Value) -> Value {
+    let mut next = current.clone();
+    if line_is_ours(current)
+        && let Some(map) = next.as_object_mut()
+    {
+        map.remove("statusLine");
+    }
+    next
+}
+
+fn line_is_ours(v: &Value) -> bool {
+    v["statusLine"]["command"]
+        .as_str()
+        .is_some_and(|c| c.contains(MARKER))
+}
+
+/// What installing (or taking out) Claude's status line would change.
+pub fn preview_line(install: bool, given: Option<PathBuf>) -> Result<Value, String> {
+    let hook = given.unwrap_or_else(hook_path);
+    preview_with(&Tool::Claude.file(), |c| line_next(c, &hook, install))
+}
+
+/// Writes it, if the file is still the one previewed.
+pub fn write_line(install: bool, seen: &str, given: Option<PathBuf>) -> Result<Value, String> {
+    let hook = match given {
+        Some(hook) => hook,
+        None if install => place_hook()?,
+        None => hook_path(),
+    };
+    if install && !hook.exists() {
+        return Err(format!("{} manque : réinstalle Mikky.", hook.display()));
+    }
+    write_with(&Tool::Claude.file(), seen, |c| line_next(c, &hook, install))
+}
+
+fn line_next(current: &Value, hook: &Path, install: bool) -> Value {
+    if install {
+        with_line(current, hook)
+    } else {
+        without_line(current)
+    }
+}
+
 /// Installed or not, where. [given]: the relay the hooks call, when it is
 /// not this engine's (WSL's hooks call the Windows one).
 pub fn status(tool: Tool, given: Option<PathBuf>) -> Value {
@@ -287,6 +343,14 @@ pub fn status(tool: Tool, given: Option<PathBuf>) -> Value {
         "settingsPath": path.to_string_lossy(),
         "hookPath": hook.to_string_lossy(),
         "hookReady": hook.exists() || shipped,
+        // Claude's status line: Mikky's, the user's own, or none.
+        "statusLine": if line_is_ours(&current) {
+            json!("mikky")
+        } else if current["statusLine"].is_null() {
+            Value::Null
+        } else {
+            json!("other")
+        },
     })
 }
 
@@ -301,12 +365,22 @@ pub fn preview(tool: Tool, install: bool, given: Option<PathBuf>) -> Result<Valu
 }
 
 fn preview_at(path: &Path, hook: &Path, tool: Tool, install: bool) -> Result<Value, String> {
-    let (current, bytes) = read(path)?;
-    let next = if install {
-        merged(&current, hook, tool)
+    preview_with(path, |current| hooks_next(current, hook, tool, install))
+}
+
+/// The hooks installed in [current], or taken out of it.
+fn hooks_next(current: &Value, hook: &Path, tool: Tool, install: bool) -> Value {
+    if install {
+        merged(current, hook, tool)
     } else {
-        without_ours(&current)
-    };
+        without_ours(current)
+    }
+}
+
+/// The diff from the file at [path] to [next] of it.
+fn preview_with(path: &Path, next: impl Fn(&Value) -> Value) -> Result<Value, String> {
+    let (current, bytes) = read(path)?;
+    let next = next(&current);
     Ok(json!({
         "diff": unified_diff(&pretty(&current), &pretty(&next)),
         "changes": current != next,
@@ -340,6 +414,14 @@ fn write_at(
     if install && !hook.exists() {
         return Err(format!("{} manque : réinstalle Mikky.", hook.display()));
     }
+    write_with(path, seen, |current| {
+        hooks_next(current, hook, tool, install)
+    })
+}
+
+/// Writes [next] of the file at [path], if it is still the one of the
+/// preview ([seen]): a dated copy first, then an atomic rename.
+fn write_with(path: &Path, seen: &str, next: impl Fn(&Value) -> Value) -> Result<Value, String> {
     let (current, bytes) = read(path)?;
     if fingerprint(&bytes) != seen {
         return Err(
@@ -358,12 +440,7 @@ fn write_at(
         std::fs::write(&to, &bytes).map_err(|e| format!("sauvegarde impossible : {e}"))?;
         backup = json!(to.to_string_lossy());
     }
-    let next = if install {
-        merged(&current, hook, tool)
-    } else {
-        without_ours(&current)
-    };
-    let mut text = pretty(&next);
+    let mut text = pretty(&next(&current));
     text.push('\n');
     let temp = path.with_extension(format!("json.mikky-{}", std::process::id()));
     std::fs::write(&temp, text).map_err(|e| format!("écriture impossible : {e}"))?;
@@ -449,6 +526,28 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         std::fs::create_dir_all(&dir).unwrap();
         dir
+    }
+
+    #[test]
+    fn the_status_line_is_added_apart_and_never_over_the_users() {
+        let hook = Path::new(r"C:\Mikky\mikky-hook.exe");
+        let mine = json!({"env": {"A": "1"}});
+        let with = line_next(&mine, hook, true);
+        assert_eq!(
+            with["statusLine"]["command"],
+            "\"C:/Mikky/mikky-hook.exe\" StatusLine"
+        );
+        assert!(line_is_ours(&with));
+        assert!(!installed(&with));
+        assert_eq!(line_next(&with, hook, false), mine);
+        // The hooks, installed or taken out, leave it alone.
+        assert_eq!(
+            without_ours(&merged(&with, hook, Tool::Claude))["statusLine"],
+            with["statusLine"]
+        );
+        let theirs = json!({"statusLine": {"type": "command", "command": "ccline"}});
+        assert_eq!(line_next(&theirs, hook, true), theirs);
+        assert_eq!(line_next(&theirs, hook, false), theirs);
     }
 
     #[test]

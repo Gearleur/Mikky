@@ -54,6 +54,15 @@ pub(super) async fn dispatch(
                 .await)
         }
         "hooks.list" => Ok(daemon.hooks.list()),
+        "usage.get" => Ok(daemon.hooks.usage.get()),
+        "usage.report" => {
+            let limits = params.get("rateLimits").cloned().unwrap_or(Value::Null);
+            daemon
+                .hooks
+                .usage
+                .report(params["sessionId"].as_str().unwrap_or_default(), &limits);
+            Ok(Value::Null)
+        }
         "hooks.answer" => {
             let id = params
                 .get("id")
@@ -70,6 +79,17 @@ pub(super) async fn dispatch(
             hook_tool(params)?,
             given_hook(params),
         )),
+        "hooks.preview" if params["part"] == "statusLine" => crate::hooks::settings::preview_line(
+            params["install"].as_bool().unwrap_or(true),
+            given_hook(params),
+        )
+        .map_err(|e| RpcError::new(-32000, e)),
+        "hooks.write" if params["part"] == "statusLine" => crate::hooks::settings::write_line(
+            params["install"].as_bool().unwrap_or(true),
+            str_param(params, "fingerprint")?,
+            given_hook(params),
+        )
+        .map_err(|e| RpcError::new(-32000, e)),
         "hooks.preview" => crate::hooks::settings::preview(
             hook_tool(params)?,
             params["install"].as_bool().unwrap_or(true),

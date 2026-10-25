@@ -17,6 +17,9 @@
 //! answer within the budget, anything unexpected — nothing printed, exit
 //! 0, and Claude asks in its terminal as if Mikky were not installed.
 //!
+//! `mikky-hook StatusLine` is Claude's status line instead
+//! (`statusline.rs`): the subscription's usage, for Mikky.
+//!
 //! Usage: `mikky-hook [--agent codex] <EventName>` (the name is also read
 //! from the JSON). `--ask` was the questions' `PreToolUse` hook until
 //! 2026-10-13: it held them before Claude could show them, so it now does
@@ -24,6 +27,7 @@
 
 mod delivery;
 mod origin;
+mod statusline;
 
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream};
@@ -57,6 +61,10 @@ struct Event {
 }
 
 fn main() {
+    if std::env::args().skip(1).any(|a| a == "StatusLine") {
+        statusline::run();
+        std::process::exit(0);
+    }
     let Some(event) = read_event() else {
         std::process::exit(0)
     };

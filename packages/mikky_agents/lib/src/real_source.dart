@@ -544,7 +544,19 @@ class RealAgentSource implements AgentSource {
 
   /// The latest subscription limits seen for [provider] (in any of its
   /// sessions), or null.
-  LimitsSeen? limitsOf(AgentProvider provider) => latestLimits(_entries, provider, now: _now());
+  LimitsSeen? limitsOf(AgentProvider provider) =>
+      latestLimits(_entries, provider, now: _now(), reported: _reportedLimits[provider]);
+
+  final Map<AgentProvider, LimitsSeen> _reportedLimits = {};
+
+  /// Claude's usage from its status line, as `mikkyd` keeps it
+  /// (`usage.get`, `usage.changed`).
+  void usageReported(Object? usage) {
+    final claude = usage is Map ? limitsFromUsage(usage['claude']) : null;
+    if (claude == null) return;
+    _reportedLimits[AgentProvider.claude] = claude;
+    _changed();
+  }
 
   /// Answers agent [id]'s question ([questionOf]): the answers by
   /// [Question.key], free text by [Question.otherKey]; null skips it (ACP)

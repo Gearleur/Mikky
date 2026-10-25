@@ -7,7 +7,7 @@
 //! its engine (`wsl.rs`). Here: the connection, `hello`, `autostart.*`
 //! and `daemon.shutdown`. Notifications to the client: `run.traffic` (every
 //! ACP message of a run, the past ones first on subscribe), `run.closed`,
-//! `hooks.changed`, `sessions.changed`, `state.changed`.
+//! `hooks.changed`, `usage.changed`, `sessions.changed`, `state.changed`.
 
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU64;
@@ -186,6 +186,7 @@ pub fn watch_notifications(
     let mut state = daemon.store.changes.subscribe();
     let mut hooks = daemon.hooks.changes.subscribe();
     let mut messages = daemon.hooks.messages.changes.subscribe();
+    let mut usage = daemon.hooks.usage.changes.subscribe();
     let daemon = daemon.clone();
     tokio::spawn(async move {
         loop {
@@ -193,6 +194,11 @@ pub fn watch_notifications(
                 result = messages.recv() => {
                     if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
                     if notices.send(notification("hooks.messages.changed", json!({"messages":daemon.hooks.messages.list()}))).is_err() { break; }
+                    None
+                }
+                result = usage.recv() => {
+                    if matches!(result, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
+                    if notices.send(notification("usage.changed", json!({"usage": daemon.hooks.usage.get()}))).is_err() { break; }
                     None
                 }
                 result = hooks.recv() => {
@@ -260,7 +266,7 @@ async fn dispatch(
     }
     match method.split('.').next().unwrap_or_default() {
         "run" | "runs" => return runs::dispatch(daemon, method, params, out).await,
-        "hook" | "hooks" => return hooks::dispatch(daemon, method, params, out).await,
+        "hook" | "hooks" | "usage" => return hooks::dispatch(daemon, method, params, out).await,
         "tools" => return tools::dispatch(daemon, method, params, out).await,
         "sessions" | "state" => return sessions::dispatch(daemon, method, params, out).await,
         _ => {}

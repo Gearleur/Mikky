@@ -36,6 +36,9 @@ class _HooksPageState extends State<HooksPage> {
   /// Windows, or WSL (its hooks call the Windows relay).
   AgentHost _host = AgentHost.windows;
 
+  /// The preview is of Claude's status line, not of the hooks.
+  bool _line = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,10 +59,11 @@ class _HooksPageState extends State<HooksPage> {
     _status = await widget.host.service.hooksStatus(widget.tool, host: _host);
   });
 
-  Future<void> _show(bool install) => _run(() async {
+  Future<void> _show(bool install, {bool line = false}) => _run(() async {
     _message = null;
     _installing = install;
-    _preview = await widget.host.service.hooksPreview(widget.tool, install: install, host: _host);
+    _line = line;
+    _preview = await widget.host.service.hooksPreview(widget.tool, install: install, host: _host, statusLine: line);
   });
 
   Future<void> _write() => _run(() async {
@@ -69,8 +73,13 @@ class _HooksPageState extends State<HooksPage> {
       install: _installing!,
       fingerprint: p['fingerprint']! as String,
       host: _host,
+      statusLine: _line,
     );
-    _message = _installing!
+    _message = _line
+        ? (_installing!
+              ? 'Ligne d’état ajoutée : Mikky connaît l’usage 5 h et semaine de Claude à chaque mise à jour.'
+              : 'Ligne d’état retirée.')
+        : _installing!
         ? 'Installé. Les prochaines demandes de $_name passent aussi par Mikky.'
         : 'Désinstallé. $_name demande de nouveau seulement dans son terminal.';
     if (_installing! && widget.tool == AgentProvider.codex) {
@@ -142,6 +151,29 @@ class _HooksPageState extends State<HooksPage> {
                         : 'Installés et à jour dans ${status['settingsPath']}.',
                     style: uiText(TextSize.caption, color: ui.text3),
                   ),
+                if (status != null && widget.tool == AgentProvider.claude && preview == null) ...[
+                  const SizedBox(height: 14),
+                  Text(switch (status['statusLine']) {
+                    'mikky' => 'Ligne d’état de Mikky installée : l’usage 5 h et semaine de Claude arrive ici.',
+                    'other' => 'Tu as déjà ta propre ligne d’état : Mikky ne la remplace pas, et ne voit donc pas l’usage 5 h et semaine.',
+                    _ =>
+                      'Ligne d’état : montre l’usage 5 h et semaine en bas de Claude Code et le transmet à Mikky. '
+                          'Elle prend la place des raccourcis affichés en bas de Claude.',
+                  }, style: text),
+                  if (status['statusLine'] != 'other') ...[
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: AnswerBar(
+                        answers: [
+                          status['statusLine'] == 'mikky'
+                              ? ('Retirer la ligne d’état…', _busy ? null : () => _show(false, line: true))
+                              : ('Ajouter la ligne d’état…', _busy ? null : () => _show(true, line: true)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
                 if (_message != null) ...[
                   const SizedBox(height: 10),
                   Text(_message!, style: uiText(TextSize.caption, color: ui.text)),

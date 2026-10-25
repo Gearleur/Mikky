@@ -422,3 +422,32 @@ fn a_session_in_wsl_goes_through_the_windows_relay() {
     drop(daemon.stdin.take());
     let _ = daemon.wait();
 }
+
+/// Claude's status line: the relay prints the line, and `mikkyd` keeps the
+/// subscription's usage for the screens.
+#[test]
+fn the_status_line_reports_claudes_usage() {
+    let (mut daemon, endpoint_text, endpoint) = start_daemon(mikkyd().expect("build mikkyd first"));
+    let mut screen = connect_screen(&endpoint);
+    let status = json!({
+        "session_id": "s-1",
+        "model": {"display_name": "Opus"},
+        "rate_limits": {
+            "five_hour": {"used_percentage": 23.5, "resets_at": 1738425600},
+            "seven_day": {"used_percentage": 41.2, "resets_at": 1738857600},
+        },
+    });
+    let out = relay_with(&endpoint_text, &status, &["StatusLine"])
+        .wait_with_output()
+        .unwrap();
+    assert_eq!(
+        String::from_utf8_lossy(&out.stdout).trim(),
+        "Opus · 5 h 24 % · 7 j 41 %"
+    );
+    let usage = call(&mut screen, "usage.get", json!({}));
+    assert_eq!(usage["claude"]["fiveHour"]["usedPercent"], 23.5);
+    assert_eq!(usage["claude"]["sevenDay"]["resetsAt"], 1738857600);
+    assert_eq!(usage["claude"]["sessionId"], "s-1");
+    drop(daemon.stdin.take());
+    let _ = daemon.wait();
+}
