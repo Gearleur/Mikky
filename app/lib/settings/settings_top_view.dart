@@ -115,7 +115,7 @@ class SettingsTopView extends StatelessWidget {
           value: s.autoRelaunch,
           onChanged: (v) => actions.change((s) => s.autoRelaunch = v),
         ),
-        _text('Mikky doit rester ouvert.', ui.text2, small: true),
+        _text('Limite vue Mikky ouvert.', ui.text2, small: true),
       ]),
       _CompactGroup('Général', [
         _CompactToggle('Au démarrage', value: autostart, onChanged: actions.setAutostart),

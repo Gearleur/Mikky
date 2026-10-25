@@ -9,7 +9,10 @@ import 'package:mikky_engine/mikky_engine.dart';
 /// subscription's limit goes on by itself when the limit lifts — Mikky
 /// sends it a message to take the task up again. It stays under the spell
 /// until a relaunch gets through: hit by the limit again, it waits for the
-/// next reset. In memory for now: a restart of Mikky lifts every spell.
+/// next reset. An agent `mikkyd` runs gets its relaunch from `mikkyd`
+/// itself (`run.schedule`), so it goes even with the app closed, and the
+/// app finds it again when it comes back; for the others the spell lives
+/// in memory, and a restart of Mikky lifts it.
 ///
 /// [everywhere]: « Relance automatique » for every agent (user request,
 /// 2026-09-30), kept in the settings; [watch] casts the spells then.
@@ -89,7 +92,13 @@ class Enchantments extends ChangeNotifier {
       if (e.status == AgentStatus.rateLimited) {
         final at = log.limitSeenAt ?? log.lastEventAt ?? now;
         final resets = log.limitResetsAt;
-        if (_sentAt.containsKey(e.id)) {
+        final kept = _remoteOf(e.id)?.scheduledAt;
+        if (!isOn(e.id) && kept != null && kept.isAfter(now)) {
+          // Scheduled in mikkyd before the app restarted.
+          _remote[e.id] = _remoteOf(e.id)!;
+          _arm(e.id, kept, send, now);
+          notifyListeners();
+        } else if (_sentAt.containsKey(e.id)) {
           limitedAgain(e.id, at, resets, send);
         } else if (_everywhere && !isOn(e.id) && _declined[e.id] != at) {
           // Only limits met while Mikky runs, or still in force: never
@@ -105,6 +114,15 @@ class Enchantments extends ChangeNotifier {
   final _timers = <String, Timer>{};
   final _at = <String, DateTime>{};
   final _sentAt = <String, DateTime>{};
+
+  /// The spells `mikkyd` sends (`run.schedule`): the timer here only tells.
+  final _remote = <String, DaemonAgentRun>{};
+
+  /// Agent [id]'s run in `mikkyd`, if it lives there.
+  DaemonAgentRun? _remoteOf(String id) => switch (_source?.entry(id)?.run) {
+    final DaemonAgentRun run when run.alive => run,
+    _ => null,
+  };
 
   /// When agent [id] is relaunched, or null if it is not under the spell
   /// (or its relaunch was just sent).
@@ -134,15 +152,29 @@ class Enchantments extends ChangeNotifier {
     final from = now ?? DateTime.now();
     var when = (resetsAt ?? from.add(_unknown)).add(_margin);
     if (!when.isAfter(from)) when = from.add(const Duration(seconds: 5));
+    final remote = _remoteOf(id);
+    if (remote != null) {
+      _remote[id] = remote;
+      // Not scheduled there: sent from here, as for the others.
+      unawaited(remote.schedulePrompt(when, resumeMessage).catchError((Object _) => _remote.remove(id)));
+    } else {
+      _remote.remove(id);
+    }
+    _arm(id, when, send, from);
+    notifyListeners();
+  }
+
+  /// Agent [id] relaunched at [when]: by `mikkyd` when it holds the
+  /// message, else with [send].
+  void _arm(String id, DateTime when, Future<void> Function(String text) send, DateTime from) {
     _at[id] = when;
     _timers[id] = Timer(when.difference(from), () {
       _timers.remove(id);
       _at.remove(id);
       _sentAt[id] = DateTime.now();
       notifyListeners();
-      send(resumeMessage);
+      if (_remote.remove(id) == null) send(resumeMessage);
     });
-    notifyListeners();
   }
 
   /// The relaunch sent at the time was stopped by the limit again (reset
@@ -163,6 +195,7 @@ class Enchantments extends ChangeNotifier {
     final at = _source?.entry(id)?.log.lastEventAt;
     if (at != null) _declined[id] = at;
     _timers.remove(id)?.cancel();
+    unawaited(_remote.remove(id)?.unschedule().catchError((Object _) {}));
     final waiting = _at.remove(id) != null;
     final sent = _sentAt.remove(id) != null;
     if (waiting || sent) notifyListeners();

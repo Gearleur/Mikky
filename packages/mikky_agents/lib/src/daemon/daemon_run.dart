@@ -158,6 +158,23 @@ class DaemonAgentRun implements AgentRun {
     }
   }
 
+  /// When `mikkyd` sends the message scheduled by [schedulePrompt], as
+  /// `runs.list` last said; null if none waits.
+  DateTime? scheduledAt;
+
+  /// Has `mikkyd` send [text] as a prompt at [at], even with no screen
+  /// open (the relaunch after a limit), in place of one scheduled before.
+  Future<void> schedulePrompt(DateTime at, String text) async {
+    await _client.request('run.schedule', {'run': runId, 'at': at.millisecondsSinceEpoch, 'text': text});
+    scheduledAt = at;
+  }
+
+  /// Drops the message [schedulePrompt] left waiting.
+  Future<void> unschedule() async {
+    scheduledAt = null;
+    await _client.request('run.unschedule', {'run': runId});
+  }
+
   @override
   Future<void> steer(String text) async {
     await _client.request('run.steer', {'run': runId, 'text': text});

@@ -68,6 +68,18 @@ extension _SessionRequests on RealAgentSource {
     _changed();
   }
 
+  /// An answer [sent] to a hook request that did not get through: the
+  /// agent says so for a while. A request still waiting comes back (the
+  /// service reads them again), and then speaks for itself.
+  void _followHookAnswer(AgentEntry e, Future<bool>? sent) {
+    void failed() {
+      _notes[e.id] = (unsentNote(app: e.log.app), _now().add(_noteFor));
+      _changed();
+    }
+
+    sent?.then((ok) => ok ? null : failed(), onError: (Object _) => failed());
+  }
+
   String? _noteOf(AgentEntry e) {
     final note = _notes[e.id];
     if (note == null) return null;
@@ -96,12 +108,15 @@ extension _SessionRequests on RealAgentSource {
 
 /// What an agent says when its request ended without Mikky: answered where
 /// it runs, or, after the wait, still asked there.
-String settledNote({required bool timedOut, AgentApp? app}) {
-  final where = switch (app) {
-    AgentApp.vscode => 'dans VS Code',
-    AgentApp.claude => 'dans Claude',
-    AgentApp.codex => 'dans Codex',
-    _ => 'dans le terminal',
-  };
-  return timedOut ? 'Toujours en attente $where' : 'Répondu $where';
-}
+String settledNote({required bool timedOut, AgentApp? app}) =>
+    timedOut ? 'Toujours en attente ${_where(app)}' : 'Répondu ${_where(app)}';
+
+/// What an agent says when Mikky could not pass the user's answer on.
+String unsentNote({AgentApp? app}) => 'Réponse non transmise : réponds ${_where(app)}';
+
+String _where(AgentApp? app) => switch (app) {
+  AgentApp.vscode => 'dans VS Code',
+  AgentApp.claude => 'dans Claude',
+  AgentApp.codex => 'dans Codex',
+  _ => 'dans le terminal',
+};

@@ -22,6 +22,29 @@ pub(super) struct Agent {
     run: Run,
     child: tokio::sync::Mutex<Child>,
     job: Option<Job>,
+    /// A message to send at a set time (`run.schedule`): the relaunch after
+    /// a subscription limit, which must not need the app to stay open.
+    scheduled: std::sync::Mutex<Option<Scheduled>>,
+}
+
+struct Scheduled {
+    /// Milliseconds since the Unix epoch.
+    at: i64,
+    task: tokio::task::AbortHandle,
+}
+
+impl Agent {
+    /// When its scheduled message goes, if one waits.
+    fn scheduled_at(&self) -> Option<i64> {
+        self.scheduled.lock().unwrap().as_ref().map(|s| s.at)
+    }
+
+    /// Drops the message waiting to be sent, if any.
+    fn unschedule(&self) {
+        if let Some(s) = self.scheduled.lock().unwrap().take() {
+            s.task.abort();
+        }
+    }
 }
 
 impl Daemon {
@@ -70,6 +93,7 @@ pub(super) async fn dispatch(
                         "run": id, "provider": a.provider, "host": a.host, "cwd": a.cwd,
                         "adapterPid": a.adapter_pid,
                         "sessionId": a.run.session_id(), "alive": a.run.alive(), "working": a.run.working(),
+                        "scheduledAt": a.scheduled_at(),
                     })
                 })
                 .collect();
@@ -133,6 +157,19 @@ pub(super) async fn dispatch(
             Ok(json!(a.run.answer_question(
                 params.get("answers").filter(|v| !v.is_null()).cloned()
             )))
+        }
+        "run.schedule" => {
+            let a = daemon.agent(params)?;
+            let at = params
+                .get("at")
+                .and_then(Value::as_i64)
+                .ok_or_else(|| RpcError::new(-32602, "missing at"))?;
+            schedule(&a, at, str_param(params, "text")?.to_owned());
+            Ok(Value::Null)
+        }
+        "run.unschedule" => {
+            daemon.agent(params)?.unschedule();
+            Ok(Value::Null)
         }
         "run.cancel" => {
             daemon.agent(params)?.run.cancel();
@@ -227,6 +264,7 @@ pub(super) fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcEr
         run: run.clone(),
         child: tokio::sync::Mutex::new(child),
         job,
+        scheduled: std::sync::Mutex::new(None),
     });
     daemon.agents.lock().unwrap().insert(id.clone(), agent);
     // Once the adapter is gone, so is the agent (and, dropped, its job with
@@ -239,9 +277,33 @@ pub(super) fn start(daemon: &Arc<Daemon>, params: &Value) -> Result<Value, RpcEr
     Ok(json!({"run": id, "cwd": params["cwd"], "adapterPid": adapter_pid}))
 }
 
+/// Sends [text] to agent [a] as a prompt at [at] (ms since the Unix epoch),
+/// in place of any message scheduled before. Skipped if the agent is gone
+/// or already working by then: the user took it up meanwhile.
+fn schedule(a: &Arc<Agent>, at: i64, text: String) {
+    a.unschedule();
+    let now = chrono::Utc::now().timestamp_millis();
+    let wait = Duration::from_millis(u64::try_from(at - now).unwrap_or(0));
+    let weak = Arc::downgrade(a);
+    let mut slot = a.scheduled.lock().unwrap();
+    let task = tokio::spawn(async move {
+        tokio::time::sleep(wait).await;
+        let Some(a) = weak.upgrade() else { return };
+        a.scheduled.lock().unwrap().take();
+        if a.run.alive() && !a.run.working() {
+            let _ = a.run.prompt(&text).await;
+        }
+    });
+    *slot = Some(Scheduled {
+        at,
+        task: task.abort_handle(),
+    });
+}
+
 /// Ends an agent and everything it started: cancel the turn, close its
 /// stdin (which ends the adapter), then the job ends what is left.
 pub(super) async fn stop(a: &Agent) {
+    a.unschedule();
     if a.run.working() {
         a.run.cancel();
     }

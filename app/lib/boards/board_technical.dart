@@ -374,8 +374,8 @@ final technicalBoard = BoardSpec('Technique', 'Sous le capot · architecture, op
         ),
         _Note(
           'Relance après quota',
-          'La relance automatique existe côté écran. Fermer cet écran suspend cette automatisation. Pour fonctionner sans interface, son échéancier devra rejoindre Rust avec des tests de reprise et d’annulation.',
-          'Ensorcelé · pas encore durable côté Rust',
+          'Pour un agent lancé par Mikky, mikkyd tient le message de relance (run.schedule) : il part même écran fermé, et l’écran le retrouve en revenant. La détection d’une nouvelle limite reste côté écran. Une session extérieure n’est relancée qu’au prochain tour de son application.',
+          'Ensorcelé · tenu par mikkyd pour ses agents',
           stage: _Stage.transition,
         ),
       ],

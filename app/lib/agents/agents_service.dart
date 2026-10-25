@@ -77,11 +77,21 @@ class AgentsService extends ChangeNotifier {
   final Future<bool> Function() _controlDown;
 
   /// `hooks.answer`: a permission's `decision`, or a question's `answers`
-  /// (null for either: Claude asks in its terminal).
-  void _answerHook(Map<String, Object?> params) {
+  /// (null for either: Claude asks in its terminal). False when it did not
+  /// get through: the engine is gone, or the request ended or refused the
+  /// answer; the requests are read again so one still waiting comes back.
+  Future<bool> _answerHook(Map<String, Object?> params) async {
     final client = daemon;
-    if (client == null || client.isClosed) return;
-    unawaited(client.request('hooks.answer', params).catchError((Object _) => null));
+    if (client == null || client.isClosed) return false;
+    try {
+      if (await client.request('hooks.answer', params) == true) return true;
+    } catch (_) {
+      // Told as a refusal below.
+    }
+    if (!client.isClosed) {
+      unawaited(client.request('hooks.list').then((list) => _hookAsks(list, replay: true)).catchError((Object _) {}));
+    }
+    return false;
   }
 
   /// The overlay's native side (`windows/runner/reveal.cpp`): only the
@@ -281,16 +291,17 @@ class AgentsService extends ChangeNotifier {
       final host = AgentHost.values.asNameMap()[r['host']];
       if (provider == null || host == null || r['alive'] != true || r['sessionId'] == null) continue;
       final id = r['run'] as String;
+      final scheduledAt = switch (r['scheduledAt']) {
+        final int ms => DateTime.fromMillisecondsSinceEpoch(ms),
+        _ => null,
+      };
       if (known[id] case final run?) {
+        run.scheduledAt = scheduledAt;
         if (!run.connected) await run.reconnect(client);
         continue;
       }
-      final run = await DaemonAgentRun.attach(
-        client,
-        id,
-        cwd: r['cwd'] as String?,
-        adapterPid: r['adapterPid'] as int?,
-      );
+      final run = await DaemonAgentRun.attach(client, id, cwd: r['cwd'] as String?, adapterPid: r['adapterPid'] as int?)
+        ..scheduledAt = scheduledAt;
       source.adopt(run, provider: provider, host: host, cwd: r['cwd'] as String?);
     }
   }

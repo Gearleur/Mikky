@@ -274,11 +274,35 @@ void main() {
       expect(source.entries, hasLength(1));
       expect(source.entries.single.id, id);
     });
+    test('a session Mikky ran, taken up elsewhere once its run ended: one agent, the file for it', () async {
+      final id = await source.launch(
+        const LaunchRequest(provider: AgentProvider.claude, host: AgentHost.windows, cwd: r'C:\p', prompt: 'bonjour'),
+      );
+      await settle(() => source.entry(id)!.sessionId != null);
+      await source.stop(id);
+      await watcher.start();
+      source.follow(watcher);
+      final at = DateTime.now().toUtc().add(const Duration(seconds: 1)).toIso8601String();
+      final file = File('${home.path}/projects/C--p/${FakeAgent.sessionId}.jsonl')
+        ..writeAsStringSync(
+          '{"type":"user","message":{"role":"user","content":"reprends"},"uuid":"u1",'
+          '"sessionId":"${FakeAgent.sessionId}","cwd":"C:\\\\p","timestamp":"$at"}\n',
+        );
+      await watcher.changed(file.path);
+      await settle(() => source.entries.single.run == null);
+      final e = source.entries.single;
+      expect(e.id, id);
+      expect(e.origin, AgentOrigin.external);
+      expect(e.log.items.whereType<UserItem>().last.text, 'reprends');
+    });
   });
 
   test('a permission from the hooks of Claude: on the island, answered through mikkyd', () {
     final sent = <(int, String?)>[];
-    source.answerHook = (id, decision) => sent.add((id, decision));
+    source.answerHook = (id, decision) async {
+      sent.add((id, decision));
+      return true;
+    };
     source.hookAsks([permissionAsk(7, 's-ext', 'cargo test', cwd: r'C:\p')]);
     final agent = source.agents.single;
     expect(agent.status, AgentStatus.approval);
@@ -303,8 +327,14 @@ void main() {
     final sent = <(int, Map<String, Object>?)>[];
     final decisions = <(int, String?)>[];
     source
-      ..answerHookQuestion = ((id, answers) => sent.add((id, answers)))
-      ..answerHook = ((id, decision) => decisions.add((id, decision)));
+      ..answerHookQuestion = ((id, answers) async {
+        sent.add((id, answers));
+        return true;
+      })
+      ..answerHook = ((id, decision) async {
+        decisions.add((id, decision));
+        return true;
+      });
     final ask = questionAsk(9, 's-q', cwd: r'C:\p');
     source.hookAsks([ask]);
     final agent = source.agents.single;
@@ -335,6 +365,20 @@ void main() {
     expect(source.answer(agent.id, AgentAnswer.dismiss, clock), isTrue);
     expect(sent.last, (9, null));
     expect(decisions, isEmpty);
+  });
+
+  test('an answer that does not get through is told, and the request can come back', () async {
+    source.answerHook = (id, decision) async => false;
+    source.hookAsks([permissionAsk(7, 's-ext', 'cargo test', cwd: r'C:\p')]);
+    final agent = source.agents.single;
+    expect(source.answer(agent.id, AgentAnswer.allow, clock), isTrue);
+    await pumpEventQueue();
+    expect(source.agentOf(agent.id)?.detail, 'Réponse non transmise : réponds dans le terminal');
+
+    // mikkyd still holds it (the service reads the requests again): asked again.
+    source.hookAsks([permissionAsk(7, 's-ext', 'cargo test', cwd: r'C:\p')]);
+    expect(source.agentOf(agent.id)?.status, AgentStatus.approval);
+    expect(source.agentOf(agent.id)?.detail, 'cargo test');
   });
 
   test('a request without its event is not shown', () {

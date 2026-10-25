@@ -52,7 +52,16 @@ extension _WatchedAgents on RealAgentSource {
         e = x;
       }
     }
-    if (e != null && e.run != null) return;
+    if (e != null && e.run != null) {
+      // Mikky's own run speaks for the session while it lives. Once it
+      // ended, newer work in the file is the session taken up elsewhere
+      // (`claude --resume` in a terminal): the file stands for it then.
+      final ranUntil = e.run!.log.lastActivityAt ?? e.run!.log.lastEventAt;
+      if (e.live || !live || (ranUntil != null && !activityAt.isAfter(ranUntil))) return;
+      e
+        ..run = null
+        ..origin = AgentOrigin.external;
+    }
     if (e == null) {
       final stored = sessionId == null ? null : store?.bySession(sessionId);
       e =

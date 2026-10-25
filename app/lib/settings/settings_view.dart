@@ -161,7 +161,7 @@ class _SettingsPageViewState extends State<SettingsPageView> {
                         onChanged: (v) => a.change((s) => s.autoRelaunch = v),
                       ),
                       Text(
-                        'Pour le moment, Mikky doit rester ouvert pour relancer les agents.',
+                        'La limite doit être vue Mikky ouvert ; ensuite, un agent lancé par Mikky est relancé même Mikky fermé.',
                         style: uiText(TextSize.caption, color: ui.text2, height: 1.4),
                       ),
                     ],

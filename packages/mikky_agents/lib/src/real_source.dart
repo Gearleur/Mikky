@@ -108,12 +108,12 @@ class RealAgentSource implements AgentSource {
 
   /// Sends the answer to a hook permission (`hooks.answer`): `allow`,
   /// `deny`, or null to leave it to the terminal.
-  void Function(int id, String? decision)? answerHook;
+  Future<bool> Function(int id, String? decision)? answerHook;
 
   /// Sends the answers to a hook question (`hooks.answer`), by question
   /// key as for ACP (`mikkyd` turns them into Claude's); null leaves it to
   /// the terminal.
-  void Function(int id, Map<String, Object>? answers)? answerHookQuestion;
+  Future<bool> Function(int id, Map<String, Object>? answers)? answerHookQuestion;
   final _changes = StreamController<void>.broadcast();
   final List<StreamSubscription<Object?>> _subs = [];
   int _ids = 0;
@@ -523,7 +523,7 @@ class RealAgentSource implements AgentSource {
         _ => null,
       };
       _hookAsks.remove(e.sessionId);
-      answerHook?.call(hook.id, HookAsk.decision(allow: allow));
+      _followHookAnswer(e, answerHook?.call(hook.id, HookAsk.decision(allow: allow)));
       _refresh();
       return true;
     }
@@ -555,7 +555,7 @@ class RealAgentSource implements AgentSource {
     final hook = hookQuestionOf(id);
     if (hook != null) {
       _hookAsks.remove(e.sessionId);
-      answerHookQuestion?.call(hook.id, answers);
+      _followHookAnswer(e, answerHookQuestion?.call(hook.id, answers));
       _changed();
       return true;
     }

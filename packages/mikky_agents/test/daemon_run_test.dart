@@ -131,6 +131,26 @@ void main() {
     await run.stop();
   });
 
+  test('a scheduled prompt goes with no screen open, once; unschedule drops it', () async {
+    final run = await opened(client);
+    await run.schedulePrompt(DateTime.now().add(const Duration(milliseconds: 400)), 'reprends');
+    final listed = (await client.request('runs.list') as List).cast<Map<Object?, Object?>>();
+    expect(listed.firstWhere((r) => r['run'] == run.runId)['scheduledAt'], isA<int>());
+    await client.close();
+    await Future<void>.delayed(const Duration(milliseconds: 1500));
+    client = await DaemonClient.connect(_endpoint);
+    final back = await DaemonAgentRun.attach(client, run.runId);
+    expect(back.log.items.whereType<UserItem>().map((u) => u.text), ['reprends']);
+    final after = (await client.request('runs.list') as List).cast<Map<Object?, Object?>>();
+    expect(after.firstWhere((r) => r['run'] == run.runId)['scheduledAt'], isNull);
+
+    await back.schedulePrompt(DateTime.now().add(const Duration(milliseconds: 300)), 'encore');
+    await back.unschedule();
+    await Future<void>.delayed(const Duration(milliseconds: 800));
+    expect(back.log.items.whereType<UserItem>(), hasLength(1));
+    await back.stop();
+  });
+
   test('permissions: wait for the yes, « toujours », a no', () async {
     final run = await opened(client);
     var done = run.prompt('write');
