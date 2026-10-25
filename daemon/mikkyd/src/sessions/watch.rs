@@ -1,5 +1,6 @@
 //! Native file events and incremental JSONL reads, owned by the backend.
 //! A dedicated thread keeps directory walking and file I/O off Tokio.
+use crate::store::{HistoryRequest, Store};
 use notify::{RecursiveMode, Watcher};
 use serde_json::{Value, json};
 use std::{
@@ -8,7 +9,7 @@ use std::{
     io::{Read, Seek, SeekFrom},
     path::{Path, PathBuf},
     sync::{Arc, Mutex, mpsc},
-    time::{Duration, SystemTime},
+    time::SystemTime,
 };
 use tokio::sync::broadcast;
 
@@ -17,7 +18,7 @@ struct Session {
     reader: crate::sessions::reader::Reader,
     offset: u64,
     partial: Vec<u8>,
-    lines: Vec<Value>,
+    count: usize,
     generation: u64,
     modified: u64,
     provider: String,
@@ -26,22 +27,24 @@ struct Session {
 pub struct Sessions {
     sessions: Arc<Mutex<HashMap<PathBuf, Session>>>,
     pub changes: broadcast::Sender<Value>,
+    store: Arc<Store>,
     // Dropping the sender lets the worker stop; the watcher lives on it.
     _stop: Option<mpsc::Sender<Option<notify::Result<notify::Event>>>>,
 }
 
 impl Sessions {
-    pub fn empty() -> Self {
+    pub fn empty(store: Arc<Store>) -> Self {
         let (changes, _) = broadcast::channel(256);
         Self {
             sessions: Arc::new(Mutex::new(HashMap::new())),
             changes,
+            store,
             _stop: None,
         }
     }
 
-    pub fn start(home: PathBuf) -> Result<Self, String> {
-        let mut this = Self::empty();
+    pub fn start(home: PathBuf, store: Arc<Store>) -> Result<Self, String> {
+        let mut this = Self::empty(store.clone());
         let roots = [home.join(".claude/projects"), home.join(".codex/sessions")];
         let (events, recv) = mpsc::channel();
         let stop = events.clone();
@@ -68,7 +71,7 @@ impl Sessions {
             .spawn(move || {
                 // Register first, scan second: modifications during the scan queue up.
                 for root in &roots {
-                    scan(root, &roots, &sessions, &changes);
+                    scan(root, &roots, &sessions, &changes, &store);
                 }
                 // A relay blocks on native events, not a periodic polling timer.
                 while let Ok(Some(event)) = recv.recv() {
@@ -84,15 +87,15 @@ impl Sessions {
                                     let _ = watcher.watch(&path, RecursiveMode::Recursive);
                                 }
                                 if path.is_dir() {
-                                    scan(&path, &roots, &sessions, &changes);
+                                    scan(&path, &roots, &sessions, &changes, &store);
                                 } else {
-                                    read_new(&path, &roots, &sessions, &changes);
+                                    read_new(&path, &roots, &sessions, &changes, &store);
                                 }
                             }
                         }
                         Err(_) => {
                             for root in &roots {
-                                scan(root, &roots, &sessions, &changes);
+                                scan(root, &roots, &sessions, &changes, &store);
                             }
                         }
                     }
@@ -103,44 +106,35 @@ impl Sessions {
         Ok(this)
     }
 
-    pub fn list(&self) -> Value {
-        self.sessions
-            .lock()
-            .unwrap()
-            .iter()
-            .map(|(path, s)| describe(path, s))
-            .collect()
-    }
-
-    pub fn delete(&self, path: &Path) -> Result<(), String> {
-        let mut sessions = self.sessions.lock().unwrap();
-        if !sessions.contains_key(path) {
-            return Err("Unknown session file".into());
-        }
-        match std::fs::remove_file(path) {
-            Ok(()) => {}
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
-            Err(e) => return Err(e.to_string()),
-        }
-        sessions.remove(path);
+    pub async fn delete(&self, path: &Path) -> Result<(), String> {
+        let file = path.to_path_buf();
+        let store = self.store.clone();
+        let sessions = self.sessions.clone();
+        tokio::task::spawn_blocking(move || {
+            // Serialize removal with imports, including their database commits.
+            let mut sessions = sessions.lock().unwrap();
+            let key = file.to_string_lossy().into_owned();
+            if store
+                .history_blocking(HistoryRequest::Describe(key.clone()))?
+                .is_null()
+            {
+                return Err("Unknown session file".into());
+            }
+            match std::fs::remove_file(&file) {
+                Ok(()) => {}
+                Err(e) if e.kind() == std::io::ErrorKind::NotFound => {}
+                Err(e) => return Err(e.to_string()),
+            }
+            store.history_blocking(HistoryRequest::Delete(key))?;
+            sessions.remove(&file);
+            Ok(())
+        })
+        .await
+        .map_err(|e| e.to_string())??;
         let _ = self
             .changes
             .send(json!({"path":path.to_string_lossy(),"deleted":true}));
         Ok(())
-    }
-
-    pub fn read(&self, path: &Path, after: usize, generation: u64) -> Option<Value> {
-        let sessions = self.sessions.lock().unwrap();
-        let s = sessions.get(path)?;
-        let start = if generation == s.generation {
-            after.min(s.lines.len())
-        } else {
-            0
-        };
-        let end = (start + 256).min(s.lines.len());
-        Some(
-            json!({"session": describe(path, s), "from": start, "next": end, "more": end < s.lines.len(), "lines": s.lines[start..end]}),
-        )
     }
 }
 
@@ -153,7 +147,7 @@ impl Drop for Sessions {
 }
 
 fn describe(path: &Path, s: &Session) -> Value {
-    json!({"path": path.to_string_lossy(), "provider": s.provider, "generation": s.generation, "modified": s.modified, "count": s.lines.len(), "firstMessage": s.reader.first_message, "parent": s.reader.parent})
+    json!({"path": path.to_string_lossy(), "provider": s.provider, "generation": s.generation, "modified": s.modified, "count": s.count, "firstMessage": s.reader.first_message, "parent": s.reader.parent})
 }
 
 /// A Claude session (`<project>/<session>.jsonl`), or one of its sub-agents
@@ -214,6 +208,7 @@ fn scan(
     roots: &[PathBuf; 2],
     sessions: &Mutex<HashMap<PathBuf, Session>>,
     changes: &broadcast::Sender<Value>,
+    store: &Store,
 ) {
     // Home events may mention unrelated directories. Only descend along
     // session roots; never crawl the user's other projects or downloads.
@@ -234,17 +229,9 @@ fn scan(
             continue;
         }
         if kind.is_dir() {
-            scan(&entry.path(), roots, sessions, changes);
-        } else if entry
-            .metadata()
-            .ok()
-            .and_then(|m| m.modified().ok())
-            .is_some_and(|m| {
-                SystemTime::now().duration_since(m).unwrap_or_default()
-                    < Duration::from_secs(3 * 86400)
-            })
-        {
-            read_new(&entry.path(), roots, sessions, changes);
+            scan(&entry.path(), roots, sessions, changes, store);
+        } else {
+            read_new(&entry.path(), roots, sessions, changes, store);
         }
     }
 }
@@ -254,6 +241,7 @@ fn read_new(
     roots: &[PathBuf; 2],
     sessions: &Mutex<HashMap<PathBuf, Session>>,
     changes: &broadcast::Sender<Value>,
+    store: &Store,
 ) {
     // Claude may write the metadata after the child's first lines.
     let transcript;
@@ -283,7 +271,26 @@ fn read_new(
         .map(|t| t.as_millis() as u64)
         .unwrap_or(0);
     let mut sessions = sessions.lock().unwrap();
-    let s = sessions.entry(path.to_path_buf()).or_default();
+    if !sessions.contains_key(path) {
+        let previous = match store.history_blocking(HistoryRequest::Describe(
+            path.to_string_lossy().into_owned(),
+        )) {
+            Ok(value) => value,
+            Err(error) => {
+                eprintln!("mikkyd: cannot read conversation index: {error}");
+                return;
+            }
+        };
+        sessions.insert(
+            path.to_path_buf(),
+            Session {
+                generation: previous["generation"].as_u64().map_or(0, |g| g + 1),
+                ..Default::default()
+            },
+        );
+    }
+    let s = sessions.get_mut(path).unwrap();
+    s.provider = provider.into();
     if meta.len() < s.offset || (meta.len() == s.offset && modified != s.modified) {
         let generation = s.generation + 1;
         *s = Session {
@@ -300,6 +307,9 @@ fn read_new(
     s.reader.parent = parent;
     if meta.len() == s.offset {
         if parent_changed {
+            if !persist(path, s, s.count, Vec::new(), store) {
+                return;
+            }
             let _ = changes.send(describe(path, s));
         }
         return;
@@ -318,14 +328,20 @@ fn read_new(
         s.offset += n as u64;
         s.partial.extend_from_slice(&bytes[..n]);
         if let Some(end) = s.partial.iter().rposition(|&c| c == b'\n') {
+            let mut events = Vec::new();
             for line in s.partial[..=end].split(|&c| c == b'\n') {
                 if let Ok(value) = serde_json::from_slice::<Value>(line)
                     && value.is_object()
                 {
-                    s.lines.extend(s.reader.read(provider, &value));
+                    events.extend(s.reader.read(provider, &value));
                 }
             }
             s.partial.drain(..=end);
+            let from = s.count;
+            s.count += events.len();
+            if !persist(path, s, from, events, store) {
+                return;
+            }
             changed = true;
             // A single unusually large JSON line must not reserve its entire
             // allocation for the lifetime of an otherwise idle session.
@@ -339,9 +355,72 @@ fn read_new(
     }
 }
 
+fn persist(
+    path: &Path,
+    session: &mut Session,
+    from: usize,
+    events: Vec<Value>,
+    store: &Store,
+) -> bool {
+    if let Err(error) = store.history_blocking(HistoryRequest::Write {
+        metadata: describe(path, session),
+        from,
+        events,
+    }) {
+        eprintln!("mikkyd: cannot save conversation: {error}");
+        // Re-read the transcript on its next event; never advance a failed append.
+        *session = Session {
+            generation: session.generation + 1,
+            ..Default::default()
+        };
+        return false;
+    }
+    true
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn old_conversations_are_indexed_and_reimports_replace_their_generation() {
+        let home = std::env::temp_dir().join(format!(
+            "mikky-old-{}",
+            crate::system::endpoint::new_token()
+        ));
+        let roots = [home.join("claude"), home.join("codex")];
+        let folder = roots[0].join("project");
+        std::fs::create_dir_all(&folder).unwrap();
+        let path = folder.join("old.jsonl");
+        std::fs::write(
+            &path,
+            "{\"type\":\"user\",\"sessionId\":\"old\",\"message\":{\"content\":\"Encore là\"}}\n",
+        )
+        .unwrap();
+        File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_times(
+                std::fs::FileTimes::new()
+                    .set_modified(SystemTime::now() - std::time::Duration::from_secs(10 * 86400)),
+            )
+            .unwrap();
+        let store = Store::open(None).unwrap();
+        let (changes, _) = broadcast::channel(4);
+        let first = Mutex::new(HashMap::new());
+        scan(&roots[0], &roots, &first, &changes, &store);
+        let metadata = store.history_blocking(HistoryRequest::List).unwrap();
+        assert_eq!(metadata.as_array().unwrap().len(), 1);
+        assert!(metadata[0]["count"].as_u64().unwrap() > 0);
+        let second = Mutex::new(HashMap::new());
+        read_new(&path, &roots, &second, &changes, &store);
+        let updated = store
+            .history_blocking(HistoryRequest::Describe(path.to_string_lossy().into()))
+            .unwrap();
+        assert_eq!(updated["generation"], 1);
+        assert_eq!(updated["count"], metadata[0]["count"]);
+        std::fs::remove_dir_all(home).unwrap();
+    }
     #[test]
     fn late_claude_metadata_attaches_without_replaying_the_child() {
         let home = std::env::temp_dir().join(format!(
@@ -355,18 +434,19 @@ mod tests {
         std::fs::write(&path, "{\"type\":\"user\",\"sessionId\":\"parent\",\"isSidechain\":true,\"agentId\":\"a85\",\"message\":{\"content\":\"Vérifie le lecteur\"}}\n").unwrap();
         let sessions = Mutex::new(HashMap::new());
         let (changes, _) = broadcast::channel(10);
-        read_new(&path, &roots, &sessions, &changes);
-        let before = sessions.lock().unwrap()[&path].lines.len();
+        let store = Store::open(None).unwrap();
+        read_new(&path, &roots, &sessions, &changes, &store);
+        let before = sessions.lock().unwrap()[&path].count;
         let meta = folder.join("agent-a85.meta.json");
         std::fs::write(
             &meta,
             r#"{"description":"Lecteur","toolUseId":"toolu_1","agentType":"general-purpose"}"#,
         )
         .unwrap();
-        read_new(&meta, &roots, &sessions, &changes);
+        read_new(&meta, &roots, &sessions, &changes, &store);
         let state = sessions.lock().unwrap();
         let s = &state[&path];
-        assert_eq!(s.lines.len(), before);
+        assert_eq!(s.count, before);
         assert_eq!(s.reader.parent.as_ref().unwrap()["tool"], "toolu_1");
         assert_eq!(s.reader.parent.as_ref().unwrap()["session"], "parent");
         drop(state);
@@ -389,7 +469,8 @@ mod tests {
         std::fs::write(&path, line.repeat(512)).unwrap();
         let sessions = Mutex::new(HashMap::new());
         let (changes, _) = broadcast::channel(1);
-        read_new(&path, &roots, &sessions, &changes);
+        let store = Store::open(None).unwrap();
+        read_new(&path, &roots, &sessions, &changes, &store);
         let state = sessions.lock().unwrap();
         let session = &state[&path];
         assert_eq!(session.offset, std::fs::metadata(&path).unwrap().len());

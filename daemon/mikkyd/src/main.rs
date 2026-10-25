@@ -88,12 +88,14 @@ async fn main() {
             .map(std::path::PathBuf::from)
             .map(|p| p.join(".local/share/mikky/mikky.db"))
     };
-    let store = store::Store::open(if stdout_endpoint {
-        None
-    } else {
-        data.as_deref()
-    })
-    .expect("cannot open Mikky state");
+    let store = Arc::new(
+        store::Store::open(if stdout_endpoint {
+            None
+        } else {
+            data.as_deref()
+        })
+        .expect("cannot open Mikky state"),
+    );
     let watch_home = std::env::args()
         .skip_while(|a| a != "--watch-home")
         .nth(1)
@@ -108,8 +110,10 @@ async fn main() {
             }
         });
     let sessions = match watch_home {
-        Some(home) => sessions::watch::Sessions::start(home).expect("cannot watch sessions"),
-        None => sessions::watch::Sessions::empty(),
+        Some(home) => {
+            sessions::watch::Sessions::start(home, store.clone()).expect("cannot watch sessions")
+        }
+        None => sessions::watch::Sessions::empty(store.clone()),
     };
     let daemon = Arc::new(api::Daemon::new(
         store,

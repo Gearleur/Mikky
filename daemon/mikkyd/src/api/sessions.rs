@@ -2,6 +2,7 @@
 //! app's metadata in SQLite).
 
 use super::prelude::*;
+use crate::store::HistoryRequest;
 
 pub(super) async fn dispatch(
     daemon: &Arc<Daemon>,
@@ -11,7 +12,11 @@ pub(super) async fn dispatch(
 ) -> RpcResult {
     match method {
         "sessions.list" => {
-            let mut list = daemon.sessions.list();
+            let mut list = daemon
+                .store
+                .history(HistoryRequest::List)
+                .await
+                .map_err(|e| RpcError::new(-32000, e))?;
             if daemon.allow_wsl
                 && let Ok(proxy) = daemon.wsl(out).await
                 && let Ok(Value::Array(mut remote)) = proxy.request(method, json!({})).await
@@ -27,20 +32,29 @@ pub(super) async fn dispatch(
             daemon
                 .sessions
                 .delete(std::path::Path::new(str_param(params, "path")?))
+                .await
                 .map_err(|e| RpcError::new(-32000, e))?;
             Ok(Value::Null)
         }
-        "sessions.read" => daemon
-            .sessions
-            .read(
-                std::path::Path::new(str_param(params, "path")?),
-                params.get("after").and_then(Value::as_u64).unwrap_or(0) as usize,
-                params
-                    .get("generation")
-                    .and_then(Value::as_u64)
-                    .unwrap_or(0),
-            )
-            .ok_or_else(|| RpcError::new(-32000, "unknown session")),
+        "sessions.read" => {
+            let page = daemon
+                .store
+                .history(HistoryRequest::Read {
+                    path: str_param(params, "path")?.into(),
+                    after: params.get("after").and_then(Value::as_u64).unwrap_or(0) as usize,
+                    generation: params
+                        .get("generation")
+                        .and_then(Value::as_u64)
+                        .unwrap_or(0),
+                })
+                .await
+                .map_err(|e| RpcError::new(-32000, e))?;
+            if page.is_null() {
+                Err(RpcError::new(-32000, "unknown session"))
+            } else {
+                Ok(page)
+            }
+        }
         "state.get" => daemon
             .store
             .read()

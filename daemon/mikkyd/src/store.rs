@@ -5,10 +5,14 @@ use serde_json::{Value, json};
 use std::{path::Path, sync::mpsc};
 use tokio::sync::oneshot;
 
+mod history;
+pub use history::HistoryRequest;
+
 type Reply = oneshot::Sender<Result<Value, String>>;
 enum Work {
     Read(Reply),
     Patch(Value, Reply),
+    History(HistoryRequest, Reply),
 }
 
 pub struct Store {
@@ -77,6 +81,7 @@ impl Store {
                 .map_err(|e| e.to_string())?;
             tx.commit().map_err(|e| e.to_string())?;
         }
+        history::migrate(&db)?;
         let (send, recv) = mpsc::channel();
         std::thread::Builder::new()
             .name("mikky-store".into())
@@ -88,6 +93,9 @@ impl Store {
                         }
                         Work::Patch(patch, reply) => {
                             let _ = reply.send(patch_state(&mut db, patch));
+                        }
+                        Work::History(request, reply) => {
+                            let _ = reply.send(history::handle(&mut db, request));
                         }
                     }
                 }
@@ -113,6 +121,30 @@ impl Store {
         let state = recv.await.map_err(|e| e.to_string())??;
         let _ = self.changes.send(());
         Ok(state)
+    }
+
+    pub async fn history(&self, request: HistoryRequest) -> Result<Value, String> {
+        self.history_request(request)?
+            .await
+            .map_err(|e| e.to_string())?
+    }
+
+    /// For file I/O threads only, never a Tokio runtime worker.
+    pub fn history_blocking(&self, request: HistoryRequest) -> Result<Value, String> {
+        self.history_request(request)?
+            .blocking_recv()
+            .map_err(|e| e.to_string())?
+    }
+
+    fn history_request(
+        &self,
+        request: HistoryRequest,
+    ) -> Result<oneshot::Receiver<Result<Value, String>>, String> {
+        let (send, recv) = oneshot::channel();
+        self.send
+            .send(Work::History(request, send))
+            .map_err(|e| e.to_string())?;
+        Ok(recv)
     }
 }
 

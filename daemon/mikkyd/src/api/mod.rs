@@ -46,7 +46,7 @@ type Out = mpsc::UnboundedSender<String>;
 type RpcResult = Result<Value, RpcError>;
 
 pub struct Daemon {
-    store: crate::store::Store,
+    store: Arc<crate::store::Store>,
     sessions: crate::sessions::watch::Sessions,
     agents: Mutex<HashMap<String, Arc<Agent>>>,
     next: AtomicU64,
@@ -61,7 +61,7 @@ pub struct Daemon {
 
 impl Daemon {
     pub fn new(
-        store: crate::store::Store,
+        store: Arc<crate::store::Store>,
         sessions: crate::sessions::watch::Sessions,
         allow_wsl: bool,
     ) -> Self {
