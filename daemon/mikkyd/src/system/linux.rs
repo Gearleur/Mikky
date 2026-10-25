@@ -15,8 +15,13 @@ use tokio::{
     sync::mpsc,
 };
 
+fn euid() -> u32 {
+    // SAFETY: geteuid(2) has no preconditions and cannot fail.
+    unsafe { libc::geteuid() }
+}
+
 fn directory() -> PathBuf {
-    PathBuf::from(format!("/tmp/mikky-{}", unsafe { libc::geteuid() }))
+    PathBuf::from(format!("/tmp/mikky-{}", euid()))
 }
 
 pub async fn bridge() -> Result<(), Box<dyn std::error::Error>> {
@@ -31,6 +36,8 @@ pub async fn bridge() -> Result<(), Box<dyn std::error::Error>> {
             .stderr(std::process::Stdio::null());
         // A separate session: closing wsl.exe's bridge must not send SIGHUP
         // to the persistent daemon or to the agents it owns.
+        // SAFETY: the hook runs in the forked child before exec and only
+        // calls setsid(2), which is async-signal-safe.
         unsafe {
             daemon.pre_exec(|| {
                 if libc::setsid() < 0 {
@@ -63,7 +70,7 @@ pub async fn serve(daemon: Arc<api::Daemon>) -> Result<(), Box<dyn std::error::E
     let directory = directory();
     std::fs::create_dir_all(&directory)?;
     let metadata = std::fs::symlink_metadata(&directory)?;
-    if !metadata.is_dir() || metadata.uid() != unsafe { libc::geteuid() } {
+    if !metadata.is_dir() || metadata.uid() != euid() {
         return Err("Unsafe Mikky runtime directory".into());
     }
     std::fs::set_permissions(&directory, std::fs::Permissions::from_mode(0o700))?;
@@ -72,6 +79,7 @@ pub async fn serve(daemon: Arc<api::Daemon>) -> Result<(), Box<dyn std::error::E
         .truncate(false)
         .write(true)
         .open(directory.join("daemon.lock"))?;
+    // SAFETY: the descriptor belongs to `lock`, open for the whole call.
     if unsafe { libc::flock(lock.as_raw_fd(), libc::LOCK_EX | libc::LOCK_NB) } != 0 {
         return Ok(());
     }
@@ -85,7 +93,7 @@ pub async fn serve(daemon: Arc<api::Daemon>) -> Result<(), Box<dyn std::error::E
             _ = daemon.wait_shutdown() => break,
             accept = listener.accept() => {
                 let (stream, _) = accept?;
-                if stream.peer_cred()?.uid() != unsafe { libc::geteuid() } { continue; }
+                if stream.peer_cred()?.uid() != euid() { continue; }
                 let daemon = daemon.clone();
                 tokio::spawn(async move {
                     let (read, mut write) = stream.into_split();

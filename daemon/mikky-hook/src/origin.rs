@@ -72,6 +72,7 @@ fn processes() -> Option<std::collections::HashMap<u32, (u32, String)>> {
         CreateToolhelp32Snapshot, PROCESSENTRY32W, Process32FirstW, Process32NextW,
         TH32CS_SNAPPROCESS,
     };
+    // SAFETY: plain flags; the handle is checked below and closed once.
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) };
     if snapshot == INVALID_HANDLE_VALUE || snapshot.is_null() {
         return None;
@@ -81,6 +82,7 @@ fn processes() -> Option<std::collections::HashMap<u32, (u32, String)>> {
         dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
         ..Default::default()
     };
+    // SAFETY: a valid snapshot, and `entry` has its `dwSize` set.
     let mut ok = unsafe { Process32FirstW(snapshot, &mut entry) } != 0;
     while ok {
         let len = entry
@@ -95,8 +97,10 @@ fn processes() -> Option<std::collections::HashMap<u32, (u32, String)>> {
                 String::from_utf16_lossy(&entry.szExeFile[..len]),
             ),
         );
+        // SAFETY: as for Process32FirstW.
         ok = unsafe { Process32NextW(snapshot, &mut entry) } != 0;
     }
+    // SAFETY: the snapshot is open and closed only here.
     unsafe { CloseHandle(snapshot) };
     Some(out)
 }
@@ -112,7 +116,11 @@ fn windows() -> Vec<(u32, i64)> {
     };
 
     unsafe extern "system" fn each(hwnd: HWND, data: LPARAM) -> windows_sys::core::BOOL {
+        // SAFETY: `data` is the `&mut found` EnumWindows was given below,
+        // alive and not otherwise borrowed while it calls back.
         let found = unsafe { &mut *(data as *mut Vec<(u32, i64)>) };
+        // SAFETY: `hwnd` comes from EnumWindows; a window closed meanwhile
+        // only makes these calls fail.
         let shown = unsafe {
             IsWindowVisible(hwnd) != 0
                 && GetWindow(hwnd, GW_OWNER).is_null()
@@ -121,6 +129,7 @@ fn windows() -> Vec<(u32, i64)> {
         };
         if shown {
             let mut pid = 0u32;
+            // SAFETY: as above, `pid` a valid out pointer.
             unsafe { GetWindowThreadProcessId(hwnd, &mut pid) };
             found.push((pid, hwnd as i64));
         }
@@ -128,6 +137,8 @@ fn windows() -> Vec<(u32, i64)> {
     }
 
     let mut found: Vec<(u32, i64)> = Vec::new();
+    // SAFETY: `each` matches EnumWindows' callback and only uses `found`
+    // for the duration of this call.
     unsafe { EnumWindows(Some(each), &mut found as *mut _ as LPARAM) };
     found
 }

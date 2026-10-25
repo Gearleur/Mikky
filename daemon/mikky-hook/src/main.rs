@@ -327,14 +327,19 @@ fn stored_endpoint() -> Option<Vec<u8>> {
         .chain(std::iter::once(0))
         .collect();
     let mut cred: *mut CREDENTIALW = std::ptr::null_mut();
+    // SAFETY: `target` is NUL-terminated UTF-16 alive for the call; `cred`
+    // is an out pointer Windows fills on success.
     if unsafe { CredReadW(target.as_ptr(), CRED_TYPE_GENERIC, 0, &mut cred) } == 0 || cred.is_null()
     {
         return None;
     }
+    // SAFETY: on success `cred` points to a credential Windows allocated,
+    // its blob `CredentialBlobSize` bytes long; copied before it is freed.
     let blob = unsafe {
         let c = &*cred;
         std::slice::from_raw_parts(c.CredentialBlob, c.CredentialBlobSize as usize).to_vec()
     };
+    // SAFETY: allocated by CredReadW above, freed once, not used after.
     unsafe { CredFree(cred.cast()) };
     Some(blob)
 }

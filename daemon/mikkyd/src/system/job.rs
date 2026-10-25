@@ -21,8 +21,10 @@ mod windows {
 
     pub struct Job(HANDLE);
 
-    // A kernel handle, usable from any thread.
+    // SAFETY: a kernel handle, usable from any thread; Job only closes it
+    // on drop.
     unsafe impl Send for Job {}
+    // SAFETY: the job calls take `&self` and Windows synchronises them.
     unsafe impl Sync for Job {}
 
     impl Job {
@@ -30,6 +32,9 @@ mod windows {
         /// start, before the agent is sent anything, so its own children
         /// are born inside.
         pub fn for_process(pid: u32) -> Option<Job> {
+            // SAFETY: each handle is checked before use and closed once
+            // (the job by `Drop`, the process here); `info` is a zeroed plain
+            // struct passed with its own size.
             unsafe {
                 let handle = CreateJobObjectW(std::ptr::null(), std::ptr::null());
                 if handle.is_null() {
@@ -60,6 +65,7 @@ mod windows {
 
         /// Ends every process of the job.
         pub fn terminate(&self) {
+            // SAFETY: `self.0` is the job handle, open until `Drop`.
             unsafe {
                 TerminateJobObject(self.0, 1);
             }
@@ -68,6 +74,7 @@ mod windows {
 
     impl Drop for Job {
         fn drop(&mut self) {
+            // SAFETY: the handle is owned by this Job and closed only here.
             unsafe {
                 CloseHandle(self.0);
             }
@@ -86,6 +93,8 @@ impl Job {
     }
 
     pub fn terminate(&self) {
+        // SAFETY: kill(2) takes plain integers; a gone group is an error
+        // code, not undefined behaviour.
         unsafe {
             libc::kill(-(self.0 as i32), libc::SIGKILL);
         }

@@ -40,8 +40,12 @@ pub fn single_instance() -> bool {
     use windows_sys::Win32::System::Threading::CreateMutexW;
     let name = wide("Local\\MikkyDaemon");
     // Kept open until the process ends.
+    // SAFETY: `name` is a NUL-terminated UTF-16 string alive for the call;
+    // null security attributes are allowed.
     let handle = unsafe { CreateMutexW(std::ptr::null(), 0, name.as_ptr()) };
-    !handle.is_null() && unsafe { GetLastError() } != ERROR_ALREADY_EXISTS
+    // SAFETY: no precondition; read right after the call it reports on.
+    let last = unsafe { GetLastError() };
+    !handle.is_null() && last != ERROR_ALREADY_EXISTS
 }
 
 /// Puts `describe(port, token)` in the credential store for this session.
@@ -53,6 +57,8 @@ pub fn publish(port: u16, token: &str) -> std::io::Result<()> {
     let mut blob = describe(port, token).into_bytes();
     let mut target = wide(CREDENTIAL);
     let mut user = wide("mikkyd");
+    // SAFETY: CREDENTIALW is plain data (integers and raw pointers), for
+    // which all zeroes is a valid value.
     let mut cred: CREDENTIALW = unsafe { std::mem::zeroed() };
     cred.Type = CRED_TYPE_GENERIC;
     cred.TargetName = target.as_mut_ptr();
@@ -60,6 +66,8 @@ pub fn publish(port: u16, token: &str) -> std::io::Result<()> {
     cred.CredentialBlobSize = blob.len() as u32;
     cred.CredentialBlob = blob.as_mut_ptr();
     cred.Persist = CRED_PERSIST_SESSION;
+    // SAFETY: every pointer in `cred` points into `target`, `user` and
+    // `blob`, which outlive the call; Windows copies them.
     if unsafe { CredWriteW(&cred, 0) } == 0 {
         return Err(std::io::Error::last_os_error());
     }

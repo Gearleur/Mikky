@@ -8,6 +8,10 @@ version = "0.1.0"
 publish = false
 license = "MIT"
 
+# Every unsafe block says why it is sound (audit of 2026-10-12).
+[workspace.lints.clippy]
+undocumented_unsafe_blocks = "warn"
+
 [workspace.dependencies]
 mikky-acp = { path = "mikky-acp" }
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
