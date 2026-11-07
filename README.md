@@ -150,7 +150,9 @@ the daemon, the engine, the agents client and the app.
 
 ## License
 
-[MIT](LICENSE). Third-party assets keep their own licenses: tool icons from
+Code: [MIT](LICENSE). The name Mikky, the character, the icon, Mikky's own sounds and the media showing him
+are reserved: see [LICENSE-ASSETS.md](LICENSE-ASSETS.md) (forks distributed on their own use their own name
+and character). Third-party assets keep their own licenses: tool icons from
 [Lobe Icons](https://github.com/lobehub/lobe-icons) and [Paperclip](https://github.com/paperclipai/paperclip)
 (MIT, `app/assets/brands/`) and fonts under the SIL Open Font
 License (`app/assets/fonts/OFL.txt`). Claude, Codex, OpenAI, Gemini and the other product names and logos are
