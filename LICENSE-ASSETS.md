@@ -13,6 +13,7 @@ does **not** grant: the identity of Mikky.
   painters or any other code). The code that draws him is MIT; his design is not.
 - **The icon** (`app/windows/runner/resources/`).
 - **Mikky's own sounds**, such as `app/assets/sounds/spell.mp3`.
+- **The wallpapers** (`app/assets/wallpapper/`).
 - **Screenshots, videos and other media showing Mikky** (`docs/readme/`, captures of the design boards).
 
 ## What you may do
