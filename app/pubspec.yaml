@@ -13,7 +13,7 @@ dependencies:
     path: ../packages/mikky_engine
   mikky_agents:
     path: ../packages/mikky_agents
-  flutter_svg: ^2.0.10
+  flutter_svg: ^2.3.2
 
 dev_dependencies:
   flutter_test:
